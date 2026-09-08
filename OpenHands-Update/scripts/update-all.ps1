@@ -85,8 +85,19 @@ $results.Add([PSCustomObject]@{
 })
 
 # Component 2: llama-mainline
-$mainlineCurrent = "b10816"
-$mainlineBin = "K:\Project\llama-mainline\b10816\llama-server.exe"
+$mainlineCurrent = "unknown"
+$manifestPath = "K:\Project\Config\backend-versions.json"
+if (Test-Path $manifestPath) {
+    try {
+        $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+        if ($manifest.llama_mainline.build) { $mainlineCurrent = $manifest.llama_mainline.build }
+    } catch {}
+}
+if ($mainlineCurrent -eq "unknown") {
+    $mainlineDir = Get-ChildItem -Path "K:\Project\llama-mainline" -Directory -Filter "b*" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+    if ($mainlineDir) { $mainlineCurrent = $mainlineDir.Name }
+}
+$mainlineBin = "K:\Project\llama-mainline\$mainlineCurrent\llama-server.exe"
 if (Test-Path $mainlineBin) {
     try {
         $raw = & $mainlineBin --version 2>&1

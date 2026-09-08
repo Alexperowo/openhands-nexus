@@ -9,7 +9,7 @@
  * - Zero dependency on npm packages or internal agent-canvas files.
  */
 
-import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, renameSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { request as httpRequest } from "node:http";
 
@@ -67,7 +67,9 @@ export function getWorkingProfileState() {
 
 export function saveWorkingProfileState(state) {
   state.updated_at = new Date().toISOString();
-  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), "utf-8");
+  const tmpFile = `${STATE_FILE}.tmp.${Date.now()}`;
+  writeFileSync(tmpFile, JSON.stringify(state, null, 2), "utf-8");
+  renameSync(tmpFile, STATE_FILE);
 }
 
 /**

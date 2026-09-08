@@ -112,17 +112,21 @@ def get_process_ram_mb():
 
 def decode_audio_to_16k_mono(audio_bytes: bytes) -> np.ndarray:
     """Decode incoming audio buffer (WebM, Opus, WAV, etc.) to 16kHz float32 mono."""
-    input_file = io.BytesIO(audio_bytes)
-    container = av.open(input_file)
-    resampler = av.AudioResampler(format="flt", layout="mono", rate=16000)
-    samples = []
-    for frame in container.decode(audio=0):
-        for resampled_frame in resampler.resample(frame):
-            samples.append(resampled_frame.to_ndarray())
-    if not samples:
+    try:
+        input_file = io.BytesIO(audio_bytes)
+        container = av.open(input_file)
+        resampler = av.AudioResampler(format="flt", layout="mono", rate=16000)
+        samples = []
+        for frame in container.decode(audio=0):
+            for resampled_frame in resampler.resample(frame):
+                samples.append(resampled_frame.to_ndarray())
+        if not samples:
+            return np.array([], dtype=np.float32)
+        pcm = np.concatenate(samples, axis=1).squeeze(0)
+        return pcm.astype(np.float32)
+    except Exception as err:
+        print(f"[Voice Bridge] Audio decode error: {err}", flush=True)
         return np.array([], dtype=np.float32)
-    pcm = np.concatenate(samples, axis=1).squeeze(0)
-    return pcm.astype(np.float32)
 
 
 def clean_text_for_speech(text: str) -> str:
@@ -163,11 +167,18 @@ def synthesize_to_wav_bytes(text: str, voice_style_name: str = "M1") -> tuple[by
     waveform = np.clip(wav[0], -1.0, 1.0)
     pcm_int16 = (waveform * 32767).astype(np.int16)
     
+    # Safely determine native sample rate (from model attribute or waveform / duration)
+    sample_rate = getattr(tts_model, "sample_rate", None)
+    if not sample_rate and duration > 0 and len(waveform) > 0:
+        sample_rate = int(round(len(waveform) / duration))
+    if not sample_rate or sample_rate <= 0:
+        sample_rate = 44100
+        
     out_io = io.BytesIO()
     with wave.open(out_io, "wb") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)
-        wf.setframerate(44100)
+        wf.setframerate(sample_rate)
         wf.writeframes(pcm_int16.tobytes())
         
     return out_io.getvalue(), duration, latency

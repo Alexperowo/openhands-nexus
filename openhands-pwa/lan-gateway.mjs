@@ -84,7 +84,11 @@ function parseCookies(cookieHeader) {
     name = name?.trim();
     if (!name) return;
     const val = rest.join("=").trim();
-    list[name] = decodeURIComponent(val);
+    try {
+      list[name] = decodeURIComponent(val);
+    } catch {
+      list[name] = val;
+    }
   });
   return list;
 }
