@@ -1,4 +1,4 @@
-﻿import urllib.request
+import urllib.request
 import json
 import time
 import os
@@ -13,7 +13,8 @@ if len(sys.argv) < 2:
 prof_name = sys.argv[1]
 TEST_PROMPT = "Explain what RAM is in one sentence. Be direct and concise."
 
-with open(r"C:\Users\User\.openhands\agent-canvas\api-key.txt", "r") as f:
+api_key_path = os.path.join(os.environ.get("USERPROFILE") or os.path.expanduser("~"), ".openhands", "agent-canvas", "api-key.txt")
+with open(api_key_path, "r") as f:
     API_KEY = f.read().strip()
 
 BASE_URL = "http://127.0.0.1:18000"

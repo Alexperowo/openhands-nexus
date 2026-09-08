@@ -1,10 +1,15 @@
-﻿import urllib.request
+import urllib.request
 import json
 
-with open(r"C:\Users\User\.openhands\agent-canvas\api-key.txt", "r") as f:
+import os
+
+user_home = os.environ.get("USERPROFILE") or os.path.expanduser("~")
+api_key_path = os.path.join(user_home, ".openhands", "agent-canvas", "api-key.txt")
+with open(api_key_path, "r") as f:
     key = f.read().strip()
 
-with open(r"C:\Users\User\.openhands\profiles\Qwen38_Opus_96K.json", "r", encoding="utf-8") as f:
+profile_path = os.path.join(user_home, ".openhands", "profiles", "Qwen38_Opus_96K.json")
+with open(profile_path, "r", encoding="utf-8") as f:
     base_cfg = json.load(f)
 
 # Define the 4 target profiles

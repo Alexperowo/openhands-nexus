@@ -1,4 +1,4 @@
-﻿import urllib.request
+import urllib.request
 import urllib.error
 import json
 import time
@@ -12,10 +12,11 @@ try:
 except Exception:
     pass
 
-OUTPUT_DIR = r"K:\Project\OpenHands-Tests\Android-WiFi-ADB"
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "Android-WiFi-ADB")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-with open(r"C:\Users\User\.openhands\agent-canvas\api-key.txt", "r", encoding="utf-8") as f:
+api_key_path = os.path.join(os.environ.get("USERPROFILE") or os.environ.get("HOME") or os.path.expanduser("~"), ".openhands", "agent-canvas", "api-key.txt")
+with open(api_key_path, "r", encoding="utf-8") as f:
     API_KEY = f.read().strip()
 
 BASE_URL = "http://127.0.0.1:18000"

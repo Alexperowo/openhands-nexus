@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import sys
 import time
@@ -7,8 +7,9 @@ import requests
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-EN_FILE = r"C:\Users\User\AppData\Roaming\npm\node_modules\@openhands\agent-canvas\build\locales\en\openhands.json"
-RU_FILE = r"K:\Project\openhands-localization\ru.json"
+appdata = os.environ.get("APPDATA") or os.path.expanduser(r"~\AppData\Roaming")
+EN_FILE = os.path.join(appdata, r"npm\node_modules\@openhands\agent-canvas\build\locales\en\openhands.json")
+RU_FILE = os.path.join(os.path.dirname(__file__), "ru.json")
 LLM_URL = "http://127.0.0.1:8080/v1/chat/completions"
 
 def load_json(path):

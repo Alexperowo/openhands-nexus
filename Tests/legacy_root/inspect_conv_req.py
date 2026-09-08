@@ -1,7 +1,10 @@
-﻿import urllib.request
+import urllib.request
 import json
 
-with open(r"C:\Users\User\.openhands\agent-canvas\api-key.txt", "r") as f:
+import os
+
+api_key_path = os.path.join(os.environ.get("USERPROFILE") or os.path.expanduser("~"), ".openhands", "agent-canvas", "api-key.txt")
+with open(api_key_path, "r") as f:
     key = f.read().strip()
 
 r = urllib.request.urlopen(urllib.request.Request("http://127.0.0.1:18000/openapi.json", headers={"X-Session-API-Key": key}))

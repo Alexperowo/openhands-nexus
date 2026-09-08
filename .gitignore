@@ -23,7 +23,10 @@ Logs/
 Temp/
 scratch/
 Archive/
-.openhands-local/
+.openhands-local/session.json
+.openhands-local/logs/
+.openhands-local/*.pid
+.openhands-local/*.log
 *.zip
 *.tar
 *.gz

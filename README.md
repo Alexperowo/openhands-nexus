@@ -93,19 +93,19 @@
 ## Быстрый старт
 
 ### Запуск станции
-`cmd
-K:\Project\START-OPENHANDS-LOCAL.cmd
-`
-Скрипт проверяет порты, запускает llama-swap (:8080), голосовой мост (:18002), gent-server (:18000), gent-canvas (:8000) и lan-gateway (:8443).
+```cmd
+START-OPENHANDS-LOCAL.cmd
+```
+Скрипт проверяет порты, запускает llama-swap (:8080), голосовой мост (:18002), agent-server (:18000), agent-canvas (:8000) и lan-gateway (:8443).
 
 ### Доступ
 * **Рабочий стол ПК**: http://127.0.0.1:8000
 * **Мобильные устройства в LAN (Wi-Fi)**: https://192.168.0.14:8443 (или локальный IP ПК в вашей сети)
 
 ### Диагностика
-`cmd
-K:\Project\DIAGNOSTICS-OPENHANDS-LOCAL.cmd
-`
+```cmd
+DIAGNOSTICS-OPENHANDS-LOCAL.cmd
+```
 
 ---
 

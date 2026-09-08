@@ -61,16 +61,49 @@ if (!LAN_AUTH_TOKEN) {
   LAN_AUTH_TOKEN = process.env.OPENHANDS_LAN_AUTH_TOKEN || "openhands-local-station-pass";
 }
 
+function resolveAgentCanvasDir() {
+  if (process.env.OPENHANDS_CANVAS_DIR && existsSync(process.env.OPENHANDS_CANVAS_DIR)) {
+    return process.env.OPENHANDS_CANVAS_DIR;
+  }
+  const candidates = [];
+  if (process.env.APPDATA) {
+    candidates.push(join(process.env.APPDATA, "npm", "node_modules", "@openhands", "agent-canvas"));
+  }
+  if (process.env.USERPROFILE) {
+    candidates.push(join(process.env.USERPROFILE, "AppData", "Roaming", "npm", "node_modules", "@openhands", "agent-canvas"));
+  }
+  if (process.env.LOCALAPPDATA) {
+    candidates.push(join(process.env.LOCALAPPDATA, "npm", "node_modules", "@openhands", "agent-canvas"));
+  }
+  if (process.env.HOME) {
+    candidates.push(join(process.env.HOME, ".npm-global", "lib", "node_modules", "@openhands", "agent-canvas"));
+  }
+  candidates.push(
+    "/usr/local/lib/node_modules/@openhands/agent-canvas",
+    "/usr/lib/node_modules/@openhands/agent-canvas"
+  );
+  for (const dir of candidates) {
+    if (dir && existsSync(join(dir, "scripts", "proxy-utils.mjs"))) {
+      return dir;
+    }
+  }
+  return null;
+}
+
 // 2. Load proxy handler from agent-canvas installation
 let createProxyHandlers;
+const canvasDir = resolveAgentCanvasDir();
+if (!canvasDir) {
+  console.error("[LAN Gateway] Could not locate installed @openhands/agent-canvas. Set OPENHANDS_CANVAS_DIR environment variable.");
+  process.exit(1);
+}
 try {
-  const appData = process.env.APPDATA || (process.env.USERPROFILE ? join(process.env.USERPROFILE, "AppData", "Roaming") : "C:\\Users\\User\\AppData\\Roaming");
-  const proxyUtilsPath = join(appData, "npm", "node_modules", "@openhands", "agent-canvas", "scripts", "proxy-utils.mjs");
+  const proxyUtilsPath = join(canvasDir, "scripts", "proxy-utils.mjs");
   const proxyUtilsUrl = pathToFileURL(proxyUtilsPath).href;
   const proxyUtils = await import(proxyUtilsUrl);
   createProxyHandlers = proxyUtils.createProxyHandlers;
 } catch (err) {
-  console.error(`[LAN Gateway] Failed to load agent-canvas proxy-utils: ${err.message}`);
+  console.error(`[LAN Gateway] Failed to load agent-canvas proxy-utils from ${canvasDir}: ${err.message}`);
   process.exit(1);
 }
 

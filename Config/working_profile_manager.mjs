@@ -1,10 +1,10 @@
 /**
  * OpenHands Local - Working Profile Manager
- * Location: K:\Project\Config\working_profile_manager.mjs
+ * Location: Config/working_profile_manager.mjs
  * 
  * Update-resistant standalone module that handles:
- * - Loading all Working Profiles from C:\Users\User\.openhands\working-profiles\
- * - Maintaining persistent server-side active state in C:\Users\User\.openhands\working-profile-state.json
+ * - Loading all Working Profiles from %USERPROFILE%\.openhands\working-profiles\
+ * - Maintaining persistent server-side active state in %USERPROFILE%\.openhands\working-profile-state.json
  * - Dispatching synchronized profile switches to Agent Server (:18000)
  * - Zero dependency on npm packages or internal agent-canvas files.
  */
@@ -16,8 +16,8 @@ import { request as httpRequest } from "node:http";
 import process from "node:process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const USER_HOME = process.env.USERPROFILE || "C:\\Users\\User";
-const OPENHANDS_HOME = join(USER_HOME, ".openhands");
+const USER_HOME = process.env.USERPROFILE || process.env.HOME || (process.env.HOMEDRIVE && process.env.HOMEPATH ? join(process.env.HOMEDRIVE, process.env.HOMEPATH) : "");
+const OPENHANDS_HOME = process.env.OPENHANDS_HOME || (USER_HOME ? join(USER_HOME, ".openhands") : join(__dirname, "..", ".openhands"));
 const WORKING_PROFILES_DIR = join(OPENHANDS_HOME, "working-profiles");
 const STATE_FILE = join(OPENHANDS_HOME, "working-profile-state.json");
 const API_KEY_FILE = join(OPENHANDS_HOME, "agent-canvas", "api-key.txt");
@@ -146,22 +146,56 @@ export async function syncToAgentServer(agentProfileId, llmProfileName) {
 }
 
 /**
- * Atomically switches the global Working Profile
+ * Safely switches the global Working Profile with strict validation and Agent Server sync.
+ * Failure behavior:
+ * - Validates target profile and reasoning mode first (invalid mode throws Error, never silent fallback).
+ * - Synchronizes with Agent Server before touching disk state.
+ * - Only modifies disk state and reports success when Agent Server accepts.
  */
 export async function switchWorkingProfile(workingProfileId, reasoningModeId = null, updatedBy = "api") {
+  // a) Validate target profile first
   const profiles = loadWorkingProfiles();
   const targetWp = profiles.find((p) => p.id === workingProfileId);
   if (!targetWp) {
-    throw new Error("Working profile '" + workingProfileId + "' not found.");
+    throw new Error(`Working profile '${workingProfileId}' not found.`);
   }
 
   let resolvedAgentProfileId = targetWp.default_agent_profile_id;
   let resolvedLlmProfileName = targetWp.default_llm_profile_name;
-  let activeReasoningModeId = reasoningModeId || targetWp.reasoning?.default_mode_id || "direct";
+  let activeReasoningModeId = null;
 
-  if (targetWp.reasoning && targetWp.reasoning.supported && targetWp.reasoning.modes) {
-    const mode = targetWp.reasoning.modes.find((m) => m.id === activeReasoningModeId);
-    if (mode) {
+  const reasoning = targetWp.reasoning || {};
+  const supported = Boolean(reasoning.supported);
+  const modes = reasoning.modes || [];
+
+  if (reasoningModeId) {
+    if (!supported) {
+      // Profile does not support reasoning modes (e.g. Ornith)
+      const allowedDefault = reasoning.default_mode_id || "direct";
+      if (reasoningModeId !== allowedDefault && reasoningModeId !== "direct") {
+        throw new Error(`Working profile '${workingProfileId}' does not support reasoning modes (requested: '${reasoningModeId}').`);
+      }
+      activeReasoningModeId = allowedDefault;
+    } else {
+      // Explicit reasoning_mode_id must be valid for supported profiles; no silent fallback
+      const mode = modes.find((m) => m.id === reasoningModeId);
+      if (!mode) {
+        const validModes = modes.length > 0 ? modes.map((m) => `'${m.id}'`).join(", ") : "none";
+        throw new Error(`Invalid reasoning_mode_id '${reasoningModeId}' for working profile '${workingProfileId}'. Valid modes: [${validModes}].`);
+      }
+      activeReasoningModeId = mode.id;
+      if (mode.target_agent_profile_id) {
+        resolvedAgentProfileId = mode.target_agent_profile_id;
+      }
+      if (mode.target_llm_profile_name) {
+        resolvedLlmProfileName = mode.target_llm_profile_name;
+      }
+    }
+  } else {
+    // Default mode selection if none explicitly specified
+    if (supported && modes.length > 0) {
+      activeReasoningModeId = reasoning.default_mode_id || modes[0].id;
+      const mode = modes.find((m) => m.id === activeReasoningModeId) || modes[0];
       if (mode.target_agent_profile_id) {
         resolvedAgentProfileId = mode.target_agent_profile_id;
       }
@@ -169,10 +203,28 @@ export async function switchWorkingProfile(workingProfileId, reasoningModeId = n
         resolvedLlmProfileName = mode.target_llm_profile_name;
       }
     } else {
-      activeReasoningModeId = targetWp.reasoning.default_mode_id || targetWp.reasoning.modes[0]?.id || "direct";
+      activeReasoningModeId = reasoning.default_mode_id || "direct";
     }
   }
 
+  if (!resolvedAgentProfileId || !resolvedLlmProfileName) {
+    throw new Error(`Working profile '${workingProfileId}' is missing resolved agent or LLM profile.`);
+  }
+
+  // b) Synchronize Agent Server before touching disk
+  let agentServerResult = null;
+  try {
+    agentServerResult = await syncToAgentServer(resolvedAgentProfileId, resolvedLlmProfileName);
+  } catch (err) {
+    throw new Error(`Agent Server synchronization failed: ${err.message}. Working profile state was NOT changed.`);
+  }
+
+  if (!agentServerResult || !agentServerResult.ok) {
+    const detail = agentServerResult?.body ? ` (HTTP ${agentServerResult.status}: ${agentServerResult.body})` : ` (HTTP ${agentServerResult?.status || "unknown"})`;
+    throw new Error(`Agent Server rejected profile switch${detail}. Working profile state was NOT changed.`);
+  }
+
+  // c & d) Only update disk state after verified successful Agent Server sync
   const newState = {
     active_working_profile_id: targetWp.id,
     active_reasoning_mode_id: activeReasoningModeId,
@@ -181,19 +233,11 @@ export async function switchWorkingProfile(workingProfileId, reasoningModeId = n
     updated_by: updatedBy,
   };
 
-  // 1. Persist state on disk
   saveWorkingProfileState(newState);
 
-  // 2. Synchronize to Agent Server
-  let agentServerResult = null;
-  try {
-    agentServerResult = await syncToAgentServer(resolvedAgentProfileId, resolvedLlmProfileName);
-  } catch (err) {
-    console.warn("[WorkingProfileManager] Could not sync to Agent Server:", err.message);
-  }
-
   return {
+    ok: true,
     state: newState,
-    agent_server_synced: agentServerResult?.ok ?? false,
+    agent_server_synced: true,
   };
 }

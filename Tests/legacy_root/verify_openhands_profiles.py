@@ -1,4 +1,4 @@
-﻿import urllib.request
+import urllib.request
 import json
 import time
 import os
@@ -6,7 +6,8 @@ import sys
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-with open(r"C:\Users\User\.openhands\agent-canvas\api-key.txt", "r") as f:
+api_key_path = os.path.join(os.environ.get("USERPROFILE") or os.path.expanduser("~"), ".openhands", "agent-canvas", "api-key.txt")
+with open(api_key_path, "r") as f:
     API_KEY = f.read().strip()
 
 BASE_URL = "http://127.0.0.1:18000"

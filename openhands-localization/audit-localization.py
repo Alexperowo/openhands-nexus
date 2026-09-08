@@ -2,12 +2,14 @@
 import json
 import re
 import sys
+import os
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-EN_PATH = Path(r"C:\Users\User\AppData\Roaming\npm\node_modules\@openhands\agent-canvas\build\locales\en\openhands.json")
-RU_PATH = Path(r"K:\Project\openhands-localization\ru.json")
+appdata = os.environ.get("APPDATA") or os.path.expanduser(r"~\AppData\Roaming")
+EN_PATH = Path(appdata) / "npm/node_modules/@openhands/agent-canvas/build/locales/en/openhands.json"
+RU_PATH = Path(__file__).resolve().parent / "ru.json"
 
 # Recognized intentional non-translatable technical items
 EXPLICIT_TECHNICAL_KEYS = {

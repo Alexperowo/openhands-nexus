@@ -11,7 +11,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Canonical Centralized Logs
-$LogDir = "K:\Project\Logs\Updater"
+$LogDir = Join-Path $Global:ProjectRootDir "Logs\Updater"
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
 $ts = Get-Date -Format "yyyyMMdd-HHmmss"
 $LogFile = Join-Path $LogDir "update-all-$ts.log"
@@ -55,7 +55,7 @@ $results = [System.Collections.Generic.List[PSObject]]::new()
 
 # Component 1: llama-swap
 $swapCurrent = "unknown"
-$swapBin = "K:\Project\llama-swap\bin\llama-swap.exe"
+$swapBin = Join-Path $Global:ProjectRootDir "llama-swap\bin\llama-swap.exe"
 if (Test-Path $swapBin) {
     try {
         $raw = & $swapBin -version 2>&1
@@ -86,7 +86,7 @@ $results.Add([PSCustomObject]@{
 
 # Component 2: llama-mainline
 $mainlineCurrent = "unknown"
-$manifestPath = "K:\Project\Config\backend-versions.json"
+$manifestPath = Join-Path $Global:ProjectRootDir "Config\backend-versions.json"
 if (Test-Path $manifestPath) {
     try {
         $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
@@ -94,10 +94,10 @@ if (Test-Path $manifestPath) {
     } catch {}
 }
 if ($mainlineCurrent -eq "unknown") {
-    $mainlineDir = Get-ChildItem -Path "K:\Project\llama-mainline" -Directory -Filter "b*" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+    $mainlineDir = Get-ChildItem -Path (Join-Path $Global:ProjectRootDir "llama-mainline") -Directory -Filter "b*" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
     if ($mainlineDir) { $mainlineCurrent = $mainlineDir.Name }
 }
-$mainlineBin = "K:\Project\llama-mainline\$mainlineCurrent\llama-server.exe"
+$mainlineBin = Join-Path $Global:ProjectRootDir "llama-mainline\$mainlineCurrent\llama-server.exe"
 if (Test-Path $mainlineBin) {
     try {
         $raw = & $mainlineBin --version 2>&1
@@ -128,7 +128,7 @@ $results.Add([PSCustomObject]@{
 
 # Component 3: ik_llama
 $ikCurrent = "3c58ae3"
-$ikBin = "K:\Project\ik_llama\bin\llama-server.exe"
+$ikBin = Join-Path $Global:ProjectRootDir "ik_llama\bin\llama-server.exe"
 if (Test-Path $ikBin) {
     try {
         $raw = & $ikBin --version 2>&1
@@ -160,7 +160,8 @@ $results.Add([PSCustomObject]@{
 })
 
 # Component 4: @openhands/agent-canvas
-$canvasPkg = "C:\Users\User\AppData\Roaming\npm\node_modules\@openhands\agent-canvas\package.json"
+$appData = if ($env:APPDATA) { $env:APPDATA } else { Join-Path $env:USERPROFILE 'AppData\Roaming' }
+$canvasPkg = Join-Path $appData "npm\node_modules\@openhands\agent-canvas\package.json"
 $canvasCurrent = "unknown"
 if (Test-Path $canvasPkg) {
     try {
@@ -182,7 +183,7 @@ $results.Add([PSCustomObject]@{
 })
 
 # Component 5: openhands-agent-server
-$defsJson = "C:\Users\User\AppData\Roaming\npm\node_modules\@openhands\agent-canvas\config\defaults.json"
+$defsJson = Join-Path $appData "npm\node_modules\@openhands\agent-canvas\config\defaults.json"
 $serverPinned = "unknown"
 $automationPinned = "unknown"
 if (Test-Path $defsJson) {

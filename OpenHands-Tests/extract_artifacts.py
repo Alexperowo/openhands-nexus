@@ -1,4 +1,4 @@
-﻿import urllib.request
+import urllib.request
 import json
 import base64
 import os
@@ -6,10 +6,11 @@ import sys
 import re
 from datetime import datetime
 
-OUTPUT_DIR = r"K:\Project\OpenHands-Tests\Android-Smoke-01"
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "Android-Smoke-01")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-with open(r"C:\Users\User\.openhands\agent-canvas\api-key.txt", "r", encoding="utf-8") as f:
+api_key_path = os.path.join(os.environ.get("USERPROFILE") or os.environ.get("HOME") or os.path.expanduser("~"), ".openhands", "agent-canvas", "api-key.txt")
+with open(api_key_path, "r", encoding="utf-8") as f:
     API_KEY = f.read().strip()
 
 conv_id = "fbf3610f-87a4-4c8d-86b8-52bf48507698"

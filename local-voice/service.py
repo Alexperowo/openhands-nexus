@@ -43,10 +43,22 @@ if sys.stderr is not None:
         pass
 
 # Setup paths for transcribe_cpp
-PYTHONPATH_TRANSCRIBE = r"D:\Project\futo-keyboard-gigaam\third_party\transcribe.cpp\bindings\python\src"
-TRANSCRIBE_DLL = r"K:\Project\transcribe-build-shared\bin\Release\transcribe.dll"
-GIGAAM_MODEL_PATH = r"D:\Project\futo-keyboard-gigaam\voiceinput-shared\models\cache\assets\voice-models\gigaam-v3-e2e-rnnt-Q8_0.gguf"
-SUPERTONIC_DIR = r"D:\AI\Models\Speech\supertonic"
+PYTHONPATH_TRANSCRIBE = os.environ.get(
+    "FUTO_TRANSCRIBE_PATH",
+    r"D:\Project\futo-keyboard-gigaam\third_party\transcribe.cpp\bindings\python\src"
+)
+TRANSCRIBE_DLL = os.environ.get(
+    "TRANSCRIBE_LIBRARY",
+    os.path.join(os.path.dirname(__file__), "..", "transcribe-build-shared", "bin", "Release", "transcribe.dll")
+)
+GIGAAM_MODEL_PATH = os.environ.get(
+    "GIGAAM_MODEL_PATH",
+    r"D:\Project\futo-keyboard-gigaam\voiceinput-shared\models\cache\assets\voice-models\gigaam-v3-e2e-rnnt-Q8_0.gguf"
+)
+SUPERTONIC_DIR = os.environ.get(
+    "SUPERTONIC_MODEL_DIR",
+    r"D:\AI\Models\Speech\supertonic"
+)
 
 os.environ["PYTHONPATH"] = PYTHONPATH_TRANSCRIBE
 os.environ["TRANSCRIBE_LIBRARY"] = TRANSCRIBE_DLL
