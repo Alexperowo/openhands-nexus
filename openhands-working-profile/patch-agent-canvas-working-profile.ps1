@@ -1,7 +1,8 @@
 # OpenHands Local - Idempotent Working Profile UI Patcher for Agent Canvas
 $ErrorActionPreference = 'Stop'
 
-$CanvasDir = 'C:\Users\User\AppData\Roaming\npm\node_modules\@openhands\agent-canvas\build'
+$appData = if ($env:APPDATA) { $env:APPDATA } else { Join-Path $env:USERPROFILE 'AppData\Roaming' }
+$CanvasDir = Join-Path $appData 'npm\node_modules\@openhands\agent-canvas\build'
 $IndexHtml = Join-Path $CanvasDir 'index.html'
 
 if (-not (Test-Path $IndexHtml)) {
@@ -11,11 +12,12 @@ if (-not (Test-Path $IndexHtml)) {
 
 $Content = [System.IO.File]::ReadAllText($IndexHtml, [System.Text.Encoding]::UTF8)
 
-$LoaderSnippet = '<script id="oh-wp-loader">(function(){var base=window.location.origin+"/voice-api";var ts=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href=base+"/working-profile-ui.css?t="+ts;document.head.appendChild(l);var s=document.createElement("script");s.src=base+"/working-profile-ui.js?t="+ts;s.defer=true;document.head.appendChild(s);})();</script>'
+$LoaderId = 'id="oh-wp-loader"'
+$LoaderSnippet = '<script id="oh-wp-loader">(function(){var isSec=(window.location.protocol==="https:"||window.location.port==="8443");var base=isSec?(window.location.origin+"/voice-api"):"http://127.0.0.1:18002";var ts=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href=base+"/working-profile-ui.css?t="+ts;document.head.appendChild(l);var s=document.createElement("script");s.src=base+"/working-profile-ui.js?t="+ts;s.defer=true;document.head.appendChild(s);})();</script>'
 
 if ($Content.Contains($LoaderId)) {
     # Remove existing to allow clean update
-    $Content = $Content -replace '<script id="oh-wp-loader">.*?</script>', ''
+    $Content = $Content -replace '<script id="oh-wp-loader">[\s\S]*?</script>', ''
 }
 
 # Inject before </body>

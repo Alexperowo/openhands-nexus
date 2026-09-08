@@ -1,9 +1,10 @@
 # OpenHands Local - Agent Canvas PWA & Mobile Adaptation Patcher
 $ErrorActionPreference = "Stop"
 
-$CanvasBase = "C:\Users\User\AppData\Roaming\npm\node_modules\@openhands\agent-canvas"
+$appData = if ($env:APPDATA) { $env:APPDATA } else { Join-Path $env:USERPROFILE 'AppData\Roaming' }
+$CanvasBase = Join-Path $appData "npm\node_modules\@openhands\agent-canvas"
 $BuildDir = Join-Path $CanvasBase "build"
-$SourceDir = "K:\Project\openhands-pwa"
+$SourceDir = $PSScriptRoot
 $IndexHtml = Join-Path $BuildDir "index.html"
 $IndexOrig = Join-Path $BuildDir "index.html.orig-pwa"
 

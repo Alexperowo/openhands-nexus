@@ -2,7 +2,8 @@
 # Ensures local loopback configuration, model 'qwen', and bypasses cloud-only onboarding gates.
 $ErrorActionPreference = "Stop"
 
-$CanvasBase = "C:\Users\User\AppData\Roaming\npm\node_modules\@openhands\agent-canvas"
+$appData = if ($env:APPDATA) { $env:APPDATA } else { Join-Path $env:USERPROFILE 'AppData\Roaming' }
+$CanvasBase = Join-Path $appData "npm\node_modules\@openhands\agent-canvas"
 $BuildDir = Join-Path $CanvasBase "build"
 $AssetsDir = Join-Path $BuildDir "assets"
 $ScriptsDir = Join-Path $CanvasBase "scripts"
@@ -96,7 +97,7 @@ if (Test-Path $devStatic) {
 }
 
 # 4c. Ensure Working Profile UI loader is present
-$wpPatcher = "K:\Project\openhands-working-profile\patch-agent-canvas-working-profile.ps1"
+$wpPatcher = Join-Path $PSScriptRoot "..\openhands-working-profile\patch-agent-canvas-working-profile.ps1"
 if (Test-Path $wpPatcher) {
     & powershell -NoProfile -ExecutionPolicy Bypass -File $wpPatcher
 }

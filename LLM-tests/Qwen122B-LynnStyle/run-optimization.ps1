@@ -11,10 +11,6 @@ Write-Host "=================================================================" -
 Write-Host "Starting at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Yellow
 
 $pythonExe = "python.exe"
-if (Test-Path "D:\AI\Butler\venv\Scripts\python.exe") {
-    $pythonExe = "D:\AI\Butler\venv\Scripts\python.exe"
-}
-
 Write-Host "Using Python: $pythonExe" -ForegroundColor Green
 Write-Host "Executing runner_core.py..." -ForegroundColor Green
 

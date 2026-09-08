@@ -1,0 +1,52 @@
+{
+  "$schema": "urn:openhands:working-profile:v1",
+  "schema_version": 1,
+  "id": "team-full",
+  "name": "Team-Full: Три Модели",
+  "description": "Автономный оркестратор: Qwen 3.8 (план и роутинг) ➔ Ornith 1.5 (код и тесты) ➔ Qwen3-Next 80B (дебаг)",
+  "kind": "three_model_chain",
+  "default_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+  "default_llm_profile_name": "Qwen3.8-Medium",
+  "models": [
+    {
+      "role": "router_reviewer",
+      "model_alias": "openai/qwen",
+      "base_llm_profile": "Qwen3.8-Medium"
+    },
+    {
+      "role": "code_executor",
+      "model_alias": "openai/ornith",
+      "base_llm_profile": "Ornith-Coding"
+    },
+    {
+      "role": "deep_debugger",
+      "model_alias": "openai/next",
+      "base_llm_profile": "Next-Normal"
+    }
+  ],
+  "reasoning": {
+    "supported": true,
+    "ui_type": "preset_choice",
+    "default_mode_id": "standard_team",
+    "modes": [
+      {
+        "id": "standard_team",
+        "label": "Стандартная команда",
+        "description": "Сбалансированное рассуждение роутера (Qwen 3.8 Medium) и быстрая разработка",
+        "target_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+        "target_llm_profile_name": "Qwen3.8-Medium"
+      },
+      {
+        "id": "deep_team",
+        "label": "Глубокая команда",
+        "description": "Максимальное рассуждение роутера (Qwen 3.8 High) и глубокий анализ ошибок",
+        "target_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+        "target_llm_profile_name": "Qwen3.8-High"
+      }
+    ]
+  },
+  "ui_badge": {
+    "text": "3 Модели",
+    "color": "indigo"
+  }
+}

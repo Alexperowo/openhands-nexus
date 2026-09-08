@@ -1,10 +1,11 @@
 # OpenHands Local - Idempotent Russian Localization Patcher for Agent Canvas
 $ErrorActionPreference = "Stop"
 
-$CanvasBase = "C:\Users\User\AppData\Roaming\npm\node_modules\@openhands\agent-canvas"
+$appData = if ($env:APPDATA) { $env:APPDATA } else { Join-Path $env:USERPROFILE 'AppData\Roaming' }
+$CanvasBase = Join-Path $appData "npm\node_modules\@openhands\agent-canvas"
 $BuildDir = Join-Path $CanvasBase "build"
 $DistDir = Join-Path $CanvasBase "dist"
-$SourceDir = "K:\Project\openhands-localization"
+$SourceDir = $PSScriptRoot
 $RuJsonSource = Join-Path $SourceDir "ru.json"
 
 Write-Host "=====================================================================" -ForegroundColor Cyan

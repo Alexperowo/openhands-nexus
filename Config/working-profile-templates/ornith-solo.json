@@ -1,0 +1,27 @@
+{
+  "$schema": "urn:openhands:working-profile:v1",
+  "schema_version": 1,
+  "id": "ornith-solo",
+  "name": "Ornith 1.5 Coder (Архитектор)",
+  "description": "Специализированная кодинг-модель на архитектуре ICE для чистого синтеза кода и тестов",
+  "kind": "single_model",
+  "default_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
+  "default_llm_profile_name": "Ornith-Coding",
+  "models": [
+    {
+      "role": "solo_coder",
+      "model_alias": "openai/ornith",
+      "base_llm_profile": "Ornith-Coding"
+    }
+  ],
+  "reasoning": {
+    "supported": false,
+    "ui_type": "none",
+    "default_mode_id": "direct",
+    "modes": []
+  },
+  "ui_badge": {
+    "text": "1 Модель",
+    "color": "teal"
+  }
+}

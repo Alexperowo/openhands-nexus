@@ -1,0 +1,47 @@
+{
+  "$schema": "urn:openhands:working-profile:v1",
+  "schema_version": 1,
+  "id": "team-qwen-next",
+  "name": "Qwen 3.8 + Next (Анализ-тандем)",
+  "description": "Двухмодельный тандем: Qwen 3.8 (планировщик) с эскалацией на Qwen3-Next 80B для глубокого анализа",
+  "kind": "two_model_chain",
+  "default_agent_profile_id": "87261658-94ae-441e-854d-61040716272d",
+  "default_llm_profile_name": "Qwen3.8-Medium",
+  "models": [
+    {
+      "role": "planner",
+      "model_alias": "openai/qwen",
+      "base_llm_profile": "Qwen3.8-Medium"
+    },
+    {
+      "role": "heavy_reasoner",
+      "model_alias": "openai/next",
+      "base_llm_profile": "Next-Normal"
+    }
+  ],
+  "reasoning": {
+    "supported": true,
+    "ui_type": "discrete_levels",
+    "default_mode_id": "normal",
+    "modes": [
+      {
+        "id": "normal",
+        "label": "Normal (Стандартная эскалация)",
+        "description": "Эскалация на Next-Normal (Thinking budget: 2048)",
+        "target_agent_profile_id": "87261658-94ae-441e-854d-61040716272d",
+        "target_llm_profile_name": "Qwen3.8-Medium"
+      },
+      {
+        "id": "deep",
+        "label": "Deep (Глубокая эскалация)",
+        "description": "Эскалация на Next-Deep (Thinking budget: 4096)",
+        "target_agent_profile_id": "87261658-94ae-441e-854d-61040716272d",
+        "target_llm_profile_name": "Qwen3.8-High"
+      }
+    ]
+  },
+  "ui_badge": {
+    "text": "2 Модели",
+    "color": "cyan"
+  }
+}

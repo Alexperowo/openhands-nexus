@@ -1,0 +1,56 @@
+{
+  "$schema": "urn:openhands:working-profile:v1",
+  "schema_version": 1,
+  "id": "qwen38-solo",
+  "name": "Qwen 3.8 (Автономный)",
+  "description": "Одиночный автономный агент: планирование, синтез кода и запуск тестов универсальной моделью Qwen 3.8",
+  "kind": "single_model",
+  "default_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
+  "default_llm_profile_name": "Qwen3.8-Medium",
+  "models": [
+    {
+      "role": "solo_agent",
+      "model_alias": "openai/qwen",
+      "base_llm_profile": "Qwen3.8-Medium"
+    }
+  ],
+  "reasoning": {
+    "supported": true,
+    "ui_type": "discrete_levels",
+    "default_mode_id": "medium",
+    "modes": [
+      {
+        "id": "direct",
+        "label": "Direct (Без рассуждения)",
+        "description": "Прямая генерация ответов без thinking tokens",
+        "target_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
+        "target_llm_profile_name": "Qwen3.8-Direct"
+      },
+      {
+        "id": "low",
+        "label": "Low (Быстрое)",
+        "description": "Быстрые краткие размышления",
+        "target_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
+        "target_llm_profile_name": "Qwen3.8-Low"
+      },
+      {
+        "id": "medium",
+        "label": "Medium (Сбалансированное)",
+        "description": "Сбалансированное рассуждение",
+        "target_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
+        "target_llm_profile_name": "Qwen3.8-Medium"
+      },
+      {
+        "id": "high",
+        "label": "High (Максимальное)",
+        "description": "Максимальная глубина анализа перед генерацией",
+        "target_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
+        "target_llm_profile_name": "Qwen3.8-High"
+      }
+    ]
+  },
+  "ui_badge": {
+    "text": "1 Модель",
+    "color": "blue"
+  }
+}

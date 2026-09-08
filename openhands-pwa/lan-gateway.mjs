@@ -14,8 +14,7 @@
 import { createServer as createHttpsServer } from "node:https";
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { parse as parseUrl } from "node:url";
+import { fileURLToPath, pathToFileURL, parse as parseUrl } from "node:url";
 import { parse as parseQuery } from "node:querystring";
 import process from "node:process";
 import { loadWorkingProfiles, getWorkingProfileState, switchWorkingProfile } from "../Config/working_profile_manager.mjs";
@@ -65,7 +64,9 @@ if (!LAN_AUTH_TOKEN) {
 // 2. Load proxy handler from agent-canvas installation
 let createProxyHandlers;
 try {
-  const proxyUtilsUrl = "file:///C:/Users/User/AppData/Roaming/npm/node_modules/@openhands/agent-canvas/scripts/proxy-utils.mjs";
+  const appData = process.env.APPDATA || (process.env.USERPROFILE ? join(process.env.USERPROFILE, "AppData", "Roaming") : "C:\\Users\\User\\AppData\\Roaming");
+  const proxyUtilsPath = join(appData, "npm", "node_modules", "@openhands", "agent-canvas", "scripts", "proxy-utils.mjs");
+  const proxyUtilsUrl = pathToFileURL(proxyUtilsPath).href;
   const proxyUtils = await import(proxyUtilsUrl);
   createProxyHandlers = proxyUtils.createProxyHandlers;
 } catch (err) {

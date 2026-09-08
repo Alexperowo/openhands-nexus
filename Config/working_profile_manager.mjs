@@ -9,13 +9,19 @@
  * - Zero dependency on npm packages or internal agent-canvas files.
  */
 
-import { readFileSync, writeFileSync, renameSync, readdirSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, writeFileSync, renameSync, readdirSync, existsSync, mkdirSync, copyFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { request as httpRequest } from "node:http";
+import process from "node:process";
 
-const WORKING_PROFILES_DIR = "C:\\Users\\User\\.openhands\\working-profiles";
-const STATE_FILE = "C:\\Users\\User\\.openhands\\working-profile-state.json";
-const API_KEY_FILE = "C:\\Users\\User\\.openhands\\agent-canvas\\api-key.txt";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const USER_HOME = process.env.USERPROFILE || "C:\\Users\\User";
+const OPENHANDS_HOME = join(USER_HOME, ".openhands");
+const WORKING_PROFILES_DIR = join(OPENHANDS_HOME, "working-profiles");
+const STATE_FILE = join(OPENHANDS_HOME, "working-profile-state.json");
+const API_KEY_FILE = join(OPENHANDS_HOME, "agent-canvas", "api-key.txt");
+const TEMPLATES_DIR = join(__dirname, "working-profile-templates");
 const AGENT_SERVER_PORT = 18000;
 
 export function getSessionApiKey() {
@@ -27,7 +33,26 @@ export function getSessionApiKey() {
   return "";
 }
 
+function seedTemplatesIfMissing() {
+  try {
+    if (!existsSync(WORKING_PROFILES_DIR)) {
+      mkdirSync(WORKING_PROFILES_DIR, { recursive: true });
+    }
+    const existing = readdirSync(WORKING_PROFILES_DIR).filter((f) => f.endsWith(".json"));
+    if (existing.length === 0 && existsSync(TEMPLATES_DIR)) {
+      const templateFiles = readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith(".json"));
+      for (const tf of templateFiles) {
+        copyFileSync(join(TEMPLATES_DIR, tf), join(WORKING_PROFILES_DIR, tf));
+      }
+      console.log(`[WorkingProfileManager] Auto-seeded ${templateFiles.length} working profile templates to ${WORKING_PROFILES_DIR}`);
+    }
+  } catch (err) {
+    console.warn("[WorkingProfileManager] Template auto-seeding warning:", err.message);
+  }
+}
+
 export function loadWorkingProfiles() {
+  seedTemplatesIfMissing();
   const profiles = [];
   if (!existsSync(WORKING_PROFILES_DIR)) {
     return profiles;

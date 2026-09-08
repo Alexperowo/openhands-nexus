@@ -230,7 +230,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             return
 
         elif clean_path == "/working-profile-ui.js":
-            js_path = r"K:\Project\openhands-working-profile\working-profile-ui.js"
+            js_path = os.path.join(os.path.dirname(__file__), "..", "openhands-working-profile", "working-profile-ui.js")
             with open(js_path, "rb") as f:
                 body = f.read()
             self.send_response(200)
@@ -242,7 +242,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             return
 
         elif clean_path == "/working-profile-ui.css":
-            css_path = r"K:\Project\openhands-working-profile\working-profile-ui.css"
+            css_path = os.path.join(os.path.dirname(__file__), "..", "openhands-working-profile", "working-profile-ui.css")
             with open(css_path, "rb") as f:
                 body = f.read()
             self.send_response(200)

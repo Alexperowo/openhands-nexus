@@ -1,0 +1,61 @@
+{
+  "$schema": "urn:openhands:working-profile:v1",
+  "schema_version": 1,
+  "id": "team-qwen-ornith",
+  "name": "Qwen 3.8 + Ornith (Кодинг-тандем)",
+  "description": "Двухмодельный тандем: Qwen 3.8 (план и ревью) ➔ Ornith 1.5 Coder (код и тесты)",
+  "kind": "two_model_chain",
+  "default_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
+  "default_llm_profile_name": "Qwen3.8-Medium",
+  "models": [
+    {
+      "role": "architect_reviewer",
+      "model_alias": "openai/qwen",
+      "base_llm_profile": "Qwen3.8-Medium"
+    },
+    {
+      "role": "code_executor",
+      "model_alias": "openai/ornith",
+      "base_llm_profile": "Ornith-Coding"
+    }
+  ],
+  "reasoning": {
+    "supported": true,
+    "ui_type": "discrete_levels",
+    "default_mode_id": "medium",
+    "modes": [
+      {
+        "id": "direct",
+        "label": "Direct (Без рассуждения)",
+        "description": "Прямая генерация без thinking tokens",
+        "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
+        "target_llm_profile_name": "Qwen3.8-Direct"
+      },
+      {
+        "id": "low",
+        "label": "Low (Быстрое)",
+        "description": "Краткая цепочка рассуждений ведущей модели",
+        "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
+        "target_llm_profile_name": "Qwen3.8-Low"
+      },
+      {
+        "id": "medium",
+        "label": "Medium (Сбалансированное)",
+        "description": "Сбалансированная глубина рассуждений для планирования",
+        "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
+        "target_llm_profile_name": "Qwen3.8-Medium"
+      },
+      {
+        "id": "high",
+        "label": "High (Максимальное)",
+        "description": "Глубокое планирование и тщательное ревью архитектуры",
+        "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
+        "target_llm_profile_name": "Qwen3.8-High"
+      }
+    ]
+  },
+  "ui_badge": {
+    "text": "2 Модели",
+    "color": "blue"
+  }
+}

@@ -8,13 +8,17 @@ Maintains persistent server-side active state and synchronizes with OpenHands Ag
 
 import os
 import json
+import shutil
 import urllib.request
 import urllib.error
 from datetime import datetime
 
-WORKING_PROFILES_DIR = r"C:\Users\User\.openhands\working-profiles"
-STATE_FILE = r"C:\Users\User\.openhands\working-profile-state.json"
-API_KEY_FILE = r"C:\Users\User\.openhands\agent-canvas\api-key.txt"
+USER_HOME = os.environ.get("USERPROFILE", r"C:\Users\User")
+OPENHANDS_HOME = os.path.join(USER_HOME, ".openhands")
+WORKING_PROFILES_DIR = os.path.join(OPENHANDS_HOME, "working-profiles")
+STATE_FILE = os.path.join(OPENHANDS_HOME, "working-profile-state.json")
+API_KEY_FILE = os.path.join(OPENHANDS_HOME, "agent-canvas", "api-key.txt")
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "working-profile-templates")
 AGENT_SERVER_URL = "http://127.0.0.1:18000/api/settings"
 
 
@@ -28,7 +32,21 @@ def get_session_api_key() -> str:
     return ""
 
 
+def seed_templates_if_missing():
+    try:
+        os.makedirs(WORKING_PROFILES_DIR, exist_ok=True)
+        existing = [f for f in os.listdir(WORKING_PROFILES_DIR) if f.endswith(".json")]
+        if not existing and os.path.exists(TEMPLATES_DIR):
+            template_files = [f for f in os.listdir(TEMPLATES_DIR) if f.endswith(".json")]
+            for tf in template_files:
+                shutil.copyfile(os.path.join(TEMPLATES_DIR, tf), os.path.join(WORKING_PROFILES_DIR, tf))
+            print(f"[WorkingProfiles] Auto-seeded {len(template_files)} working profile templates to {WORKING_PROFILES_DIR}")
+    except Exception as e:
+        print(f"[WorkingProfiles] Template auto-seeding warning: {e}")
+
+
 def load_working_profiles() -> list:
+    seed_templates_if_missing()
     profiles = []
     if not os.path.exists(WORKING_PROFILES_DIR):
         return profiles

@@ -17,13 +17,14 @@ $ErrorActionPreference = "Stop"
 Init-UpdaterLog "openhands"
 
 # Ensure PATH includes Node.js and global npm
-$env:PATH = "C:\Program Files\nodejs;C:\Users\User\AppData\Roaming\npm;" + $env:PATH
+$appData = if ($env:APPDATA) { $env:APPDATA } else { Join-Path $env:USERPROFILE 'AppData\Roaming' }
+$env:PATH = "C:\Program Files\nodejs;" + (Join-Path $appData "npm") + ";" + $env:PATH
 
 # Paths
-$canvasPkgDir = "C:\Users\User\AppData\Roaming\npm\node_modules\@openhands\agent-canvas"
+$canvasPkgDir = Join-Path $appData "npm\node_modules\@openhands\agent-canvas"
 $canvasPkgJson = Join-Path $canvasPkgDir "package.json"
 $canvasDefaultsJson = Join-Path $canvasPkgDir "config\defaults.json"
-$archiveBackupRoot = "K:\Project\Archive\backups\OpenHands"
+$archiveBackupRoot = Join-Path $Global:ProjectRootDir "Archive\backups\OpenHands"
 $openhandsBackupRoot = Join-Path $Global:BackupDir "openhands"
 $lastRunStatusFile = Join-Path $Global:UpdateRootDir "state\last_run_status.json"
 
@@ -246,7 +247,7 @@ if ($Update) {
 
     # Re-apply Local LLM and Ingress patches
     Log-Msg "Applying Local LLM & Ingress proxy patch..." "STEP"
-    $llmPatcher = "K:\Project\openhands-localization\patch-agent-canvas-local-llm.ps1"
+    $llmPatcher = Join-Path $Global:ProjectRootDir "openhands-localization\patch-agent-canvas-local-llm.ps1"
     $llmProc = Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$llmPatcher`"" -NoNewWindow -PassThru -Wait
     if ($llmProc.ExitCode -ne 0) {
         Invoke-OpenHandsRollback "LOCAL_LLM_PATCH_FAILED"
@@ -254,7 +255,7 @@ if ($Update) {
 
     # Re-apply localization patch
     Log-Msg "Applying Russian localization patch..." "STEP"
-    $locPatcher = "K:\Project\openhands-localization\patch-agent-canvas-localization.ps1"
+    $locPatcher = Join-Path $Global:ProjectRootDir "openhands-localization\patch-agent-canvas-localization.ps1"
     $locProc = Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$locPatcher`"" -NoNewWindow -PassThru -Wait
     if ($locProc.ExitCode -ne 0) {
         Invoke-OpenHandsRollback "LOCALIZATION_PATCH_FAILED"
@@ -262,13 +263,13 @@ if ($Update) {
 
     # Strict localization parity audit
     Log-Msg "Auditing Russian localization parity (LOCALIZATION_STRICT_GATE = KEEP)..." "STEP"
-    $auditScript = "K:\Project\openhands-localization\audit-localization.py"
-    $auditProc = Start-Process "D:\AI\Butler\venv\Scripts\python.exe" -ArgumentList "`"$auditScript`"" -NoNewWindow -PassThru -Wait
+    $auditScript = Join-Path $Global:ProjectRootDir "openhands-localization\audit-localization.py"
+    $auditProc = Start-Process "python.exe" -ArgumentList "`"$auditScript`"" -NoNewWindow -PassThru -Wait
     if ($auditProc.ExitCode -ne 0) {
         Invoke-OpenHandsRollback "LOCALE_AUDIT_SCRIPT_ERROR"
     }
 
-    $auditJson = "K:\Project\OpenHands-Tests\Russian-Localization\locale-audit.json"
+    $auditJson = Join-Path $Global:ProjectRootDir "OpenHands-Tests\Russian-Localization\locale-audit.json"
     if (Test-Path $auditJson) {
         $auditData = Get-Content $auditJson -Raw | ConvertFrom-Json
         if ($auditData.missing_in_ru.Count -gt 0) {
@@ -280,7 +281,7 @@ if ($Update) {
 
     # Re-apply voice UI patch
     Log-Msg "Applying Voice UI patch..." "STEP"
-    $voicePatcher = "K:\Project\local-voice\patch-agent-canvas-voice.ps1"
+    $voicePatcher = Join-Path $Global:ProjectRootDir "local-voice\patch-agent-canvas-voice.ps1"
     $voiceProc = Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$voicePatcher`"" -NoNewWindow -PassThru -Wait
     if ($voiceProc.ExitCode -ne 0) {
         Invoke-OpenHandsRollback "VOICE_PATCH_FAILED"
@@ -295,9 +296,17 @@ if ($Update) {
     }
     Log-Msg "Voice UI patch verification: PASS" "SUCCESS"
 
+    # Re-apply Working Profile UI patch
+    Log-Msg "Applying Working Profile UI patch..." "STEP"
+    $wpPatcher = Join-Path $Global:ProjectRootDir "openhands-working-profile\patch-agent-canvas-working-profile.ps1"
+    $wpProc = Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$wpPatcher`"" -NoNewWindow -PassThru -Wait
+    if ($wpProc.ExitCode -ne 0) {
+        Invoke-OpenHandsRollback "WORKING_PROFILE_PATCH_FAILED"
+    }
+
     # Re-apply Mobile PWA patch
     Log-Msg "Applying Mobile PWA patch..." "STEP"
-    $pwaPatcher = "K:\Project\openhands-pwa\patch-agent-canvas-pwa.ps1"
+    $pwaPatcher = Join-Path $Global:ProjectRootDir "openhands-pwa\patch-agent-canvas-pwa.ps1"
     $pwaProc = Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$pwaPatcher`"" -NoNewWindow -PassThru -Wait
     if ($pwaProc.ExitCode -ne 0) {
         Invoke-OpenHandsRollback "PWA_PATCH_FAILED"

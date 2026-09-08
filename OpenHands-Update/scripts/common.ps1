@@ -1,8 +1,9 @@
 # Common Helper Module for OpenHands and ik_llama Updaters
 # Location: K:\Project\OpenHands-Update\scripts\common.ps1
 
-$Global:UpdateRootDir = "K:\Project\OpenHands-Update"
-$Global:LogDir = "K:\Project\Logs\Updater"
+$Global:ProjectRootDir = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$Global:UpdateRootDir = Join-Path $Global:ProjectRootDir "OpenHands-Update"
+$Global:LogDir = Join-Path $Global:ProjectRootDir "Logs\Updater"
 $Global:BackupDir = Join-Path $Global:UpdateRootDir "backups"
 
 if (-not (Test-Path $Global:LogDir)) { New-Item -ItemType Directory -Path $Global:LogDir -Force | Out-Null }
@@ -138,11 +139,11 @@ function Run-SmokeTest([bool]$CheckLocale = $true) {
     # 6. Check Locale Parity if requested
     if ($CheckLocale) {
         Log-Msg "  Checking Russian localization dictionary integrity..." "STEP"
-        $auditScript = "K:\Project\openhands-localization\audit-localization.py"
+        $auditScript = Join-Path $Global:ProjectRootDir "openhands-localization\audit-localization.py"
         if (Test-Path $auditScript) {
-            $auditProc = Start-Process -FilePath "D:\AI\Butler\venv\Scripts\python.exe" -ArgumentList "`"$auditScript`"" -NoNewWindow -PassThru -Wait
+            $auditProc = Start-Process -FilePath "python.exe" -ArgumentList "`"$auditScript`"" -NoNewWindow -PassThru -Wait
             if ($auditProc.ExitCode -eq 0) {
-                $auditJson = "K:\Project\OpenHands-Tests\Russian-Localization\locale-audit.json"
+                $auditJson = Join-Path $Global:ProjectRootDir "OpenHands-Tests\Russian-Localization\locale-audit.json"
                 if (Test-Path $auditJson) {
                     $data = Get-Content $auditJson -Raw | ConvertFrom-Json
                     if ($data.missing_in_ru.Count -eq 0 -and $data.suspicious_matches_count -eq 0) {

@@ -1,0 +1,42 @@
+{
+  "$schema": "urn:openhands:working-profile:v1",
+  "schema_version": 1,
+  "id": "next-solo",
+  "name": "Qwen3-Next 80B (Глубокий Анализ)",
+  "description": "Тяжелая reasoning-модель для алгоритмических задач и комплексного анализа",
+  "kind": "single_model",
+  "default_agent_profile_id": "d496bfef-da8c-439b-8e77-e5a92e5c7849",
+  "default_llm_profile_name": "Next-Normal",
+  "models": [
+    {
+      "role": "deep_analyst",
+      "model_alias": "openai/next",
+      "base_llm_profile": "Next-Normal"
+    }
+  ],
+  "reasoning": {
+    "supported": true,
+    "ui_type": "discrete_levels",
+    "default_mode_id": "normal",
+    "modes": [
+      {
+        "id": "normal",
+        "label": "Normal (Стандартное)",
+        "description": "Thinking budget: 2048 токенов",
+        "target_agent_profile_id": "d496bfef-da8c-439b-8e77-e5a92e5c7849",
+        "target_llm_profile_name": "Next-Normal"
+      },
+      {
+        "id": "deep",
+        "label": "Deep (Глубокое)",
+        "description": "Thinking budget: 4096 токенов",
+        "target_agent_profile_id": "4c45d9fa-2bbe-4a96-a0c7-63e319464f33",
+        "target_llm_profile_name": "Next-Deep"
+      }
+    ]
+  },
+  "ui_badge": {
+    "text": "1 Модель",
+    "color": "purple"
+  }
+}

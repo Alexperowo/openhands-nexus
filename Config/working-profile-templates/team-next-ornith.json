@@ -1,0 +1,47 @@
+{
+  "$schema": "urn:openhands:working-profile:v1",
+  "schema_version": 1,
+  "id": "team-next-ornith",
+  "name": "Next + Ornith (Кодинг)",
+  "description": "Двухмодельный тандем для сложных проектов: Qwen3-Next 80B (архитектура) ➔ Ornith 1.5 Coder (код и тесты)",
+  "kind": "two_model_chain",
+  "default_agent_profile_id": "ab16d813-fbd1-4f45-9453-1245993c557f",
+  "default_llm_profile_name": "Next-Normal",
+  "models": [
+    {
+      "role": "heavy_architect",
+      "model_alias": "openai/next",
+      "base_llm_profile": "Next-Normal"
+    },
+    {
+      "role": "code_executor",
+      "model_alias": "openai/ornith",
+      "base_llm_profile": "Ornith-Coding"
+    }
+  ],
+  "reasoning": {
+    "supported": true,
+    "ui_type": "discrete_levels",
+    "default_mode_id": "normal",
+    "modes": [
+      {
+        "id": "normal",
+        "label": "Normal (Стандартное)",
+        "description": "Архитектор Next-Normal (Thinking budget: 2048)",
+        "target_agent_profile_id": "ab16d813-fbd1-4f45-9453-1245993c557f",
+        "target_llm_profile_name": "Next-Normal"
+      },
+      {
+        "id": "deep",
+        "label": "Deep (Глубокое)",
+        "description": "Архитектор Next-Deep (Thinking budget: 4096)",
+        "target_agent_profile_id": "ab16d813-fbd1-4f45-9453-1245993c557f",
+        "target_llm_profile_name": "Next-Deep"
+      }
+    ]
+  },
+  "ui_badge": {
+    "text": "2 Модели",
+    "color": "purple"
+  }
+}

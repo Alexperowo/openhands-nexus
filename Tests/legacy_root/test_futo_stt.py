@@ -1,4 +1,4 @@
-﻿import torch
+import torch
 import wave
 import numpy as np
 import scipy.signal
@@ -8,7 +8,7 @@ import sys
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-model_path = r"D:\AI\Butler\venv\Lib\site-packages\silero\model\v5_ru.pt"
+model_path = os.environ.get("SILERO_MODEL_PATH", os.path.expanduser(r"~/.cache/silero/v5_ru.pt"))
 model = torch.package.PackageImporter(model_path).load_pickle("tts_models", "model")
 model.to("cpu")
 
