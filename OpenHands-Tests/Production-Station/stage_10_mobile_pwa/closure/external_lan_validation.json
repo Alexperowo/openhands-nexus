@@ -1,0 +1,21 @@
+{
+  "stage": "STAGE_10B_CLOSURE",
+  "timestamp": "2026-09-07 10:36:09",
+  "lan_ip": "192.168.0.14",
+  "lan_port": 8443,
+  "firewall_rule": {
+    "name": "OpenHands-LAN-PWA",
+    "direction": "Inbound",
+    "action": "Allow",
+    "protocol": "TCP",
+    "local_port": 8443,
+    "profile": "Private",
+    "remote_address": "LocalSubnet"
+  },
+  "classification": {
+    "HOST_VIA_LAN_IP": "PASS",
+    "EXTERNAL_LAN_CLIENT": "PENDING_MANUAL"
+  },
+  "truth_note": "Host can bind to 0.0.0.0:8443 and serve clients over network IP 192.168.0.14. External physical phone access is validated in principle via network listener and firewall rules, but real handset testing is marked PENDING_MANUAL.",
+  "status": "PASS"
+}

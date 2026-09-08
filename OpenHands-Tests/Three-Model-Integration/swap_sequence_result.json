@@ -1,0 +1,51 @@
+{
+  "records": [
+    {
+      "step": 1,
+      "model": "qwen",
+      "wall_time_s": 40.53,
+      "vram_peak_mib": 20939,
+      "backends_count": 1,
+      "pid": 7288,
+      "exe": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "correct_binary": true,
+      "response": ""
+    },
+    {
+      "step": 2,
+      "model": "next",
+      "wall_time_s": 849.83,
+      "vram_peak_mib": 21510,
+      "backends_count": 1,
+      "pid": 4900,
+      "exe": "K:\\Project\\llama-mainline\\b10816\\llama-server.exe",
+      "correct_binary": true,
+      "response": ""
+    },
+    {
+      "step": 3,
+      "model": "ornith",
+      "wall_time_s": 439.1,
+      "vram_peak_mib": 20652,
+      "backends_count": 1,
+      "pid": 4504,
+      "exe": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "correct_binary": true,
+      "response": ""
+    },
+    {
+      "step": 4,
+      "model": "qwen",
+      "wall_time_s": 45.11,
+      "vram_peak_mib": 21076,
+      "backends_count": 1,
+      "pid": 3512,
+      "exe": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "correct_binary": true,
+      "response": ""
+    }
+  ],
+  "vram_start": 680,
+  "vram_end": 778,
+  "remaining_backends": 0
+}

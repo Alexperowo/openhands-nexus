@@ -1,0 +1,42 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:02:00+03:00",
+  "gateway_url": "https://192.168.0.14:8443",
+  "conversation_id": "905b1dc6-9514-41c0-8131-dcc225712b15",
+  "agent_profile": "Team-Full",
+  "task_prompt": "Please create a text file named mobile_pwa_smoke.txt in the current workspace containing exactly 'OPENHANDS_MOBILE_PWA_PASS'. Read it back to verify, then call finish.",
+  "workspace_file": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_10_workspace\\mobile_pwa_smoke.txt",
+  "file_created": true,
+  "file_content": "OPENHANDS_MOBILE_PWA_PASS",
+  "readback_match": true,
+  "execution_status": "finished",
+  "events_count": 14,
+  "tool_actions": [
+    {
+      "tool": "file_editor",
+      "command": "create",
+      "path": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_10_workspace\\mobile_pwa_smoke.txt"
+    },
+    {
+      "tool": "file_editor",
+      "command": "view",
+      "path": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_10_workspace\\mobile_pwa_smoke.txt"
+    },
+    {
+      "tool": "finish",
+      "message": "Created `mobile_pwa_smoke.txt` in the workspace with content `OPENHANDS_MOBILE_PWA_PASS` and verified its content by reading it back."
+    }
+  ],
+  "checks": {
+    "PAGE_LOAD": true,
+    "MANIFEST_LOAD": true,
+    "PWA_ASSETS": true,
+    "API_WS_CONNECTIONS": true,
+    "CONVERSATION_CREATED": true,
+    "TOOL_ACTION_EXECUTED": true,
+    "FILE_CREATED": true,
+    "READBACK_MATCH": true,
+    "FINISH": true
+  },
+  "verdict": "PASS"
+}

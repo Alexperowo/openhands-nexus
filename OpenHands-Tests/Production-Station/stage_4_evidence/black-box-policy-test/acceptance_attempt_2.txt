@@ -1,0 +1,5 @@
+COMMAND = cd K:\Project\OpenHands-Tests\Production-Station\stage_4_workspace; python K:\Project\OpenHands-Tests\Production-Station\stage_4_fixture\acceptance_client.py; echo "EXIT CODE: $LASTEXITCODE"
+ACTUAL_EXIT_CODE = 1
+
+RAW_TERMINAL_OBSERVATION =
+[TextContent(cache_prompt=False, type='text', text="[ACCEPTANCE CHECK]: FAILURE B\r\nObjective Failure: Missing correction-B marker with runtime secret token.\r\nRequirement B: Heavy architectural deadlock detected. Requires deep root-cause diagnosis.\r\nRequirement B: Create file 'correction_b.txt' containing 'TOKEN_B_093C9A01'.\r\nEXIT CODE: 1\r\nEXIT CODE: 1")]

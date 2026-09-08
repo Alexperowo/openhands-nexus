@@ -1,0 +1,34 @@
+--- backend-versions.json (before)
++++ backend-versions.json (after)
+@@ -1,5 +1,5 @@
+ {
+-  "timestamp": "2026-09-06T10:14:34.876305+00:00",
++  "timestamp": "2026-09-06T10:37:35.729444+00:00",
+   "description": "Informational version manifest for OpenHands Local platform components (not a runtime dependency)",
+   "agent_canvas": {
+     "current_version": "1.16.0",
+@@ -22,13 +22,14 @@
+     "last_verified": "2026-09-06T10:14:34.876305+00:00"
+   },
+   "llama_swap": {
+-    "current_version": "v252",
+-    "commit": "e31a1ad",
+-    "build_time": "2026-08-31T16:54:46Z",
++    "current_version": "v255",
++    "commit": "7761aa1",
++    "build_time": "2026-09-06T05:46:05Z",
+     "production_path": "K:\\Project\\llama-swap\\bin\\llama-swap.exe",
+-    "sha256": "2C9E252256D5B418EE103295215F3A92583C5A48E739675920E9522A54D4CA4C",
++    "sha256": "41FCCA0870EA3EC6E159C18224E7589B325419C6A5685E7C53482DCD81817B3E",
+     "upstream_source": "https://github.com/mostlygeek/llama-swap",
+-    "last_verified": "2026-09-06T10:14:34.876305+00:00"
++    "last_verified": "2026-09-06T10:37:35.729444+00:00",
++    "previous_version": "v252"
+   },
+   "llama_mainline": {
+     "current_version": "0.4.0-dev (build 10816)",
+@@ -46,4 +47,4 @@
+     "upstream_source": "https://github.com/ikawrakow/ik_llama.cpp",
+     "last_verified": "2026-09-06T10:14:34.876305+00:00"
+   }
+-}+}

@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-09-06T10:16:10.443587+00:00",
+  "component": "OpenHands App Stack",
+  "script_path": "K:\\Project\\OpenHands-Update\\scripts\\update-openhands.ps1",
+  "rollback_path": "K:\\Project\\OpenHands-Update\\scripts\\rollback-openhands.ps1",
+  "launcher_cmd": "K:\\Project\\OpenHands-Update\\UPDATE-OPENHANDS.cmd",
+  "supported_modes": [
+    "-CheckOnly",
+    "-DryRun",
+    "-Update",
+    "-Rollback"
+  ],
+  "default_mode": "-CheckOnly",
+  "app_stack_scope": [
+    "@openhands/agent-canvas",
+    "openhands-agent-server",
+    "openhands-automation",
+    "openhands-localization (Russian locale patch)",
+    "local-voice (Voice UI injection patch)"
+  ],
+  "safety_gates": {
+    "station_stopped_gate": "HARD_GATE (ports 8000, 8080, 18000, 18001, 18002 must be FREE; -Force cannot bypass)",
+    "version_discovery": "Independently inspects npm (@openhands/agent-canvas) and PyPI (openhands-agent-server, openhands-automation)",
+    "backend_pypi_policy": "PINNED (PyPI backend updates do NOT automatically alter production pins; Canvas defaults.json pins take precedence)",
+    "localization_gate": "STRICT_GATE_KEEP (audit-localization.py must verify 0 missing keys in ru.json; aborts & rolls back if violated)",
+    "voice_ui_gate": "STRICT_ANCHOR_VERIFY (build/index.html must contain verified voice-bridge.css and voice-bridge.js tags)",
+    "backup_strategy": "Full folder copy to K:\\Project\\Archive\\backups\\OpenHands\\<timestamp>-v<ver>\\ and local backup folder",
+    "rollback_boundary": "Atomic rollback of entire package, defaults.json pins, and patch state; default state: STATION STOPPED"
+  }
+}

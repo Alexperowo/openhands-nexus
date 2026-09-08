@@ -1,0 +1,109 @@
+{
+  "timestamp": "2026-09-05T14:46:06.687383+00:00",
+  "stage": "STAGE_1",
+  "tests": {
+    "next_normal": {
+      "status": "PASS",
+      "profile": "Next-Normal",
+      "target_budget": 2048,
+      "wire_budget_received": 2048,
+      "budget_pass": true,
+      "reasoning_content_chars": 4337,
+      "content": "The word \"strawberry\" has the letter sequence s-t-r-a-w-b-e-r-r-y, with 'r' appearing at positions 3, 8, and 9.  \n\\boxed{3}",
+      "finish_reason": "stop",
+      "elapsed_seconds": 71.13,
+      "llama_server_pid": 548,
+      "vram_mib": 21466,
+      "captured_wire_request": {
+        "url": "http://127.0.0.1:8080/v1/chat/completions",
+        "body_keys": [
+          "messages",
+          "model",
+          "max_completion_tokens",
+          "temperature",
+          "top_p",
+          "thinking_budget_tokens",
+          "chat_template_kwargs"
+        ],
+        "thinking_budget_tokens": 2048
+      }
+    },
+    "next_deep": {
+      "status": "PASS",
+      "profile": "Next-Deep",
+      "target_budget": 4096,
+      "wire_budget_received": 4096,
+      "budget_pass": true,
+      "zero_reload": true,
+      "pid_before": 548,
+      "pid_after": 548,
+      "reasoning_content_chars": 10048,
+      "content": "The word \"strawberry\" is spelled s-t-r-a-w-b-e-r-r-y, with 'r' appearing at positions 3, 8, and 9. This gives one 'r' in \"straw\" and two 'r's in \"berry\", totaling three.  \nFinal count: \\boxed{3}",
+      "finish_reason": "stop",
+      "elapsed_seconds": 167.6,
+      "llama_server_pid": 548,
+      "vram_mib": 21466,
+      "captured_wire_request": {
+        "url": "http://127.0.0.1:8080/v1/chat/completions",
+        "body_keys": [
+          "messages",
+          "model",
+          "max_completion_tokens",
+          "temperature",
+          "top_p",
+          "thinking_budget_tokens",
+          "chat_template_kwargs"
+        ],
+        "thinking_budget_tokens": 4096
+      }
+    },
+    "qwen_standalone": {
+      "status": "PASS",
+      "profile": "Qwen38_Opus_96K",
+      "model": "openai/qwen",
+      "response": "144",
+      "finish_reason": "stop",
+      "elapsed_seconds": 47.18,
+      "llama_server_pid": 6316,
+      "vram_mib": 21030
+    },
+    "ornith_standalone": {
+      "status": "PASS",
+      "profile": "Ornith-Coding",
+      "model": "openai/ornith",
+      "response": "225",
+      "finish_reason": "stop",
+      "elapsed_seconds": 436.45,
+      "llama_server_pid": 7660,
+      "vram_mib": 20606
+    }
+  },
+  "overall_status": "PASS",
+  "recent_llama_swap_logs": [
+    "INFO [                    main] HTTP server listening | tid=\"1892\" timestamp=1788620288 hostname=\"127.0.0.1\" port=\"5801\" n_threads_http=\"11\"",
+    "INFO [              slots_idle] all slots are idle | tid=\"1892\" timestamp=1788620288",
+    "INFO [     process_single_task] slot data | tid=\"1892\" timestamp=1788620288 id_task=0 n_idle_slots=1 n_processing_slots=0",
+    "INFO [              slots_idle] all slots are idle | tid=\"1892\" timestamp=1788620288",
+    "INFO [      log_server_request] request | tid=\"1916\" timestamp=1788620288 remote_addr=\"127.0.0.1\" remote_port=57252 status=200 method=\"GET\" path=\"/health\" params={}",
+    "[INFO] <ornith> Health check passed on http://127.0.0.1:5801/health",
+    "======== Prompt cache: cache size: 0, n_keep: 0, n_discarded_prompt: 0, cache_ram_n_min: 0, f_keep: 0.00, cache_ram_similarity: 0.50",
+    "WARN [   launch_slot_with_task] %s",
+    "| =\"ctx_shift is not supported by recurrent model, it will be disabled\"",
+    "INFO [   launch_slot_with_task] slot is processing task | tid=\"1892\" timestamp=1788620289 id_slot=0 id_task=1",
+    "======== Cache: cache_size = 0, n_past =  0, n_past_prompt = 0",
+    "INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid=\"1892\" timestamp=1788620289 id_slot=0 id_task=1 p0=0",
+    "INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid=\"1892\" timestamp=1788620289 id_slot=0 id_task=1 p0=22",
+    "slot print_timing: id  0 | task 1 |",
+    "prompt eval time =     213.02 ms /    27 tokens (    7.89 ms per token,   126.75 tokens per second)",
+    "eval time =     652.42 ms /    58 tokens (   11.25 ms per token,    88.90 tokens per second)",
+    "total time =     865.44 ms /    85 tokens",
+    "draft acceptance rate = 0.96552 (   28 accepted /    29 generated)",
+    "statistics mtp: #calls(b,g,a) = 1 29 29, #gen drafts = 29, #acc drafts = 28, #gen tokens = 29, #acc tokens = 28, dur(b,g,a) = 0.003, 18.186, 0.009 ms",
+    "INFO [      log_server_request] request | tid=\"1916\" timestamp=1788620289 remote_addr=\"127.0.0.1\" remote_port=57252 status=200 method=\"POST\" path=\"/v1/chat/completions\" params={}",
+    "[DEBUG] Capture 15 compressed and saved: 1857 bytes -> 1061 bytes (42.9% compression)",
+    "[INFO] Request 127.0.0.1 \"POST /v1/chat/completions HTTP/1.1\" 200 883 \"OpenAI/Python 2.54.0\" 2m15.9616306s",
+    "slot create_check: id  0 | task 1 | created context checkpoint 1 of 32 (pos_min = 83, pos_max = 83, n_tokens = 84, size = 62.815 MiB, took 31.20 ms)",
+    "INFO [           release_slots] slot released | tid=\"1892\" timestamp=1788620289 id_slot=0 id_task=1 n_ctx=98304 n_past=84 n_system_tokens=0 n_cache_tokens=84 truncated=false",
+    "INFO [              slots_idle] all slots are idle | tid=\"1892\" timestamp=1788620289"
+  ]
+}

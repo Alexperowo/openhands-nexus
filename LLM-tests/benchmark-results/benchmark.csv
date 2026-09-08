@@ -1,0 +1,5 @@
+﻿"TestId","TestName","Backend","Version","MTP","Status","PromptTokens","PromptEvalSpeed_TokSec","TTFT_Sec","GenSpeed_TokSec","GenTokens","TotalTime_Sec","PeakVRAM_MiB","MTP_Acceptance","Errors"
+"01","01-mainline-no-mtp","llama.cpp (mainline)","b10752 (b96806d96)","OFF","FAILED","0","0","0","0","0","1800,02","19386","N/A","The request was aborted: The operation has timed out."
+"02","02-mainline-mtp","llama.cpp (mainline)","b10752 (b96806d96)","ON (draft-mtp)","FAILED","0","0","0","0","0","1800,01","20654","acceptance = 0.50000","The request was aborted: The operation has timed out."
+"03","03-ik-no-mtp","ik_llama.cpp","commit 3c58ae3","OFF","SUCCESS","85337","390,10","218,76","13,77","512","256,32","19994","N/A",""
+"04","04-ik-mtp","ik_llama.cpp","commit 3c58ae3","ON (mtp:n_max=1,p_min=0.0)","SUCCESS","85337","345,50","247,00","12,46","512","288,52","21675","acceptance rate = 0.50000",""

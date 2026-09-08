@@ -1,0 +1,304 @@
+{
+  "timestamp": "2026-09-06T15:21:00.000000+00:00",
+  "task_families": [
+    "A_planning_reasoning",
+    "B_code_execution",
+    "C_debugging",
+    "D_tool_calling",
+    "E_long_instruction",
+    "F_reviewer_error_detection"
+  ],
+  "models": {
+    "qwen": {
+      "name": "Qwen 3.8 Opus Distill v2 (27B)",
+      "backend": "K:\\Project\\ik_llama\\bin\\llama-server.exe (commit fe215a8)",
+      "load_time_cold_s": 41.83,
+      "load_time_warm_s": 9.69,
+      "vram_load_mib": 22099,
+      "vram_peak_mib": 22129,
+      "vram_headroom_mib": 399,
+      "tasks": {
+        "A_planning_reasoning": {
+          "title": "Planning / Architecture",
+          "score": 75,
+          "feedback": [
+            "+25 Redis streams mentioned",
+            "+35 ACK/PEL failure recovery covered",
+            "+15 Consumer groups referenced"
+          ],
+          "gen_tok_s": 27.1,
+          "prompt_tok_s": 198.5,
+          "gen_tokens": 180,
+          "elapsed_s": 7.82,
+          "response_sample": "High-Availability Event-Driven Notification System Architecture..."
+        },
+        "B_code_execution": {
+          "title": "Code Editing / Execution",
+          "score": 70,
+          "feedback": [
+            "+20 RingBuffer class declared",
+            "+30 collections.deque utilized",
+            "+20 Capacity/maxlen enforced"
+          ],
+          "gen_tok_s": 33.5,
+          "prompt_tok_s": 210.0,
+          "gen_tokens": 150,
+          "elapsed_s": 4.81,
+          "response_sample": "from collections import deque\nfrom typing import Any, List, Optional\n\nclass RingBuffer:"
+        },
+        "C_debugging": {
+          "title": "Debugging / Root Cause",
+          "score": 100,
+          "feedback": [
+            "+40 Mutable default argument identified",
+            "+40 None sentinel pattern suggested as fix",
+            "+20 Shared state explanation clear"
+          ],
+          "gen_tok_s": 33.0,
+          "prompt_tok_s": 205.2,
+          "gen_tokens": 140,
+          "elapsed_s": 4.61,
+          "response_sample": "Root Cause: In Python, default arguments are evaluated once when the function is defined..."
+        },
+        "D_tool_calling": {
+          "title": "Tool Calling / Structured Output",
+          "score": 0,
+          "feedback": [
+            "+0 No isolated JSON structure found (conversational markdown wrap)"
+          ],
+          "gen_tok_s": 32.5,
+          "prompt_tok_s": 212.0,
+          "gen_tokens": 90,
+          "elapsed_s": 3.23,
+          "response_sample": "To execute git status on K:/Project..."
+        },
+        "E_long_instruction": {
+          "title": "Long-Instruction Adherence",
+          "score": 20,
+          "feedback": [
+            "+0 Violated negative constraint ('z' present)",
+            "+20 [VERIFIED] marker partially present"
+          ],
+          "gen_tok_s": 24.7,
+          "prompt_tok_s": 195.0,
+          "gen_tokens": 110,
+          "elapsed_s": 4.96,
+          "response_sample": "1. Non-blocking I/O allows high concurrency [VERIFIED]..."
+        },
+        "F_reviewer_error_detection": {
+          "title": "Reviewer / Security Audit",
+          "score": 100,
+          "feedback": [
+            "+40 SQL injection detected",
+            "+20 Severity level specified",
+            "+40 Parameterized fix provided"
+          ],
+          "gen_tok_s": 26.1,
+          "prompt_tok_s": 200.1,
+          "gen_tokens": 130,
+          "elapsed_s": 5.35,
+          "response_sample": "Vulnerability: SQL Injection\nSeverity: Critical (CVSS 9.8)..."
+        }
+      },
+      "total_score": 365,
+      "average_score": 60.8,
+      "average_gen_tok_s": 29.49,
+      "role_ranking": "Rank 1: Reviewer / Security Audit; Rank 2: Debugging / Diagnostics; Rank 2: High-Level Planning"
+    },
+    "ornith": {
+      "name": "Ornith 1.5 35B MTP ICE (MoE)",
+      "backend": "K:\\Project\\ik_llama\\bin\\llama-server.exe (commit fe215a8)",
+      "load_time_cold_s": 37.63,
+      "load_time_warm_s": 9.54,
+      "vram_load_mib": 20233,
+      "vram_peak_mib": 20363,
+      "vram_headroom_mib": 2165,
+      "tasks": {
+        "A_planning_reasoning": {
+          "title": "Planning / Architecture",
+          "score": 100,
+          "feedback": [
+            "+25 Redis streams mentioned",
+            "+35 ACK/PEL failure recovery covered",
+            "+25 Scaling bottlenecks analyzed",
+            "+15 Consumer groups referenced"
+          ],
+          "gen_tok_s": 70.9,
+          "prompt_tok_s": 300.65,
+          "gen_tokens": 180,
+          "elapsed_s": 3.04,
+          "response_sample": "Architecture Overview: Event-driven notification system using Redis Streams..."
+        },
+        "B_code_execution": {
+          "title": "Code Editing / Execution",
+          "score": 50,
+          "feedback": [
+            "+30 collections.deque utilized",
+            "+20 Capacity/maxlen enforced"
+          ],
+          "gen_tok_s": 72.9,
+          "prompt_tok_s": 285.0,
+          "gen_tokens": 150,
+          "elapsed_s": 2.33,
+          "response_sample": "from collections import deque\nfrom typing import Any, List\n\nclass RingBuffer:\n    def __init__(self, capacity: int):..."
+        },
+        "C_debugging": {
+          "title": "Debugging / Root Cause",
+          "score": 60,
+          "feedback": [
+            "+40 Mutable default argument identified",
+            "+20 Shared state explanation clear"
+          ],
+          "gen_tok_s": 77.2,
+          "prompt_tok_s": 290.4,
+          "gen_tokens": 140,
+          "elapsed_s": 2.0,
+          "response_sample": "The bug is caused by default=[] mutable argument across invocations..."
+        },
+        "D_tool_calling": {
+          "title": "Tool Calling / Structured Output",
+          "score": 70,
+          "feedback": [
+            "+70 Valid JSON tool call, partial arg match"
+          ],
+          "gen_tok_s": 76.4,
+          "prompt_tok_s": 305.1,
+          "gen_tokens": 90,
+          "elapsed_s": 1.46,
+          "response_sample": "{\"tool\": \"run_command\", \"args\": {\"CommandLine\": \"git status\"}}"
+        },
+        "E_long_instruction": {
+          "title": "Long-Instruction Adherence",
+          "score": 35,
+          "feedback": [
+            "+0 Violated negative constraint ('z' present)",
+            "+15 Numbered items present (5)",
+            "+20 [VERIFIED] marker partially present"
+          ],
+          "gen_tok_s": 62.9,
+          "prompt_tok_s": 275.2,
+          "gen_tokens": 110,
+          "elapsed_s": 2.06,
+          "response_sample": "1. Non-blocking network requests improve throughput [VERIFIED]..."
+        },
+        "F_reviewer_error_detection": {
+          "title": "Reviewer / Security Audit",
+          "score": 100,
+          "feedback": [
+            "+40 SQL injection detected",
+            "+20 Severity level specified",
+            "+40 Parameterized fix provided"
+          ],
+          "gen_tok_s": 58.6,
+          "prompt_tok_s": 295.0,
+          "gen_tokens": 130,
+          "elapsed_s": 2.41,
+          "response_sample": "Vulnerability: SQL Injection (CWE-89)\nSeverity: High..."
+        }
+      },
+      "total_score": 415,
+      "average_score": 69.2,
+      "average_gen_tok_s": 69.81,
+      "role_ranking": "Rank 1: Primary Code Generation / High-Throughput Execution (69.8 tok/s); Rank 2: Architecture Planning"
+    },
+    "next": {
+      "name": "Qwen3-Next 80B Thinking UD (MoE)",
+      "backend": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+      "load_time_cold_s": 809.0,
+      "load_time_warm_s": 14.16,
+      "vram_load_mib": 20939,
+      "vram_peak_mib": 20939,
+      "vram_headroom_mib": 1589,
+      "tasks": {
+        "A_planning_reasoning": {
+          "title": "Planning / Architecture",
+          "score": 95,
+          "feedback": [
+            "+25 Redis streams mentioned",
+            "+35 ACK/PEL failure recovery covered",
+            "+25 Scaling bottlenecks analyzed",
+            "+10 Consumer group topology"
+          ],
+          "gen_tok_s": 18.28,
+          "prompt_tok_s": 25.76,
+          "gen_tokens": 180,
+          "elapsed_s": 9.85,
+          "response_sample": "<think>Designing an HA notification system...</think>1. Architecture: Redis Streams..."
+        },
+        "B_code_execution": {
+          "title": "Code Editing / Execution",
+          "score": 85,
+          "feedback": [
+            "+20 RingBuffer class declared",
+            "+30 collections.deque utilized",
+            "+20 Capacity/maxlen enforced",
+            "+15 Type hints and docstrings complete"
+          ],
+          "gen_tok_s": 18.28,
+          "prompt_tok_s": 25.76,
+          "gen_tokens": 150,
+          "elapsed_s": 8.21,
+          "response_sample": "<think>Implementing RingBuffer with fixed deque...</think>class RingBuffer:..."
+        },
+        "C_debugging": {
+          "title": "Debugging / Root Cause",
+          "score": 95,
+          "feedback": [
+            "+40 Mutable default argument identified",
+            "+40 None sentinel pattern suggested as fix",
+            "+15 Scope and bytecode explanation"
+          ],
+          "gen_tok_s": 18.28,
+          "prompt_tok_s": 25.76,
+          "gen_tokens": 140,
+          "elapsed_s": 7.66,
+          "response_sample": "<think>Root cause analysis...</think>The default list is bound at function creation..."
+        },
+        "D_tool_calling": {
+          "title": "Tool Calling / Structured Output",
+          "score": 85,
+          "feedback": [
+            "+85 Exact JSON tool call output after internal thinking trace"
+          ],
+          "gen_tok_s": 18.28,
+          "prompt_tok_s": 25.76,
+          "gen_tokens": 90,
+          "elapsed_s": 4.92,
+          "response_sample": "{\"tool\": \"run_command\", \"args\": {\"CommandLine\": \"git status\", \"Cwd\": \"K:/Project\", \"WaitMs\": 5000}}"
+        },
+        "E_long_instruction": {
+          "title": "Long-Instruction Adherence",
+          "score": 80,
+          "feedback": [
+            "+35 Self-monitored constraint violation during thinking",
+            "+30 Exactly 3 numbered items",
+            "+15 [VERIFIED] tags appended"
+          ],
+          "gen_tok_s": 18.28,
+          "prompt_tok_s": 25.76,
+          "gen_tokens": 110,
+          "elapsed_s": 6.02,
+          "response_sample": "1. Non-blocking operations boost concurrency [VERIFIED]..."
+        },
+        "F_reviewer_error_detection": {
+          "title": "Reviewer / Security Audit",
+          "score": 95,
+          "feedback": [
+            "+40 SQL injection detected",
+            "+20 High severity / CVSS breakdown",
+            "+35 Parameterized query with AST explanation"
+          ],
+          "gen_tok_s": 18.28,
+          "prompt_tok_s": 25.76,
+          "gen_tokens": 130,
+          "elapsed_s": 7.11,
+          "response_sample": "<think>Analyzing user input interpolation...</think>Vulnerability: SQL Injection..."
+        }
+      },
+      "total_score": 535,
+      "average_score": 89.2,
+      "average_gen_tok_s": 18.28,
+      "role_ranking": "Rank 1: Deep Reasoning / Escalation & Complex Architectural Trade-offs; Not suitable for high-frequency iteration due to cold load latency"
+    }
+  }
+}

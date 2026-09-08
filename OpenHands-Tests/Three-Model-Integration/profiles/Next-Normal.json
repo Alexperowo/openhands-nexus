@@ -1,0 +1,42 @@
+{
+  "model": "openai/next",
+  "api_key": "gAAAAABqmGQlmxAULdenZtbSOdYguddHfdhJafYVKp6poSZeSX7NuX21W_H0F7vp1wy6HuJcluAeYVaQhAGjPS-EFecXKJwcSg==",
+  "auth_type": "api_key",
+  "base_url": "http://127.0.0.1:8080/v1",
+  "openrouter_site_url": "https://docs.all-hands.dev/",
+  "openrouter_app_name": "OpenHands",
+  "num_retries": 5,
+  "retry_multiplier": 8.0,
+  "retry_min_wait": 8,
+  "retry_max_wait": 64,
+  "timeout": 300,
+  "max_message_chars": 30000,
+  "temperature": 0.6,
+  "top_p": 0.95,
+  "max_input_tokens": 98304,
+  "max_output_tokens": 5120,
+  "api_mode": "auto",
+  "capability_overrides": {},
+  "stream": false,
+  "drop_params": true,
+  "modify_params": true,
+  "disable_stop_word": false,
+  "caching_prompt": true,
+  "log_completions": true,
+  "log_completions_folder": "logs\\\\completions",
+  "native_tool_calling": true,
+  "reasoning_effort": "medium",
+  "enable_encrypted_reasoning": true,
+  "prompt_cache_retention": "24h",
+  "extended_thinking_budget": 2048,
+  "usage_id": "default",
+  "litellm_extra_body": {
+    "thinking_budget_tokens": 2048,
+    "reasoning_budget_tokens": 2048,
+    "chat_template_kwargs": {
+      "thinking_budget_tokens": 2048
+    }
+  },
+  "is_subscription": false,
+  "schema_version": 1
+}

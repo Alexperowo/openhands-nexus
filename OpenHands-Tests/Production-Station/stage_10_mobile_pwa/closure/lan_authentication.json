@@ -1,0 +1,111 @@
+{
+  "stage": "STAGE_10B_CLOSURE",
+  "timestamp": "2026-09-07 10:36:09",
+  "boundary_location": "Port 8443 (Mobile LAN PWA Gateway)",
+  "mechanism": "Token Authentication via HttpOnly Cookie (openhands_lan_auth), X-LAN-Auth / Bearer Header, or URL Query Param",
+  "token_storage": {
+    "path": "openhands-pwa/certs/lan-auth-token.txt",
+    "sha256": "f1cb3e4ddd16715b42541ab8e6b28d0637bdc6a5f4e449608e42cfc99926de8b",
+    "git_ignored": true
+  },
+  "test_evidence": {
+    "unauthenticated_get_root": {
+      "method": "GET",
+      "path": "/",
+      "expected_status": 401,
+      "actual_status": 401,
+      "response_type": "text/html",
+      "contains_login_portal": true,
+      "result": "PASS"
+    },
+    "unauthenticated_get_api": {
+      "method": "GET",
+      "path": "/api/options/models",
+      "expected_status": 401,
+      "actual_status": 401,
+      "response_type": "application/json",
+      "result": "PASS"
+    },
+    "unauthenticated_get_voice": {
+      "method": "GET",
+      "path": "/voice-api/health",
+      "expected_status": 401,
+      "actual_status": 401,
+      "response_type": "application/json",
+      "result": "PASS"
+    },
+    "unauthenticated_websocket": {
+      "method": "GET",
+      "path": "/sockets/bash-events",
+      "headers": {
+        "Upgrade": "websocket"
+      },
+      "expected_status": 401,
+      "actual_status": 401,
+      "result": "PASS"
+    },
+    "public_root_ca_download": {
+      "method": "GET",
+      "path": "/openhands-ca.crt",
+      "expected_status": 200,
+      "actual_status": 200,
+      "content_type": "application/x-x509-ca-cert",
+      "result": "PASS"
+    },
+    "authenticated_login_form_post": {
+      "method": "POST",
+      "path": "/__lan_login",
+      "expected_status": 302,
+      "actual_status": 302,
+      "set_cookie": "openhands_lan_auth=<REDACTED>; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=31536000",
+      "location": "/",
+      "result": "PASS"
+    },
+    "authenticated_query_param_token": {
+      "method": "GET",
+      "path": "/?token=<REDACTED>",
+      "expected_status": 302,
+      "actual_status": 302,
+      "set_cookie_present": true,
+      "location": "/",
+      "result": "PASS"
+    },
+    "authenticated_get_root": {
+      "method": "GET",
+      "path": "/",
+      "cookie": "openhands_lan_auth=<REDACTED>",
+      "expected_status": 200,
+      "actual_status": 200,
+      "pwa_manifest_present": true,
+      "sw_js_present": true,
+      "dynamic_voice_loader_present": true,
+      "result": "PASS"
+    },
+    "authenticated_voice_health": {
+      "method": "GET",
+      "path": "/voice-api/health",
+      "cookie": "openhands_lan_auth=<REDACTED>",
+      "expected_status": 200,
+      "actual_status": 200,
+      "voice_status": "ok",
+      "result": "PASS"
+    },
+    "authenticated_websocket": {
+      "method": "GET",
+      "path": "/sockets/bash-events",
+      "cookie": "openhands_lan_auth=<REDACTED>",
+      "expected_status": 101,
+      "actual_status": 101,
+      "upgrade": "websocket",
+      "result": "PASS"
+    },
+    "desktop_localhost_direct_access": {
+      "method": "GET",
+      "target": "http://127.0.0.1:8000/",
+      "auth_required": false,
+      "actual_status": 200,
+      "result": "PASS"
+    }
+  },
+  "status": "PASS"
+}

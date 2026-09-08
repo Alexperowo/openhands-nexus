@@ -1,0 +1,11 @@
+mode,ngl,context,prompt_tokens,generated_tokens,thinking_tokens,answer_tokens,prompt_tps,generation_tps,ttft_s,wall_time_s,peak_vram_mib,peak_ram_mib,gpu_util_pct,cpu_util_pct,status,notes
+coarse_sweep,18,16384,52,256,0,256,31.26,13.01,1.66,21.4,14008,38937,31,0,PASS,"Coarse ngl=18"
+coarse_sweep,22,16384,52,256,0,256,63.83,14.22,0.81,18.83,16760,38912,34,0,PASS,"Coarse ngl=22"
+coarse_sweep,25,16384,52,256,0,256,69.31,16.48,0.75,16.33,18894,38925,23,0,PASS,"Coarse ngl=25"
+coarse_sweep,28,16384,52,256,0,256,73.32,17.83,0.71,15.1,20946,38884,35,0,PASS,"Coarse ngl=28"
+coarse_sweep,30,16384,52,256,0,256,49.29,19.33,1.05,14.33,22069,39143,36,0,PASS,"Coarse ngl=30"
+fine_sweep,29,16384,52,256,0,256,76.81,18.24,0.68,14.74,21552,38974,35,0,PASS,"Fine ngl=29"
+fine_sweep,31,16384,52,256,0,256,46.3,11.78,1.12,22.88,22069,39820,60,0,PASS,"Fine ngl=31"
+96k_target_cold,26,98304,30120,256,0,256,190.3,12.29,158.27,179.24,20083,40650,30,0,PASS,"Qwen3-Next 80B 96K cold prompt"
+96k_target_followup1,26,98304,30142,128,0,128,21.02,12.5,1.28,11.63,20085,40688,28,0,PASS,"Qwen 80B KV reuse follow-up 1"
+96k_target_followup2,26,98304,30163,64,0,64,18.5,13.32,1.41,6.3,20085,40757,21,0,PASS,"Qwen 80B KV reuse follow-up 2"

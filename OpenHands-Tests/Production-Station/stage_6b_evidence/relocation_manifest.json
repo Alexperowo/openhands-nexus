@@ -1,0 +1,356 @@
+{
+  "generated_at": "2026-09-06T06:51:22.774510+00:00",
+  "stage": "STAGE_6B",
+  "total_files_relocated": 43,
+  "total_directories_deleted": 1,
+  "empty_directory_removal": {
+    "path": "K:\\Project\\OpenHands",
+    "status": "DELETED_CONFIRMED_EMPTY"
+  },
+  "manifest": [
+    {
+      "SOURCE": "K:\\Project\\benchmark_voice_full.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\benchmark_voice_full.py",
+      "SIZE": 3477,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\inspect_conv_req.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\inspect_conv_req.py",
+      "SIZE": 383,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\setup_openhands_profiles.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\setup_openhands_profiles.py",
+      "SIZE": 3079,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\verify_openhands_profiles.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\verify_openhands_profiles.py",
+      "SIZE": 5858,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_all_modes.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_all_modes.py",
+      "SIZE": 2573,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_barge_in.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_barge_in.py",
+      "SIZE": 1450,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_bgt.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_bgt.py",
+      "SIZE": 1133,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_budget.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_budget.py",
+      "SIZE": 1497,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_comb.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_comb.py",
+      "SIZE": 857,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_combined_memory.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_combined_memory.py",
+      "SIZE": 1141,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_compare.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_compare.py",
+      "SIZE": 1542,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_direct2.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_direct2.py",
+      "SIZE": 690,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_direct_deepseek.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_direct_deepseek.py",
+      "SIZE": 1591,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_direct_inst.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_direct_inst.py",
+      "SIZE": 1334,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_direct_prompt.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_direct_prompt.py",
+      "SIZE": 2381,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_exact.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_exact.py",
+      "SIZE": 2089,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_futo_stt.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_futo_stt.py",
+      "SIZE": 2230,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_jinja_render.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_jinja_render.py",
+      "SIZE": 915,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_litellm.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_litellm.py",
+      "SIZE": 648,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_litellm_both.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_litellm_both.py",
+      "SIZE": 665,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_litellm_budget.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_litellm_budget.py",
+      "SIZE": 613,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_litellm_direct.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_litellm_direct.py",
+      "SIZE": 647,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_off_modes.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_off_modes.py",
+      "SIZE": 2080,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_persistent_stt.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_persistent_stt.py",
+      "SIZE": 1875,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_raw_prompt.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_raw_prompt.py",
+      "SIZE": 1441,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_reasoning_syntax.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_reasoning_syntax.py",
+      "SIZE": 2203,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_rf.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_rf.py",
+      "SIZE": 1323,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_save_profile.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_save_profile.py",
+      "SIZE": 1027,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_single_profile.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_single_profile.py",
+      "SIZE": 5326,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_val.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_val.py",
+      "SIZE": 685,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_voice_bridge_stt.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_voice_bridge_stt.py",
+      "SIZE": 1701,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\test_voice_bridge_tts.py",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\test_voice_bridge_tts.py",
+      "SIZE": 1271,
+      "ACTION": "RELOCATE_ROOT_TEST_SCRIPT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\all_modes_results.json",
+      "DESTINATION": "K:\\Project\\Tests\\legacy_root\\all_modes_results.json",
+      "SIZE": 5000,
+      "ACTION": "RELOCATE_ROOT_TEST_RESULT",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\Three-Model-Integration-Full-Archive.zip",
+      "DESTINATION": "K:\\Project\\Archive\\zip_archives\\Three-Model-Integration-Full-Archive.zip",
+      "SIZE": 11931757,
+      "ACTION": "RELOCATE_HISTORICAL_ARCHIVE",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\Three-Model-Integration-Supplemental-Evidence.zip",
+      "DESTINATION": "K:\\Project\\Archive\\zip_archives\\Three-Model-Integration-Supplemental-Evidence.zip",
+      "SIZE": 12745547,
+      "ACTION": "RELOCATE_HISTORICAL_ARCHIVE",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\.openhands-local\\start.ps1.bak",
+      "DESTINATION": "K:\\Project\\Archive\\backups\\start.ps1.bak",
+      "SIZE": 13570,
+      "ACTION": "RELOCATE_BACKUP_FILE",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\.openhands-local\\stop.ps1.bak",
+      "DESTINATION": "K:\\Project\\Archive\\backups\\stop.ps1.bak",
+      "SIZE": 7935,
+      "ACTION": "RELOCATE_BACKUP_FILE",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\llama-swap\\config.yaml.backup.20260905_105239",
+      "DESTINATION": "K:\\Project\\Archive\\backups\\config.yaml.backup.20260905_105239",
+      "SIZE": 1006,
+      "ACTION": "RELOCATE_BACKUP_FILE",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\llama.log",
+      "DESTINATION": "K:\\Project\\Logs\\legacy\\llama.log",
+      "SIZE": 1750,
+      "ACTION": "RELOCATE_SCATTERED_LOG",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\Models\\smoke_test.err.log",
+      "DESTINATION": "K:\\Project\\Logs\\legacy\\smoke_test.err.log",
+      "SIZE": 14512,
+      "ACTION": "RELOCATE_SCATTERED_LOG",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\Models\\smoke_test.out.log",
+      "DESTINATION": "K:\\Project\\Logs\\legacy\\smoke_test.out.log",
+      "SIZE": 2864,
+      "ACTION": "RELOCATE_SCATTERED_LOG",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\ik_llama_help.txt",
+      "DESTINATION": "K:\\Project\\Docs\\ik_llama_help.txt",
+      "SIZE": 75124,
+      "ACTION": "RELOCATE_DOCUMENTATION",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:\\Project\\final_about_tablet.png",
+      "DESTINATION": "K:\\Project\\Docs\\final_about_tablet.png",
+      "SIZE": 319922,
+      "ACTION": "RELOCATE_DOCUMENTATION",
+      "REFERENCE_CHECK": "NO_PRODUCTION_REFERENCE_CLEAN",
+      "RESULT": "SUCCESS"
+    }
+  ]
+}

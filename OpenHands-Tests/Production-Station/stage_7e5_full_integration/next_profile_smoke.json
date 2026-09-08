@@ -1,0 +1,24 @@
+{
+  "stage": "7E-5",
+  "step": "C_NEXT_PROFILE_SMOKE",
+  "timestamp": "2026-09-06T12:33:28.482921+00:00",
+  "profile": "Next-Normal",
+  "configured_budget": 2048,
+  "wire_budget": 2048,
+  "pass_budget": true,
+  "content": "25 multiplied by 4 equals 100 because adding 25 four times (25 + 25 + 25 + 25) results in 100.  \n**100**",
+  "pass_content": true,
+  "reasoning_chars": 6091,
+  "finish_reason": "stop",
+  "pass_finish": true,
+  "elapsed_seconds": 966.93,
+  "backend_processes": [
+    {
+      "pid": 5892,
+      "exe": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+      "cmdline": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe -m K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf -md K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf -c 98304 -ngl 26 -fa on -ctk q8_0 -ctv q8_0 -np 1 -t 6 -dev CUDA0 --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek --reasoning-budget-message Conclude reasoning immediately and output the final answer now. --jinja --host 127.0.0.1 --port 5800 --temp 0.6"
+    }
+  ],
+  "next_backend_verified": true,
+  "verdict": "PASS"
+}

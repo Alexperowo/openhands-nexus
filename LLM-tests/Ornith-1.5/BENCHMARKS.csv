@@ -1,0 +1,13 @@
+mode,context,prompt_tokens,generated_tokens,mtp,n_max,p_min,ngram,drafted_tokens,accepted_tokens,acceptance_pct,prompt_tps,generation_tps,wall_time_s,peak_vram_mib,status,notes
+baseline-no-mtp,16384,54,256,none,0,0,none,0,0,0,447.15,57.00,4.69,18583,PASS,"Sanity OK"
+mtp-n1-p075,16384,54,256,mtp,1,0.75,none,153,101,66.0,168.14,57.06,4.86,19625,PASS,"Sanity OK"
+mtp-author,16384,54,256,ngram-mod+mtp,1,0.75,mod:8-24/48,153,101,66.0,161.36,54.00,5.13,21071,PASS,"Sanity OK"
+mtp-n2-p075,16384,54,256,mtp,2,0.75,none,157,98,62.4,176.00,48.99,5.59,19689,PASS,"Sanity OK"
+mtp-n3-p075,16384,54,256,mtp,3,0.75,none,157,98,62.4,167.99,51.40,5.36,19751,PASS,"Sanity OK"
+mtp-n2-p0,16384,54,256,mtp,2,0,none,287,111,38.7,176.82,49.85,5.48,19689,PASS,"Sanity OK"
+mtp-n3-p0,16384,54,256,mtp,3,0,none,421,114,27.1,179.32,52.10,5.26,19751,PASS,"Sanity OK"
+96k-no-mtp,98304,83999,300,none,0,0,none,0,0,0,1033.09,34.26,90.42,19447,PASS,"Sanity OK (Length 1514)"
+96k-top1,98304,83999,300,mtp,1,0.75,none,179,120,67.0,861.54,39.03,105.66,20793,PASS,"Sanity OK, Verified 2x average"
+96k-top2,98304,83999,300,ngram-mod+mtp,1,0.75,mod:8-24/48,179,120,67.0,858.14,38.90,105.94,22159,PASS,"Sanity OK, Verified 2x average"
+vision-no-mtp,16384,2420,100,none,0,0,none,0,0,0,182.40,41.20,14.20,21041,PASS,"Clean screen and Russian UI description"
+vision-best-mtp,16384,2420,80,mtp,1,0.75,none,46,32,69.6,180.10,48.50,12.80,22034,PASS,"UI buttons identified, 69.6% MTP acceptance"

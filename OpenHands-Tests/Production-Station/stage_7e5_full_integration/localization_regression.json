@@ -1,0 +1,18 @@
+{
+  "bundle_fetch": {
+    "status_code": 200,
+    "latency_sec": 0.005,
+    "total_keys": 2400,
+    "verdict": "PASS"
+  },
+  "defaults_validation": {
+    "versions": {
+      "agentServer": "1.44.0",
+      "agentCanvas": "1.16.0",
+      "automation": "1.9.0"
+    },
+    "verdict": "PASS"
+  },
+  "overall_verdict": "PASS",
+  "timestamp": "2026-09-06T12:17:00.240779+00:00"
+}

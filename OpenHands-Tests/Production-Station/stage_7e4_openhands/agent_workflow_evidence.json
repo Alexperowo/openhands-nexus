@@ -1,0 +1,55 @@
+{
+  "stage": "7E-4",
+  "timestamp": "2026-09-06T12:14:45.704603+00:00",
+  "conversation_id": "b0e5260b-df62-49d0-8a11-5c61424a822b",
+  "profile_used": "Ornith-Coding",
+  "elapsed_seconds": 26.42,
+  "task_prompt": "Create a file named 'app_stack_rehearsal.txt' in your workspace containing exactly: REHEARSAL_VALIDATION_PASS_2026\nThen stop.",
+  "artifact_file": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_7e4_workspace\\app_stack_rehearsal.txt",
+  "artifact_created": true,
+  "artifact_content": "REHEARSAL_VALIDATION_PASS_2026",
+  "artifact_valid": true,
+  "voice_bridge_before": {
+    "status": "ok",
+    "uptime_s": 89.3,
+    "stt_engine": "gigaam-v3-e2e-rnnt (FUTO transcribe.cpp)",
+    "tts_engine": "supertonic-3 (Supertone ONNX)",
+    "voices": [
+      "M1",
+      "F1"
+    ],
+    "ram_mb": 746.6,
+    "metrics": {
+      "stt_load_time_s": 0.184,
+      "tts_load_time_s": 1.714,
+      "stt_count": 0,
+      "tts_count": 0,
+      "last_stt_latency_ms": 0.0,
+      "last_tts_latency_ms": 0.0,
+      "last_tts_rtf": 0.0
+    }
+  },
+  "voice_bridge_after": {
+    "status": "ok",
+    "uptime_s": 117.1,
+    "stt_engine": "gigaam-v3-e2e-rnnt (FUTO transcribe.cpp)",
+    "tts_engine": "supertonic-3 (Supertone ONNX)",
+    "voices": [
+      "M1",
+      "F1"
+    ],
+    "ram_mb": 746.6,
+    "metrics": {
+      "stt_load_time_s": 0.184,
+      "tts_load_time_s": 1.714,
+      "stt_count": 0,
+      "tts_count": 0,
+      "last_stt_latency_ms": 0.0,
+      "last_tts_latency_ms": 0.0,
+      "last_tts_rtf": 0.0
+    }
+  },
+  "voice_bridge_healthy": true,
+  "final_agent_response": "Done. I've created `app_stack_rehearsal.txt` in the workspace with the exact content `REHEARSAL_VALIDATION_PASS_2026` and verified it. Stopping here as requested.",
+  "verdict": "PASS"
+}

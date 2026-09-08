@@ -1,0 +1,137 @@
+=== QWEN BASELINE LOG (p_min=0.0) ===
+INFO [                    main] build info | tid="11772" timestamp=1788714647 build=8 commit="fe215a8"
+INFO [                    main] system info | tid="11772" timestamp=1788714647 n_threads=6 n_threads_batch=-1 total_threads=12 system_info="AVX = 1 | AVX_VNNI = 0 | AVX2 = 1 | AVX512 = 0 | AVX512_VBMI = 0 | AVX512_VNNI = 0 | AVX512_BF16 = 0 | FMA = 1 | NEON = 0 | SVE = 0 | ARM_FMA = 0 | F16C = 1 | FP16_VA = 0 | WASM_SIMD = 0 | SSE3 = 1 | SSSE3 = 1 | VSX = 0 | MATMUL_INT8 = 0 | "
+ggml_cuda_init: found 1 CUDA devices:
+  Device 0: NVIDIA GeForce RTX 2080 Ti, compute capability 7.5, VMM: yes, VRAM: 22527 MiB
+CUDA0: using device CUDA0 - 21326 MiB free
+llama_model_loader: loaded meta data with 43 key-value pairs and 866 tensors from K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen35
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                     general.sampling.top_k i32              = 20
+llama_model_loader: - kv   3:                     general.sampling.top_p f32              = 0.950000
+llama_model_loader: - kv   4:                      general.sampling.temp f32              = 1.000000
+llama_model_loader: - kv   5:                               general.name str              = Hf_Src
+llama_model_loader: - kv   6:                         general.size_label str              = 27B
+llama_model_loader: - kv   7:                            general.license str              = apache-2.0
+llama_model_loader: - kv   8:                   general.base_model.count u32              = 1
+llama_model_loader: - kv   9:                  general.base_model.0.name str              = Qwen3.8 27B
+llama_model_loader: - kv  10:          general.base_model.0.organization str              = Qwen
+llama_model_loader: - kv  11:              general.base_model.0.repo_url str              = https://huggingface.co/Qwen/Qwen3.8-27B
+llama_model_loader: - kv  12:                               general.tags arr[str,9]       = ["qwen", "lora", "reasoning", "opus-d...
+llama_model_loader: - kv  13:                         qwen35.block_count u32              = 65
+llama_model_loader: - kv  14:                      qwen35.context_length u32              = 262144
+llama_model_loader: - kv  15:                    qwen35.embedding_length u32              = 5120
+llama_model_loader: - kv  16:                 qwen35.feed_forward_length u32              = 17408
+llama_model_loader: - kv  17:                qwen35.attention.head_count u32              = 24
+llama_model_loader: - kv  18:             qwen35.attention.head_count_kv u32              = 4
+llama_model_loader: - kv  19:             qwen35.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  20:    
+... [TRUNCATED] ...
+slots_idle] all slots are idle | tid="11772" timestamp=1788714669
+======== Prompt cache: cache size: 153, n_keep: 0, n_discarded_prompt: 0, cache_ram_n_min: 0, f_keep: 0.21, cache_ram_similarity: 0.50
+updating prompt cache
+ - saving prompt with length 153, total state size = 154.074 MiB
+prompt cache save took 55.95 ms
+ - looking for better prompt, base f_keep = 0.213, sim = 0.351, n_keep = 0, n_discarded_prompt = 0
+ - cache state: 2 prompts, 607.405 MiB (limits: 8192.000 MiB, 0 tokens, 4126 est)
+   - prompt 000001E6B652C270:     153 tokens,       0 discarded, checkpoints:  1,   303.702 MiB
+   - prompt 000001E6B652C570:     153 tokens,       0 discarded, checkpoints:  1,   303.702 MiB
+prompt cache load took 0.13 ms
+INFO [   launch_slot_with_task] slot is processing task | tid="11772" timestamp=1788714670 id_slot=0 id_task=114
+======== Cache: cache_size = 153, n_past =  26, n_past_prompt = 26
+cache :  and docstring.
+
+<think>
+
+</think>
+
+<think>
+I'm building a Dijkstra's algorithm implementation with proper type hints and documentation, using a heap
+prompt:  and docstring.
+INFO [    batch_pending_prompt] we have to evaluate at least 1 token to generate logits | tid="11772" timestamp=1788714670 id_slot=0 id_task=114
+slot apply_checkp: id  0 | task 114 | n_past = 25, slot.prompt.tokens.size() = 153, seq_id = 0, pos_min = 152
+slot apply_checkp: id  0 | task 114 | forcing full prompt re-processing due to lack of cache data (likely due to SWA, see https://github.com/ggml-org/llama.cpp/pull/13194#issuecomment-2868343055)
+slot apply_checkp: id  0 | task 114 | erased invalidated context checkpoint (pos_min = 152, pos_max = 152, size = 149.629 MiB)
+INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid="11772" timestamp=1788714670 id_slot=0 id_task=114 p0=0
+INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid="11772" timestamp=1788714670 id_slot=0 id_task=114 p0=21
+slot print_timing: id  0 | task 114 | 
+prompt eval time =     181.22 ms /    26 tokens (    6.97 ms per token,   143.47 tokens per second)
+       eval time =    5016.07 ms /   128 tokens (   39.19 ms per token,    25.52 tokens per second)
+      total time =    5197.29 ms /   154 tokens
+draft acceptance rate = 0.43030 (   71 accepted /   165 generated)
+statistics mtp: #calls(b,g,a) = 4 156 156, #gen drafts = 156, #acc drafts = 111, #gen tokens = 468, #acc tokens = 238, dur(b,g,a) = 0.008, 1141.126, 0.054 ms
+INFO [      log_server_request] request | tid="10392" timestamp=1788714675 remote_addr="127.0.0.1" remote_port=56458 status=200 method="POST" path="/completion" params={}
+slot create_check: id  0 | task 114 | created context checkpoint 1 of 32 (pos_min = 152, pos_max = 152, n_tokens = 153, size = 149.629 MiB, took 43.69 ms)
+INFO [           release_slots] slot released | tid="11772" timestamp=1788714675 id_slot=0 id_task=114 n_ctx=98304 n_past=153 n_system_tokens=0 n_cache_tokens=153 truncated=false
+INFO [              slots_idle] all slots are idle | tid="11772" timestamp=1788714675
+
+
+=== QWEN CURRENT WINNER LOG (p_min=0.05) ===
+INFO [                    main] build info | tid="12548" timestamp=1788714681 build=8 commit="fe215a8"
+INFO [                    main] system info | tid="12548" timestamp=1788714681 n_threads=6 n_threads_batch=-1 total_threads=12 system_info="AVX = 1 | AVX_VNNI = 0 | AVX2 = 1 | AVX512 = 0 | AVX512_VBMI = 0 | AVX512_VNNI = 0 | AVX512_BF16 = 0 | FMA = 1 | NEON = 0 | SVE = 0 | ARM_FMA = 0 | F16C = 1 | FP16_VA = 0 | WASM_SIMD = 0 | SSE3 = 1 | SSSE3 = 1 | VSX = 0 | MATMUL_INT8 = 0 | "
+ggml_cuda_init: found 1 CUDA devices:
+  Device 0: NVIDIA GeForce RTX 2080 Ti, compute capability 7.5, VMM: yes, VRAM: 22527 MiB
+CUDA0: using device CUDA0 - 21326 MiB free
+llama_model_loader: loaded meta data with 43 key-value pairs and 866 tensors from K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen35
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                     general.sampling.top_k i32              = 20
+llama_model_loader: - kv   3:                     general.sampling.top_p f32              = 0.950000
+llama_model_loader: - kv   4:                      general.sampling.temp f32              = 1.000000
+llama_model_loader: - kv   5:                               general.name str              = Hf_Src
+llama_model_loader: - kv   6:                         general.size_label str              = 27B
+llama_model_loader: - kv   7:                            general.license str              = apache-2.0
+llama_model_loader: - kv   8:                   general.base_model.count u32              = 1
+llama_model_loader: - kv   9:                  general.base_model.0.name str              = Qwen3.8 27B
+llama_model_loader: - kv  10:          general.base_model.0.organization str              = Qwen
+llama_model_loader: - kv  11:              general.base_model.0.repo_url str              = https://huggingface.co/Qwen/Qwen3.8-27B
+llama_model_loader: - kv  12:                               general.tags arr[str,9]       = ["qwen", "lora", "reasoning", "opus-d...
+llama_model_loader: - kv  13:                         qwen35.block_count u32              = 65
+llama_model_loader: - kv  14:                      qwen35.context_length u32              = 262144
+llama_model_loader: - kv  15:                    qwen35.embedding_length u32              = 5120
+llama_model_loader: - kv  16:                 qwen35.feed_forward_length u32              = 17408
+llama_model_loader: - kv  17:                qwen35.attention.head_count u32              = 24
+llama_model_loader: - kv  18:             qwen35.attention.head_count_kv u32              = 4
+llama_model_loader: - kv  19:             qwen35.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  20:    
+... [TRUNCATED] ...
+ots_idle] all slots are idle | tid="12548" timestamp=1788714704
+======== Prompt cache: cache size: 153, n_keep: 0, n_discarded_prompt: 0, cache_ram_n_min: 0, f_keep: 0.17, cache_ram_similarity: 0.50
+updating prompt cache
+ - saving prompt with length 153, total state size = 154.074 MiB
+prompt cache save took 55.86 ms
+ - looking for better prompt, base f_keep = 0.173, sim = 0.295, n_keep = 0, n_discarded_prompt = 0
+ - cache state: 2 prompts, 607.405 MiB (limits: 8192.000 MiB, 0 tokens, 4126 est)
+   - prompt 00000216FC102710:     153 tokens,       0 discarded, checkpoints:  1,   303.702 MiB
+   - prompt 00000216FC101210:     153 tokens,       0 discarded, checkpoints:  1,   303.702 MiB
+prompt cache load took 0.10 ms
+INFO [   launch_slot_with_task] slot is processing task | tid="12548" timestamp=1788714706 id_slot=0 id_task=131
+======== Cache: cache_size = 153, n_past =  26, n_past_prompt = 26
+cache :  and docstring.
+
+<think>
+
+</think>
+
+<think>
+I'm implementing Dijkstra's algorithm with proper type hints and documentation, using a heap-based approach
+prompt:  and docstring.
+INFO [    batch_pending_prompt] we have to evaluate at least 1 token to generate logits | tid="12548" timestamp=1788714706 id_slot=0 id_task=131
+slot apply_checkp: id  0 | task 131 | n_past = 25, slot.prompt.tokens.size() = 153, seq_id = 0, pos_min = 152
+slot apply_checkp: id  0 | task 131 | forcing full prompt re-processing due to lack of cache data (likely due to SWA, see https://github.com/ggml-org/llama.cpp/pull/13194#issuecomment-2868343055)
+slot apply_checkp: id  0 | task 131 | erased invalidated context checkpoint (pos_min = 152, pos_max = 152, size = 149.629 MiB)
+INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid="12548" timestamp=1788714706 id_slot=0 id_task=131 p0=0
+INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid="12548" timestamp=1788714706 id_slot=0 id_task=131 p0=21
+slot print_timing: id  0 | task 131 | 
+prompt eval time =     180.80 ms /    26 tokens (    6.95 ms per token,   143.80 tokens per second)
+       eval time =    4395.26 ms /   128 tokens (   34.34 ms per token,    29.12 tokens per second)
+      total time =    4576.06 ms /   154 tokens
+draft acceptance rate = 0.56738 (   80 accepted /   141 generated)
+statistics mtp: #calls(b,g,a) = 4 166 166, #gen drafts = 166, #acc drafts = 121, #gen tokens = 498, #acc tokens = 230, dur(b,g,a) = 0.007, 1630.791, 0.059 ms
+INFO [      log_server_request] request | tid="12528" timestamp=1788714710 remote_addr="127.0.0.1" remote_port=56467 status=200 method="POST" path="/completion" params={}
+slot create_check: id  0 | task 131 | created context checkpoint 1 of 32 (pos_min = 152, pos_max = 152, n_tokens = 153, size = 149.629 MiB, took 35.24 ms)
+INFO [           release_slots] slot released | tid="12548" timestamp=1788714710 id_slot=0 id_task=131 n_ctx=98304 n_past=153 n_system_tokens=0 n_cache_tokens=153 truncated=false
+INFO [              slots_idle] all slots are idle | tid="12548" timestamp=1788714710
+

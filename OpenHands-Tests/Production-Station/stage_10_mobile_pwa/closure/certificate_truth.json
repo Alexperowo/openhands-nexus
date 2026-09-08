@@ -1,0 +1,36 @@
+{
+  "stage": "STAGE_10B_CLOSURE",
+  "timestamp": "2026-09-07 10:36:09",
+  "architecture": "2-Tier PKI: Separate Root CA and signed Leaf Server Certificate",
+  "root_ca": {
+    "file": "certs/openhands-ca.crt",
+    "subject": "O=OpenHands Local Station,CN=OpenHands Local Root CA",
+    "issuer": "O=OpenHands Local Station,CN=OpenHands Local Root CA",
+    "is_ca": true,
+    "key_cert_sign": true,
+    "crl_sign": true,
+    "valid_from": "2026-09-07 06:28:08+00:00",
+    "valid_to": "2036-09-04 06:33:08+00:00",
+    "sha256_fingerprint": "4488a69515f90520bbab1754a3636fb4f79148578fc39f58e235efd7313d7604",
+    "android_import_target": true
+  },
+  "leaf_server_certificate": {
+    "file": "certs/openhands-lan.crt",
+    "pfx_file": "certs/openhands-lan.pfx",
+    "subject": "CN=DESKTOP-L0FBHL4",
+    "issuer": "O=OpenHands Local Station,CN=OpenHands Local Root CA",
+    "is_ca": false,
+    "subject_alternative_names": [
+      "DESKTOP-L0FBHL4",
+      "localhost",
+      "192.168.0.14",
+      "127.0.0.1"
+    ],
+    "valid_from": "2026-09-07 06:28:08+00:00",
+    "valid_to": "2029-09-06 06:33:08+00:00",
+    "sha256_fingerprint": "ad650dd666b4af75e4671d552e5d62ab8ea9e26a74e2f84ca7db688231c6210c",
+    "android_import_target": false
+  },
+  "truth_statement": "The Root CA (openhands-ca.crt) is properly flagged with basicConstraints CA:TRUE and keyCertSign. The Server certificate (openhands-lan.crt) is flagged CA:FALSE. Only the Root CA certificate should be installed on client devices as a trusted CA.",
+  "status": "PASS"
+}

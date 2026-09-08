@@ -1,0 +1,68 @@
+{
+  "stage": "STAGE_6D",
+  "status": "PASS",
+  "timestamp": "2026-09-06T12:11:23.135296",
+  "stage_6c_reference_closure": {
+    "old_active_references_count": 0,
+    "exact_path_verdict": "PASS",
+    "audited_files_count": 23
+  },
+  "canonical_roots": {
+    "log_root": "K:\\Project\\Logs",
+    "temp_root": "K:\\Project\\Temp",
+    "archive_root": "K:\\Project\\Archive"
+  },
+  "service_log_paths": {
+    "openhands_agent_canvas": "K:\\Project\\Logs\\OpenHands\\agent-canvas.log",
+    "openhands_launcher": "K:\\Project\\Logs\\OpenHands\\launcher.log",
+    "llama_swap": "K:\\Project\\Logs\\llama-swap\\llama-swap.log",
+    "llama_server": "K:\\Project\\Logs\\llama-server\\llama.log",
+    "voice_bridge": "K:\\Project\\Logs\\Voice\\voice-bridge.log",
+    "automation": "K:\\Project\\Logs\\Automation\\automation.log",
+    "diagnostics": "K:\\Project\\Logs\\Diagnostics\\diagnostics.log"
+  },
+  "policies": {
+    "log_retention": "Conservative 5-generation startup rotation (<service>.log.<1..5>), permanent legacy log preservation, no unbounded accumulation",
+    "temp_policy": "Local disposable scratch subtrees under K:\\Project\\Temp (documented in README.txt), zero global env modifications, no production state"
+  },
+  "relocation_and_cleanliness": {
+    "old_logs_relocated": 18,
+    "new_scattered_runtime_files": 0,
+    "scattered_root_logs_remaining": 0
+  },
+  "runtime_verification": {
+    "session_ownership_preserved": true,
+    "session_json_location": "K:\\Project\\.openhands-local\\session.json",
+    "production_start": "PASS",
+    "all_ports_listening": [
+      8000,
+      8080,
+      18000,
+      18001,
+      18002
+    ],
+    "production_stop": "PASS",
+    "ports_released": true
+  },
+  "archive_candidates": {
+    "llama_cpp": "ARCHIVE_CANDIDATE_PENDING_REFERENCE_AUDIT",
+    "transcribe_build": "ARCHIVE_CANDIDATE_PENDING_REFERENCE_AUDIT"
+  },
+  "configuration_invariants": {
+    "models_moved": false,
+    "backends_moved": false,
+    "model_parameters_changed": false
+  },
+  "evidence_files": [
+    "stage_6c_reference_closure.json",
+    "log_inventory_before.json",
+    "runtime_path_map.json",
+    "production_log_diffs.txt",
+    "log_relocation_manifest.json",
+    "retention_policy.json",
+    "runtime_log_validation.json",
+    "cleanliness_audit.json",
+    "stage_6d_summary.json"
+  ],
+  "unresolved": null
+}

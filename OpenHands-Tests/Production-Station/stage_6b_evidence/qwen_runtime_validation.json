@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-09-06T06:50:46Z",
+  "stage": "STAGE_6B",
+  "conversation_id": "3065c3e9-e9b5-445d-8219-46f225803202",
+  "profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
+  "profile_name": "Qwen-Standalone",
+  "final_execution_status": "finished",
+  "target_file": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_6b_workspace\\smoke_test_qwen.txt",
+  "file_exists": true,
+  "file_content": "QWEN STAGE 6B VERIFIED K_DRIVE",
+  "content_matches": true,
+  "events_count": 14,
+  "runtime_process_evidence": {
+    "pid": 5576,
+    "command_line": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=3,p_min=0.0 --jinja --host 127.0.0.1 --port 5802 --temp 0.7 --top-p 0.8 --min-p 0.05",
+    "k_path_verified": true,
+    "d_path_absent": true
+  },
+  "qwen_production_validation": "PASS"
+}

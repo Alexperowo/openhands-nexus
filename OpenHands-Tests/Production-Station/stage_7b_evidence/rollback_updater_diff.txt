@@ -1,0 +1,52 @@
+--- a/scripts/rollback-ik-llama.ps1 (Stage 7A baseline)
++++ b/scripts/rollback-ik-llama.ps1 (Stage 7B closure)
+@@ -2,7 +2,8 @@
+ # Location: K:\Project\OpenHands-Update\scripts\rollback-ik-llama.ps1
+ 
+ param(
+-    [string]$BackupPath = ""
++    [string]$BackupPath = "",
++    [switch]$RestartPlatform
+ )
+ 
+ $ErrorActionPreference = "Stop"
+@@ -47,19 +48,28 @@
+ Fast-CopyDir $BackupPath $prodBinDir -Mirror
+ Log-Msg "      Restored production binaries from: $BackupPath" "SUCCESS"
+ 
+-# 3. Restart platform
+-Log-Msg "[3/4] Starting OpenHands Local..." "STEP"
+-& "K:\Project\.openhands-local\start.ps1"
+-Start-Sleep -Seconds 3
++# 3. Platform Restart (Conditional on -RestartPlatform; default: STOPPED)
++if ($RestartPlatform) {
++    Log-Msg "[3/4] Starting OpenHands Local (-RestartPlatform supplied)..." "STEP"
++    & "K:\Project\.openhands-local\start.ps1"
++    Start-Sleep -Seconds 3
+ 
+-# 4. Smoke test
+-Log-Msg "[4/4] Running smoke test on restored backend..." "STEP"
+-if (Test-HttpEndpoint "http://127.0.0.1:8080/v1/models") {
++    # 4. Smoke test
++    Log-Msg "[4/4] Running smoke test on restored backend..." "STEP"
++    if (Test-HttpEndpoint "http://127.0.0.1:8080/v1/models") {
++        Log-Msg "=====================================================================" "SUCCESS"
++        Log-Msg "   ROLLBACK SUCCESSFUL: ik_llama restored and active on port 8080" "SUCCESS"
++        Log-Msg "=====================================================================" "SUCCESS"
++        exit 0
++    } else {
++        Log-Msg "Restored backend not responding on port 8080!" "ERROR"
++        exit 1
++    }
++} else {
+     Log-Msg "=====================================================================" "SUCCESS"
+-    Log-Msg "   ROLLBACK SUCCESSFUL: ik_llama restored and active on port 8080" "SUCCESS"
++    Log-Msg "   ROLLBACK SUCCESSFUL: ik_llama restored to bin/ (Station STOPPED)" "SUCCESS"
++    Log-Msg "   To start platform explicitly, run START-OPENHANDS-LOCAL.cmd" "INFO"
+     Log-Msg "=====================================================================" "SUCCESS"
+     exit 0
+-} else {
+-    Log-Msg "Restored backend not responding on port 8080!" "ERROR"
+-    exit 1
+ }
++

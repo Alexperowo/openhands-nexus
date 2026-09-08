@@ -1,0 +1,18 @@
+﻿{
+    "owned_processes_terminated":  true,
+    "remaining_openhands_procs":  {
+
+                                  },
+    "foreign_process_id":  14236,
+    "vram_delta_mib":  0,
+    "foreign_process_still_alive":  true,
+    "active_station_ports":  [
+
+                             ],
+    "timestamp":  "2026-09-06T09:01:18.7709660+03:00",
+    "ports_released":  true,
+    "session_json_exists":  false,
+    "post_stop_vram_mib":  558,
+    "pre_start_vram_mib":  558,
+    "vram_returned_near_baseline":  true
+}

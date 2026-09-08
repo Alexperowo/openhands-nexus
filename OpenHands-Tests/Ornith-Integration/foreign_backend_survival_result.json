@@ -1,0 +1,8 @@
+{
+  "foreign_swap_pid": 14108,
+  "foreign_backend_pid": 12040,
+  "foreign_swap_alive": true,
+  "foreign_backend_alive": true,
+  "model_still_loaded": false,
+  "status": "PASS"
+}

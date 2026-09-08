@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-09-06T10:16:10.443587+00:00",
+  "tests": [
+    {
+      "test_name": "OPENHANDS_CHECKONLY_TEST",
+      "command": "update-openhands.ps1 -CheckOnly",
+      "exit_code": 0,
+      "passed": true,
+      "output_snippet": "K:\\Project\\Logs\\Updater\\update-openhands-20260906-131614.log\n[2026-09-06 13:16:14] [STEP] === OpenHands App Stack Updater (CheckOnly Mode) ===\n[2026-09-06 13:16:14] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 13:16:14] [INFO] Checking upstream npm & PyPI registries...\n[2026-09-06 13:16:16] [STEP] =====================================================================\n[2026-09-06 13:16:16] [STEP]                OPENHANDS APP-STACK VERSION MATRIX\n[2026-09-06 13:16:16] ["
+    },
+    {
+      "test_name": "OPENHANDS_DRYRUN_TEST",
+      "command": "update-openhands.ps1 -DryRun",
+      "exit_code": 0,
+      "passed": true,
+      "output_snippet": "K:\\Project\\Logs\\Updater\\update-openhands-20260906-131616.log\n[2026-09-06 13:16:16] [STEP] === OpenHands App Stack Updater (DryRun Simulation Mode) ===\n[2026-09-06 13:16:16] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 13:16:17] [INFO] [SIMULATION] 1. Station stop gate: VERIFIED (All production ports free)\n[2026-09-06 13:16:17] [INFO] [SIMULATION] 2. Upstream Canvas target: v1.16.0\n[2026-09-06 13:16:17] [INFO] [SIMULATION] 3. Would backup current installation to: K:\\P"
+    },
+    {
+      "test_name": "OPENHANDS_DEFAULT_INVOCATION_TEST",
+      "command": "update-openhands.ps1 (no arguments)",
+      "exit_code": 0,
+      "passed": true,
+      "output_snippet": "K:\\Project\\Logs\\Updater\\update-openhands-20260906-131617.log\n[2026-09-06 13:16:17] [INFO] No execution mode specified. Defaulting safely to -CheckOnly.\n[2026-09-06 13:16:18] [STEP] === OpenHands App Stack Updater (CheckOnly Mode) ===\n[2026-09-06 13:16:18] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 13:16:18] [INFO] Checking upstream npm & PyPI registries...\n[2026-09-06 13:16:19] [STEP] =====================================================================\n[2026-09-06"
+    }
+  ]
+}

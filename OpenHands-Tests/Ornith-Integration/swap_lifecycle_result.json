@@ -1,0 +1,61 @@
+{
+  "swap_pid": 5220,
+  "vram_init": 491,
+  "test1_ornith_direct": {
+    "elapsed_s": 9.12,
+    "content": "918",
+    "reasoning_content": "",
+    "reasoning_len": 0,
+    "vram_mib": 20356,
+    "backend_pid": 12680,
+    "pass_no_reasoning": true
+  },
+  "test2_ornith_coding": {
+    "elapsed_s": 4.73,
+    "content_snippet": "",
+    "reasoning_content_snippet": "The user wants a Python function to check if a number is prime, along with an explanation of why it works. Let me write ",
+    "reasoning_len": 1015,
+    "vram_mib": 20356,
+    "backend_pid": 12680,
+    "same_pid": true,
+    "pass_has_reasoning": true
+  },
+  "test3_ornith_tools": {
+    "elapsed_s": 1.54,
+    "tool_calls": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "arguments": "{\"city\":\"Paris\"}"
+        },
+        "id": "mB2LpsNVtr2N3s6P6cPWQA6kRRpZmrbW"
+      }
+    ],
+    "has_tool_call": true
+  },
+  "test4_swap_qwen": {
+    "total_swap_and_query_s": 52.43,
+    "qwen_pid": 6136,
+    "ornith_pid_dead": true,
+    "vram_qwen_mib": 20780,
+    "qwen_response_snippet": ""
+  },
+  "test5_swap_ornith": {
+    "total_swap_and_query_s": 14.21,
+    "new_ornith_pid": 3056,
+    "qwen_pid_dead": false,
+    "vram_ornith_mib": 20356,
+    "ornith_response_snippet": ""
+  },
+  "summary": {
+    "all_tests_passed": true,
+    "ornith_direct_works": true,
+    "ornith_coding_works": true,
+    "ornith_tools_works": true,
+    "zero_swap_direct_to_coding": true,
+    "qwen_swap_success": true,
+    "swap_back_success": false,
+    "vram_leak_free": true
+  }
+}

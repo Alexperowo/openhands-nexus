@@ -1,0 +1,132 @@
+{
+  "qwen_routing": {
+    "success": true,
+    "latency_sec": 11.77,
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "The user is asking me to reply with a specific string. This appears to be a simple test or"
+          }
+        }
+      ],
+      "created": 1788696260,
+      "model": "qwen",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 20,
+        "prompt_tokens": 71,
+        "total_tokens": 91,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "id": "chatcmpl-85BYmvZwoQPzdX2Tq14IBit64nmoljIS",
+      "timings": {
+        "prompt_n": 71,
+        "prompt_ms": 660.426,
+        "prompt_per_token_ms": 9.301774647887324,
+        "prompt_per_second": 107.50636710244599,
+        "predicted_n": 20,
+        "predicted_ms": 672.547,
+        "predicted_per_token_ms": 33.62735,
+        "predicted_per_second": 29.73769862924078,
+        "n_ctx": 98304,
+        "n_past": 90,
+        "draft_n": 19,
+        "draft_n_accepted": 11,
+        "draft_by_depth": [
+          {
+            "depth": 1,
+            "draft_n": 7,
+            "draft_n_accepted": 6
+          },
+          {
+            "depth": 2,
+            "draft_n": 6,
+            "draft_n_accepted": 3
+          },
+          {
+            "depth": 3,
+            "draft_n": 6,
+            "draft_n_accepted": 2
+          }
+        ]
+      }
+    },
+    "error": null,
+    "backend_processes": [
+      {
+        "pid": 8804,
+        "name": "llama-server.exe",
+        "exe": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+        "cmdline": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf --mmproj K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=3,p_min=0.0 --jinja --host 127.0.0.1 --port 5802 --temp 0.7 --top-p 0.8 --min-p 0.05"
+      }
+    ]
+  },
+  "ornith_routing": {
+    "success": true,
+    "latency_sec": 13.67,
+    "response": {
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "ORNITH",
+            "reasoning_content": "The user wants me to reply with exactly 'ORNITH_IK_OK'.\n"
+          }
+        }
+      ],
+      "created": 1788696274,
+      "model": "ornith",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 20,
+        "prompt_tokens": 32,
+        "total_tokens": 52,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "id": "chatcmpl-wy4QW3I5fc4c0aZ1sr2sYLI26I3cBnmr",
+      "timings": {
+        "prompt_n": 32,
+        "prompt_ms": 488.188,
+        "prompt_per_token_ms": 15.255875,
+        "prompt_per_second": 65.54851819381058,
+        "predicted_n": 20,
+        "predicted_ms": 290.986,
+        "predicted_per_token_ms": 14.549299999999999,
+        "predicted_per_second": 68.73182902270213,
+        "n_ctx": 98304,
+        "n_past": 51,
+        "draft_n": 9,
+        "draft_n_accepted": 9,
+        "draft_by_depth": [
+          {
+            "depth": 1,
+            "draft_n": 9,
+            "draft_n_accepted": 9
+          }
+        ]
+      }
+    },
+    "error": null,
+    "backend_processes": [
+      {
+        "pid": 5108,
+        "name": "llama-server.exe",
+        "exe": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+        "cmdline": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75 --jinja --host 127.0.0.1 --port 5801 --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0"
+      }
+    ]
+  },
+  "verdict": "PASS",
+  "timestamp": "2026-09-06T12:04:34.612292+00:00"
+}

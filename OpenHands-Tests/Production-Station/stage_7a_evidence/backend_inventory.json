@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-09-06T12:26:27.831948",
+  "ik_llama": {
+    "production_path": "K:/Project/ik_llama/bin/llama-server.exe",
+    "raw_version": "version: 1 (3c58ae3)",
+    "build": "MSVC 19.44.35228.0 for x64",
+    "commit": "3c58ae373a0081c884099f435fb16ca720852bf7",
+    "short_commit": "3c58ae3",
+    "sha256": "D8A860D7D608D563239C56EDA69912B771A2E26317EBB58C3A6413BAAE29320A",
+    "mtp_support": "Integrated recurrent MTP (custom/forked ik_llama build)",
+    "models_served": [
+      "Qwen3.8 (primary)",
+      "Ornith (delegated)"
+    ]
+  },
+  "llama_mainline": {
+    "production_path": "K:/Project/llama-mainline/b10816/llama-server.exe",
+    "raw_version": "version: 0.4.0-dev (build 10816, commit 427291b5b)",
+    "build": "10816",
+    "tag": "b10816",
+    "commit": "427291b5b34cd914a31b3fd3b61a68f6184f4b9f",
+    "compiler": "Clang 20.1.8 for Windows x86_64",
+    "cuda_build": "Windows x64 CUDA 12.4",
+    "download_source": "https://github.com/ggml-org/llama.cpp/releases/download/b10816/llama-b10816-bin-win-cuda-12.4-x64.zip",
+    "sha256": "907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA",
+    "mtp_support": "Official draft-mtp via external draft model (-md ...Q4_K_M.gguf)",
+    "models_served": [
+      "Qwen3-Next-80B (heavy/escalation)"
+    ]
+  },
+  "llama_swap": {
+    "production_path": "K:/Project/llama-swap/bin/llama-swap.exe",
+    "raw_version": "version: v252 (e31a1ad), built at 2026-08-31T16:54:46Z",
+    "version": "v252",
+    "commit": "e31a1ad",
+    "build_time": "2026-08-31T16:54:46Z",
+    "sha256": "2C9E252256D5B418EE103295215F3A92583C5A48E739675920E9522A54D4CA4C",
+    "role": "Smart port router & dynamic model evictor/loader on port 8080"
+  }
+}

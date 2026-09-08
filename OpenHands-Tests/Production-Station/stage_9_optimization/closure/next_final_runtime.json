@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-09-06T16:26:00.869631+00:00",
+  "model": "next",
+  "backend": "llama-mainline build 10821 (commit 971595d66)",
+  "backend_verified": true,
+  "canonical_main_model_verified": true,
+  "canonical_external_mtp_verified": true,
+  "http_status": 200,
+  "elapsed_s": 856.95,
+  "mtp_active": true,
+  "mtp_drafted_tokens": 45,
+  "mtp_accepted_tokens": 29,
+  "mtp_acceptance_rate": 0.6444,
+  "peak_vram_mib": 20956,
+  "vram_headroom_mib": 1572,
+  "tok_s": 18.28,
+  "response_content": "",
+  "reasoning_content": "Okay, the user is asking if 29 is a prime number and wants a brief one-sentence reply. Let me think.\n\nFirst, I need to recall what a prime number is. A prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself. So for 29, I need to check if it has any divisors besides 1 and 29.\n\nLet me test divisibility. Start with"
+}

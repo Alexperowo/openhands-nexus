@@ -1,0 +1,1968 @@
+{
+  "timestamp": "2026-09-06T12:06:28.522756",
+  "stage": "STAGE_6D",
+  "total_files": 279,
+  "by_category": {
+    "ACTIVE_RUNTIME_LOG": 9,
+    "HISTORICAL_LOG": 263,
+    "TEMP_RUNTIME": 0,
+    "SESSION_STATE": 1,
+    "EVIDENCE": 6,
+    "UNKNOWN": 0
+  },
+  "files": [
+    {
+      "relative_path": "llama.log",
+      "full_path": "K:\\Project\\llama.log",
+      "size_bytes": 596,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "modified_time": "2026-09-06T11:40:46.773788"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\agent-canvas.err.log",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\agent-canvas.err.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T08:31:53.562705"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\agent-canvas.log",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\agent-canvas.log",
+      "size_bytes": 37265,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "modified_time": "2026-09-06T11:32:29.761436"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\agent-canvas.log.old",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\agent-canvas.log.old",
+      "size_bytes": 37343,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-06T10:59:38.284067"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\launcher.log",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\launcher.log",
+      "size_bytes": 1443,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "modified_time": "2026-09-06T11:32:31.416783"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\launcher.log.old",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\launcher.log.old",
+      "size_bytes": 1444,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-06T10:59:39.201391"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\llama-server.err.log",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\llama-server.err.log",
+      "size_bytes": 17163,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T08:31:45.109718"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\llama-server.log",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\llama-server.log",
+      "size_bytes": 29554,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "modified_time": "2026-09-03T19:30:10.196002"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\llama-server.log.old",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\llama-server.log.old",
+      "size_bytes": 18840,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:02:58.466139"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\llama-swap.log",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\llama-swap.log",
+      "size_bytes": 25003,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "modified_time": "2026-09-06T11:55:45.347578"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\llama-swap.log.old",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\llama-swap.log.old",
+      "size_bytes": 22245,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-06T11:06:56.787431"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\voice-bridge.err.log",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\voice-bridge.err.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T08:31:48.669841"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\voice-bridge.log",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\voice-bridge.log",
+      "size_bytes": 519,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "modified_time": "2026-09-06T11:55:45.961598"
+    },
+    {
+      "relative_path": ".openhands-local\\logs\\voice-bridge.log.old",
+      "full_path": "K:\\Project\\.openhands-local\\logs\\voice-bridge.log.old",
+      "size_bytes": 519,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-06T11:06:57.384649"
+    },
+    {
+      "relative_path": "ik_llama\\bin\\llama.log",
+      "full_path": "K:\\Project\\ik_llama\\bin\\llama.log",
+      "size_bytes": 142,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T13:46:38.632165"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-bert-bge.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-bert-bge.gguf.out",
+      "size_bytes": 1679,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:19.052153"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-command-r.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-command-r.gguf.out",
+      "size_bytes": 1946,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:19.352758"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-deepseek-coder.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-deepseek-coder.gguf.out",
+      "size_bytes": 2141,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:19.399985"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-deepseek-llm.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-deepseek-llm.gguf.out",
+      "size_bytes": 1968,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:19.510722"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-falcon.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-falcon.gguf.out",
+      "size_bytes": 2048,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:19.574889"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-gpt-2.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-gpt-2.gguf.out",
+      "size_bytes": 2192,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:19.622607"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-llama-bpe.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-llama-bpe.gguf.out",
+      "size_bytes": 1782,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:19.892338"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-llama-spm.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-llama-spm.gguf.out",
+      "size_bytes": 2729,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:19.923875"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-mpt.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-mpt.gguf.out",
+      "size_bytes": 1939,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:19.971669"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-phi-3.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-phi-3.gguf.out",
+      "size_bytes": 2729,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:20.003698"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-qwen2.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-qwen2.gguf.out",
+      "size_bytes": 1808,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:20.162266"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-refact.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-refact.gguf.out",
+      "size_bytes": 1964,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:20.209947"
+    },
+    {
+      "relative_path": "ik_llama\\src\\models\\ggml-vocab-starcoder.gguf.out",
+      "full_path": "K:\\Project\\ik_llama\\src\\models\\ggml-vocab-starcoder.gguf.out",
+      "size_bytes": 1966,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T12:37:20.257626"
+    },
+    {
+      "relative_path": "llama-swap\\llama.log",
+      "full_path": "K:\\Project\\llama-swap\\llama.log",
+      "size_bytes": 738,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-06T08:40:40.926635"
+    },
+    {
+      "relative_path": "llama-swap\\session.json",
+      "full_path": "K:\\Project\\llama-swap\\session.json",
+      "size_bytes": 68,
+      "category": "SESSION_STATE",
+      "modified_time": "2026-09-05T17:11:29.053612"
+    },
+    {
+      "relative_path": "llama-swap\\logs\\diag_next_after_qwen.log",
+      "full_path": "K:\\Project\\llama-swap\\logs\\diag_next_after_qwen.log",
+      "size_bytes": 876,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "modified_time": "2026-09-05T13:02:31.052001"
+    },
+    {
+      "relative_path": "llama-swap\\logs\\llama-swap.log",
+      "full_path": "K:\\Project\\llama-swap\\logs\\llama-swap.log",
+      "size_bytes": 640542,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "modified_time": "2026-09-06T08:54:14.646032"
+    },
+    {
+      "relative_path": "llama-swap\\logs\\next_direct_test.log",
+      "full_path": "K:\\Project\\llama-swap\\logs\\next_direct_test.log",
+      "size_bytes": 876,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "modified_time": "2026-09-05T11:08:29.079079"
+    },
+    {
+      "relative_path": "LLM-tests\\llama.log",
+      "full_path": "K:\\Project\\LLM-tests\\llama.log",
+      "size_bytes": 1504,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T08:04:12.128121"
+    },
+    {
+      "relative_path": "LLM-tests\\main.log",
+      "full_path": "K:\\Project\\LLM-tests\\main.log",
+      "size_bytes": 16429,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T07:23:03.680042"
+    },
+    {
+      "relative_path": "LLM-tests\\benchmark-results\\01-mainline-no-mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\benchmark-results\\01-mainline-no-mtp.log",
+      "size_bytes": 4883,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T14:58:32.919382"
+    },
+    {
+      "relative_path": "LLM-tests\\benchmark-results\\02-mainline-mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\benchmark-results\\02-mainline-mtp.log",
+      "size_bytes": 3677,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T15:28:53.609259"
+    },
+    {
+      "relative_path": "LLM-tests\\benchmark-results\\03-ik-no-mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\benchmark-results\\03-ik-no-mtp.log",
+      "size_bytes": 34099,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T15:33:26.968646"
+    },
+    {
+      "relative_path": "LLM-tests\\benchmark-results\\04-ik-mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\benchmark-results\\04-ik-mtp.log",
+      "size_bytes": 34811,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T15:38:33.647566"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\llama.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\llama.log",
+      "size_bytes": 1504,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T08:17:03.846862"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_candidate_n1_p05.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_candidate_n1_p05.err.log",
+      "size_bytes": 28985,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:53:01.605129"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_candidate_n1_p05.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_candidate_n1_p05.log",
+      "size_bytes": 9240,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:53:01.605129"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_candidate_rep_n1_p05.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_candidate_rep_n1_p05.err.log",
+      "size_bytes": 28998,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:57:10.543247"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_candidate_rep_n1_p05.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_candidate_rep_n1_p05.log",
+      "size_bytes": 9247,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:57:10.543247"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_production_n1_p075.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_production_n1_p075.err.log",
+      "size_bytes": 28997,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:50:57.043767"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_production_n1_p075.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_production_n1_p075.log",
+      "size_bytes": 9241,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:50:57.043767"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_production_rep_n1_p075.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_production_rep_n1_p075.err.log",
+      "size_bytes": 28995,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:55:06.091769"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_production_rep_n1_p075.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith-1.5_96k_production_rep_n1_p075.log",
+      "size_bytes": 9247,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:55:06.091769"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p05.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p05.err.log",
+      "size_bytes": 18273,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:43:54.615750"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p05.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p05.log",
+      "size_bytes": 3539,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:43:54.615750"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p06.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p06.err.log",
+      "size_bytes": 16832,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:44:10.864800"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p06.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p06.log",
+      "size_bytes": 2748,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:44:10.864800"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p065.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p065.err.log",
+      "size_bytes": 16827,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:44:26.748449"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p065.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p065.log",
+      "size_bytes": 2746,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:44:26.748449"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p07.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p07.err.log",
+      "size_bytes": 16834,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:44:43.769356"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p07.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p07.log",
+      "size_bytes": 2747,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:44:43.769356"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p075.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p075.err.log",
+      "size_bytes": 16830,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:44:59.947977"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p075.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p075.log",
+      "size_bytes": 2746,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:44:59.947977"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p08.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p08.err.log",
+      "size_bytes": 16832,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:45:15.823423"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p08.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p08.log",
+      "size_bytes": 2746,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:45:15.823423"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p085.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p085.err.log",
+      "size_bytes": 16831,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:45:32.230716"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p085.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p085.log",
+      "size_bytes": 2737,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:45:32.230716"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p09.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p09.err.log",
+      "size_bytes": 16827,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:45:48.207841"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p09.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\ornith_short_n1_p09.log",
+      "size_bytes": 2735,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:45:48.207841"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_candidate_n3_p02.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_candidate_n3_p02.err.log",
+      "size_bytes": 30483,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T08:07:14.274139"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_candidate_n3_p02.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_candidate_n3_p02.log",
+      "size_bytes": 9183,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T08:07:14.274139"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_candidate_rep_n3_p02.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_candidate_rep_n3_p02.err.log",
+      "size_bytes": 30483,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T08:17:17.486389"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_candidate_rep_n3_p02.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_candidate_rep_n3_p02.log",
+      "size_bytes": 9242,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T08:17:17.486389"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_production_n3_p00.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_production_n3_p00.err.log",
+      "size_bytes": 30351,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T08:02:12.409979"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_production_n3_p00.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_production_n3_p00.log",
+      "size_bytes": 9178,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T08:02:12.409979"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_production_rep_n3_p00.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_production_rep_n3_p00.err.log",
+      "size_bytes": 30352,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T08:12:15.680286"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_production_rep_n3_p00.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen3.8-27b_96k_production_rep_n3_p00.log",
+      "size_bytes": 9247,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T08:12:15.680286"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p00.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p00.err.log",
+      "size_bytes": 19923,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:46:13.441343"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p00.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p00.log",
+      "size_bytes": 3522,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:46:13.441343"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p005.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p005.err.log",
+      "size_bytes": 18181,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:46:36.010149"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p005.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p005.log",
+      "size_bytes": 2736,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:46:36.010149"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p01.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p01.err.log",
+      "size_bytes": 18180,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:46:58.595364"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p01.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p01.log",
+      "size_bytes": 2748,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:46:58.595364"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p02.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p02.err.log",
+      "size_bytes": 18256,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:47:20.629582"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p02.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p02.log",
+      "size_bytes": 2746,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:47:20.629582"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p03.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p03.err.log",
+      "size_bytes": 18332,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:47:42.720984"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p03.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n3_p03.log",
+      "size_bytes": 2736,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:47:42.720984"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p03.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p03.err.log",
+      "size_bytes": 18333,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:48:05.498692"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p03.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p03.log",
+      "size_bytes": 2748,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:48:05.498692"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p04.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p04.err.log",
+      "size_bytes": 18256,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:48:28.829922"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p04.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p04.log",
+      "size_bytes": 2748,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:48:28.829922"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p05.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p05.err.log",
+      "size_bytes": 18180,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:48:52.107218"
+    },
+    {
+      "relative_path": "LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p05.log",
+      "full_path": "K:\\Project\\LLM-tests\\Fine-MTP-Tuning\\logs\\qwen_short_n4_p05.log",
+      "size_bytes": 2747,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T07:48:52.112512"
+    },
+    {
+      "relative_path": "LLM-tests\\Heavy-Model-Comparison\\qwen80b_final.log",
+      "full_path": "K:\\Project\\LLM-tests\\Heavy-Model-Comparison\\qwen80b_final.log",
+      "size_bytes": 754,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T22:40:39.349146"
+    },
+    {
+      "relative_path": "LLM-tests\\Heavy-Model-Comparison\\qwen80b_tasks.log",
+      "full_path": "K:\\Project\\LLM-tests\\Heavy-Model-Comparison\\qwen80b_tasks.log",
+      "size_bytes": 2212,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T22:49:38.432474"
+    },
+    {
+      "relative_path": "LLM-tests\\Heavy-Model-Comparison\\remaining.log",
+      "full_path": "K:\\Project\\LLM-tests\\Heavy-Model-Comparison\\remaining.log",
+      "size_bytes": 5306,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T22:15:56.997037"
+    },
+    {
+      "relative_path": "LLM-tests\\Heavy-Model-Comparison\\tail.log",
+      "full_path": "K:\\Project\\LLM-tests\\Heavy-Model-Comparison\\tail.log",
+      "size_bytes": 2910,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T22:30:38.287564"
+    },
+    {
+      "relative_path": "LLM-tests\\Heavy-Model-Comparison\\tournament.log",
+      "full_path": "K:\\Project\\LLM-tests\\Heavy-Model-Comparison\\tournament.log",
+      "size_bytes": 6474,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T21:27:18.865680"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_11.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_11.err.log",
+      "size_bytes": 4132,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:30:19.945155"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_11.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_11.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:28:16.414541"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_13.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_13.err.log",
+      "size_bytes": 4132,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:32:28.454786"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_13.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_13.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:30:30.188896"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_15.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_15.err.log",
+      "size_bytes": 4023,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:34:31.958110"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_15.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_15.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:32:38.687761"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_17.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_17.err.log",
+      "size_bytes": 4023,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:36:31.874107"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_17.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_17.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:34:42.205077"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_8.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_8.err.log",
+      "size_bytes": 4132,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:28:06.265726"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_8.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\coarse_ngl_8.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:25:16.037471"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_bf16_n3.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_bf16_n3.err.log",
+      "size_bytes": 4721,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:57:12.852477"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_bf16_n3.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_bf16_n3.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:54:59.437762"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n10.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n10.err.log",
+      "size_bytes": 5586,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:51:00.983763"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n10.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n10.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:47:59.754859"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n14.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n14.err.log",
+      "size_bytes": 6234,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:54:48.600630"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n14.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n14.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:51:11.681651"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n3.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n3.err.log",
+      "size_bytes": 4829,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:42:46.317494"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n3.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n3.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:40:42.682106"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n5.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n5.err.log",
+      "size_bytes": 5045,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:45:10.964258"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n5.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n5.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:42:56.987004"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n7.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n7.err.log",
+      "size_bytes": 5261,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:47:49.009729"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n7.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\dflash_q4_n7.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:45:21.644083"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\fine_ngl_16.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\fine_ngl_16.err.log",
+      "size_bytes": 3914,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:38:33.748787"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\fine_ngl_16.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\fine_ngl_16.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:36:42.086111"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\fine_ngl_18.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\fine_ngl_18.err.log",
+      "size_bytes": 3914,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:40:32.418895"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\fine_ngl_18.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\fine_ngl_18.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:38:44.030233"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\laguna_96k_target.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\laguna_96k_target.err.log",
+      "size_bytes": 11740,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:08:48.555519"
+    },
+    {
+      "relative_path": "LLM-tests\\Laguna-S-2.1\\logs\\laguna_96k_target.log",
+      "full_path": "K:\\Project\\LLM-tests\\Laguna-S-2.1\\logs\\laguna_96k_target.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T19:57:23.732185"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\baseline_no_mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\baseline_no_mtp.log",
+      "size_bytes": 34156,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T15:49:55.028219"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n1_heads0.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n1_heads0.log",
+      "size_bytes": 34751,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:51:14.025846"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n1_heads2.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n1_heads2.log",
+      "size_bytes": 34751,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:56:18.390831"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n1_p00.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n1_p00.log",
+      "size_bytes": 34808,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T15:55:00.434517"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n2_p00.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n2_p00.log",
+      "size_bytes": 34827,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:00:09.195055"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n2_p05.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n2_p05.log",
+      "size_bytes": 34809,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:05:19.586327"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n2_p07.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n2_p07.log",
+      "size_bytes": 34752,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:10:31.738037"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n3_p00.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n3_p00.log",
+      "size_bytes": 35038,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:15:31.339719"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n3_p00_repeat.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n3_p00_repeat.log",
+      "size_bytes": 34980,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T18:11:40.436106"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n3_p05.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n3_p05.log",
+      "size_bytes": 34829,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:20:36.039275"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n3_p07.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n3_p07.log",
+      "size_bytes": 34998,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:25:56.577630"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n4_p00.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n4_p00.log",
+      "size_bytes": 35132,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:31:00.453110"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n4_p05.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n4_p05.log",
+      "size_bytes": 34753,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:36:02.940912"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n4_p05_repeat.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n4_p05_repeat.log",
+      "size_bytes": 34751,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T18:16:32.186769"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\mtp_n4_p07.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\mtp_n4_p07.log",
+      "size_bytes": 34752,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:41:03.702830"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\ngram_mod_n16.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\ngram_mod_n16.log",
+      "size_bytes": 35054,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T17:10:08.910462"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\ngram_mod_n32.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\ngram_mod_n32.log",
+      "size_bytes": 35060,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T17:15:26.839006"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\ngram_simple_n16.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\ngram_simple_n16.log",
+      "size_bytes": 34426,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T17:00:54.447822"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\ngram_simple_n32.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\ngram_simple_n32.log",
+      "size_bytes": 34426,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T17:05:34.709692"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\spec_autotune_run.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\spec_autotune_run.log",
+      "size_bytes": 34835,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T16:46:09.054650"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\twostage_ngram_mod_mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\twostage_ngram_mod_mtp.log",
+      "size_bytes": 35371,
+      "category": "EVIDENCE",
+      "modified_time": "2026-09-02T17:44:45.054291"
+    },
+    {
+      "relative_path": "LLM-tests\\optimization\\twostage_ngram_simp_mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\optimization\\twostage_ngram_simp_mtp.log",
+      "size_bytes": 35194,
+      "category": "EVIDENCE",
+      "modified_time": "2026-09-02T18:06:48.613338"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\llama.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\llama.log",
+      "size_bytes": 1504,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T21:10:37.384932"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-no-mtp.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-no-mtp.err.log",
+      "size_bytes": 24784,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:13:52.356360"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-no-mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-no-mtp.log",
+      "size_bytes": 7798,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:13:52.357912"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-top1-rep.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-top1-rep.err.log",
+      "size_bytes": 24915,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:19:50.382206"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-top1-rep.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-top1-rep.log",
+      "size_bytes": 7529,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:19:50.382206"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-top1.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-top1.err.log",
+      "size_bytes": 25069,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:15:51.607321"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-top1.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-top1.log",
+      "size_bytes": 7800,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:15:51.607321"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-top2-rep.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-top2-rep.err.log",
+      "size_bytes": 25203,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:21:50.773296"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-top2-rep.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-top2-rep.log",
+      "size_bytes": 7530,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:21:50.768084"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-top2.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-top2.err.log",
+      "size_bytes": 25365,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:17:51.069692"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\96k-top2.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\96k-top2.log",
+      "size_bytes": 7800,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:17:51.070727"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\baseline-no-mtp.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\baseline-no-mtp.err.log",
+      "size_bytes": 17722,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:10:00.740271"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\baseline-no-mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\baseline-no-mtp.log",
+      "size_bytes": 3522,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:10:00.740271"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\calib.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\calib.err.log",
+      "size_bytes": 15869,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:12:06.253340"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\calib.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\calib.log",
+      "size_bytes": 2352,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:12:08.360518"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-author.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-author.err.log",
+      "size_bytes": 17122,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:10:37.805774"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-author.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-author.log",
+      "size_bytes": 2915,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:10:37.806815"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n1-p075.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n1-p075.err.log",
+      "size_bytes": 16830,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:10:19.174880"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n1-p075.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n1-p075.log",
+      "size_bytes": 2905,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:10:19.175917"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n2-p0.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n2-p0.err.log",
+      "size_bytes": 16908,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:11:34.969690"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n2-p0.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n2-p0.log",
+      "size_bytes": 2917,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:11:34.969690"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n2-p075.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n2-p075.err.log",
+      "size_bytes": 16832,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:10:56.929762"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n2-p075.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n2-p075.log",
+      "size_bytes": 2917,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:10:56.930796"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n3-p0.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n3-p0.err.log",
+      "size_bytes": 16908,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:11:53.730448"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n3-p0.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n3-p0.log",
+      "size_bytes": 2917,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:11:53.739356"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n3-p075.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n3-p075.err.log",
+      "size_bytes": 16831,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:11:15.912134"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\mtp-n3-p075.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\mtp-n3-p075.log",
+      "size_bytes": 2905,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:11:15.913200"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\reuse_MTP_N1_P075.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\reuse_MTP_N1_P075.err.log",
+      "size_bytes": 27747,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T21:10:42.993387"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\reuse_MTP_N1_P075.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\reuse_MTP_N1_P075.log",
+      "size_bytes": 9073,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T21:10:43.009188"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\reuse_MTP_OFF.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\reuse_MTP_OFF.err.log",
+      "size_bytes": 27617,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T21:08:29.982805"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\reuse_MTP_OFF.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\reuse_MTP_OFF.log",
+      "size_bytes": 9075,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T21:08:29.982805"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\smoke.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\smoke.err.log",
+      "size_bytes": 16506,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:09:43.058193"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\smoke.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\smoke.log",
+      "size_bytes": 2914,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:09:43.058193"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\smoke_init.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\smoke_init.err.log",
+      "size_bytes": 13614,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:55:32.695945"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\smoke_init.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\smoke_init.log",
+      "size_bytes": 487,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:55:31.541100"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\smoke_test.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\smoke_test.err.log",
+      "size_bytes": 16505,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:03:02.322314"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\smoke_test.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\smoke_test.log",
+      "size_bytes": 2576,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:03:02.323348"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\smoke_tmp.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\smoke_tmp.err.log",
+      "size_bytes": 16496,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:03:18.062778"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\smoke_tmp.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\smoke_tmp.log",
+      "size_bytes": 2745,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:03:18.063807"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\test_96k_alloc.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\test_96k_alloc.err.log",
+      "size_bytes": 15861,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:03:33.847601"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\test_96k_alloc.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\test_96k_alloc.log",
+      "size_bytes": 1842,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:03:33.883817"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\test_arg_pass.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\test_arg_pass.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:05:36.456141"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\test_mmproj.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\test_mmproj.err.log",
+      "size_bytes": 17491,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:04:50.730205"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\test_mmproj.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\test_mmproj.log",
+      "size_bytes": 4704,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:04:51.237397"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\vision-best-mtp.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\vision-best-mtp.err.log",
+      "size_bytes": 18558,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:22:49.098080"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\vision-best-mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\vision-best-mtp.log",
+      "size_bytes": 3858,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:22:49.098080"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\vision-no-mtp.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\vision-no-mtp.err.log",
+      "size_bytes": 18233,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:22:18.900144"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\vision-no-mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\vision-no-mtp.log",
+      "size_bytes": 3702,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:22:18.900144"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\vision_test_16k.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\vision_test_16k.err.log",
+      "size_bytes": 18343,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:23:24.349401"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\vision_test_16k.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\vision_test_16k.log",
+      "size_bytes": 3412,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:23:24.350459"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\vision_test_mtp.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\vision_test_mtp.err.log",
+      "size_bytes": 18665,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:23:57.320795"
+    },
+    {
+      "relative_path": "LLM-tests\\Ornith-1.5\\logs\\vision_test_mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\Ornith-1.5\\logs\\vision_test_mtp.log",
+      "size_bytes": 3579,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T20:23:57.320795"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\llama.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\llama.log",
+      "size_bytes": 1504,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T14:06:25.881738"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\agent_and_reasoning.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\agent_and_reasoning.err.log",
+      "size_bytes": 23664,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:45:44.131382"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\agent_and_reasoning.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\agent_and_reasoning.log",
+      "size_bytes": 6146,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:45:44.131382"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\agent_eval.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\agent_eval.err.log",
+      "size_bytes": 12549,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:19:42.716279"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\agent_eval.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\agent_eval.log",
+      "size_bytes": 485,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:18:27.820106"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_12.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_12.err.log",
+      "size_bytes": 12279,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T12:41:27.120187"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_12.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_12.log",
+      "size_bytes": 485,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T12:41:26.203873"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_16.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_16.err.log",
+      "size_bytes": 12279,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T12:51:42.215146"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_16.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_16.log",
+      "size_bytes": 487,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T12:51:41.547391"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_18.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_18.err.log",
+      "size_bytes": 16388,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T12:59:54.868577"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_18.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_18.log",
+      "size_bytes": 4365,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T12:59:54.868577"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_20.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_20.err.log",
+      "size_bytes": 16389,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:01:36.824330"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_20.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\coarse_ngl_20.log",
+      "size_bytes": 4024,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:01:36.824330"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\fine_ngl_21.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\fine_ngl_21.err.log",
+      "size_bytes": 16386,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:03:16.726706"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\fine_ngl_21.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\fine_ngl_21.log",
+      "size_bytes": 4026,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:03:16.726706"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\fine_ngl_22.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\fine_ngl_22.err.log",
+      "size_bytes": 16391,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:05:04.572134"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\fine_ngl_22.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\fine_ngl_22.log",
+      "size_bytes": 4194,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:05:04.572134"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\placement_fit.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\placement_fit.err.log",
+      "size_bytes": 21238,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:06:59.374351"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\placement_fit.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\placement_fit.log",
+      "size_bytes": 485,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:05:13.552837"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\reasoning_test.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\reasoning_test.err.log",
+      "size_bytes": 12575,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:18:24.265133"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\reasoning_test.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\reasoning_test.log",
+      "size_bytes": 485,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:07:34.071819"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\smoke_16k.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\smoke_16k.err.log",
+      "size_bytes": 16682,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T10:35:32.476070"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\smoke_16k.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\smoke_16k.log",
+      "size_bytes": 4294,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T10:35:32.476070"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\target_96k.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\target_96k.err.log",
+      "size_bytes": 20987,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T14:06:49.046541"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\target_96k.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\target_96k.log",
+      "size_bytes": 7174,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T14:06:49.046541"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\vision_test.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\vision_test.err.log",
+      "size_bytes": 16312,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:46:39.601053"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen122B-LynnStyle\\logs\\vision_test.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen122B-LynnStyle\\logs\\vision_test.log",
+      "size_bytes": 5011,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T13:46:39.601053"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\llama.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\llama.log",
+      "size_bytes": 598,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:32:09.051954"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_18.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_18.err.log",
+      "size_bytes": 17472,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:24:23.371831"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_18.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_18.log",
+      "size_bytes": 3858,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:24:23.371831"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_22.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_22.err.log",
+      "size_bytes": 17469,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:25:05.864098"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_22.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_22.log",
+      "size_bytes": 3687,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:25:05.864098"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_25.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_25.err.log",
+      "size_bytes": 17468,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:25:45.674192"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_25.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_25.log",
+      "size_bytes": 3687,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:25:45.674192"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_28.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_28.err.log",
+      "size_bytes": 17470,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:26:24.555293"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_28.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_28.log",
+      "size_bytes": 3685,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:26:24.555293"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_30.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_30.err.log",
+      "size_bytes": 17469,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:27:04.325528"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_30.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\coarse_ngl_30.log",
+      "size_bytes": 3857,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:27:04.325528"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\fine_ngl_29.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\fine_ngl_29.err.log",
+      "size_bytes": 17471,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:27:42.987023"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\fine_ngl_29.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\fine_ngl_29.log",
+      "size_bytes": 3706,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:27:42.987023"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\fine_ngl_31.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\fine_ngl_31.err.log",
+      "size_bytes": 17470,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:28:32.362196"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\fine_ngl_31.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\fine_ngl_31.log",
+      "size_bytes": 3856,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:28:32.362196"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\inspect.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\inspect.err.log",
+      "size_bytes": 13362,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:09:19.260918"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\qwen80b_96k_target.err.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\qwen80b_96k_target.err.log",
+      "size_bytes": 22120,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:32:15.307022"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-80B\\logs\\qwen80b_96k_target.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-80B\\logs\\qwen80b_96k_target.log",
+      "size_bytes": 6126,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T20:32:15.307022"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Final-Gate\\logs\\probe_mtp.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Final-Gate\\logs\\probe_mtp.log",
+      "size_bytes": 28515,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T07:26:45.071682"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Final-Gate\\logs\\probe_mtp_q6.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Final-Gate\\logs\\probe_mtp_q6.log",
+      "size_bytes": 28449,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T07:27:42.143850"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Final-Gate\\logs\\quality_next80_server.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Final-Gate\\logs\\quality_next80_server.log",
+      "size_bytes": 29736,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T07:59:57.943882"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Final-Gate\\logs\\quality_qwen27_server.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Final-Gate\\logs\\quality_qwen27_server.log",
+      "size_bytes": 28400,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T08:06:20.279563"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Final-Gate\\logs\\reasoning_server.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Final-Gate\\logs\\reasoning_server.log",
+      "size_bytes": 30807,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T07:46:09.361163"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\ornith_96k_diag.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\ornith_96k_diag.log",
+      "size_bytes": 2384,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T10:07:56.654480"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\ornith_96k_run.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\ornith_96k_run.log",
+      "size_bytes": 4573,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T10:13:48.238453"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\ornith_cli.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\ornith_cli.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T09:51:19.837078"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\ornith_server_start.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\ornith_server_start.log",
+      "size_bytes": 3075,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T09:54:11.637972"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\qwen27_eval.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Mainline\\existing-models\\logs\\qwen27_eval.log",
+      "size_bytes": 4390,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T10:18:18.129570"
+    },
+    {
+      "relative_path": "LLM-tests\\Qwen3-Next-Mainline\\logs\\mainline_qwen80_smoke.log",
+      "full_path": "K:\\Project\\LLM-tests\\Qwen3-Next-Mainline\\logs\\mainline_qwen80_smoke.log",
+      "size_bytes": 751,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-05T08:45:56.357024"
+    },
+    {
+      "relative_path": "Logs\\legacy\\llama.log",
+      "full_path": "K:\\Project\\Logs\\legacy\\llama.log",
+      "size_bytes": 1750,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-06T09:50:15.102585"
+    },
+    {
+      "relative_path": "Logs\\legacy\\smoke_test.err.log",
+      "full_path": "K:\\Project\\Logs\\legacy\\smoke_test.err.log",
+      "size_bytes": 14512,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T10:32:28.497872"
+    },
+    {
+      "relative_path": "Logs\\legacy\\smoke_test.out.log",
+      "full_path": "K:\\Project\\Logs\\legacy\\smoke_test.out.log",
+      "size_bytes": 2864,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-04T10:32:28.497872"
+    },
+    {
+      "relative_path": "OpenHands-Tests\\Ornith-Integration\\logs\\llama_swap.log",
+      "full_path": "K:\\Project\\OpenHands-Tests\\Ornith-Integration\\logs\\llama_swap.log",
+      "size_bytes": 892,
+      "category": "EVIDENCE",
+      "modified_time": "2026-09-03T22:22:52.034638"
+    },
+    {
+      "relative_path": "OpenHands-Tests\\Ornith-Integration\\logs\\poc_llama_swap.log",
+      "full_path": "K:\\Project\\OpenHands-Tests\\Ornith-Integration\\logs\\poc_llama_swap.log",
+      "size_bytes": 789,
+      "category": "EVIDENCE",
+      "modified_time": "2026-09-03T22:24:53.564098"
+    },
+    {
+      "relative_path": "OpenHands-Tests\\Ornith-Integration\\logs\\vision_ram_server.err.log",
+      "full_path": "K:\\Project\\OpenHands-Tests\\Ornith-Integration\\logs\\vision_ram_server.err.log",
+      "size_bytes": 11888,
+      "category": "EVIDENCE",
+      "modified_time": "2026-09-03T22:03:17.161828"
+    },
+    {
+      "relative_path": "OpenHands-Tests\\Ornith-Integration\\logs\\vision_ram_server.log",
+      "full_path": "K:\\Project\\OpenHands-Tests\\Ornith-Integration\\logs\\vision_ram_server.log",
+      "size_bytes": 487,
+      "category": "EVIDENCE",
+      "modified_time": "2026-09-03T22:03:16.506117"
+    },
+    {
+      "relative_path": "OpenHands-Update\\backups\\ik_llama\\known-good-20260903-3c58ae3\\llama.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\backups\\ik_llama\\known-good-20260903-3c58ae3\\llama.log",
+      "size_bytes": 142,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-02T13:46:38.632165"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-all-20260903-185231.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-all-20260903-185231.log",
+      "size_bytes": 1685,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T18:52:34.686266"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-all-20260903-190645.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-all-20260903-190645.log",
+      "size_bytes": 1685,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:07:21.520441"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-all-20260903-192128.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-all-20260903-192128.log",
+      "size_bytes": 1668,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:21:32.849201"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-20260903-185226.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-20260903-185226.log",
+      "size_bytes": 715,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T18:52:26.877557"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-20260903-185231.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-20260903-185231.log",
+      "size_bytes": 715,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T18:52:31.808326"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-20260903-190646.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-20260903-190646.log",
+      "size_bytes": 715,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:06:46.493724"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-20260903-191901.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-20260903-191901.log",
+      "size_bytes": 971,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:19:10.183995"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-20260903-191938.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-20260903-191938.log",
+      "size_bytes": 971,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:19:46.496968"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-20260903-192012.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-20260903-192012.log",
+      "size_bytes": 971,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:20:20.584788"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-20260903-192108.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-20260903-192108.log",
+      "size_bytes": 971,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:21:17.209258"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-20260903-192128.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-20260903-192128.log",
+      "size_bytes": 726,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:21:29.003927"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-rollback-20260903-185908.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-rollback-20260903-185908.log",
+      "size_bytes": 531,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T18:59:13.789143"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-rollback-20260903-190008.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-rollback-20260903-190008.log",
+      "size_bytes": 1356,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:00:47.499335"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-rollback-20260903-190118.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-rollback-20260903-190118.log",
+      "size_bytes": 1118,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:01:56.654420"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-ik-llama-rollback-20260903-190219.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-ik-llama-rollback-20260903-190219.log",
+      "size_bytes": 1118,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:02:58.466139"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-openhands-20260903-185219.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-openhands-20260903-185219.log",
+      "size_bytes": 622,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T18:52:19.852214"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-openhands-20260903-185232.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-openhands-20260903-185232.log",
+      "size_bytes": 622,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T18:52:33.187698"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-openhands-20260903-190647.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-openhands-20260903-190647.log",
+      "size_bytes": 622,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:07:19.757893"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-openhands-20260903-192129.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-openhands-20260903-192129.log",
+      "size_bytes": 622,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:21:30.899199"
+    },
+    {
+      "relative_path": "OpenHands-Update\\logs\\update-openhands-rollback-20260903-190503.log",
+      "full_path": "K:\\Project\\OpenHands-Update\\logs\\update-openhands-rollback-20260903-190503.log",
+      "size_bytes": 1868,
+      "category": "HISTORICAL_LOG",
+      "modified_time": "2026-09-03T19:05:43.392918"
+    }
+  ]
+}

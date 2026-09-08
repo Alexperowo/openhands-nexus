@@ -1,0 +1,73 @@
+﻿{
+    "all_profiles_count":  9,
+    "timestamp":  "2026-09-06T08:57:02.2334793+03:00",
+    "qwen_activation":  {
+                            "activation_response":  {
+                                                        "id":  "44761011-15fd-4981-971c-6b3ea145efbc",
+                                                        "message":  "Agent profile \u002744761011-15fd-4981-971c-6b3ea145efbc\u0027 activated",
+                                                        "agent_settings_applied":  false
+                                                    },
+                            "is_active":  true,
+                            "verified_active_id":  "44761011-15fd-4981-971c-6b3ea145efbc",
+                            "requested_id":  "44761011-15fd-4981-971c-6b3ea145efbc",
+                            "requested_name":  "Qwen-Standalone"
+                        },
+    "team_full_activation":  {
+                                 "activation_response":  {
+                                                             "id":  "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+                                                             "message":  "Agent profile \u0027ba66f66f-f9fb-4764-b5b9-22f27bf84b3a\u0027 activated",
+                                                             "agent_settings_applied":  false
+                                                         },
+                                 "is_active":  true,
+                                 "verified_active_id":  "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+                                 "requested_id":  "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+                                 "requested_name":  "Team-Full"
+                             },
+    "profiles_list":  [
+                          {
+                              "name":  "default",
+                              "id":  "e3de816d-0a24-483f-811d-b8d9a2b8ab30",
+                              "llm_profile_ref":  "default"
+                          },
+                          {
+                              "name":  "Next-Deep-Standalone",
+                              "id":  "4c45d9fa-2bbe-4a96-a0c7-63e319464f33",
+                              "llm_profile_ref":  "Next-Deep"
+                          },
+                          {
+                              "name":  "Next-Normal-Standalone",
+                              "id":  "d496bfef-da8c-439b-8e77-e5a92e5c7849",
+                              "llm_profile_ref":  "Next-Normal"
+                          },
+                          {
+                              "name":  "Ornith-Standalone",
+                              "id":  "90fdc7d6-418b-4b06-bd0c-08e04406c510",
+                              "llm_profile_ref":  "Ornith-Coding"
+                          },
+                          {
+                              "name":  "Qwen-Standalone",
+                              "id":  "44761011-15fd-4981-971c-6b3ea145efbc",
+                              "llm_profile_ref":  "Qwen38_Opus_96K"
+                          },
+                          {
+                              "name":  "Team-Full",
+                              "id":  "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+                              "llm_profile_ref":  "Qwen3.8-Opus-Medium"
+                          },
+                          {
+                              "name":  "Team-Next-Ornith",
+                              "id":  "ab16d813-fbd1-4f45-9453-1245993c557f",
+                              "llm_profile_ref":  "Next-Normal"
+                          },
+                          {
+                              "name":  "Team-Qwen-Next",
+                              "id":  "87261658-94ae-441e-854d-61040716272d",
+                              "llm_profile_ref":  "Qwen38_Opus_96K"
+                          },
+                          {
+                              "name":  "Team-Qwen-Ornith",
+                              "id":  "f2159fa5-1735-44d0-abd0-ca3a08ade349",
+                              "llm_profile_ref":  "Qwen38_Opus_96K"
+                          }
+                      ]
+}

@@ -1,0 +1,12 @@
+{
+  "profile_name": "Team-Full",
+  "starting_llm_ref": "Qwen3.8-Opus-Medium",
+  "starting_llm_pass": true,
+  "llm_profile_model": "openai/qwen",
+  "llm_profile_reasoning_effort": "medium",
+  "reasoning_pass": true,
+  "switch_llm_tool_enabled": true,
+  "switch_llm_pass": true,
+  "heavy_trigger_in_suffix": true,
+  "heavy_trigger_pass": true
+}

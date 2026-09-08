@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-09-06T08:31:21.908083+00:00",
+  "models_dir": "K:/Project/Models",
+  "total_items": 8,
+  "directories_count": 1,
+  "files_count": 7,
+  "items": [
+    {
+      "name": "Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "path": "K:/Project/Models/Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "type": "FILE",
+      "classification": "ACTIVE_ORNITH",
+      "size_bytes": 18822546944
+    },
+    {
+      "name": "Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf",
+      "path": "K:/Project/Models/Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf",
+      "type": "FILE",
+      "classification": "ACTIVE_NEXT",
+      "size_bytes": 1507217408
+    },
+    {
+      "name": "Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q6_K.gguf",
+      "path": "K:/Project/Models/Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q6_K.gguf",
+      "type": "FILE",
+      "classification": "ALTERNATIVE_QUANT",
+      "size_bytes": 1873725440
+    },
+    {
+      "name": "Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+      "path": "K:/Project/Models/Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+      "type": "FILE",
+      "classification": "ACTIVE_NEXT",
+      "size_bytes": 35494473888
+    },
+    {
+      "name": "Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF-mmproj-Q8_0.gguf",
+      "path": "K:/Project/Models/Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF-mmproj-Q8_0.gguf",
+      "type": "FILE",
+      "classification": "VISION_PROJECTOR",
+      "size_bytes": 619212000
+    },
+    {
+      "name": "Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf",
+      "path": "K:/Project/Models/Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf",
+      "type": "FILE",
+      "classification": "BENCHMARK_MODEL",
+      "size_bytes": 44612547968
+    },
+    {
+      "name": "Qwen3.8",
+      "path": "K:/Project/Models/Qwen3.8",
+      "type": "DIRECTORY",
+      "classification": "ACTIVE_QWEN38",
+      "file_count": 2,
+      "total_size_bytes": 17738321984,
+      "files": [
+        {
+          "name": "Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+          "size_bytes": 927607296,
+          "path": "K:/Project/Models/Qwen3.8/Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf"
+        },
+        {
+          "name": "Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+          "size_bytes": 16810714688,
+          "path": "K:/Project/Models/Qwen3.8/Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "name": "mmproj-Ornith-1.5-35B-BF16.gguf",
+      "path": "K:/Project/Models/mmproj-Ornith-1.5-35B-BF16.gguf",
+      "type": "FILE",
+      "classification": "VISION_PROJECTOR",
+      "size_bytes": 902822240
+    }
+  ]
+}

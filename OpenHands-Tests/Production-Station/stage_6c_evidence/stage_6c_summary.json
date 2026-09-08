@@ -1,0 +1,76 @@
+{
+  "stage": "STAGE_6C",
+  "status": "PASS",
+  "timestamp": "2026-09-06T11:56:10.152167",
+  "qwen38": {
+    "canonical_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+    "mmproj_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+    "verified_in_stage_6b": true
+  },
+  "ornith": {
+    "canonical_path": "K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf",
+    "mmproj_path": "K:\\Project\\Models\\Ornith\\mmproj-Ornith-1.5-35B-BF16.gguf",
+    "runtime_path_verified": true,
+    "runtime_status": "PASS",
+    "runtime_port": 5801
+  },
+  "next": {
+    "canonical_path": "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+    "active_mtp_path": "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf",
+    "alternate_mtp_path": "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q6_K.gguf",
+    "runtime_path_verified": true,
+    "mtp_runtime_path_verified": true,
+    "runtime_status": "PASS",
+    "runtime_port": 5800
+  },
+  "benchmarks": {
+    "organized": true,
+    "canonical_directory": "K:\\Project\\Models\\Benchmarks\\Qwen3.5-122B",
+    "files": [
+      "Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf",
+      "Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF-mmproj-Q8_0.gguf"
+    ]
+  },
+  "storage_audit": {
+    "loose_model_files_remaining": 0,
+    "unknown_model_files": 0,
+    "model_files_lost": 0,
+    "model_files_deleted": 0,
+    "total_subdirectories": 4
+  },
+  "d_qwen_source": {
+    "safe_to_delete": "YES",
+    "deleted": false,
+    "reasons": [
+      "K: copies verified and in place (main GGUF + mmproj GGUF)",
+      "Identical SHA256 hashes confirmed in Stage 6A",
+      "Zero active production references to D:\\Project\\models"
+    ]
+  },
+  "configuration_integrity": {
+    "active_backends_moved": "NO",
+    "model_parameters_changed": "NO",
+    "final_active_profile": "Team-Full",
+    "production_stop": "PASS",
+    "ports_released": [
+      8000,
+      8080,
+      18000,
+      18001,
+      18002,
+      5800,
+      5801
+    ]
+  },
+  "evidence_files": [
+    "models_before.json",
+    "models_after.json",
+    "model_relocation_manifest.json",
+    "model_config_diff.txt",
+    "ornith_runtime_validation.json",
+    "next_runtime_validation.json",
+    "model_reference_audit.json",
+    "stage_6c_summary.json"
+  ],
+  "unresolved": null
+}

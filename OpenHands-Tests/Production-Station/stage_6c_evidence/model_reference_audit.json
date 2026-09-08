@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-09-06T08:31:57.833274+00:00",
+  "stage": "STAGE_6C",
+  "active_references_count": 0,
+  "active_references": [],
+  "historical_references_count": 25,
+  "sample_historical_references": [
+    {
+      "file": "K:/Project/LLM-tests/BEST-ORNITH15-96K.cmd",
+      "referenced_model": "Ornith-1.5-35B-MTP-19G-ICE.gguf"
+    },
+    {
+      "file": "K:/Project/LLM-tests/Fine-MTP-Tuning/run-fine-tuning.ps1",
+      "referenced_model": "Ornith-1.5-35B-MTP-19G-ICE.gguf"
+    },
+    {
+      "file": "K:/Project/LLM-tests/Heavy-Model-Comparison/run_final_qwen80b.py",
+      "referenced_model": "Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
+    },
+    {
+      "file": "K:/Project/LLM-tests/Heavy-Model-Comparison/run_head_to_head.py",
+      "referenced_model": "Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
+    },
+    {
+      "file": "K:/Project/LLM-tests/Heavy-Model-Comparison/run_qwen80b_full.py",
+      "referenced_model": "Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
+    },
+    {
+      "file": "K:/Project/LLM-tests/Heavy-Model-Comparison/run_remaining_models.py",
+      "referenced_model": "Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
+    },
+    {
+      "file": "K:/Project/LLM-tests/Heavy-Model-Comparison/run_tournament_tail.py",
+      "referenced_model": "Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
+    },
+    {
+      "file": "K:/Project/LLM-tests/Ornith-1.5/RESULT.md",
+      "referenced_model": "Ornith-1.5-35B-MTP-19G-ICE.gguf"
+    },
+    {
+      "file": "K:/Project/LLM-tests/Ornith-1.5/run-benchmark.ps1",
+      "referenced_model": "Ornith-1.5-35B-MTP-19G-ICE.gguf"
+    },
+    {
+      "file": "K:/Project/LLM-tests/Qwen122B-LynnStyle/runner_core.py",
+      "referenced_model": "Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf"
+    }
+  ],
+  "verdict": "CLEAN_NO_ACTIVE_OLD_REFERENCES"
+}

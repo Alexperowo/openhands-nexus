@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-09-06T12:16:56.228172+00:00",
+  "stage": "7E-5",
+  "step": "A_COLD_START",
+  "ports": {
+    "8000": {
+      "description": "Agent Canvas (HTTP Proxy / Frontend)",
+      "listening": true,
+      "status": "ONLINE"
+    },
+    "8080": {
+      "description": "llama-swap Router",
+      "listening": true,
+      "status": "ONLINE"
+    },
+    "18000": {
+      "description": "openhands-agent-server",
+      "listening": true,
+      "status": "ONLINE"
+    },
+    "18001": {
+      "description": "openhands-automation",
+      "listening": true,
+      "status": "ONLINE"
+    },
+    "18002": {
+      "description": "Local Voice Bridge",
+      "listening": true,
+      "status": "ONLINE"
+    }
+  },
+  "endpoints": {
+    "llama_swap_health": {
+      "status_code": 200,
+      "reachable": true,
+      "snippet": "OK"
+    },
+    "voice_bridge_health": {
+      "status_code": 200,
+      "reachable": true,
+      "snippet": "{\"status\": \"ok\", \"uptime_s\": 29.6, \"stt_engine\": \"gigaam-v3-e2e-rnnt (FUTO transcribe.cpp)\", \"tts_en"
+    },
+    "canvas_ui": {
+      "status_code": 200,
+      "reachable": true,
+      "snippet": "\ufeff<!DOCTYPE html><html lang=\"en\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=de"
+    }
+  },
+  "overall_status": "PASS"
+}

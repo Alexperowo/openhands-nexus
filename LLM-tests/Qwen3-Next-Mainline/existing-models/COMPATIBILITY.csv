@@ -1,0 +1,4 @@
+Model,Architecture,Official_b10816_Status,MTP_Type,MTP_Speedup,Thinking_Control,Tool_Calling,Vision_mmproj,PP_Speed_96K,TG_Speed_16K,TG_Speed_96K,Peak_VRAM_96K
+Qwen3-Next-80B-A3B,qwen3next (Hybrid MoE),PASS (Fully Rescued),External Companion (Q4_K_M),+13.7% (17.79 t/s),PASS (reasoning-budget-message),N/A (Reasoning-only),N/A,404.1 tok/s,17.79 tok/s,12.75 tok/s,21458 MiB
+Qwen3.8-27B-Opus,qwen (Dense),PASS (Drop-in Ready),Embedded Layer (n_max=3),+7.6% (23.91 t/s),PASS (Direct mode),PASS (OpenAI format),N/A,47.86 tok/s,23.91 tok/s,9.61 tok/s,20258 MiB
+Ornith-1.5-35B,qwen35moe (MoE),PASS (Functional),Embedded Layer (n_max=1),MoE verify overhead (54.7 vs 74.0 t/s),PASS (Dynamic 0 vs 128),PASS (OpenAI format),PASS (mmproj BF16),41.65 tok/s,74.01 tok/s (MTP OFF),12.26 tok/s,19794 MiB

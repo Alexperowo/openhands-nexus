@@ -1,0 +1,69 @@
+{
+  "conversation_id": "37403c32-73dd-4886-bc9a-9ee44c0d9be4",
+  "switch_llm_tool_attached": true,
+  "qwen_invoked_switch": true,
+  "switch_action_event": {
+    "id": "4f41913f-bf39-45ed-81f6-f761cae7e44b",
+    "timestamp": "2026-09-04T07:24:56.129052",
+    "source": "agent",
+    "parent_id": "e9f63c32-e7c4-4d46-ab24-ed6356e88648",
+    "thought": [
+      {
+        "cache_prompt": false,
+        "type": "text",
+        "text": ""
+      }
+    ],
+    "reasoning_content": "I need to switch to the Ornith-Coding profile.\n",
+    "thinking_blocks": [],
+    "action": {
+      "profile_name": "Ornith-Coding",
+      "reason": "Передаю выполнение кода модели Ornith",
+      "kind": "SwitchLLMAction"
+    },
+    "tool_name": "switch_llm",
+    "tool_call_id": "qNWHZADjZVDlrzDCnJ7zqNgQaL258vOI",
+    "tool_call": {
+      "id": "qNWHZADjZVDlrzDCnJ7zqNgQaL258vOI",
+      "name": "switch_llm",
+      "arguments": "{\"profile_name\": \"Ornith-Coding\", \"reason\": \"\\u041f\\u0435\\u0440\\u0435\\u0434\\u0430\\u044e \\u0432\\u044b\\u043f\\u043e\\u043b\\u043d\\u0435\\u043d\\u0438\\u0435 \\u043a\\u043e\\u0434\\u0430 \\u043c\\u043e\\u0434\\u0435\\u043b\\u0438 Ornith\", \"security_risk\": \"LOW\", \"summary\": \"\\u041f\\u0435\\u0440\\u0435\\u043a\\u043b\\u044e\\u0447\\u0430\\u044e \\u043f\\u0440\\u043e\\u0444\\u0438\\u043b\\u044c \\u043d\\u0430 Ornith-Coding\"}",
+      "origin": "completion"
+    },
+    "llm_response_id": "chatcmpl-06cLK4uTiHOOdRPfxgaAI0txeDbBAaay",
+    "security_risk": "UNKNOWN",
+    "summary": "Переключаю профиль на Ornith-Coding",
+    "kind": "ActionEvent"
+  },
+  "switch_observation_event": {
+    "id": "217d7077-e232-4883-99e4-5350ce86bf81",
+    "timestamp": "2026-09-04T07:24:56.129052",
+    "source": "environment",
+    "parent_id": "4f41913f-bf39-45ed-81f6-f761cae7e44b",
+    "tool_name": "switch_llm",
+    "tool_call_id": "qNWHZADjZVDlrzDCnJ7zqNgQaL258vOI",
+    "observation": {
+      "content": [
+        {
+          "cache_prompt": false,
+          "type": "text",
+          "text": "Switched LLM profile to 'Ornith-Coding' with active model 'openai/ornith'. Reason: Передаю выполнение кода модели Ornith Future agent steps will use this profile."
+        }
+      ],
+      "is_error": false,
+      "profile_name": "Ornith-Coding",
+      "reason": "Передаю выполнение кода модели Ornith",
+      "active_model": "openai/ornith",
+      "kind": "SwitchLLMObservation"
+    },
+    "action_id": "4f41913f-bf39-45ed-81f6-f761cae7e44b",
+    "extended_content": [],
+    "kind": "ObservationEvent"
+  },
+  "profile_switched_to_ornith": true,
+  "physical_swap_confirmed": true,
+  "ornith_tool_called": true,
+  "tool_details": "status.txt created: True, tool events: 11",
+  "verdict": "PASS",
+  "events_count": 24,
+  "status_txt_content": "Ornith execution verified"
+}

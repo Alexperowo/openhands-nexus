@@ -1,0 +1,110 @@
+{
+  "timestamp": "2026-09-06T10:07:05.991294+00:00",
+  "updater_directory": "K:\\Project\\OpenHands-Update",
+  "coverage_map": [
+    {
+      "component_id": "llama-mainline",
+      "updater_exists": true,
+      "updater_path": "K:\\Project\\OpenHands-Update\\scripts\\update-llama-mainline.ps1",
+      "updater_status": "READY",
+      "check_only_supported": true,
+      "dry_run_supported": true,
+      "backup_supported": true,
+      "rollback_supported": true,
+      "post_update_validation": "Station stopped gate, HTTP HEAD asset checks, SHA256 integrity, dry-run simulation",
+      "auto_restart_behavior": "STATION_REMAINS_STOPPED (No auto-restart)",
+      "notes": "Hardened in Stage 7B"
+    },
+    {
+      "component_id": "ik_llama",
+      "updater_exists": true,
+      "updater_path": "K:\\Project\\OpenHands-Update\\scripts\\update-ik-llama.ps1",
+      "updater_status": "READY",
+      "check_only_supported": false,
+      "dry_run_supported": false,
+      "backup_supported": true,
+      "rollback_supported": true,
+      "post_update_validation": "Station stopped gate, Qwen 3.8 mmproj + MTP staging gate, Ornith 1.5-35B MTP gate",
+      "auto_restart_behavior": "STATION_REMAINS_STOPPED (Defaults to stopped; -RestartPlatform optional)",
+      "notes": "Hardened in Stage 7B Closure"
+    },
+    {
+      "component_id": "openhands-agent-canvas",
+      "updater_exists": true,
+      "updater_path": "K:\\Project\\OpenHands-Update\\scripts\\update-openhands.ps1",
+      "updater_status": "NEEDS_FIX",
+      "check_only_supported": false,
+      "dry_run_supported": false,
+      "backup_supported": true,
+      "rollback_supported": true,
+      "post_update_validation": "Localization patcher, Voice patcher, ru.json locale audit, smoke test",
+      "auto_restart_behavior": "AUTOMATICALLY_RESTARTS_STATION (Violates station stop default policy)",
+      "notes": "Lacks -CheckOnly, -DryRun, forces installation if new npm version exists, automatically restarts platform"
+    },
+    {
+      "component_id": "openhands-agent-server",
+      "updater_exists": false,
+      "updater_path": null,
+      "updater_status": "NEEDS_FIX",
+      "check_only_supported": false,
+      "dry_run_supported": false,
+      "backup_supported": false,
+      "rollback_supported": false,
+      "post_update_validation": "None directly (tied to agent-canvas defaults.json)",
+      "auto_restart_behavior": "N/A",
+      "notes": "Currently implicit via agent-canvas defaults.json"
+    },
+    {
+      "component_id": "openhands-automation",
+      "updater_exists": false,
+      "updater_path": null,
+      "updater_status": "NEEDS_FIX",
+      "check_only_supported": false,
+      "dry_run_supported": false,
+      "backup_supported": false,
+      "rollback_supported": false,
+      "post_update_validation": "None directly",
+      "auto_restart_behavior": "N/A",
+      "notes": "Currently implicit via agent-canvas defaults.json"
+    },
+    {
+      "component_id": "llama-swap",
+      "updater_exists": false,
+      "updater_path": null,
+      "updater_status": "MISSING",
+      "check_only_supported": false,
+      "dry_run_supported": false,
+      "backup_supported": false,
+      "rollback_supported": false,
+      "post_update_validation": "None",
+      "auto_restart_behavior": "N/A",
+      "notes": "CRITICAL GAP: Frequently updated router (v252 -> v255) has 0 automated updater scripts"
+    },
+    {
+      "component_id": "local-voice-bridge",
+      "updater_exists": false,
+      "updater_path": null,
+      "updater_status": "NOT_NEEDED",
+      "check_only_supported": false,
+      "dry_run_supported": false,
+      "backup_supported": false,
+      "rollback_supported": false,
+      "post_update_validation": "None",
+      "auto_restart_behavior": "N/A",
+      "notes": "transcribe.cpp is pinned for RNN-T compatibility; Supertonic TTS is pinned to stable 1.3.1"
+    },
+    {
+      "component_id": "android-mcp",
+      "updater_exists": false,
+      "updater_path": null,
+      "updater_status": "NOT_NEEDED",
+      "check_only_supported": false,
+      "dry_run_supported": false,
+      "backup_supported": false,
+      "rollback_supported": false,
+      "post_update_validation": "None",
+      "auto_restart_behavior": "N/A",
+      "notes": "Upstream has 0 releases in 180 days; static stable utility"
+    }
+  ]
+}

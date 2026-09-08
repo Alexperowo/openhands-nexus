@@ -1,0 +1,59 @@
+[
+  {
+    "profile": "Qwen3.8-Opus-Direct",
+    "conversation_id": "d64a7c30-6af3-45cd-89eb-d74dbe802372",
+    "elapsed_s": 4.01,
+    "reasoning_effort": "none",
+    "extra_body": {
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      },
+      "reasoning_budget_tokens": 0
+    },
+    "reasoning_len": 0,
+    "reasoning_preview": "",
+    "agent_output": "RAM (Random Access Memory) is a volatile, high-speed memory chip that temporarily stores data and instructions the CPU needs active access to while a computer is running."
+  },
+  {
+    "profile": "Qwen3.8-Opus-Low",
+    "conversation_id": "712b9730-5ddf-40a2-8887-31aa1a87f803",
+    "elapsed_s": 6.02,
+    "reasoning_effort": "low",
+    "extra_body": {
+      "chat_template_kwargs": {
+        "reasoning_effort": "low"
+      }
+    },
+    "reasoning_len": 132,
+    "reasoning_preview": "The user is asking for a straightforward definition of RAM, so I'll give them a clear, concise explanation without any extra fluff.\n",
+    "agent_output": "RAM (Random Access Memory) is the computer's short-term working memory that temporarily stores data and programs currently in use, allowing the CPU to access it much faster than storage drives, but loses its contents when power is cut."
+  },
+  {
+    "profile": "Qwen3.8-Opus-Medium",
+    "conversation_id": "4760bcef-c2dd-4dd0-b016-c2cd04b5be9f",
+    "elapsed_s": 4.01,
+    "reasoning_effort": "medium",
+    "extra_body": {
+      "chat_template_kwargs": {
+        "reasoning_effort": "medium"
+      }
+    },
+    "reasoning_len": 158,
+    "reasoning_preview": "The user is asking for a straightforward definition of RAM, so I'll give them a clear, concise explanation without needing any tools or additional res",
+    "agent_output": "RAM (Random Access Memory) is a fast, volatile memory that temporarily stores data and instructions the CPU needs to access immediately while the computer is running."
+  },
+  {
+    "profile": "Qwen3.8-Opus-XHigh",
+    "conversation_id": "300b6001-0a22-45af-aa12-5f8669fed41d",
+    "elapsed_s": 32.08,
+    "reasoning_effort": "high",
+    "extra_body": {
+      "chat_template_kwargs": {
+        "reasoning_effort": "xhigh"
+      }
+    },
+    "reasoning_len": 101,
+    "reasoning_preview": "The user is asking for a straightforward definition of RAM, so I'll keep my answer brief and direct.\n",
+    "agent_output": "RAM (Random Access Memory) is a fast, volatile memory that temporarily stores data and instructions the CPU needs to access quickly while a computer is powered on."
+  }
+]

@@ -1,0 +1,114 @@
+{
+  "timestamp": "2026-09-05T18:15:54.290441+00:00",
+  "stage": "STAGE_3_SELECTABLE_MODES_AND_SMOKE",
+  "status": "PASS",
+  "all_modes_selectable": true,
+  "mode_selection_mechanism": "Native OpenHands AgentProfileStore (C:\\Users\\User\\.openhands\\agent-profiles\\*.json) + Agent Server /api/agent-profiles + Agent Canvas UI (/settings -> Agent Profiles)",
+  "modes_tested": {
+    "Qwen-Standalone": {
+      "status": "PASS",
+      "loaded_name": "Qwen-Standalone",
+      "profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
+      "llm_model": "openai/qwen",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "enable_switch_llm_tool": false,
+      "switch_in_default_tools": false,
+      "tools_count": 3,
+      "suffix_matches": true
+    },
+    "Ornith-Standalone": {
+      "status": "PASS",
+      "loaded_name": "Ornith-Standalone",
+      "profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
+      "llm_model": "openai/ornith",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "enable_switch_llm_tool": false,
+      "switch_in_default_tools": false,
+      "tools_count": 3,
+      "suffix_matches": true
+    },
+    "Next-Normal-Standalone": {
+      "status": "PASS",
+      "loaded_name": "Next-Normal-Standalone",
+      "profile_id": "d496bfef-da8c-439b-8e77-e5a92e5c7849",
+      "llm_model": "openai/next",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "enable_switch_llm_tool": false,
+      "switch_in_default_tools": false,
+      "tools_count": 3,
+      "suffix_matches": true
+    },
+    "Next-Deep-Standalone": {
+      "status": "PASS",
+      "loaded_name": "Next-Deep-Standalone",
+      "profile_id": "4c45d9fa-2bbe-4a96-a0c7-63e319464f33",
+      "llm_model": "openai/next",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "enable_switch_llm_tool": false,
+      "switch_in_default_tools": false,
+      "tools_count": 3,
+      "suffix_matches": true
+    },
+    "Team-Qwen-Ornith": {
+      "status": "PASS",
+      "loaded_name": "Team-Qwen-Ornith",
+      "profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
+      "llm_model": "openai/qwen",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "enable_switch_llm_tool": true,
+      "switch_in_default_tools": true,
+      "tools_count": 3,
+      "suffix_matches": true
+    },
+    "Team-Next-Ornith": {
+      "status": "PASS",
+      "loaded_name": "Team-Next-Ornith",
+      "profile_id": "ab16d813-fbd1-4f45-9453-1245993c557f",
+      "llm_model": "openai/next",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "enable_switch_llm_tool": true,
+      "switch_in_default_tools": true,
+      "tools_count": 3,
+      "suffix_matches": true
+    },
+    "Team-Qwen-Next": {
+      "status": "PASS",
+      "loaded_name": "Team-Qwen-Next",
+      "profile_id": "87261658-94ae-441e-854d-61040716272d",
+      "llm_model": "openai/qwen",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "enable_switch_llm_tool": true,
+      "switch_in_default_tools": true,
+      "tools_count": 3,
+      "suffix_matches": true
+    },
+    "Team-Full": {
+      "status": "PASS",
+      "loaded_name": "Team-Full",
+      "profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+      "llm_model": "openai/qwen",
+      "base_url": "http://127.0.0.1:8080/v1",
+      "enable_switch_llm_tool": true,
+      "switch_in_default_tools": true,
+      "tools_count": 3,
+      "suffix_matches": true
+    }
+  },
+  "smoke_test": {
+    "session_id": "eb379ed3-b52d-486c-bcfc-716b0f908669",
+    "elapsed_seconds": 1340.12,
+    "models_timeline": [
+      "next",
+      "ornith"
+    ],
+    "next_switched_to_ornith": true,
+    "ornith_finished": true,
+    "status": "PASS"
+  },
+  "role_discipline": {
+    "policy_location": "C:\\Users\\User\\.openhands\\agent-profiles\\Team-Qwen-Ornith.json (system_message_suffix)",
+    "defect_rejection_clause_present": true,
+    "tool_level_isolation": "UNSUPPORTED / NOT IMPLEMENTED in OpenHands SDK (dynamic per-LLM tool filtering not supported during switch_llm)",
+    "enforcement_type": "BEHAVIORAL_VIA_SYSTEM_CONTRACT"
+  }
+}

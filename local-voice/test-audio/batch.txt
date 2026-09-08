@@ -1,0 +1,2 @@
+﻿K:\Project\local-voice\test-audio\test1.wav
+K:\Project\local-voice\test-audio\test3.wav

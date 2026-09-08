@@ -1,0 +1,18 @@
+[
+  {
+    "switch_index": 1,
+    "timestamp": "2026-09-05T19:03:36.559668+00:00",
+    "from_profile": "Qwen38_Opus_96K",
+    "to_profile": "Ornith-Coding",
+    "reason": "Delegating implementation of correction markers (A and B) to the Executor.",
+    "initiator_action": "SwitchLLMAction"
+  },
+  {
+    "switch_index": 2,
+    "timestamp": "2026-09-05T19:04:07.557050+00:00",
+    "from_profile": "Ornith-Coding",
+    "to_profile": "Qwen38_Opus_96K",
+    "reason": "Acceptance command executed with exit code 0; returning evidence for review and routing.",
+    "initiator_action": "SwitchLLMAction"
+  }
+]

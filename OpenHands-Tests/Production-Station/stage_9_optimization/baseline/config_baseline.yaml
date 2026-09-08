@@ -1,0 +1,44 @@
+healthCheckTimeout: 1200
+logLevel: debug
+logToStdout: both
+
+models:
+  qwen:
+    aliases:
+    - openai/qwen
+    - K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
+    - openai/K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
+    proxy: http://127.0.0.1:${PORT}
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+    unloadTimeout: 15
+    cmd: K:\Project\ik_llama\bin\llama-server.exe -m K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf --mmproj K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf
+      -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=3,p_min=0.0
+      --jinja --host 127.0.0.1 --port ${PORT} --temp 0.7 --top-p 0.8 --min-p 0.05
+  ornith:
+    aliases:
+    - openai/ornith
+    - K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
+    - openai/K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
+    proxy: http://127.0.0.1:${PORT}
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+    unloadTimeout: 15
+    cmd: K:\Project\ik_llama\bin\llama-server.exe -m K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
+      -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75
+      --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6 --top-p 0.95 --top-k 20 --min-p
+      0.0 --presence-penalty 0.0 --repeat-penalty 1.0
+  next:
+    aliases:
+    - openai/next
+    - K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
+    - openai/K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
+    proxy: http://127.0.0.1:${PORT}
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+    unloadTimeout: 15
+    cmd: K:\Project\llama-mainline\b10821\llama-server.exe -m K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
+      -md K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf
+      -c 98304 -ngl 26 -fa on -ctk q8_0 -ctv q8_0 -np 1 -t 6 -dev CUDA0
+      --spec-type draft-mtp --spec-draft-n-max 1
+      --reasoning-format deepseek
+      --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
+      --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6
+

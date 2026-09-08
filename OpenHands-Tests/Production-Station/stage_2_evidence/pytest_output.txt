@@ -1,0 +1,11 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: K:\Project\OpenHands-Tests\Production-Station\stage_2_workspace
+plugins: anyio-4.14.2, langsmith-0.3.45, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 9 items
+
+test_url_normalizer.py .........                                         [100%]
+
+============================== 9 passed in 0.03s ==============================
+

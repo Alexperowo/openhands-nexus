@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-09-05T16:51:13.894521+00:00",
+  "stage": "STAGE_1_AGENT_SESSION_CLOSURE",
+  "duplicate_budget_removed": "YES",
+  "wire_budget_after_cleanup": 2048,
+  "real_openhands_agent_session": "FAIL",
+  "finish_reason": "tool_calls",
+  "backend_pid": 6576,
+  "session_id": "0567afd9-ec35-4d6c-9312-8977612a6c09",
+  "profile": "Next-Normal",
+  "elapsed_seconds": 884.78,
+  "final_content": "144",
+  "reasoning_length": 1331,
+  "wire_request": {
+    "url": "http://127.0.0.1:8080/v1/chat/completions",
+    "body_keys": [
+      "messages",
+      "model",
+      "max_completion_tokens",
+      "prompt_cache_key",
+      "temperature",
+      "tools",
+      "top_p",
+      "thinking_budget_tokens"
+    ],
+    "thinking_budget_tokens": 2048,
+    "chat_template_kwargs_budget": null
+  },
+  "overall_status": "FAIL"
+}

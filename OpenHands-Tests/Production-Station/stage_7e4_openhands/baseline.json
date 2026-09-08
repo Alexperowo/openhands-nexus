@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-09-06T12:07:35.056496+00:00",
+  "stage": "7E-4",
+  "mode": "Path B (Same-Version Rehearsal)",
+  "canvas_package_version": "1.16.0",
+  "agent_server_pin": "1.44.0",
+  "automation_pin": "1.9.0",
+  "defaults_json_sha256": "93E39C2E5106B527F88481F00428613206C2AF32CD324CB87879237E2EA3B477",
+  "localization_patch_state": {
+    "status": "APPLIED",
+    "ru_dictionary_keys": 2400,
+    "ru_bundle_present": true
+  },
+  "voice_ui_patch_state": {
+    "status": "APPLIED",
+    "voice_bridge_css": true,
+    "voice_bridge_js": true
+  }
+}

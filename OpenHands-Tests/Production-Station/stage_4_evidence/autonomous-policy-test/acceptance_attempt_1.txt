@@ -1,0 +1,5 @@
+COMMAND = python K:\Project\OpenHands-Tests\Production-Station\stage_4_fixture\acceptance_check.py
+ACTUAL_EXIT_CODE = 1
+
+RAW_TERMINAL_OBSERVATION =
+[TextContent(cache_prompt=False, type='text', text="[ACCEPTANCE CHECK]: FAILURE A\r\nObjective Failure: Missing correction-A marker in workspace.\r\nRequirement A: Create file 'correction_a.txt' containing 'CORRECTION_A_RESOLVED'.\r\nEXIT CODE: 1")]

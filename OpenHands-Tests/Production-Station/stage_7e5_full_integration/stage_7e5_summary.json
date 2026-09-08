@@ -1,0 +1,23 @@
+{
+  "stage": "7E-5",
+  "title": "FINAL FULL-STATION INTEGRATION GATE",
+  "timestamp": "2026-09-06T12:52:18.713306+00:00",
+  "status": "PASS",
+  "components_validated": {
+    "A_cold_start": "PASS (Ports 8000, 8080, 18000, 18001, 18002 online)",
+    "B_multi_agent_workflow": "PASS (Team-Full: Qwen planner -> Ornith coder -> Qwen reviewer)",
+    "C_standalone_next_smoke": "PASS (openai/next, thinking_budget: 2048, b10821-971595d66)",
+    "D_voice_integration": "PASS (Health ok, STT 135k wav transcribed in 0.559s, TTS 40 chars in 0.837s, UI injected)",
+    "E_localization_integration": "PASS (RU bundle 2400 keys HTTP fetch 200 OK, defaults valid)",
+    "F_primary_cold_stop": "PASS (Zero orphans, all ports freed)",
+    "G_lifecycle_repeatability": "PASS (Secondary Start -> Up -> Stop -> Clean Free)"
+  },
+  "evidence_files": [
+    "station_health.json",
+    "multi_agent_workflow.json",
+    "next_profile_smoke.json",
+    "voice_regression.json",
+    "localization_regression.json",
+    "lifecycle_repeatability.json"
+  ]
+}

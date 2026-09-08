@@ -1,0 +1,17 @@
+﻿{
+    "remaining_openhands_procs":  {
+
+                                  },
+    "vram_delta_mib":  0,
+    "foreign_process_manually_terminated":  true,
+    "active_station_ports":  [
+
+                             ],
+    "final_vram_mib":  558,
+    "timestamp":  "2026-09-06T09:02:32.5158341+03:00",
+    "ports_released":  true,
+    "session_json_exists":  false,
+    "clean_processes":  true,
+    "pre_start_vram_mib":  558,
+    "vram_returned_near_baseline":  true
+}

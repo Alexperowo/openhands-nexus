@@ -1,0 +1,108 @@
+[
+  {
+    "path": "K:\\models",
+    "type": "DIRECTORY",
+    "size_bytes": 0,
+    "description": "Empty top-level directory K:\\models",
+    "classification": "DELETE_SAFE",
+    "reason": "CONFIRMED_EMPTY_DIRECTORY: 0 bytes, 0 files, unreferenced"
+  },
+  {
+    "path": "K:\\Project\\llama.cpp",
+    "type": "DIRECTORY",
+    "size_bytes": 1166133533,
+    "description": "Historical old llama-mainline build/source",
+    "classification": "ARCHIVE_NOW",
+    "destination": "K:\\Project\\Archive\\deprecated-builds\\llama.cpp",
+    "reason": "Approved Stage 6 archive candidate; unreferenced historical build"
+  },
+  {
+    "path": "K:\\Project\\transcribe-build",
+    "type": "DIRECTORY",
+    "size_bytes": 86172237,
+    "description": "Historical old whisper.cpp / transcribe build artifact",
+    "classification": "ARCHIVE_NOW",
+    "destination": "K:\\Project\\Archive\\deprecated-builds\\transcribe-build",
+    "reason": "Approved Stage 6 archive candidate; unreferenced; transcribe-build-shared is preserved"
+  },
+  {
+    "path": "K:\\Project\\transcribe-build-shared",
+    "type": "DIRECTORY",
+    "size_bytes": 44513973,
+    "description": "Current production dependency for Voice STT",
+    "classification": "KEEP_BUILD_DEPENDENCY",
+    "reason": "Active dependency required by K:\\Project\\local-voice\\service.py"
+  },
+  {
+    "path": "K:\\Project\\llama-mainline\\b10816",
+    "type": "DIRECTORY",
+    "size_bytes": 1166448402,
+    "description": "Previous known-good rollback build for llama-mainline",
+    "classification": "KEEP_ROLLBACK",
+    "reason": "Retained rollback version per Stage 7E update policy"
+  },
+  {
+    "path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+    "type": "FILE",
+    "size_bytes": 16810714688,
+    "description": "D: Qwen 3.8 Main GGUF model source copy",
+    "classification": "SAFE_TO_REMOVE_LATER",
+    "reason": "Matches canonical K: copy exactly (SHA256 verified), production references K: only"
+  },
+  {
+    "path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+    "type": "FILE",
+    "size_bytes": 927607296,
+    "description": "D: Qwen 3.8 mmproj GGUF model source copy",
+    "classification": "SAFE_TO_REMOVE_LATER",
+    "reason": "Matches canonical K: copy exactly (SHA256 verified), production references K: only"
+  },
+  {
+    "path": "K:\\llama.cpp",
+    "type": "DIRECTORY",
+    "size_bytes": 1571478792,
+    "description": "Top-level K:\\llama.cpp installation",
+    "classification": "KEEP_UNKNOWN",
+    "reason": "Outside K:\\Project root; independent top-level tool/runtime tree; protected per core rule"
+  },
+  {
+    "path": "K:\\poolside-llama",
+    "type": "DIRECTORY",
+    "size_bytes": 1160030349,
+    "description": "Top-level K:\\poolside-llama runtime",
+    "classification": "KEEP_PROJECT",
+    "reason": "Outside K:\\Project root; independent project/runtime; referenced by K:\\start_server_poolside_laguna_dflash.bat"
+  },
+  {
+    "path": "K:\\OpenCode",
+    "type": "DIRECTORY",
+    "size_bytes": 517326090,
+    "description": "Top-level OpenCode application directory",
+    "classification": "KEEP_PROJECT",
+    "reason": "Outside K:\\Project root; independent OpenCode installation/tree"
+  },
+  {
+    "path": "K:\\OpenCode_Setup.exe",
+    "type": "FILE",
+    "size_bytes": 126211368,
+    "description": "Top-level OpenCode setup installer",
+    "classification": "REVIEW_MANUALLY",
+    "reason": "Installer file (120 MB) on K: drive root; user file outside K:\\Project root"
+  },
+  {
+    "path": "K:\\scripts",
+    "type": "DIRECTORY",
+    "size_bytes": 12800,
+    "description": "Top-level scripts directory",
+    "classification": "REVIEW_MANUALLY",
+    "reason": "Outside K:\\Project root; contains user automation/management scripts"
+  },
+  {
+    "path": "K:\\Project\\Temp",
+    "type": "DIRECTORY",
+    "size_bytes": 1137,
+    "description": "K:\\Project\\Temp directory with README policy and subfolders",
+    "classification": "KEEP_ACTIVE",
+    "reason": "Production Temp directory established in Stage 6D; currently clean with 0 disposable files"
+  }
+]

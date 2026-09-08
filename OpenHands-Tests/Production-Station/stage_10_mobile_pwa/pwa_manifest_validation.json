@@ -1,0 +1,40 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:02:00+03:00",
+  "manifest_path": "K:\\Project\\openhands-pwa\\manifest.webmanifest",
+  "served_at": "https://192.168.0.14:8443/manifest.webmanifest",
+  "fields": {
+    "name": "OpenHands",
+    "short_name": "OpenHands",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "theme_color": "#18181b",
+    "background_color": "#09090b",
+    "icons_count": 3
+  },
+  "icons_verified": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "status": 200,
+      "sizes": "192x192"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "status": 200,
+      "sizes": "512x512"
+    },
+    {
+      "src": "/favicon.svg",
+      "status": 200,
+      "sizes": "any"
+    }
+  ],
+  "html_injection": {
+    "file": "K:\\Project\\OpenHands\\frontend\\build\\index.html",
+    "manifest_link_present": true,
+    "mobile_css_link_present": true,
+    "service_worker_script_present": true
+  },
+  "verdict": "PASS"
+}

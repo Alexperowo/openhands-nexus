@@ -1,0 +1,12 @@
+﻿{
+    "active_station_ports":  [
+
+                             ],
+    "timestamp":  "2026-09-06T08:55:14.9601180+03:00",
+    "vram_free_mib":  21673,
+    "session_json_exists":  false,
+    "foreign_alive":  true,
+    "foreign_pid":  14236,
+    "vram_used_mib":  558,
+    "vram_total_mib":  22528
+}

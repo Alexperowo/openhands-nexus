@@ -1,0 +1,5 @@
+COMMAND = cd K:\Project\OpenHands-Tests\Production-Station\stage_4_workspace; python K:\Project\OpenHands-Tests\Production-Station\stage_4_fixture\acceptance_client.py; echo "EXIT CODE: $LASTEXITCODE"
+ACTUAL_EXIT_CODE = 0
+
+RAW_TERMINAL_OBSERVATION =
+[TextContent(cache_prompt=False, type='text', text="[ACCEPTANCE CHECK]: PASS\r\nAll acceptance criteria satisfied:\r\n - Correction A verified: 'correction_a.txt' -> CORRECTION_A_RESOLVED\r\n - Correction B verified: 'correction_b.txt' -> TOKEN_B_093C9A01\r\nEXIT CODE: 0\r\nEXIT CODE: 0")]

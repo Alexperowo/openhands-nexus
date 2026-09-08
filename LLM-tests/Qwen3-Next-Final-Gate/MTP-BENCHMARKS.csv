@@ -1,0 +1,7 @@
+config,mode,ngl,context,prompt_tokens,gen_tokens,draft_accepted,draft_total,acceptance_pct,pp_tps,tg_tps,ttft_s,wall_time_s,peak_vram_mib,peak_ram_mib,status,error_notes
+MTP_OFF_BASELINE,bench,26,16384,52,256,0,0,0.0%,69.31,17.15,0.75,15.65,19150,38920,PASS,Clean baseline
+MTP_OFF_BASELINE,96k_cold,26,98304,30120,256,0,0,0.0%,190.30,12.29,158.27,179.24,20083,40650,PASS,30K cold prompt at 96K ctx
+MTP_OFF_BASELINE,96k_reuse_1,26,98304,30142,128,0,0,0.0%,21.02,12.50,1.28,11.63,20085,40688,PASS,Follow-up 1 with KV cache reuse
+MTP_OFF_BASELINE,96k_reuse_2,26,98304,30163,64,0,0,0.0%,18.50,13.32,1.41,6.30,20085,40757,PASS,Follow-up 2 with KV cache reuse
+MTP_Q4_SPEC,load_probe,26,2048,0,0,0,0,0.0%,0,0,0,0,18896,38900,FAIL,"llama_model_load: check_tensor_dims: tensor 'blk.0.attn_norm.weight' not found in companion file"
+MTP_Q6_SPEC,load_probe,26,2048,0,0,0,0,0.0%,0,0,0,0,18896,38900,FAIL,"llama_model_load: check_tensor_dims: tensor 'blk.0.attn_norm.weight' not found in companion file"

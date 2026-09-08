@@ -1,0 +1,40 @@
+{
+  "conversation_id": "960ec3f2-f8c2-43e8-b89e-b24da5385b8a",
+  "phase1_qwen_plan": {},
+  "phase2_switch_ornith": {
+    "old_qwen_pid": 4632,
+    "ornith_pid": 16784,
+    "physical_swap_confirmed": true,
+    "vram_mib": 20361,
+    "old_qwen_pid_dead": true
+  },
+  "phase3_ornith_tools": {
+    "file_created": true,
+    "ornith_pid": 16784
+  },
+  "phase4_zero_reload_check": {
+    "coding_pid_init": 16784,
+    "direct_pid": 16784,
+    "coding_pid_after": 16784,
+    "zero_reload_confirmed": true
+  },
+  "phase5_switch_qwen_review": {
+    "new_qwen_pid": 10984,
+    "old_ornith_dead": true,
+    "physical_swap_confirmed": true,
+    "vram_mib": 20845
+  },
+  "proof_matrix": {
+    "same_conversation_id": true,
+    "conversation_id": "960ec3f2-f8c2-43e8-b89e-b24da5385b8a",
+    "history_preserved": true,
+    "total_events_in_session": 34,
+    "tool_state_preserved": true,
+    "switch_llm_tool_functional": true,
+    "one_llm_in_vram_at_a_time": true,
+    "max_vram_recorded_mib": 20845,
+    "direct_coding_zero_reload": true,
+    "qwen_ornith_swap_reload": true,
+    "all_checks_pass": true
+  }
+}

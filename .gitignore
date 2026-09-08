@@ -1,0 +1,77 @@
+# OpenHands Local Station (.gitignore)
+
+# 1. Models & Large Binary Weights (>100MB)
+Models/
+*.gguf
+*.bin
+*.safetensors
+*.pt
+*.onnx
+
+# 2. Security & Credentials (Strictly Excluded)
+*.key
+*.pfx
+openhands-pwa/certs/lan-auth-token.txt
+openhands-pwa/certs/*.key
+openhands-pwa/certs/*.pfx
+api-key.txt
+*token*.txt
+
+# 3. Logs, Temp, and Scratch Data
+Logs/
+*.log
+Temp/
+scratch/
+Archive/
+.openhands-local/
+*.zip
+*.tar
+*.gz
+
+# 4. Dependency & Build Caches
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+build/
+CMakeFiles/
+CMakeCache.txt
+*.vcxproj*
+*.sln
+transcribe-build-shared/
+
+# 5. Compiled Executables & Large Binaries / Third-party trees
+*.exe
+*.dll
+*.obj
+*.lib
+*.pdb
+ik_llama/
+llama-mainline/
+llama-swap/bin/
+llama-swap/staging/
+llama-swap/session.json
+local-voice/bin/
+backups/
+OpenHands-Update/backups/
+OpenHands-Update/state/
+*.bak
+*.bak*
+
+# 6. Separate Projects & Test Workspaces / Ephemeral Dumps
+ksenia-android/
+AgentCanvas-Test/
+*_workspace/
+*_persistence/
+*_persistence_*/
+
+# 7. OS & Editor Junk
+Thumbs.db
+Desktop.ini
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.png

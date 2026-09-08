@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-09-06T12:28:04.122669",
+  "stage": "STAGE_7A_IK_LLAMA_AUDIT",
+  "script": "K:/Project/OpenHands-Update/scripts/update-ik-llama.ps1",
+  "safety_criteria_audit": {
+    "repository_source_update": {
+      "supported": true,
+      "details": "Checks git status in srcDir, fetches origin/main, checks for new commits"
+    },
+    "isolated_staging_build": {
+      "supported": true,
+      "details": "Creates detached worktree in src-staging and builds in build-staging, leaving production srcDir untouched"
+    },
+    "cuda_sm75_build": {
+      "supported": true,
+      "details": "Builds via CMake with -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=75 and MSVC BuildTools vcvars64"
+    },
+    "mtp_support_handling": {
+      "supported": true,
+      "details": "Validates using --spec-type mtp:n_max=3,p_min=0.0 on test port 18080 and verifies draft_n_accepted"
+    },
+    "preservation_of_production_binary": {
+      "supported": true,
+      "details": "Production bin/ is never modified until staging passes 100% of compile, load, and benchmark gates"
+    },
+    "versioned_backup": {
+      "supported": true,
+      "details": "Mirrors production bin/ to backups/ik_llama/<timestamp>-<commit>/ with metadata JSON"
+    },
+    "automatic_rollback": {
+      "supported": true,
+      "details": "Invokes rollback-ik-llama.ps1 if final smoke test fails after promotion"
+    },
+    "failed_build_handling": {
+      "supported": true,
+      "details": "Cleans worktree and staging directories, records BUILD_FAILED in last_run_status.json, preserves production"
+    },
+    "station_stopped_requirement": {
+      "supported": true,
+      "details": "Calls stop.ps1 and terminates file-locking processes before bin replacement"
+    },
+    "atomic_promotion": {
+      "supported": true,
+      "details": "Promotes via Fast-CopyDir -Mirror from staging-bin to prod bin and writes BUILD-INFO.txt"
+    }
+  },
+  "defects_and_improvements_needed": [
+    {
+      "severity": "HIGH",
+      "defect": "Line 27 references stale path:  = D:/Project/models/Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "fix": "Update to canonical K:/Project/Models/Qwen3.8/Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
+    },
+    {
+      "severity": "MEDIUM",
+      "defect": "Line 363 unconditionally restarts whole platform via start.ps1 instead of isolated service validation",
+      "fix": "Make restart optional or controlled via parameter (-RestartPlatform)"
+    },
+    {
+      "severity": "LOW",
+      "defect": "Assumes only Qwen 3.8 is served by ik_llama; Ornith also uses ik_llama with mtp:n_max=1,p_min=0.75",
+      "fix": "Optionally add Ornith test generation to validation matrix"
+    }
+  ],
+  "ik_llama_updater_status": "NEEDS_FIX"
+}

@@ -1,0 +1,55 @@
+Incident Post-Mortem Request: Payment Processor OOM Outage
+
+Incident Summary from On-Call Engineer:
+"At 14:22:10 UTC, our payment-processor pod in Kubernetes crashed. The logs showed an OutOfMemoryError in TransactionBuffer. We believe our recent patch in v2.4.1 introduced a major heap memory leak in the transaction buffer. Please analyze the code and logs below, explain why the heap leak happened, and fix the buffer implementation."
+
+Evidence Package:
+
+--- 1. Deployment Specification (deployment.yaml) ---
+containers:
+  - name: payment-processor
+    image: registry.internal/payment-processor:v2.4.1
+    resources:
+      limits:
+        memory: "2Gi"
+      requests:
+        memory: "1Gi"
+    env:
+      - name: JAVA_OPTS
+        value: "-Xms1024m -Xmx1024m -XX:+UseG1GC"
+
+--- 2. Production Prometheus Metrics at Incident Timestamp (14:22:10 UTC) ---
+jvm_memory_used_bytes{area="heap", pod="payment-processor-7b64f"} = 432013312   (412 MiB)
+jvm_memory_max_bytes{area="heap", pod="payment-processor-7b64f"}  = 1073741824  (1024 MiB)
+container_memory_working_set_bytes{pod="payment-processor-7b64f"} = 2146435072  (2047 MiB)
+
+--- 3. Kernel dmesg Log from Node Worker-04 at 14:22:10 UTC ---
+[54128.102] memory: usage 2097152kB, limit 2097152kB, failcnt 1420
+[54128.103] oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=/,mems_allowed=0,oom_memcg=/kubepods/burstable/podpayment-processor-7b64f
+[54128.104] Memory cgroup out of memory: Killed process 89141 (java) total-vm:4120892kB, anon-rss:2094120kB, file-rss:3032kB
+
+--- 4. Log Aggregator Extract (Elasticsearch Query for tag: payment-processor) ---
+2026-09-05T14:22:09.912Z [ERROR] com.checkout.buffer.TransactionBuffer - java.lang.OutOfMemoryError: Java heap space
+    at com.checkout.buffer.TransactionBuffer.allocate(TransactionBuffer.java:142)
+    at com.checkout.service.PaymentService.processTransaction(PaymentService.java:88)
+    at com.checkout.handler.HttpHandler.handle(HttpHandler.java:45)
+
+--- 5. Deployed Source Code (v2.4.1: TransactionBuffer.java) ---
+package com.checkout.buffer;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
+public class TransactionBuffer {
+    // Line 140: Buffer management logic
+    // Line 141: Uses Netty direct buffer pools
+    // Line 142: In v2.4.1, legacy byte arrays were replaced by pooled direct memory
+    public static ByteBuf acquireSegment(int capacity) {
+        return Unpooled.directBuffer(capacity);
+    }
+}
+
+Task:
+Perform an objective forensic investigation of this incident.
+Evaluate whether the on-call engineer's hypothesis (a Java heap leak in TransactionBuffer) is supported or contradicted by the evidence.
+Highlight any incompatibilities in the logs and metrics, identify the true root cause, and provide actionable next steps.

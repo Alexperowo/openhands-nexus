@@ -1,0 +1,404 @@
+{
+  "timestamp": "2026-09-06T13:03:45.569184+00:00",
+  "drives": {
+    "K:\\": {
+      "total_bytes": 239933059072,
+      "total_gb": 223.46,
+      "used_bytes": 136790761472,
+      "used_gb": 127.4,
+      "free_bytes": 103142297600,
+      "free_gb": 96.06
+    },
+    "D:\\": {
+      "total_bytes": 255924891648,
+      "total_gb": 238.35,
+      "used_bytes": 212967931904,
+      "used_gb": 198.34,
+      "free_bytes": 42956959744,
+      "free_gb": 40.01
+    }
+  },
+  "k_top_level_ranked_by_size": [
+    {
+      "name": "Project",
+      "path": "K:\\Project",
+      "is_directory": true,
+      "size_bytes": 132928881295,
+      "size_mb": 126770.86,
+      "size_gb": 123.8,
+      "file_count": 155779
+    },
+    {
+      "name": "llama.cpp",
+      "path": "K:\\llama.cpp",
+      "is_directory": true,
+      "size_bytes": 1571478792,
+      "size_mb": 1498.68,
+      "size_gb": 1.464,
+      "file_count": 54
+    },
+    {
+      "name": "poolside-llama",
+      "path": "K:\\poolside-llama",
+      "is_directory": true,
+      "size_bytes": 1160030349,
+      "size_mb": 1106.29,
+      "size_gb": 1.08,
+      "file_count": 57
+    },
+    {
+      "name": "OpenCode",
+      "path": "K:\\OpenCode",
+      "is_directory": true,
+      "size_bytes": 517326090,
+      "size_mb": 493.36,
+      "size_gb": 0.482,
+      "file_count": 125
+    },
+    {
+      "name": "OpenCode_Setup.exe",
+      "path": "K:\\OpenCode_Setup.exe",
+      "is_directory": false,
+      "size_bytes": 126211368,
+      "size_mb": 120.36,
+      "size_gb": 0.118,
+      "file_count": 1
+    },
+    {
+      "name": "scripts",
+      "path": "K:\\scripts",
+      "is_directory": true,
+      "size_bytes": 12800,
+      "size_mb": 0.01,
+      "size_gb": 0.0,
+      "file_count": 5
+    },
+    {
+      "name": "start_server_poolside_laguna_dflash.bat",
+      "path": "K:\\start_server_poolside_laguna_dflash.bat",
+      "is_directory": false,
+      "size_bytes": 3440,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    },
+    {
+      "name": "start_server_laguna_dflash.bat",
+      "path": "K:\\start_server_laguna_dflash.bat",
+      "is_directory": false,
+      "size_bytes": 3385,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    },
+    {
+      "name": "$RECYCLE.BIN",
+      "path": "K:\\$RECYCLE.BIN",
+      "is_directory": true,
+      "size_bytes": 129,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    },
+    {
+      "name": "System Volume Information",
+      "path": "K:\\System Volume Information",
+      "is_directory": true,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 0
+    },
+    {
+      "name": "models",
+      "path": "K:\\models",
+      "is_directory": true,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 0
+    }
+  ],
+  "d_top_level_ranked_by_size": [
+    {
+      "name": "AI",
+      "path": "D:\\AI",
+      "is_directory": true,
+      "size_bytes": 167385445338,
+      "size_mb": 159631.2,
+      "size_gb": 155.89,
+      "file_count": 30196
+    },
+    {
+      "name": "Project",
+      "path": "D:\\Project",
+      "is_directory": true,
+      "size_bytes": 84788159062,
+      "size_mb": 80860.29,
+      "size_gb": 78.965,
+      "file_count": 97888
+    },
+    {
+      "name": "$RECYCLE.BIN",
+      "path": "D:\\$RECYCLE.BIN",
+      "is_directory": true,
+      "size_bytes": 258,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 2
+    },
+    {
+      "name": "System Volume Information",
+      "path": "D:\\System Volume Information",
+      "is_directory": true,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 0
+    },
+    {
+      "name": "body.bin",
+      "path": "D:\\body.bin",
+      "is_directory": false,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    },
+    {
+      "name": "header.bin",
+      "path": "D:\\header.bin",
+      "is_directory": false,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    }
+  ],
+  "largest_project_roots": [
+    {
+      "PATH": "D:\\AI",
+      "PROJECT_NAME": "AI",
+      "PROJECT_TYPE": "UNKNOWN",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 167385445338,
+      "APPROX_SIZE_MB": 159631.2,
+      "APPROX_SIZE_GB": 155.89,
+      "FILE_COUNT": 30196,
+      "STATUS": "UNKNOWN"
+    },
+    {
+      "PATH": "D:\\AI\\Models",
+      "PROJECT_NAME": "Models",
+      "PROJECT_TYPE": "AI Models Store",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 161759576969,
+      "APPROX_SIZE_MB": 154265.95,
+      "APPROX_SIZE_GB": 150.65,
+      "FILE_COUNT": 102,
+      "STATUS": "RUNTIME"
+    },
+    {
+      "PATH": "K:\\Project",
+      "PROJECT_NAME": "Project",
+      "PROJECT_TYPE": "OpenHands Local Production Root",
+      "GIT_REPO": "YES",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [
+        ".git (git)"
+      ],
+      "APPROX_SIZE_BYTES": 132928884997,
+      "APPROX_SIZE_MB": 126770.86,
+      "APPROX_SIZE_GB": 123.8,
+      "FILE_COUNT": 155780,
+      "STATUS": "ACTIVE_PROJECT"
+    },
+    {
+      "PATH": "D:\\Project",
+      "PROJECT_NAME": "Project",
+      "PROJECT_TYPE": "D: Multi-Project Workspace Root",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 84788159062,
+      "APPROX_SIZE_MB": 80860.29,
+      "APPROX_SIZE_GB": 78.965,
+      "FILE_COUNT": 97888,
+      "STATUS": "ACTIVE_PROJECT"
+    },
+    {
+      "PATH": "D:\\Project\\models",
+      "PROJECT_NAME": "models",
+      "PROJECT_TYPE": "AI Models Store",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 57985063107,
+      "APPROX_SIZE_MB": 55298.87,
+      "APPROX_SIZE_GB": 54.003,
+      "FILE_COUNT": 10,
+      "STATUS": "RUNTIME"
+    },
+    {
+      "PATH": "D:\\Project\\assistant-ksenia",
+      "PROJECT_NAME": "assistant-ksenia",
+      "PROJECT_TYPE": "Voice Assistant Ksenia",
+      "GIT_REPO": "YES",
+      "REMOTE": "https://github.com/Alexperowo/assistant-ksenia.git",
+      "LAST_COMMIT": "e22681f Require cancellation gate in full audit (2026-09-02 10:57:48 +0300)",
+      "INDICATORS": [
+        ".git (git)",
+        "pyproject.toml (python)",
+        "src (source_dir)"
+      ],
+      "APPROX_SIZE_BYTES": 12965904572,
+      "APPROX_SIZE_MB": 12365.25,
+      "APPROX_SIZE_GB": 12.075,
+      "FILE_COUNT": 63098,
+      "STATUS": "ACTIVE_PROJECT"
+    },
+    {
+      "PATH": "D:\\AI\\Butler",
+      "PROJECT_NAME": "Butler",
+      "PROJECT_TYPE": "Python Butler venv / tools",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [
+        "venv (venv)"
+      ],
+      "APPROX_SIZE_BYTES": 5625868369,
+      "APPROX_SIZE_MB": 5365.25,
+      "APPROX_SIZE_GB": 5.239,
+      "FILE_COUNT": 30094,
+      "STATUS": "RUNTIME"
+    },
+    {
+      "PATH": "D:\\Project\\futo-keyboard-gigaam",
+      "PROJECT_NAME": "futo-keyboard-gigaam",
+      "PROJECT_TYPE": "FUTO Keyboard / STT models",
+      "GIT_REPO": "YES",
+      "REMOTE": "https://github.com/futo-org/android-keyboard.git",
+      "LAST_COMMIT": "d63298f fix(telemetry): audit and instrument diagnostic events for device validation without sensitive text (2026-08-31 22:12:38 +0300)",
+      "INDICATORS": [
+        ".git (git)",
+        "gradlew (gradle)",
+        "build.gradle (gradle)"
+      ],
+      "APPROX_SIZE_BYTES": 4262709799,
+      "APPROX_SIZE_MB": 4065.24,
+      "APPROX_SIZE_GB": 3.97,
+      "FILE_COUNT": 16614,
+      "STATUS": "ACTIVE_PROJECT"
+    },
+    {
+      "PATH": "K:\\Project\\OpenHands-Update",
+      "PROJECT_NAME": "OpenHands-Update",
+      "PROJECT_TYPE": "UNKNOWN",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 3313831384,
+      "APPROX_SIZE_MB": 3160.32,
+      "APPROX_SIZE_GB": 3.086,
+      "FILE_COUNT": 72190,
+      "STATUS": "UNKNOWN"
+    },
+    {
+      "PATH": "D:\\Project\\ik_llama-dflash",
+      "PROJECT_NAME": "ik_llama-dflash",
+      "PROJECT_TYPE": "ik_llama backend",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 2831772281,
+      "APPROX_SIZE_MB": 2700.59,
+      "APPROX_SIZE_GB": 2.637,
+      "FILE_COUNT": 54,
+      "STATUS": "ARCHIVE"
+    },
+    {
+      "PATH": "K:\\Project\\llama-mainline",
+      "PROJECT_NAME": "llama-mainline",
+      "PROJECT_TYPE": "OpenHands Local Production Subsystem",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 2332897914,
+      "APPROX_SIZE_MB": 2224.82,
+      "APPROX_SIZE_GB": 2.173,
+      "FILE_COUNT": 114,
+      "STATUS": "ACTIVE_PROJECT"
+    },
+    {
+      "PATH": "K:\\Project\\ik_llama",
+      "PROJECT_NAME": "ik_llama",
+      "PROJECT_TYPE": "ik_llama backend",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [
+        "src (source_dir)"
+      ],
+      "APPROX_SIZE_BYTES": 1715483479,
+      "APPROX_SIZE_MB": 1636.01,
+      "APPROX_SIZE_GB": 1.598,
+      "FILE_COUNT": 5667,
+      "STATUS": "ACTIVE_PROJECT"
+    },
+    {
+      "PATH": "K:\\llama.cpp",
+      "PROJECT_NAME": "llama.cpp",
+      "PROJECT_TYPE": "UNKNOWN",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 1571478792,
+      "APPROX_SIZE_MB": 1498.68,
+      "APPROX_SIZE_GB": 1.464,
+      "FILE_COUNT": 54,
+      "STATUS": "UNKNOWN"
+    },
+    {
+      "PATH": "D:\\Project\\ik_llama-current",
+      "PROJECT_NAME": "ik_llama-current",
+      "PROJECT_TYPE": "ik_llama backend",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 1571478792,
+      "APPROX_SIZE_MB": 1498.68,
+      "APPROX_SIZE_GB": 1.464,
+      "FILE_COUNT": 54,
+      "STATUS": "ARCHIVE"
+    },
+    {
+      "PATH": "K:\\poolside-llama",
+      "PROJECT_NAME": "poolside-llama",
+      "PROJECT_TYPE": "poolside-llama backend / runtime",
+      "GIT_REPO": "NO",
+      "REMOTE": null,
+      "LAST_COMMIT": null,
+      "INDICATORS": [],
+      "APPROX_SIZE_BYTES": 1160030349,
+      "APPROX_SIZE_MB": 1106.29,
+      "APPROX_SIZE_GB": 1.08,
+      "FILE_COUNT": 57,
+      "STATUS": "RUNTIME"
+    }
+  ]
+}

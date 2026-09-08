@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-09-06T12:06:55.041275",
+  "stage": "STAGE_6D",
+  "log_retention_policy": {
+    "policy_name": "Conservative 5-Generation Rotation Policy",
+    "canonical_log_root": "K:\\Project\\Logs",
+    "rotation_mechanism": "Native PowerShell Rotate-LogFile in start.ps1",
+    "max_historical_generations": 5,
+    "generation_naming_pattern": "<service>.log.<1..5>",
+    "trigger": "Service startup in start.ps1",
+    "invariants": [
+      "Current active log is never deleted while service is running",
+      "Up to 5 previous run generations are retained per service",
+      "Oldest generation (.5) is safely dropped upon new rotation",
+      "No unbounded file accumulation",
+      "Test/evidence logs and historical legacy logs (Logs\\legacy) are permanently preserved"
+    ],
+    "managed_services": [
+      {
+        "service": "OpenHands Launcher",
+        "active_log": "K:\\Project\\Logs\\OpenHands\\launcher.log",
+        "rotated_logs": "K:\\Project\\Logs\\OpenHands\\launcher.log.<1..5>"
+      },
+      {
+        "service": "Agent Canvas / Agent Server",
+        "active_log": "K:\\Project\\Logs\\OpenHands\\agent-canvas.log",
+        "rotated_logs": "K:\\Project\\Logs\\OpenHands\\agent-canvas.log.<1..5>"
+      },
+      {
+        "service": "llama-swap",
+        "active_log": "K:\\Project\\Logs\\llama-swap\\llama-swap.log",
+        "rotated_logs": "K:\\Project\\Logs\\llama-swap\\llama-swap.log.<1..5>"
+      },
+      {
+        "service": "llama-server children",
+        "active_log": "K:\\Project\\Logs\\llama-server\\llama.log",
+        "rotated_logs": "K:\\Project\\Logs\\llama-server\\llama.log.<1..5>"
+      },
+      {
+        "service": "Voice Bridge",
+        "active_log": "K:\\Project\\Logs\\Voice\\voice-bridge.log",
+        "rotated_logs": "K:\\Project\\Logs\\Voice\\voice-bridge.log.<1..5>"
+      },
+      {
+        "service": "Diagnostics",
+        "active_log": "K:\\Project\\Logs\\Diagnostics\\diagnostics.log",
+        "rotated_logs": "K:\\Project\\Logs\\Diagnostics\\diagnostics.log.<1..5>"
+      }
+    ]
+  },
+  "temp_retention_policy": {
+    "canonical_temp_root": "K:\\Project\\Temp",
+    "subdirectories": [
+      "K:\\Project\\Temp\\OpenHands",
+      "K:\\Project\\Temp\\Voice",
+      "K:\\Project\\Temp\\Tests"
+    ],
+    "rules": [
+      "Disposable local data only",
+      "No global Windows TEMP/TMP modification",
+      "No production state, models, configs, or evidence stored in Temp"
+    ]
+  }
+}

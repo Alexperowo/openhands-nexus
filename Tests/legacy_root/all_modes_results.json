@@ -1,0 +1,106 @@
+[
+  {
+    "name": "1. Direct (enable_thinking=False)",
+    "elapsed_s": 5.84,
+    "payload": {
+      "model": "Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "messages": [
+        {
+          "role": "user",
+          "content": "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost? Show your steps."
+        }
+      ],
+      "max_tokens": 512,
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "min_p": 0.05,
+      "stream": false,
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    "prompt_tokens": 50,
+    "completion_tokens": 189,
+    "total_tokens": 239,
+    "reasoning_content": "",
+    "content": "<think>\nThe ball costs $0.05. Let me show the steps clearly.\n</think>\n\nThe ball costs $0.05.\n\nSteps:\n1. Let the ball's cost = x.\n2. The bat costs $1.00 more, so the bat = x + $1.00.\n3. Together they cost $1.10: x + (x + $1.00) = $1.10.\n4. 2x + $1.00 = $1.10.\n5. 2x = $0.10.\n6. x = $0.05.\n\nVerification: $0.05 (ball) + $1.05 (bat) = $1.10 ✓ and $1.05 − $0.05 = $1.00 ✓"
+  },
+  {
+    "name": "2. Low (reasoning_effort=low)",
+    "elapsed_s": 5.05,
+    "payload": {
+      "model": "Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "messages": [
+        {
+          "role": "user",
+          "content": "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost? Show your steps."
+        }
+      ],
+      "max_tokens": 512,
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "min_p": 0.05,
+      "stream": false,
+      "chat_template_kwargs": {
+        "reasoning_effort": "low"
+      }
+    },
+    "prompt_tokens": 78,
+    "completion_tokens": 177,
+    "total_tokens": 255,
+    "reasoning_content": "This is the classic bat and ball problem. Let me solve it.\n\nLet the ball cost x. Then the bat costs x + 1.00.\n\nx + (x + 1.00) = 1.10\n2x + 1.00 = 1.10\n2x = 0.10\nx = 0.05\n\nThe ball costs $0.05.\n",
+    "content": "The ball costs $0.05.\n\nLet the ball cost $x$. Then the bat costs $x + 1.00$.\n\nx + (x + 1.00) = 1.10\n2x + 1.00 = 1.10\n2x = 0.10\nx = 0.05"
+  },
+  {
+    "name": "3. Medium (reasoning_effort=medium)",
+    "elapsed_s": 6.97,
+    "payload": {
+      "model": "Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "messages": [
+        {
+          "role": "user",
+          "content": "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost? Show your steps."
+        }
+      ],
+      "max_tokens": 512,
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "min_p": 0.05,
+      "stream": false,
+      "chat_template_kwargs": {
+        "reasoning_effort": "medium"
+      }
+    },
+    "prompt_tokens": 48,
+    "completion_tokens": 244,
+    "total_tokens": 292,
+    "reasoning_content": "This is the classic bat and ball problem. Let me solve it carefully.\n\nLet the ball cost x. Then the bat costs x + $1.00.\n\nx + (x + $1.00) = $1.10\n2x + $1.00 = $1.10\n2x = $0.10\nx = $0.05\n\nThe ball costs $0.05 (5 cents).\n",
+    "content": "The ball costs $0.05.\n\n**Steps:**\n\n1. Let the ball's cost = x. Then the bat's cost = x + $1.00.\n2. Together they cost $1.10: x + (x + $1.00) = $1.10\n3. Simplify: 2x + $1.00 = $1.10\n4. Subtract $1.00 from both sides: 2x = $0.10\n5. Divide by 2: x = $0.05\n\nThe ball costs 5 cents, and the bat costs $1.05."
+  },
+  {
+    "name": "4. XHigh (reasoning_effort=xhigh)",
+    "elapsed_s": 9.39,
+    "payload": {
+      "model": "Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "messages": [
+        {
+          "role": "user",
+          "content": "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost? Show your steps."
+        }
+      ],
+      "max_tokens": 512,
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "min_p": 0.05,
+      "stream": false,
+      "chat_template_kwargs": {
+        "reasoning_effort": "xhigh"
+      }
+    },
+    "prompt_tokens": 90,
+    "completion_tokens": 317,
+    "total_tokens": 407,
+    "reasoning_content": "I'm setting up the classic bat and ball problem with variables for each item's cost, then solving the system of equations to find that the ball costs $0.05 and the bat costs $1.05.\n",
+    "content": "# Bat and Ball Problem\n\n## Setting Up the Equations\n\nLet **b** = cost of the ball\n\nSince the bat costs $1.00 more than the ball:\n**bat** = b + 1.00\n\nTogether they cost $1.10:\n**b + (b + 1.00) = 1.10**\n\n## Solving\n\nCombine like terms:\n$$2b + 1.00 = 1.10$$\n\nSubtract $1.00 from both sides:\n$$2b = 0.10$$\n\nDivide by 2:\n$$b = 0.05$$\n\n## Answer\n\n**The ball costs $0.05 (5 cents).**\n\n### Check:\n- Ball: $0.05\n- Bat: $0.05 + $1.00 = $1.05\n- Total: $0.05 + $1.05 = **$1.10** ✓\n\n> ⚠️ **Common mistake:** Many people answer \"$0.10\" — but then the bat would be $1.10, making the total $1.20, not $1.10!"
+  }
+]

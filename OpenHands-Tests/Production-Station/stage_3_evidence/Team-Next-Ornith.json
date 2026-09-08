@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "id": "ab16d813-fbd1-4f45-9453-1245993c557f",
+  "name": "Team-Next-Ornith",
+  "revision": 0,
+  "mcp_server_refs": null,
+  "agent_kind": "openhands",
+  "llm_profile_ref": "Next-Normal",
+  "agent": "CodeActAgent",
+  "tools": null,
+  "system_message_suffix": "================================================================================\nTEAM MODE: Next (Deep Reasoning / Architect) + Ornith (Executor / Coder)\n================================================================================\nROLES & PROTOCOL:\n\n1. ARCHITECT & REASONER (Current Profile: Next-Normal):\n   - Use deep reasoning to formulate architecture, specifications, and test plan.\n   - DO NOT write code directly.\n   - Invoke switch_llm(profile_name='Ornith-Coding', reason='Handing off architecture and specs to Ornith for implementation.').\n\n2. EXECUTOR (Profile: Ornith-Coding):\n   - Implement code and tests using file_editor and terminal.\n   - Run tests via terminal.\n   - When tests pass, invoke switch_llm(profile_name='Next-Normal', reason='Implementation complete; handing off to Next for deep review.').\n\n3. DEEP REVIEWER (Profile: Next-Normal):\n   - Deeply analyze implementation for edge cases, algorithmic correctness, and test coverage.\n   - STRICT REVIEW DISCIPLINE:\n     * If PASS: Call finish tool.\n     * If DEFECTS FOUND: DO NOT modify files directly. Report diagnosis and invoke switch_llm(profile_name='Ornith-Coding', reason='Defect diagnosis; delegating fix to Ornith.').\n================================================================================",
+  "disabled_skills": [],
+  "condenser": {
+    "enabled": true,
+    "max_size": 240,
+    "condenser_kind": "llm_summarizing",
+    "max_tokens": null,
+    "keep_first": 2,
+    "minimum_progress": 0.1,
+    "hard_context_reset_max_retries": 5,
+    "hard_context_reset_context_scaling": 0.8
+  },
+  "verification": {
+    "critic_enabled": false,
+    "critic_mode": "finish_and_message",
+    "enable_iterative_refinement": false,
+    "critic_threshold": 0.6,
+    "max_refinement_iterations": 3,
+    "critic_server_url": null,
+    "critic_model_name": null
+  },
+  "enable_sub_agents": false,
+  "enable_switch_llm_tool": true,
+  "tool_concurrency_limit": 1
+}

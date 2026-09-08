@@ -1,0 +1,47 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:02:00+03:00",
+  "viewports_evaluated": [
+    {
+      "device": "Standard Phone Portrait",
+      "dimensions": "412x915",
+      "scale": "1.0",
+      "result": "PASS"
+    },
+    {
+      "device": "Large Phone / Tablet Portrait",
+      "dimensions": "768x1024",
+      "scale": "1.0",
+      "result": "PASS"
+    },
+    {
+      "device": "Tablet Landscape",
+      "dimensions": "1024x768",
+      "scale": "1.0",
+      "result": "PASS"
+    }
+  ],
+  "responsive_fixes_applied": [
+    {
+      "issue": "iOS/Android form input auto-zoom",
+      "fix": "Enforce font-size: 16px !important on input, textarea, select for screens <= 768px"
+    },
+    {
+      "issue": "Touch target accessibility",
+      "fix": "Enforce min-height: 38px on buttons/touch targets, and 44x44px for voice mic button"
+    },
+    {
+      "issue": "Display notch & home gesture bar clipping",
+      "fix": "Integrate CSS environment safe-area-insets (env(safe-area-inset-*))"
+    },
+    {
+      "issue": "Wide code blocks, markdown tables, and output panes blowing out mobile viewport",
+      "fix": "Set pre, code, [data-code-block], table to max-width: 100% with horizontal touch scroll"
+    },
+    {
+      "issue": "Message composer clipping on small screens",
+      "fix": "Enforce max-width: 100% and box-sizing: border-box on form composer container"
+    }
+  ],
+  "verdict": "PASS"
+}

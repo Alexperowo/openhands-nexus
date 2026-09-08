@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-09-06T12:05:06.194066+00:00",
+  "description": "Informational version manifest for OpenHands Local platform components (not a runtime dependency)",
+  "agent_canvas": {
+    "current_version": "1.16.0",
+    "production_path": "C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@openhands\\agent-canvas",
+    "upstream_source": "https://github.com/OpenHands/OpenHands (npm: @openhands/agent-canvas)",
+    "last_verified": "2026-09-06T10:14:34.876305+00:00"
+  },
+  "agent_server": {
+    "current_version": "1.44.0",
+    "pinned_in": "C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@openhands\\agent-canvas\\config\\defaults.json",
+    "production_path": "Astral uvx cache (port 18000)",
+    "upstream_source": "https://github.com/OpenHands/software-agent-sdk (PyPI: openhands-agent-server)",
+    "last_verified": "2026-09-06T10:14:34.876305+00:00"
+  },
+  "automation": {
+    "current_version": "1.9.0",
+    "pinned_in": "C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@openhands\\agent-canvas\\config\\defaults.json",
+    "production_path": "Astral uvx cache (port 18001)",
+    "upstream_source": "https://github.com/OpenHands/automation (PyPI: openhands-automation)",
+    "last_verified": "2026-09-06T10:14:34.876305+00:00"
+  },
+  "llama_swap": {
+    "current_version": "v255",
+    "commit": "7761aa1",
+    "build_time": "2026-09-06T05:46:05Z",
+    "production_path": "K:\\Project\\llama-swap\\bin\\llama-swap.exe",
+    "sha256": "41FCCA0870EA3EC6E159C18224E7589B325419C6A5685E7C53482DCD81817B3E",
+    "upstream_source": "https://github.com/mostlygeek/llama-swap",
+    "last_verified": "2026-09-06T10:37:35.729444+00:00",
+    "previous_version": "v252"
+  },
+  "llama_mainline": {
+    "current_version": "0.4.0-dev (build 10821)",
+    "commit": "971595d66",
+    "production_path": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+    "sha256": "ED0C7F94CDDCB0F9CE0F5D30CF18967DA76AB881C0281AF11464033FA859146C",
+    "upstream_source": "https://github.com/ggml-org/llama.cpp",
+    "last_verified": "2026-09-06T11:07:41.262923+00:00",
+    "previous_version": "0.4.0-dev (build 10816)",
+    "build": "b10821"
+  },
+  "ik_llama": {
+    "current_version": "1",
+    "commit": "fe215a8ccdce6b844d2a3a3bbde08ae76a6284bf",
+    "short_commit": "fe215a8",
+    "previous_commit": "3c58ae373a0081c884099f435fb16ca720852bf7",
+    "production_path": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+    "sha256": "81980FF3C20CB7C29240FCACDE37CE254B9D55DF58AED9A0FBC53A0A260F5D63",
+    "upstream_source": "https://github.com/ikawrakow/ik_llama.cpp",
+    "last_verified": "2026-09-06T12:05:06.194066+00:00"
+  }
+}

@@ -1,0 +1,7 @@
+mtp_type,n_max,pp_tps,tg_tps,drafted,accepted,acceptance_pct,completion_tokens,wall_time_s,vram_mib,ram_mib,finish_reason
+MTP_Q4,1,22.3,17.79,0,415,0.0,1024,58.9,20482,24956,length
+MTP_Q4,2,22.84,17.01,0,511,0.0,1024,61.49,20482,24952,length
+MTP_Q4,3,22.27,16.03,0,534,0.0,1024,65.23,20482,25064,length
+MTP_Q6,1,23.22,17.2,0,396,0.0,1024,60.82,20744,25293,length
+MTP_Q6,2,22.12,16.45,0,487,0.0,1024,63.62,20754,25297,length
+MTP_Q6,3,21.66,15.98,0,538,0.0,1024,65.44,20754,25275,length

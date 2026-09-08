@@ -1,0 +1,50 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:02:00+03:00",
+  "gateway_service": {
+    "name": "OpenHands Mobile LAN PWA Gateway",
+    "script_path": "K:\\Project\\openhands-pwa\\lan-gateway.mjs",
+    "runtime": "Node.js v24 built-in https server",
+    "proxy_engine": "@openhands/agent-canvas/scripts/proxy-utils.mjs (createProxyHandlers via httpxy)",
+    "external_dependencies_added": 0,
+    "listen_address": "0.0.0.0:8443",
+    "lan_ip": "192.168.0.14",
+    "lan_hostname": "DESKTOP-L0FBHL4",
+    "canonical_urls": [
+      "https://192.168.0.14:8443",
+      "https://DESKTOP-L0FBHL4:8443"
+    ],
+    "tls_configuration": {
+      "certificate_path": "K:\\Project\\openhands-pwa\\certs\\openhands-lan.pfx",
+      "public_cert_path": "K:\\Project\\openhands-pwa\\certs\\openhands-lan.crt",
+      "key_type": "RSA 2048-bit",
+      "subject": "CN=DESKTOP-L0FBHL4",
+      "san_entries": [
+        "DESKTOP-L0FBHL4",
+        "192.168.0.14",
+        "localhost",
+        "127.0.0.1"
+      ],
+      "validity_years": 3,
+      "private_key_protection": "Stored outside web root, excluded by .gitignore, never exposed in logs or evidence"
+    },
+    "routing_rules": [
+      {
+        "prefix": "/voice-api/",
+        "target": "http://127.0.0.1:18002/",
+        "purpose": "Routes STT and TTS requests to loopback voice bridge over secure HTTPS connection"
+      },
+      {
+        "prefix": "/",
+        "target": "http://127.0.0.1:8000/",
+        "purpose": "Routes all Canvas UI, API, static assets, and WebSocket connections (/sockets)"
+      }
+    ]
+  },
+  "pwa_assets": {
+    "manifest": "K:\\Project\\openhands-pwa\\manifest.webmanifest",
+    "service_worker": "K:\\Project\\openhands-pwa\\sw.js",
+    "mobile_css": "K:\\Project\\openhands-pwa\\mobile-pwa.css",
+    "injection_script": "K:\\Project\\openhands-pwa\\patch-agent-canvas-pwa.ps1"
+  }
+}

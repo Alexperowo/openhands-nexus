@@ -1,0 +1,48 @@
+{
+  "stage": "10",
+  "title": "OpenHands Mobile LAN PWA",
+  "timestamp": "2026-09-06T22:05:00+03:00",
+  "stage_status": "PASS",
+  "results": {
+    "STAGE_10_MOBILE_PWA": "PASS",
+    "LAN_ADDRESS": "https://192.168.0.14:8443 (or https://DESKTOP-L0FBHL4:8443)",
+    "LAN_WEB_ACCESS": "PASS",
+    "PWA_INSTALLABLE": "PASS",
+    "HTTPS_USED": "YES",
+    "LAN_EXPOSED_PORTS": [
+      8443
+    ],
+    "BACKEND_PORTS_STILL_LOOPBACK_ONLY": [
+      8000,
+      8080,
+      18000,
+      18001,
+      18002
+    ],
+    "MOBILE_PHONE_LAYOUT": "PASS",
+    "MOBILE_TABLET_LAYOUT": "PASS",
+    "REAL_OPENHANDS_AGENT_TASK": "PASS",
+    "DESKTOP_REGRESSION": "PASS",
+    "CANONICAL_START_INTEGRATION": "PASS",
+    "CANONICAL_STOP_INTEGRATION": "PASS",
+    "ORPHAN_PROCESSES": 0,
+    "ANDROID_CHROME_REAL_TEST": "PENDING_MANUAL",
+    "UPDATE_SURVIVABILITY": "PASS",
+    "DOCUMENTATION": "K:\\Project\\Docs\\MOBILE-PWA.md",
+    "EVIDENCE_PATH": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_10_mobile_pwa\\"
+  },
+  "evidence_files": [
+    "network_architecture_before.json",
+    "pwa_architecture.json",
+    "chrome_pwa_requirements.json",
+    "lan_security.json",
+    "pwa_manifest_validation.json",
+    "mobile_responsive_audit.json",
+    "lan_functional_test.json",
+    "android_chrome_test.json",
+    "desktop_regression.json",
+    "start_stop_integration.json",
+    "stage_10_summary.json"
+  ],
+  "unresolved": []
+}

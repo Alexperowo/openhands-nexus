@@ -1,0 +1,142 @@
+Perform a rigorous security, concurrency, and reliability code audit on the following Python module.
+Identify all genuine programming defects, race conditions, memory/socket leaks, and logic errors.
+For each defect found, provide:
+1. Exact location (Class and Method)
+2. Defect classification (Concurrency, State, Resource, Security, Logic)
+3. Precise failure mechanism
+4. Verified code fix
+
+```python
+import asyncio
+import time
+import copy
+import logging
+from typing import Dict, Any, Optional, Set, List
+
+logger = logging.getLogger("job_worker")
+
+class TokenBucket:
+    def __init__(self, capacity: float, fill_rate: float):
+        self.capacity = capacity
+        self.fill_rate = fill_rate
+        self.tokens = capacity
+        self.last_refill = time.time()
+
+    def refill(self):
+        now = time.time()
+        elapsed = now - self.last_refill
+        # BUG-A4: int truncation discards fractional tokens on high frequency calls
+        added_tokens = int(elapsed * self.fill_rate)
+        if added_tokens > 0:
+            self.tokens = min(self.capacity, self.tokens + added_tokens)
+            self.last_refill = now
+
+class AsyncRateLimiter:
+    def __init__(self, bucket: TokenBucket):
+        self.bucket = bucket
+        self._lock = asyncio.Lock()
+
+    async def acquire(self):
+        # BUG-A2: Race condition - reading and updating bucket across sleep without lock
+        while True:
+            self.bucket.refill()
+            if self.bucket.tokens >= 1.0:
+                self.bucket.tokens -= 1.0
+                return
+            await asyncio.sleep(0.05)
+
+class TaskConfig:
+    def __init__(self, options: Dict[str, Any]):
+        self.options = options
+
+    def derive_child(self, task_id: str) -> "TaskConfig":
+        # BUG-A6: Shallow copy causes nested dictionary mutation
+        child_opts = self.options.copy()
+        child_opts["task_id"] = task_id
+        return TaskConfig(child_opts)
+
+class CacheKey:
+    @staticmethod
+    def generate(tenant_id: str, resource_name: str) -> str:
+        # BUG-A8: Colon delimiter injection between tenant and resource
+        return f"{tenant_id}:{resource_name}"
+
+class ConnectionPool:
+    def __init__(self, host: str, port: int):
+        self.host = host
+        self.port = port
+
+    async def _perform_handshake(self, writer: asyncio.StreamWriter):
+        writer.write(b"AUTH_INIT\n")
+        await writer.drain()
+        # Simulated auth check
+        raise ConnectionRefusedError("Handshake auth failed")
+
+    async def get_connection(self):
+        reader, writer = await asyncio.open_connection(self.host, self.port)
+        # BUG-A3: If handshake raises, socket is never closed
+        await self._perform_handshake(writer)
+        return reader, writer
+
+class JobQueue:
+    def __init__(self, name: str):
+        self.name = name
+        self.jobs: List[Dict[str, Any]] = []
+        self.active_job_ids: Set[str] = set()
+        self.in_progress: int = 0
+        self.lock = asyncio.Lock()
+
+    async def push(self, job: Dict[str, Any]):
+        async with self.lock:
+            if job["id"] in self.active_job_ids:
+                return False
+            self.jobs.append(job)
+            self.active_job_ids.add(job["id"])
+            return True
+
+    async def pop(self) -> Optional[Dict[str, Any]]:
+        async with self.lock:
+            if not self.jobs:
+                return None
+            job = self.jobs.pop(0)
+            self.in_progress += 1
+            return job
+
+    async def handle_failure(self, job: Dict[str, Any]):
+        async with self.lock:
+            self.in_progress -= 1
+            # BUG-A1: job['id'] is never removed from active_job_ids on permanent failure/retry
+            logger.warning(f"Job {job['id']} marked failed")
+
+class QueueRouter:
+    @staticmethod
+    async def transfer_job(src_queue: JobQueue, dst_queue: JobQueue, job_id: str):
+        # BUG-A7: Asymmetric lock ordering causes deadlock
+        async with src_queue.lock:
+            async with dst_queue.lock:
+                # Find and move job
+                for i, j in enumerate(src_queue.jobs):
+                    if j["id"] == job_id:
+                        job = src_queue.jobs.pop(i)
+                        src_queue.active_job_ids.remove(job_id)
+                        dst_queue.jobs.append(job)
+                        dst_queue.active_job_ids.add(job_id)
+                        return True
+                return False
+
+class Worker:
+    async def fetch_metadata(self) -> Dict[str, Any]:
+        raise TimeoutError("Network timeout loading metadata")
+
+    async def execute_task(self):
+        try:
+            # BUG-A5: task_meta is not initialized before try, UnboundLocalError in finally
+            task_meta = await self.fetch_metadata()
+            logger.info("Executing task with meta")
+        except Exception as e:
+            logger.error(f"Task failed: {e}")
+        finally:
+            if task_meta.get("cleanup"):
+                logger.info("Running task cleanup")
+
+```

@@ -1,0 +1,15 @@
+[
+  {
+    "ACTION": "DELETE",
+    "SOURCE": "K:\\models",
+    "DESTINATION": "N/A",
+    "TYPE": "DIRECTORY",
+    "SIZE_BYTES": 0,
+    "FILE_COUNT": 0,
+    "REASON": "CONFIRMED_EMPTY_DIRECTORY: empty directory on K: root, 0 bytes, 0 files, unreferenced",
+    "REFERENCE_CHECK": "PASS - 0 references in any script/config",
+    "PROJECT_BOUNDARY_CHECK": "PASS - Not part of any protected project",
+    "RESULT": "SUCCESS",
+    "TIMESTAMP": "2026-09-06T13:06:19.370512+00:00"
+  }
+]

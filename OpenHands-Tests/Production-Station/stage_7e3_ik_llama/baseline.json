@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-09-06T14:10:37.097964",
+  "stage": "7E-3.1",
+  "ports_free": true,
+  "current_ik_llama": {
+    "commit": "3c58ae373a0081c884099f435fb16ca720852bf7",
+    "short_commit": "3c58ae3",
+    "binary_path": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+    "binary_sha256": "D8A860D7D608D563239C56EDA69912B771A2E26317EBB58C3A6413BAAE29320A"
+  },
+  "upstream_target": {
+    "commit": "fe215a8ccdce6b844d2a3a3bbde08ae76a6284bf",
+    "short_commit": "fe215a8",
+    "source": "https://github.com/ikawrakow/ik_llama.cpp (origin/main)"
+  },
+  "production_commands": {
+    "qwen": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf --mmproj K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=3,p_min=0.0 --jinja --host 127.0.0.1 --port ${PORT} --temp 0.7 --top-p 0.8 --min-p 0.05",
+    "ornith": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75 --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0"
+  },
+  "frozen_target_commit": "fe215a8ccdce6b844d2a3a3bbde08ae76a6284bf"
+}

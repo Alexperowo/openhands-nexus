@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-09-06T10:16:10.443587+00:00",
+  "matrix": {
+    "agent_canvas": {
+      "current_installed": "1.16.0",
+      "latest_upstream": "1.16.0",
+      "package_manager": "npm",
+      "status": "UP_TO_DATE"
+    },
+    "agent_server": {
+      "current_pinned": "1.44.0",
+      "pinned_in": "defaults.json",
+      "latest_upstream_pypi": "1.44.1",
+      "status": "PINNED_COMPATIBLE (PyPI update available)"
+    },
+    "automation": {
+      "current_pinned": "1.9.0",
+      "pinned_in": "defaults.json",
+      "latest_upstream_pypi": "1.10.0",
+      "status": "PINNED_COMPATIBLE (PyPI update available)"
+    },
+    "localization_patch": {
+      "version": "1.0.0",
+      "dictionary_strings_ru": 2400,
+      "gate_status": "PASS (0 missing keys)"
+    },
+    "voice_ui_patch": {
+      "version": "1.0.0",
+      "anchors_present_in_index_html": true,
+      "gate_status": "PASS"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-09-06T10:07:05.991294+00:00",
+  "summary": "Identifies production-relevant components that update periodically/frequently but lack safe updaters",
+  "update_gaps": [
+    {
+      "gap_id": "GAP-01",
+      "component": "llama-swap",
+      "production_role": "Core routing proxy for all LLM models on port 8080",
+      "current_version": "v252",
+      "latest_upstream": "v255",
+      "why_update_needed": "Active upstream development (32 releases in last 90 days), bug fixes, improved process termination, connection pooling. Router is the single point of failure for all LLM inference.",
+      "current_update_method": "Manual binary download and file replacement",
+      "proposed_updater_type": "PowerShell script (K:\\Project\\OpenHands-Update\\scripts\\update-llama-swap.ps1) with GitHub release discovery, SHA256 check, station stopped gate, -CheckOnly, -DryRun, config test, and atomic binary rollback",
+      "required_validation": "Station stopped check, config.yaml syntax test with candidate exe, port 8080 binding test, /health 200 check, /v1/models endpoint check",
+      "rollback_strategy": "Retain previous llama-swap.exe as llama-swap.exe.bak; atomic copy restoration"
+    },
+    {
+      "gap_id": "GAP-02",
+      "component": "OpenHands Agent Canvas Updater Hardening",
+      "production_role": "Primary Web UI and Ingress Controller",
+      "current_version": "1.16.0",
+      "latest_upstream": "1.16.0",
+      "why_update_needed": "Existing update-openhands.ps1 lacks modern safety gates established in Stage 7B: has no -CheckOnly mode, no -DryRun mode, automatically restarts station, and immediately attempts live npm install if new version exists.",
+      "current_update_method": "Flawed update-openhands.ps1",
+      "proposed_updater_type": "Harden K:\\Project\\OpenHands-Update\\scripts\\update-openhands.ps1 with -CheckOnly, -DryRun, station stopped gate, decoupled restart (-RestartPlatform), and defaults.json version inspection",
+      "required_validation": "Station stopped check, npm tarball extraction to staging dir, build/ asset hash inspection, patcher dry-run, localization parity check",
+      "rollback_strategy": "Full folder backup to OpenHands-Update\\backups\\openhands\\<timestamp>-v<ver>"
+    },
+    {
+      "gap_id": "GAP-03",
+      "component": "OpenHands Agent Server / Automation Backend Visibility",
+      "production_role": "Background FastAPI services executed by uvx",
+      "current_version": "agentServer 1.44.0 / automation 1.9.0",
+      "latest_upstream": "agentServer 1.44.1 / automation 1.10.0",
+      "why_update_needed": "agent-server and automation have independent releases on PyPI that can diverge from agent-canvas. When agent-canvas updates, defaults.json changes version pins automatically. There is currently no pre-update visibility tool reporting what backend versions will be pulled.",
+      "current_update_method": "Implicitly dictated by agent-canvas defaults.json",
+      "proposed_updater_type": "Integrate backend PyPI version inspection into update-openhands.ps1 -CheckOnly output",
+      "required_validation": "Verify PyPI availability and agent-client-protocol constraints before updating agent-canvas",
+      "rollback_strategy": "Revert agent-canvas package, which restores previous defaults.json"
+    }
+  ]
+}

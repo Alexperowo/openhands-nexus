@@ -1,0 +1,40 @@
+{
+  "stage": "7E-3",
+  "component": "ik_llama",
+  "timestamp": "2026-09-06T12:05:06.208197+00:00",
+  "status": "PASS",
+  "baseline": {
+    "commit": "3c58ae373a0081c884099f435fb16ca720852bf7",
+    "short_commit": "3c58ae3",
+    "sha256": "D8A860D7D608D563239C56EDA69912B771A2E26317EBB58C3A6413BAAE29320A"
+  },
+  "promoted": {
+    "commit": "fe215a8ccdce6b844d2a3a3bbde08ae76a6284bf",
+    "short_commit": "fe215a8",
+    "sha256": "81980FF3C20CB7C29240FCACDE37CE254B9D55DF58AED9A0FBC53A0A260F5D63",
+    "binary_path": "K:\\Project\\ik_llama\\bin\\llama-server.exe"
+  },
+  "backup_path": "K:\\Project\\OpenHands-Update\\backups\\ik_llama\\20260906-145525-3c58ae3",
+  "gates": {
+    "gate_a_qwen_38": {
+      "status": "PASS",
+      "model": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "mmproj": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "mtp": "n_max=3,p_min=0.0",
+      "completion_tested": true
+    },
+    "gate_b_ornith_15": {
+      "status": "PASS",
+      "model": "K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "mtp": "n_max=1,p_min=0.75",
+      "completion_tested": true
+    }
+  },
+  "production_routing": {
+    "qwen_status": "PASS",
+    "qwen_tps": 29.74,
+    "ornith_status": "PASS",
+    "ornith_tps": 68.73,
+    "clean_shutdown": "PASS"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-09-06T08:31:31.387036+00:00",
+  "stage": "STAGE_6C",
+  "total_moved": 7,
+  "total_failed": 0,
+  "manifest": [
+    {
+      "SOURCE": "K:/Project/Models/Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "DESTINATION": "K:/Project/Models/Ornith/Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "SIZE_BEFORE": 18822546944,
+      "SIZE_AFTER": 18822546944,
+      "MOVE_RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:/Project/Models/mmproj-Ornith-1.5-35B-BF16.gguf",
+      "DESTINATION": "K:/Project/Models/Ornith/mmproj-Ornith-1.5-35B-BF16.gguf",
+      "SIZE_BEFORE": 902822240,
+      "SIZE_AFTER": 902822240,
+      "MOVE_RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:/Project/Models/Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+      "DESTINATION": "K:/Project/Models/Qwen3-Next/Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+      "SIZE_BEFORE": 35494473888,
+      "SIZE_AFTER": 35494473888,
+      "MOVE_RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:/Project/Models/Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf",
+      "DESTINATION": "K:/Project/Models/Qwen3-Next/Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf",
+      "SIZE_BEFORE": 1507217408,
+      "SIZE_AFTER": 1507217408,
+      "MOVE_RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:/Project/Models/Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q6_K.gguf",
+      "DESTINATION": "K:/Project/Models/Qwen3-Next/Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q6_K.gguf",
+      "SIZE_BEFORE": 1873725440,
+      "SIZE_AFTER": 1873725440,
+      "MOVE_RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:/Project/Models/Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf",
+      "DESTINATION": "K:/Project/Models/Benchmarks/Qwen3.5-122B/Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf",
+      "SIZE_BEFORE": 44612547968,
+      "SIZE_AFTER": 44612547968,
+      "MOVE_RESULT": "SUCCESS"
+    },
+    {
+      "SOURCE": "K:/Project/Models/Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF-mmproj-Q8_0.gguf",
+      "DESTINATION": "K:/Project/Models/Benchmarks/Qwen3.5-122B/Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF-mmproj-Q8_0.gguf",
+      "SIZE_BEFORE": 619212000,
+      "SIZE_AFTER": 619212000,
+      "MOVE_RESULT": "SUCCESS"
+    }
+  ]
+}

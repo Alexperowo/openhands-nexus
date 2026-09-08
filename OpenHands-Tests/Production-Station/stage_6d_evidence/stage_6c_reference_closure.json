@@ -1,0 +1,133 @@
+{
+  "timestamp": "2026-09-06T12:05:29.294861",
+  "stage": "STAGE_6C_REFERENCE_CLOSURE",
+  "audited_production_files_count": 23,
+  "audited_production_files": [
+    "K:\\Project\\START-OPENHANDS-LOCAL.cmd",
+    "K:\\Project\\STOP-OPENHANDS-LOCAL.cmd",
+    "K:\\Project\\RESTART-OPENHANDS-LOCAL.cmd",
+    "K:\\Project\\DIAGNOSTICS-OPENHANDS-LOCAL.cmd",
+    "K:\\Project\\.openhands-local\\start.ps1",
+    "K:\\Project\\.openhands-local\\stop.ps1",
+    "K:\\Project\\.openhands-local\\restart.ps1",
+    "K:\\Project\\.openhands-local\\diagnostics.ps1",
+    "K:\\Project\\llama-swap\\config.yaml",
+    "C:\\Users\\User\\.openhands\\settings.json",
+    "C:\\Users\\User\\.openhands\\agent-profiles\\Next-Deep-Standalone.json",
+    "C:\\Users\\User\\.openhands\\agent-profiles\\Next-Normal-Standalone.json",
+    "C:\\Users\\User\\.openhands\\agent-profiles\\Ornith-Standalone.json",
+    "C:\\Users\\User\\.openhands\\agent-profiles\\Qwen-Standalone.json",
+    "C:\\Users\\User\\.openhands\\agent-profiles\\Team-Full.json",
+    "C:\\Users\\User\\.openhands\\agent-profiles\\Team-Next-Ornith.json",
+    "C:\\Users\\User\\.openhands\\agent-profiles\\Team-Qwen-Next.json",
+    "C:\\Users\\User\\.openhands\\agent-profiles\\Team-Qwen-Ornith.json",
+    "C:\\Users\\User\\.openhands\\agent-profiles\\default.json",
+    "K:\\Project\\local-voice\\benchmark_results.json",
+    "K:\\Project\\local-voice\\patch-agent-canvas-voice.ps1",
+    "K:\\Project\\local-voice\\service.py",
+    "K:\\Project\\local-voice\\stt_test_results.json"
+  ],
+  "exact_path_results": {
+    "K:\\Project\\Models\\Ornith-1.5-35B-MTP-19G-ICE.gguf": {
+      "old_path": "K:\\Project\\Models\\Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "active_reference_count": 0,
+      "active_matches": [],
+      "status": "CLEAN"
+    },
+    "K:\\Project\\Models\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf": {
+      "old_path": "K:\\Project\\Models\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+      "active_reference_count": 0,
+      "active_matches": [],
+      "status": "CLEAN"
+    },
+    "K:\\Project\\Models\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf": {
+      "old_path": "K:\\Project\\Models\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf",
+      "active_reference_count": 0,
+      "active_matches": [],
+      "status": "CLEAN"
+    },
+    "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf": {
+      "old_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "active_reference_count": 0,
+      "active_matches": [],
+      "status": "CLEAN"
+    },
+    "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf": {
+      "old_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "active_reference_count": 0,
+      "active_matches": [],
+      "status": "CLEAN"
+    }
+  },
+  "all_independent_counts_zero": true,
+  "historical_and_deferred_references": {
+    "LLM-tests": {
+      "count": 119,
+      "sample": [
+        {
+          "file": "K:\\Project\\LLM-tests\\01-mainline-no-mtp.cmd",
+          "referenced_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
+        },
+        {
+          "file": "K:\\Project\\LLM-tests\\02-mainline-mtp.cmd",
+          "referenced_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
+        },
+        {
+          "file": "K:\\Project\\LLM-tests\\03-ik-no-mtp.cmd",
+          "referenced_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
+        },
+        {
+          "file": "K:\\Project\\LLM-tests\\04-ik-mtp.cmd",
+          "referenced_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
+        },
+        {
+          "file": "K:\\Project\\LLM-tests\\BEST-ORNITH15-96K.cmd",
+          "referenced_path": "K:\\Project\\Models\\Ornith-1.5-35B-MTP-19G-ICE.gguf"
+        }
+      ]
+    },
+    "OpenHands-Tests": {
+      "count": 16,
+      "sample": [
+        {
+          "file": "K:\\Project\\OpenHands-Tests\\Ornith-Integration\\RESEARCH.md",
+          "referenced_path": "K:\\Project\\Models\\Ornith-1.5-35B-MTP-19G-ICE.gguf"
+        },
+        {
+          "file": "K:\\Project\\OpenHands-Tests\\Ornith-Integration\\VISION-RAM-TEST.md",
+          "referenced_path": "K:\\Project\\Models\\Ornith-1.5-35B-MTP-19G-ICE.gguf"
+        },
+        {
+          "file": "K:\\Project\\OpenHands-Tests\\Ornith-Integration\\logs\\vision_ram_server.err.log",
+          "referenced_path": "K:\\Project\\Models\\Ornith-1.5-35B-MTP-19G-ICE.gguf"
+        },
+        {
+          "file": "K:\\Project\\OpenHands-Tests\\Production-Station\\NEW-IMPLEMENTATION-PLAN.md",
+          "referenced_path": "K:\\Project\\Models\\Ornith-1.5-35B-MTP-19G-ICE.gguf"
+        },
+        {
+          "file": "K:\\Project\\OpenHands-Tests\\Production-Station\\run_reference_audit.py",
+          "referenced_path": "K:\\Project\\Models\\Ornith-1.5-35B-MTP-19G-ICE.gguf"
+        }
+      ]
+    },
+    "OpenHands-Update": {
+      "count": 1,
+      "sample": [
+        {
+          "file": "K:\\Project\\OpenHands-Update\\scripts\\update-ik-llama.ps1",
+          "referenced_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
+        }
+      ]
+    },
+    "Archive": {
+      "count": 0,
+      "sample": []
+    },
+    "Logs": {
+      "count": 0,
+      "sample": []
+    }
+  },
+  "verdict": "PASS"
+}

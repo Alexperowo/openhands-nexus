@@ -1,0 +1,73 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:05:00+03:00",
+  "initial_stop": {
+    "exit_code": 0,
+    "duration_seconds": 8.38,
+    "active_ports_after_stop": [],
+    "all_ports_released": true
+  },
+  "cold_start": {
+    "exit_code": 0,
+    "duration_seconds": 28.29,
+    "active_ports_after_start": [
+      8000,
+      18002,
+      18001,
+      18000,
+      8443,
+      8080
+    ],
+    "required_ports": [
+      8000,
+      8080,
+      8443,
+      18000,
+      18001,
+      18002
+    ],
+    "all_required_ports_active": true
+  },
+  "lan_endpoint_health": {
+    "all_healthy": true,
+    "endpoints": {
+      "LAN Gateway Root": {
+        "url": "https://192.168.0.14:8443/",
+        "status": 200,
+        "pass": true
+      },
+      "LAN PWA Manifest": {
+        "url": "https://192.168.0.14:8443/manifest.webmanifest",
+        "status": 200,
+        "pass": true
+      },
+      "LAN Service Worker": {
+        "url": "https://192.168.0.14:8443/sw.js",
+        "status": 200,
+        "pass": true
+      },
+      "LAN Mobile CSS": {
+        "url": "https://192.168.0.14:8443/mobile-pwa.css",
+        "status": 200,
+        "pass": true
+      },
+      "LAN Voice Health": {
+        "url": "https://192.168.0.14:8443/voice-api/health",
+        "status": 200,
+        "pass": true
+      }
+    }
+  },
+  "final_stop": {
+    "exit_code": 0,
+    "duration_seconds": 4.78,
+    "active_ports_after_stop": [],
+    "all_ports_released": true
+  },
+  "orphan_check": {
+    "orphan_pids": [],
+    "orphan_count": 0,
+    "verdict": "PASS"
+  },
+  "verdict": "PASS"
+}

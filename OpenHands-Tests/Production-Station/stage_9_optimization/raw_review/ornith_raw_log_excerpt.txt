@@ -1,0 +1,135 @@
+=== ORNITH BASELINE LOG ===
+INFO [                    main] build info | tid="14352" timestamp=1788714715 build=8 commit="fe215a8"
+INFO [                    main] system info | tid="14352" timestamp=1788714715 n_threads=6 n_threads_batch=-1 total_threads=12 system_info="AVX = 1 | AVX_VNNI = 0 | AVX2 = 1 | AVX512 = 0 | AVX512_VBMI = 0 | AVX512_VNNI = 0 | AVX512_BF16 = 0 | FMA = 1 | NEON = 0 | SVE = 0 | ARM_FMA = 0 | F16C = 1 | FP16_VA = 0 | WASM_SIMD = 0 | SSE3 = 1 | SSSE3 = 1 | VSX = 0 | MATMUL_INT8 = 0 | "
+ggml_cuda_init: found 1 CUDA devices:
+  Device 0: NVIDIA GeForce RTX 2080 Ti, compute capability 7.5, VMM: yes, VRAM: 22527 MiB
+CUDA0: using device CUDA0 - 21326 MiB free
+llama_model_loader: loaded meta data with 47 key-value pairs and 753 tensors from K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen35moe
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                     general.sampling.top_k i32              = 20
+llama_model_loader: - kv   3:                     general.sampling.top_p f32              = 0.950000
+llama_model_loader: - kv   4:                      general.sampling.temp f32              = 1.000000
+llama_model_loader: - kv   5:                               general.name str              = Ornith-1.5-35B
+llama_model_loader: - kv   6:                            general.version str              = 4000
+llama_model_loader: - kv   7:                           general.finetune str              = 35b
+llama_model_loader: - kv   8:                         general.size_label str              = 256x2.6B
+llama_model_loader: - kv   9:                      qwen35moe.block_count u32              = 41
+llama_model_loader: - kv  10:                   qwen35moe.context_length u32              = 262144
+llama_model_loader: - kv  11:                 qwen35moe.embedding_length u32              = 2048
+llama_model_loader: - kv  12:             qwen35moe.attention.head_count u32              = 16
+llama_model_loader: - kv  13:          qwen35moe.attention.head_count_kv u32              = 2
+llama_model_loader: - kv  14:          qwen35moe.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  15:                   qwen35moe.rope.freq_base f32              = 10000000.000000
+llama_model_loader: - kv  16: qwen35moe.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  17:                     qwen35moe.expert_count u32              = 256
+llama_model_loader: - kv  18:                qwen35moe.expert_used_count u32              = 8
+llama_model_loader: - kv  19:             qwen35moe.attention.key_length u32              = 256
+llama_model_loader: - kv  20:           qwen35moe.attention.value_length u32              = 256
+lla
+... [TRUNCATED] ...
+3 truncated=false
+INFO [              slots_idle] all slots are idle | tid="14352" timestamp=1788714746
+======== Prompt cache: cache size: 153, n_keep: 0, n_discarded_prompt: 0, cache_ram_n_min: 0, f_keep: 0.17, cache_ram_similarity: 0.50
+updating prompt cache
+ - saving prompt with length 153, total state size = 64.253 MiB
+prompt cache save took 27.30 ms
+ - looking for better prompt, base f_keep = 0.170, sim = 0.291, n_keep = 0, n_discarded_prompt = 0
+ - cache state: 2 prompts, 254.137 MiB (limits: 8192.000 MiB, 0 tokens, 9863 est)
+   - prompt 0000021F745E05C0:     153 tokens,       0 discarded, checkpoints:  1,   127.069 MiB
+   - prompt 0000021F745E0680:     153 tokens,       0 discarded, checkpoints:  1,   127.069 MiB
+prompt cache load took 0.07 ms
+INFO [   launch_slot_with_task] slot is processing task | tid="14352" timestamp=1788714747 id_slot=0 id_task=173
+======== Cache: cache_size = 153, n_past =  26, n_past_prompt = 26
+cache :  and docstring.
+
+Here is the complete code:
+
+```python
+def find_shortest_paths(graph, start):
+    shortest_paths = {
+prompt:  and docstring.
+INFO [    batch_pending_prompt] we have to evaluate at least 1 token to generate logits | tid="14352" timestamp=1788714747 id_slot=0 id_task=173
+slot apply_checkp: id  0 | task 173 | n_past = 25, slot.prompt.tokens.size() = 153, seq_id = 0, pos_min = 152
+slot apply_checkp: id  0 | task 173 | forcing full prompt re-processing due to lack of cache data (likely due to SWA, see https://github.com/ggml-org/llama.cpp/pull/13194#issuecomment-2868343055)
+slot apply_checkp: id  0 | task 173 | erased invalidated context checkpoint (pos_min = 152, pos_max = 152, size = 62.815 MiB)
+INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid="14352" timestamp=1788714747 id_slot=0 id_task=173 p0=0
+INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid="14352" timestamp=1788714747 id_slot=0 id_task=173 p0=21
+slot print_timing: id  0 | task 173 | 
+prompt eval time =      87.05 ms /    26 tokens (    3.35 ms per token,   298.69 tokens per second)
+       eval time =    2057.18 ms /   128 tokens (   16.07 ms per token,    62.22 tokens per second)
+      total time =    2144.23 ms /   154 tokens
+draft acceptance rate = 0.34043 (   32 accepted /    94 generated)
+statistics mtp: #calls(b,g,a) = 4 250 250, #gen drafts = 250, #acc drafts = 144, #gen tokens = 250, #acc tokens = 144, dur(b,g,a) = 0.009, 156.387, 0.052 ms
+INFO [      log_server_request] request | tid="4904" timestamp=1788714749 remote_addr="127.0.0.1" remote_port=61158 status=200 method="POST" path="/completion" params={}
+slot create_check: id  0 | task 173 | created context checkpoint 1 of 32 (pos_min = 152, pos_max = 152, n_tokens = 153, size = 62.815 MiB, took 16.15 ms)
+INFO [           release_slots] slot released | tid="14352" timestamp=1788714749 id_slot=0 id_task=173 n_ctx=98304 n_past=153 n_system_tokens=0 n_cache_tokens=153 truncated=false
+INFO [              slots_idle] all slots are idle | tid="14352" timestamp=1788714749
+
+
+=== ORNITH CURRENT WINNER LOG (-b 2048 -ub 512) ===
+INFO [                    main] build info | tid="11296" timestamp=1788714755 build=8 commit="fe215a8"
+INFO [                    main] system info | tid="11296" timestamp=1788714755 n_threads=6 n_threads_batch=-1 total_threads=12 system_info="AVX = 1 | AVX_VNNI = 0 | AVX2 = 1 | AVX512 = 0 | AVX512_VBMI = 0 | AVX512_VNNI = 0 | AVX512_BF16 = 0 | FMA = 1 | NEON = 0 | SVE = 0 | ARM_FMA = 0 | F16C = 1 | FP16_VA = 0 | WASM_SIMD = 0 | SSE3 = 1 | SSSE3 = 1 | VSX = 0 | MATMUL_INT8 = 0 | "
+ggml_cuda_init: found 1 CUDA devices:
+  Device 0: NVIDIA GeForce RTX 2080 Ti, compute capability 7.5, VMM: yes, VRAM: 22527 MiB
+CUDA0: using device CUDA0 - 21326 MiB free
+llama_model_loader: loaded meta data with 47 key-value pairs and 753 tensors from K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen35moe
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                     general.sampling.top_k i32              = 20
+llama_model_loader: - kv   3:                     general.sampling.top_p f32              = 0.950000
+llama_model_loader: - kv   4:                      general.sampling.temp f32              = 1.000000
+llama_model_loader: - kv   5:                               general.name str              = Ornith-1.5-35B
+llama_model_loader: - kv   6:                            general.version str              = 4000
+llama_model_loader: - kv   7:                           general.finetune str              = 35b
+llama_model_loader: - kv   8:                         general.size_label str              = 256x2.6B
+llama_model_loader: - kv   9:                      qwen35moe.block_count u32              = 41
+llama_model_loader: - kv  10:                   qwen35moe.context_length u32              = 262144
+llama_model_loader: - kv  11:                 qwen35moe.embedding_length u32              = 2048
+llama_model_loader: - kv  12:             qwen35moe.attention.head_count u32              = 16
+llama_model_loader: - kv  13:          qwen35moe.attention.head_count_kv u32              = 2
+llama_model_loader: - kv  14:          qwen35moe.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  15:                   qwen35moe.rope.freq_base f32              = 10000000.000000
+llama_model_loader: - kv  16: qwen35moe.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  17:                     qwen35moe.expert_count u32              = 256
+llama_model_loader: - kv  18:                qwen35moe.expert_used_count u32              = 8
+llama_model_loader: - kv  19:             qwen35moe.attention.key_length u32              = 256
+llama_model_loader: - kv  20:           qwen35moe.attention.value_length u32              = 256
+lla
+... [TRUNCATED] ...
+     slots_idle] all slots are idle | tid="11296" timestamp=1788714770
+======== Prompt cache: cache size: 153, n_keep: 0, n_discarded_prompt: 0, cache_ram_n_min: 0, f_keep: 0.17, cache_ram_similarity: 0.50
+updating prompt cache
+ - saving prompt with length 153, total state size = 64.253 MiB
+prompt cache save took 24.86 ms
+ - looking for better prompt, base f_keep = 0.170, sim = 0.291, n_keep = 0, n_discarded_prompt = 0
+ - cache state: 2 prompts, 254.137 MiB (limits: 8192.000 MiB, 0 tokens, 9863 est)
+   - prompt 000002A4F1E690D0:     153 tokens,       0 discarded, checkpoints:  1,   127.069 MiB
+   - prompt 000002A4F1E69490:     153 tokens,       0 discarded, checkpoints:  1,   127.069 MiB
+prompt cache load took 0.07 ms
+INFO [   launch_slot_with_task] slot is processing task | tid="11296" timestamp=1788714772 id_slot=0 id_task=166
+======== Cache: cache_size = 153, n_past =  26, n_past_prompt = 26
+cache :  and docstring.
+
+<think>
+The user wants a Python function that implements Dijkstra's algorithm to compute the shortest path in a weighted graph. They
+prompt:  and docstring.
+INFO [    batch_pending_prompt] we have to evaluate at least 1 token to generate logits | tid="11296" timestamp=1788714772 id_slot=0 id_task=166
+slot apply_checkp: id  0 | task 166 | n_past = 25, slot.prompt.tokens.size() = 153, seq_id = 0, pos_min = 152
+slot apply_checkp: id  0 | task 166 | forcing full prompt re-processing due to lack of cache data (likely due to SWA, see https://github.com/ggml-org/llama.cpp/pull/13194#issuecomment-2868343055)
+slot apply_checkp: id  0 | task 166 | erased invalidated context checkpoint (pos_min = 152, pos_max = 152, size = 62.815 MiB)
+INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid="11296" timestamp=1788714772 id_slot=0 id_task=166 p0=0
+INFO [    batch_pending_prompt] kv cache rm [p0, end) | tid="11296" timestamp=1788714772 id_slot=0 id_task=166 p0=21
+slot print_timing: id  0 | task 166 | 
+prompt eval time =      89.11 ms /    26 tokens (    3.43 ms per token,   291.77 tokens per second)
+       eval time =    1782.56 ms /   128 tokens (   13.93 ms per token,    71.81 tokens per second)
+      total time =    1871.67 ms /   154 tokens
+draft acceptance rate = 0.68000 (   51 accepted /    75 generated)
+statistics mtp: #calls(b,g,a) = 4 227 227, #gen drafts = 227, #acc drafts = 166, #gen tokens = 227, #acc tokens = 166, dur(b,g,a) = 0.006, 127.053, 0.060 ms
+INFO [      log_server_request] request | tid="2968" timestamp=1788714773 remote_addr="127.0.0.1" remote_port=61167 status=200 method="POST" path="/completion" params={}
+slot create_check: id  0 | task 166 | created context checkpoint 1 of 32 (pos_min = 152, pos_max = 152, n_tokens = 153, size = 62.815 MiB, took 15.96 ms)
+INFO [           release_slots] slot released | tid="11296" timestamp=1788714773 id_slot=0 id_task=166 n_ctx=98304 n_past=153 n_system_tokens=0 n_cache_tokens=153 truncated=false
+INFO [              slots_idle] all slots are idle | tid="11296" timestamp=1788714773
+

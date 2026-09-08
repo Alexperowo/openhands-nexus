@@ -1,0 +1,182 @@
+{
+  "timestamp": "2026-09-06T14:00:33.732709+00:00",
+  "model": "Qwen3-Next 80B A3B Thinking UD Q3_K_XL",
+  "backend": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+  "results": [
+    {
+      "variant": "next_v0_baseline",
+      "timestamp": "2026-09-06T13:59:01.462890+00:00",
+      "load_time_s": 14.22,
+      "vram_load_mib": 21207,
+      "vram_peak_mib": 21221,
+      "gen_tok_s_avg": 16.36,
+      "pp_tok_s_avg": 20.7,
+      "runs": [
+        {
+          "run": 1,
+          "gen_tok_s": 15.8703098754795,
+          "pp_tok_s": 10.27895954087314,
+          "pred_n": 32,
+          "elapsed_s": 3.736192464828491
+        },
+        {
+          "run": 2,
+          "gen_tok_s": 14.9892415927278,
+          "pp_tok_s": 26.37826431020839,
+          "pred_n": 32,
+          "elapsed_s": 2.2607951164245605
+        },
+        {
+          "run": 3,
+          "gen_tok_s": 18.223898820913746,
+          "pp_tok_s": 25.45727632600588,
+          "pred_n": 32,
+          "elapsed_s": 1.9235479831695557
+        }
+      ],
+      "ngl": 26,
+      "threads": 6
+    },
+    {
+      "variant": "next_v1_threads_8",
+      "description": "Threads -t 8 on 12-thread Ryzen 3600 CPU",
+      "timestamp": "2026-09-06T13:59:40.934444+00:00",
+      "load_time_s": 14.16,
+      "vram_load_mib": 21207,
+      "vram_peak_mib": 21221,
+      "gen_tok_s_avg": 17.75,
+      "pp_tok_s_avg": 24.65,
+      "runs": [
+        {
+          "run": 1,
+          "gen_tok_s": 17.012103837491605,
+          "pp_tok_s": 17.977222858638104,
+          "pred_n": 32,
+          "elapsed_s": 2.8464043140411377
+        },
+        {
+          "run": 2,
+          "gen_tok_s": 17.78553966777759,
+          "pp_tok_s": 29.301667997450757,
+          "pred_n": 32,
+          "elapsed_s": 1.9087917804718018
+        },
+        {
+          "run": 3,
+          "gen_tok_s": 18.441030936911446,
+          "pp_tok_s": 26.66311158512198,
+          "pred_n": 32,
+          "elapsed_s": 1.8795084953308105
+        }
+      ],
+      "extra_args": [
+        "-ngl",
+        "26",
+        "-t",
+        "8",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--spec-type",
+        "draft-mtp",
+        "--spec-draft-n-max",
+        "1"
+      ]
+    },
+    {
+      "variant": "next_v2_draft_nmax_2",
+      "description": "Speculative draft depth n_max=2",
+      "timestamp": "2026-09-06T14:00:07.944856+00:00",
+      "load_time_s": 14.14,
+      "vram_load_mib": 21207,
+      "vram_peak_mib": 21223,
+      "gen_tok_s_avg": 15.67,
+      "pp_tok_s_avg": 26.5,
+      "runs": [
+        {
+          "run": 1,
+          "gen_tok_s": 17.937084807115586,
+          "pp_tok_s": 19.12724506038896,
+          "pred_n": 32,
+          "elapsed_s": 2.6909351348876953
+        },
+        {
+          "run": 2,
+          "gen_tok_s": 14.297006944655823,
+          "pp_tok_s": 33.172171865022435,
+          "pred_n": 32,
+          "elapsed_s": 2.3170926570892334
+        },
+        {
+          "run": 3,
+          "gen_tok_s": 14.771611821101486,
+          "pp_tok_s": 27.189243935099277,
+          "pred_n": 32,
+          "elapsed_s": 2.3072171211242676
+        }
+      ],
+      "extra_args": [
+        "-ngl",
+        "26",
+        "-t",
+        "6",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q8_0",
+        "--spec-type",
+        "draft-mtp",
+        "--spec-draft-n-max",
+        "2"
+      ]
+    },
+    {
+      "variant": "next_v3_kv_q5",
+      "description": "KV cache ctv q5_0 to reduce VRAM pressure and expand headroom",
+      "timestamp": "2026-09-06T14:00:33.730956+00:00",
+      "load_time_s": 14.15,
+      "vram_load_mib": 20925,
+      "vram_peak_mib": 20939,
+      "gen_tok_s_avg": 18.28,
+      "pp_tok_s_avg": 25.76,
+      "runs": [
+        {
+          "run": 1,
+          "gen_tok_s": 17.16878913514717,
+          "pp_tok_s": 18.65903719368081,
+          "pred_n": 32,
+          "elapsed_s": 2.790858268737793
+        },
+        {
+          "run": 2,
+          "gen_tok_s": 18.987814723029036,
+          "pp_tok_s": 31.677899121730245,
+          "pred_n": 32,
+          "elapsed_s": 1.7865123748779297
+        },
+        {
+          "run": 3,
+          "gen_tok_s": 18.683342654915045,
+          "pp_tok_s": 26.95054574855141,
+          "pred_n": 32,
+          "elapsed_s": 1.8456368446350098
+        }
+      ],
+      "extra_args": [
+        "-ngl",
+        "26",
+        "-t",
+        "6",
+        "-ctk",
+        "q8_0",
+        "-ctv",
+        "q5_0",
+        "--spec-type",
+        "draft-mtp",
+        "--spec-draft-n-max",
+        "1"
+      ]
+    }
+  ]
+}

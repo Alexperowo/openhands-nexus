@@ -1,0 +1,35 @@
+--- config.yaml (pre-stage-6c)
++++ config.yaml (canonical-models-6c)
+@@ -17,25 +17,25 @@
+   ornith:
+     aliases:
+     - openai/ornith
+-    - K:\Project\Models\Ornith-1.5-35B-MTP-19G-ICE.gguf
+-    - openai/K:\Project\Models\Ornith-1.5-35B-MTP-19G-ICE.gguf
++    - K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
++    - openai/K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
+     proxy: http://127.0.0.1:${PORT}
+     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+     unloadTimeout: 15
+-    cmd: K:\Project\ik_llama\bin\llama-server.exe -m K:\Project\Models\Ornith-1.5-35B-MTP-19G-ICE.gguf
++    cmd: K:\Project\ik_llama\bin\llama-server.exe -m K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
+       -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75
+       --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6 --top-p 0.95 --top-k 20 --min-p
+       0.0 --presence-penalty 0.0 --repeat-penalty 1.0
+   next:
+     aliases:
+     - openai/next
+-    - K:\Project\Models\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
+-    - openai/K:\Project\Models\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
++    - K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
++    - openai/K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
+     proxy: http://127.0.0.1:${PORT}
+     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+     unloadTimeout: 15
+-    cmd: K:\Project\llama-mainline\b10816\llama-server.exe -m K:\Project\Models\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
+-      -md K:\Project\Models\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf
++    cmd: K:\Project\llama-mainline\b10816\llama-server.exe -m K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
++      -md K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf
+       -c 98304 -ngl 26 -fa on -ctk q8_0 -ctv q8_0 -np 1 -t 6 -dev CUDA0
+       --spec-type draft-mtp --spec-draft-n-max 1
+       --reasoning-format deepseek

@@ -1,0 +1,32 @@
+--- llama-swap/config.yaml (original)
++++ llama-swap/config.yaml (switched to K:)
+@@ -6,12 +6,12 @@
+   qwen:
+
+     aliases:
+
+     - openai/qwen
+
+-    - D:\Project\models\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
+
+-    - openai/D:\Project\models\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
+
++    - K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
+
++    - openai/K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
+
+     proxy: http://127.0.0.1:${PORT}
+
+     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+
+     unloadTimeout: 15
+
+-    cmd: K:\Project\ik_llama\bin\llama-server.exe -m D:\Project\models\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
+
++    cmd: K:\Project\ik_llama\bin\llama-server.exe -m K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
+
+       -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=3,p_min=0.0
+
+       --jinja --host 127.0.0.1 --port ${PORT} --temp 0.7 --top-p 0.8 --min-p 0.05
+
+   ornith:

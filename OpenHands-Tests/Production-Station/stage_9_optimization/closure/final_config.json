@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-09-06T16:08:45+00:00",
+  "config_path": "K:\\Project\\llama-swap\\config.yaml",
+  "config_sha256": "A19C3CC2CCDE10783204B5777BFCB52CFEE660EE7315D4105008A180EB53DA89",
+  "backend_versions": {
+    "llama_swap": "v255 (7761aa1), built at 2026-09-06T05:46:05Z",
+    "ik_llama": "build 8 (commit fe215a8, MSVC 19.44.35228.0 for x64)",
+    "llama_mainline": "build 10821 (commit 971595d66, Clang 20.1.8 for Windows x86_64)"
+  },
+  "models": {
+    "qwen": {
+      "name": "Qwen 3.8 Opus Distill v2 (27B)",
+      "backend": "ik_llama (build 8, commit fe215a8)",
+      "backend_binary": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "model_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "mmproj_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "context": 98304,
+      "k_quant": "q8_0",
+      "v_quant": "q5_0",
+      "mtp_spec_type": "mtp:n_max=3,p_min=0.05",
+      "batch": 2048,
+      "ubatch": 512,
+      "threads": 6,
+      "ngl": 999,
+      "exact_command": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf --mmproj K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=3,p_min=0.05 --jinja --host 127.0.0.1 --port ${PORT} --temp 0.7 --top-p 0.8 --min-p 0.05"
+    },
+    "ornith": {
+      "name": "Ornith 1.5 35B MTP ICE (MoE)",
+      "backend": "ik_llama (build 8, commit fe215a8)",
+      "backend_binary": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "model_path": "K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "context": 98304,
+      "k_quant": "q8_0",
+      "v_quant": "q5_0",
+      "mtp_spec_type": "mtp:n_max=1,p_min=0.75",
+      "batch": 2048,
+      "ubatch": 512,
+      "threads": 6,
+      "ngl": 999,
+      "exact_command": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 -b 2048 -ub 512 --spec-type mtp:n_max=1,p_min=0.75 --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0"
+    },
+    "next": {
+      "name": "Qwen3-Next 80B A3B Thinking UD (MoE)",
+      "backend": "llama-mainline (build 10821, commit 971595d66)",
+      "backend_binary": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+      "model_path": "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+      "draft_model_path": "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf",
+      "context": 98304,
+      "k_quant": "q8_0",
+      "v_quant": "q5_0",
+      "mtp_spec_type": "draft-mtp (spec-draft-n-max 1)",
+      "batch": 2048,
+      "ubatch": 512,
+      "threads": 6,
+      "ngl": 26,
+      "exact_command": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe -m K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf -md K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf -c 98304 -ngl 26 -fa on -ctk q8_0 -ctv q5_0 -np 1 -t 6 -dev CUDA0 --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek --reasoning-budget-message \"Conclude reasoning immediately and output the final answer now.\" --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6"
+    }
+  },
+  "tuning_changes_during_closure": "NONE"
+}

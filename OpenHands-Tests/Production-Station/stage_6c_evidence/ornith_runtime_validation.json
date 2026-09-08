@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-09-06T11:40:47.333826",
+  "model": "openai/ornith",
+  "status_code": 200,
+  "elapsed_seconds": 0.6780681610107422,
+  "captured_process": {
+    "pid": 12400,
+    "cmdline": [
+      "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "-m",
+      "K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "-c",
+      "98304",
+      "-ctk",
+      "q8_0",
+      "-ctv",
+      "q5_0",
+      "-fa",
+      "on",
+      "-ngl",
+      "999",
+      "-np",
+      "1",
+      "-dev",
+      "CUDA0",
+      "--spec-type",
+      "mtp:n_max=1,p_min=0.75",
+      "--jinja",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "5801",
+      "--temp",
+      "0.6",
+      "--top-p",
+      "0.95",
+      "--top-k",
+      "20",
+      "--min-p",
+      "0.0",
+      "--presence-penalty",
+      "0.0",
+      "--repeat-penalty",
+      "1.0"
+    ],
+    "cmdline_str": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75 --jinja --host 127.0.0.1 --port 5801 --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0",
+    "exe": "K:\\Project\\ik_llama\\bin\\llama-server.exe"
+  },
+  "canonical_path_verified": true,
+  "response": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "reasoning_content": "The user just typed \""
+        }
+      }
+    ],
+    "created": 1788684047,
+    "model": "openai/ornith",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 5,
+      "prompt_tokens": 11,
+      "total_tokens": 16,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    },
+    "id": "chatcmpl-fr4t0DrX1NXIBH3JOF2FKlO7zX0Hl3FN",
+    "timings": {
+      "prompt_n": 11,
+      "prompt_ms": 426.593,
+      "prompt_per_token_ms": 38.78118181818182,
+      "prompt_per_second": 25.78570206262175,
+      "predicted_n": 5,
+      "predicted_ms": 80.873,
+      "predicted_per_token_ms": 16.1746,
+      "predicted_per_second": 61.825331074647906,
+      "n_ctx": 98304,
+      "n_past": 15,
+      "draft_n": 2,
+      "draft_n_accepted": 1,
+      "draft_by_depth": [
+        {
+          "depth": 1,
+          "draft_n": 2,
+          "draft_n_accepted": 1
+        }
+      ]
+    }
+  },
+  "llama_swap_log_tail": "INFO [     process_single_task] slot data | tid=\"15140\" timestamp=1788684040 id_task=0 n_idle_slots=1 n_processing_slots=0\nINFO [              slots_idle] all slots are idle | tid=\"15140\" timestamp=1788684040\nINFO [      log_server_request] request | tid=\"10728\" timestamp=1788684040 remote_addr=\"127.0.0.1\" remote_port=64537 status=200 method=\"GET\" path=\"/health\" params={}\n[INFO] <ornith> Health check passed on http://127.0.0.1:5801/health\n[INFO] Request 127.0.0.1 \"GET /v1/models HTTP/1.1\" 200 988 \"Python-urllib/3.12\" 0s\n[DEBUG] dispatch: using local process for model: ornith\n[DEBUG] group: fast-path serving model ornith (already ready)\n======== Prompt cache: cache size: 0, n_keep: 0, n_discarded_prompt: 0, cache_ram_n_min: 0, f_keep: 0.00, cache_ram_similarity: 0.50\nWARN [   launch_slot_with_task] %s\n | =\"ctx_shift is not supported by recurrent model, it will be disabled\"\nINFO [   launch_slot_with_task] slot is processing task | tid=\"15140\" timestamp=1788684046 id_slot=0 id_task=1\n======== Cache: cache_size = 0, n_past =  0, n_past_prompt = 0\nINFO [    batch_pending_prompt] kv cache rm [p0, end) | tid=\"15140\" timestamp=1788684046 id_slot=0 id_task=1 p0=0\nINFO [    batch_pending_prompt] kv cache rm [p0, end) | tid=\"15140\" timestamp=1788684047 id_slot=0 id_task=1 p0=6\nslot print_timing: id  0 | task 1 | \nprompt eval time =     426.59 ms /    11 tokens (   38.78 ms per token,    25.79 tokens per second)\n       eval time =      80.87 ms /     5 tokens (   16.17 ms per token,    61.83 tokens per second)\n      total time =     507.47 ms /    16 tokens\ndraft acceptance rate = 0.50000 (    1 accepted /     2 generated)\nstatistics mtp: #calls(b,g,a) = 1 2 2, #gen drafts = 2, #acc drafts = 1, #gen tokens = 2, #acc tokens = 1, dur(b,g,a) = 0.003, 5.494, 0.001 ms\nINFO [           release_slots] slot released | tid=\"15140\" timestamp=1788684047 id_slot=0 id_task=1 n_ctx=98304 n_past=15 n_system_tokens=0 n_cache_tokens=15 truncated=false\nINFO [              slots_idle] all slots are idle | tid=\"15140\" timestamp=1788684047\nINFO [      log_server_request] request | tid=\"14744\" timestamp=1788684047 remote_addr=\"127.0.0.1\" remote_port=63331 status=200 method=\"POST\" path=\"/v1/chat/completions\" params={}\n[DEBUG] Capture 2 compressed and saved: 1169 bytes -> 698 bytes (40.3% compression)\n[INFO] Request 127.0.0.1 \"POST /v1/chat/completions HTTP/1.1\" 200 733 \"Python-urllib/3.12\" 639.8809ms\n",
+  "verdict": "PASS"
+}

@@ -1,0 +1,29 @@
+--- backend-versions.json (before)
++++ backend-versions.json (after)
+@@ -1,5 +1,5 @@
+ {
+-  "timestamp": "2026-09-06T10:37:35.729444+00:00",
++  "timestamp": "2026-09-06T11:07:41.262923+00:00",
+   "description": "Informational version manifest for OpenHands Local platform components (not a runtime dependency)",
+   "agent_canvas": {
+     "current_version": "1.16.0",
+@@ -32,12 +32,14 @@
+     "previous_version": "v252"
+   },
+   "llama_mainline": {
+-    "current_version": "0.4.0-dev (build 10816)",
+-    "commit": "427291b5b34cd914a31b3fd3b61a68f6184f4b9f",
+-    "production_path": "K:\\Project\\llama-mainline\\b10816\\llama-server.exe",
+-    "sha256": "907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA",
++    "current_version": "0.4.0-dev (build 10821)",
++    "commit": "971595d66",
++    "production_path": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
++    "sha256": "ED0C7F94CDDCB0F9CE0F5D30CF18967DA76AB881C0281AF11464033FA859146C",
+     "upstream_source": "https://github.com/ggml-org/llama.cpp",
+-    "last_verified": "2026-09-06T10:14:34.876305+00:00"
++    "last_verified": "2026-09-06T11:07:41.262923+00:00",
++    "previous_version": "0.4.0-dev (build 10816)",
++    "build": "b10821"
+   },
+   "ik_llama": {
+     "current_version": "1",

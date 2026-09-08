@@ -1,0 +1,63 @@
+{
+  "timestamp": "2026-09-06T14:08:55.189605",
+  "stage": "7E-2",
+  "stage_name": "REAL LLAMA-MAINLINE UPDATE VALIDATION",
+  "component": "llama-mainline",
+  "verdict": "PASS",
+  "baseline": {
+    "installed_build": "b10816",
+    "installed_sha256": "907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA",
+    "config_sha256": "94D75C25C76534FA05F7FA9CFD1183837734822A35DDCE6B607F8D653A7F609F",
+    "ports_free_before_start": true
+  },
+  "discovered_target": {
+    "build": "b10821",
+    "source": "https://github.com/ggml-org/llama.cpp/releases/tag/b10821",
+    "cuda_version": "12.4 x64"
+  },
+  "candidate_validation_gate": {
+    "test_port": 18081,
+    "candidate_binary": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+    "CANDIDATE_SERVER_STARTED": "PASS",
+    "MAIN_MODEL_LOADED": "PASS",
+    "DRAFT_MODEL_LOADED": "PASS",
+    "HTTP_HEALTHY": "PASS",
+    "SHORT_COMPLETION_PASS": "PASS",
+    "gate_passed": true
+  },
+  "promotion": {
+    "promoted_binary": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+    "promoted_sha256": "ED0C7F94CDDCB0F9CE0F5D30CF18967DA76AB881C0281AF11464033FA859146C",
+    "config_backup": "K:\\Project\\Archive\\backups\\llama-mainline\\config.yaml.bak_20260906-140519",
+    "line_diff_count": 1,
+    "parameters_preserved": true
+  },
+  "production_routing_gate": {
+    "router_port": 8080,
+    "tested_model": "next",
+    "NEW_LLAMA_MAINLINE_BACKEND_SPAWNED": "PASS",
+    "CANONICAL_NEXT_MAIN_PATH": "PASS",
+    "CANONICAL_Q4_K_M_DRAFT_PATH": "PASS",
+    "HTTP_200": "PASS",
+    "REAL_COMPLETION": "PASS",
+    "draft_tokens_accepted": 7,
+    "draft_tokens_total": 7,
+    "draft_acceptance_rate": 1.0,
+    "reasoning_budget_verified": {
+      "Next-Normal": 2048,
+      "Next-Deep": 4096
+    }
+  },
+  "lifecycle_stop": {
+    "stop_exit_code": 0,
+    "all_ports_freed": true,
+    "orphan_llama_processes": 0
+  },
+  "manifest_update": {
+    "manifest_path": "K:\\Project\\Config\\backend-versions.json",
+    "previous_build": "b10816",
+    "current_build": "b10821",
+    "diff_path": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_7e2_mainline\\manifest_diff.txt"
+  },
+  "rollback_needed": false
+}

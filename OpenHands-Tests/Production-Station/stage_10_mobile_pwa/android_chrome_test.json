@@ -1,0 +1,18 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:02:00+03:00",
+  "adb_status": {
+    "command": "adb devices",
+    "attached_devices_count": 0,
+    "result": "No physical Android device connected via ADB"
+  },
+  "ANDROID_DEVICE_INSTALL_TEST": "PENDING_MANUAL",
+  "manual_verification_steps": [
+    "1. Connect Android phone or tablet to the same local Wi-Fi (192.168.0.x).",
+    "2. Open Google Chrome on Android and navigate to https://192.168.0.14:8443.",
+    "3. Proceed past self-signed certificate warning (or install openhands-lan.crt as CA certificate in Android Settings).",
+    "4. Tap the three-dot menu in Chrome and tap 'Install app' / 'Add to Home screen'.",
+    "5. Open the installed OpenHands app from the home screen: confirm standalone display without browser URL bar.",
+    "6. Send a test message or tap the voice microphone icon to verify voice recognition."
+  ]
+}

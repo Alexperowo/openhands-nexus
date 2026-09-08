@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-09-06T12:51:12.970696+00:00",
+  "step_f_primary_stop": {
+    "exit_code": 0,
+    "ports_free": true,
+    "ports_status": {
+      "8000": false,
+      "8080": false,
+      "18000": false,
+      "18001": false,
+      "18002": false
+    },
+    "orphan_processes_count": 0,
+    "verdict": "PASS"
+  },
+  "step_g_secondary_lifecycle": {
+    "start_exit_code": 0,
+    "ports_online_after_start": true,
+    "stop_exit_code": 0,
+    "ports_free_after_stop": true,
+    "ports_status": {
+      "8000": false,
+      "8080": false,
+      "18000": false,
+      "18001": false,
+      "18002": false
+    },
+    "orphan_processes_count": 0,
+    "verdict": "PASS"
+  },
+  "verdict": "PASS"
+}

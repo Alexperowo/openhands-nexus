@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-09-06T06:38:47.631902+00:00",
+  "canonical_root": "K:\\Project",
+  "design_principles": [
+    "Preserve existing working production paths to avoid breaking active services",
+    "Minimize disruption: do NOT move active production directories during Stage 6A",
+    "K: is the single canonical disk for all active production models",
+    "Centralize logs, archives, documentation, and loose test scripts into logical buckets"
+  ],
+  "structure_specification": {
+    "Models": {
+      "path": "K:\\Project\\Models",
+      "role": "Canonical repository for GGUF weights, draft models, and vision projectors",
+      "active_subdirectories": {
+        "Qwen3.8": "Target canonical home for Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf and mmproj-f16.gguf (already copied & verified)",
+        "Ornith": "Recommended subdirectory for Ornith-1.5-35B-MTP-19G-ICE.gguf and mmproj (can remain in Models root or nest in 6B)",
+        "Qwen3-Next": "Recommended subdirectory for Qwen3-Next-80B and MTP draft model"
+      },
+      "status": "EXISTS_ACTIVE"
+    },
+    "Backends": {
+      "path": "K:\\Project\\Backends",
+      "role": "Central container for inference engines and routers (virtual / target canonical grouping)",
+      "mapped_existing_paths": {
+        "ik_llama": "K:\\Project\\ik_llama (preserves active working path for Qwen and Ornith)",
+        "llama-mainline": "K:\\Project\\llama-mainline (preserves active working path for Qwen3-Next)",
+        "llama-swap": "K:\\Project\\llama-swap (preserves active working path for port 8080 model router)",
+        "transcribe-build-shared": "K:\\Project\\transcribe-build-shared (preserves active working path for local-voice STT)"
+      },
+      "recommendation": "Retain top-level paths during current baseline to avoid breaking scripts; optionally symlink or nest in later stages"
+    },
+    "Config": {
+      "path": "K:\\Project\\Config",
+      "role": "Centralized configuration references and agent profiles",
+      "mapped_existing_paths": {
+        ".openhands-local": "Launcher scripts and configuration",
+        "llama-swap/config.yaml": "Active 3-model routing configuration"
+      }
+    },
+    "Scripts": {
+      "path": "K:\\Project\\Scripts",
+      "role": "Central repository for operational, setup, and maintenance scripts",
+      "mapped_existing_paths": {
+        "root_cmd": "START, STOP, RESTART, DIAGNOSTICS scripts remain in root for 1-click accessibility",
+        "OpenHands-Update": "Update and rollback scripts maintain their dedicated subsystem"
+      }
+    },
+    "Runtime": {
+      "path": "K:\\Project\\Runtime",
+      "role": "Active working directories and runtime state (PID files, session locks)",
+      "mapped_existing_paths": {
+        ".openhands-local": "Stores runtime PID and session info",
+        "llama-swap/session.json": "Active swap session tracking"
+      }
+    },
+    "Tests": {
+      "path": "K:\\Project\\Tests",
+      "role": "Consolidated test suites, benchmarks, and verification evidence",
+      "mapped_existing_paths": {
+        "OpenHands-Tests": "Primary active test station and multi-stage verification evidence",
+        "LLM-tests": "Historical model benchmarking and fine-tuning suites",
+        "AgentCanvas-Test": "Agent Canvas smoke testing workspace",
+        "legacy_root": "Target directory for 31 standalone test scripts currently in root"
+      }
+    },
+    "Logs": {
+      "path": "K:\\Project\\Logs",
+      "role": "Unified log collection directory for all background services",
+      "subdirectories": [
+        "K:\\Project\\Logs\\openhands",
+        "K:\\Project\\Logs\\llama-server",
+        "K:\\Project\\Logs\\llama-swap",
+        "K:\\Project\\Logs\\voice-bridge"
+      ],
+      "status": "TARGET_EMPTY_DIR_CREATED"
+    },
+    "Temp": {
+      "path": "K:\\Project\\Temp",
+      "role": "Scratch runtime storage and disposable test outputs",
+      "status": "TARGET_EMPTY_DIR_CREATED"
+    },
+    "Docs": {
+      "path": "K:\\Project\\Docs",
+      "role": "Project documentation, help manuals, and reference architecture diagrams",
+      "status": "TARGET_EMPTY_DIR_CREATED"
+    },
+    "Archive": {
+      "path": "K:\\Project\\Archive",
+      "role": "Cold storage for obsolete builds, test archives, backups, and deprecated files",
+      "subdirectories": [
+        "K:\\Project\\Archive\\backups",
+        "K:\\Project\\Archive\\zip_archives",
+        "K:\\Project\\Archive\\deprecated_builds"
+      ],
+      "status": "TARGET_EMPTY_DIR_CREATED"
+    }
+  }
+}

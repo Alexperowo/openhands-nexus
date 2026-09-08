@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-09-06T10:16:10.443587+00:00",
+  "regular_update_components": [
+    {
+      "component": "llama-swap",
+      "updater_script": "update-llama-swap.ps1",
+      "launcher": "UPDATE-LLAMA-SWAP.cmd",
+      "status": "READY",
+      "check_only": true,
+      "dry_run": true,
+      "rollback": true,
+      "station_gate": "HARD_GATE",
+      "default_invocation": "CheckOnly"
+    },
+    {
+      "component": "llama-mainline",
+      "updater_script": "update-llama-mainline.ps1",
+      "launcher": "UPDATE-LLAMA-MAINLINE.cmd",
+      "status": "READY",
+      "check_only": true,
+      "dry_run": true,
+      "rollback": true,
+      "station_gate": "HARD_GATE",
+      "default_invocation": "CheckOnly"
+    },
+    {
+      "component": "ik_llama",
+      "updater_script": "update-ik-llama.ps1",
+      "launcher": "UPDATE-IK-LLAMA.cmd",
+      "status": "READY",
+      "check_only": true,
+      "dry_run": true,
+      "rollback": true,
+      "station_gate": "HARD_GATE",
+      "default_invocation": "CheckOnly"
+    },
+    {
+      "component": "OpenHands App Stack (@openhands/agent-canvas + server + automation)",
+      "updater_script": "update-openhands.ps1",
+      "launcher": "UPDATE-OPENHANDS.cmd",
+      "status": "READY",
+      "check_only": true,
+      "dry_run": true,
+      "rollback": true,
+      "station_gate": "HARD_GATE",
+      "default_invocation": "CheckOnly"
+    }
+  ],
+  "dashboard_orchestrator": {
+    "script": "update-all.ps1",
+    "launcher": "UPDATE-ALL.cmd",
+    "status": "READY",
+    "default_invocation": "CheckOnly"
+  },
+  "all_regular_components_covered": true,
+  "missing_updaters": []
+}

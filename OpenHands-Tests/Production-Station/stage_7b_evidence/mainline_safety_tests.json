@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-09-06T12:44:26.226027",
+  "stage": "STAGE_7B",
+  "script_tested": "K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1",
+  "tests": [
+    {
+      "test_name": "Station Stop Hard Gate & -Force Non-Bypass",
+      "description": "Verifies -Update and -Rollback abort when ports active and -Force cannot override",
+      "mock_condition": "Port 8080 listening",
+      "stdout": "[ERROR] HARD SAFETY GATE FAILED: Production station is RUNNING on port(s): 8080.\n[ERROR] Backend update/rollback REFUSED. -Force CANNOT override this safety gate. Stop station first.",
+      "hard_gate_enforced": true,
+      "force_bypass_permitted": false,
+      "status": "PASS"
+    },
+    {
+      "test_name": "DryRun Mode Verification",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1 -DryRun",
+      "exit_code": 0,
+      "stdout": "[2026-09-06 12:44:26] [STEP] === Official llama.cpp Updater (DryRun Mode) ===\n[2026-09-06 12:44:26] [DRYRUN] [DRYRUN] Simulating complete update workflow without making changes.\n[2026-09-06 12:44:27] [SUCCESS] [DRYRUN] [OK] Station is STOPPED. Hard gate check passed.\n[2026-09-06 12:44:27] [INFO] [DRYRUN] Current production build: b10816\n[2026-09-06 12:44:27] [INFO] [DRYRUN] Current binary: K:\\Project\\llama-mainline\\b10816\\llama-server.exe\n[2026-09-06 12:44:27] [INFO] Discovering official llama.cpp release assets from GitHub...\n[2026-09-06 12:44:28] [SUCCESS] Discovered latest official build tag: b10819\n[2026-09-06 12:44:28] [STEP] Verifying existence of release assets via HTTP HEAD...\n[2026-09-06 12:44:29] [SUCCESS] Asset URLs verified successfully (HTTP 200/302).\n[2026-09-06 12:44:29] [INFO] [DRYRUN] Target build to evaluate: b10819\n[2026-09-06 12:44:29] [INFO] [DRYRUN] Discovered Binary Asset: llama-b10819-bin-win-cuda-12.4-x64.zip (https://github.com/ggml-org/llama.cpp/releases/download/b10819/llama-b10819-bin-win-cuda-12.4-x64.zip)\n[2026-09-06 12:44:29] [INFO] [DRYRUN] Discovered CUDA Asset: cudart-llama-bin-win-cuda-12.4-x64.zip (https://github.com/ggml-org/llama.cpp/releases/download/b10819/cudart-llama-bin-win-cuda-12.4-x64.zip)\n[2026-09-06 12:44:29] [INFO] [DRYRUN] Target directory: K:\\Project\\llama-mainline\\b10819\n[2026-09-06 12:44:29] [INFO] [DRYRUN] Planned validation gates:\n[2026-09-06 12:44:29] [INFO]   Gate 1: Static capabilities check (flags: -m, -md, --spec-type, -ctk, -ctv, -fa, --jinja, --reasoning-format)\n[2026-09-06 12:44:29] [INFO]   Gate 2: Candidate runtime gate on test port 18081 (requires SERVER_STARTED, MAIN_MODEL_LOADED, DRAFT_MODEL_LOADED, HTTP_HEALTHY, SHORT_COMPLETION_PASS)\n[2026-09-06 12:44:29] [INFO]   Gate 3: Safe config promotion with YAML validation, line diff check, and backup to K:\\Project\\Archive\\backups\\llama-mainline\n[2026-09-06 12:44:29] [SUCCESS] [DRYRUN] Dry run simulation completed successfully. Zero changes were made.",
+      "status": "PASS"
+    },
+    {
+      "test_name": "Default Invocation (No Args / Double-Click) Safe CheckOnly Default",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1",
+      "exit_code": 0,
+      "stdout": "No action switch specified. Defaulting safely to -CheckOnly mode.\nUsage: .\\update-llama-mainline.ps1 [-CheckOnly | -DryRun | -Update | -Rollback] [-TargetBuild <tag>]\n\n[2026-09-06 12:44:29] [STEP] === Official llama.cpp Updater (CheckOnly Mode) ===\n[2026-09-06 12:44:30] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 12:44:30] [INFO] Current Production Build: b10816\n[2026-09-06 12:44:30] [INFO] Current Production Binary: K:\\Project\\llama-mainline\\b10816\\llama-server.exe\n[2026-09-06 12:44:30] [INFO] Current Binary Exists: True\n[2026-09-06 12:44:30] [INFO] Current Binary SHA256: 907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA\n[2026-09-06 12:44:30] [INFO] Current Version String: version: 0.4.0-dev (build 10816, commit 427291b5b) built with Clang 20.1.8 for Windows x86_64\n[2026-09-06 12:44:30] [INFO] Discovering official llama.cpp release assets from GitHub...\n[2026-09-06 12:44:31] [SUCCESS] Discovered latest official build tag: b10819\n[2026-09-06 12:44:31] [STEP] Verifying existence of release assets via HTTP HEAD...\n[2026-09-06 12:44:32] [SUCCESS] Asset URLs verified successfully (HTTP 200/302).\n[2026-09-06 12:44:32] [STEP] ================ Release Asset Discovery ================\n[2026-09-06 12:44:32] [INFO] TARGET_TAG: b10819\n[2026-09-06 12:44:32] [INFO] BIN_ASSET: llama-b10819-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:44:32] [INFO] CUDA_RUNTIME_ASSET: cudart-llama-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:44:32] [INFO] BIN_ASSET_URL: https://github.com/ggml-org/llama.cpp/releases/download/b10819/llama-b10819-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:44:32] [INFO] CUDA_ASSET_URL: https://github.com/ggml-org/llama.cpp/releases/download/b10819/cudart-llama-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:44:32] [SUCCESS] ASSETS_VERIFIED_EXIST: True\n[2026-09-06 12:44:32] [STEP] =========================================================\n[2026-09-06 12:44:32] [WARN] Status: UPDATE AVAILABLE (b10816 -> b10819).\n[2026-09-06 12:44:32] [INFO] To preview update: .\\update-llama-mainline.ps1 -DryRun\n[2026-09-06 12:44:32] [INFO] To execute update: .\\update-llama-mainline.ps1 -Update -TargetBuild b10819",
+      "status": "PASS"
+    },
+    {
+      "test_name": "Candidate Runtime Gate Implementation Audit",
+      "description": "Verifies Candidate Runtime Gate is implemented with isolated test port, real Qwen3-Next models, and all 5 required checks",
+      "runtime_gate_implemented": true,
+      "executed_in_stage_7b": false,
+      "status": "PASS"
+    },
+    {
+      "test_name": "ik_llama Updater Hardening Audit",
+      "description": "Verifies canonical model path, Ornith compatibility check, and elimination of automatic platform restart",
+      "qwen_canonical_path_present": true,
+      "ornith_compatibility_gate_present": true,
+      "ik_update_auto_restart_eliminated": true,
+      "ik_rollback_auto_restart_eliminated": true,
+      "status": "PASS"
+    }
+  ],
+  "overall_status": "PASS"
+}

@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-06T15:22:00.000000+00:00",
+  "policy_name": "Team-Full Routing Policy",
+  "current_flow": "Qwen 3.8 (Planner/Reviewer) -> Ornith 1.5 (Executor) -> Qwen 3.8 (Reviewer) with Qwen3-Next 80B (Escalation)",
+  "verdict": "KEEP",
+  "empirical_justification": {
+    "qwen_role": {
+      "assigned_roles": [
+        "Planner",
+        "Reviewer",
+        "Diagnostic Debugger"
+      ],
+      "justification": "Achieved 100/100 on Debugging/Root Cause and 100/100 on Reviewer/Security Audit. Fast warm load (9.7s), reliable 29.5 tok/s generation, safe 399 MiB VRAM margin at context 98304."
+    },
+    "ornith_role": {
+      "assigned_roles": [
+        "Primary Code Executor",
+        "Rapid Implementation"
+      ],
+      "justification": "Dominates throughput benchmarks at 69.81 tok/s average (peak 77.2 tok/s), 300+ tok/s prompt processing, near-instant 9.5s warm load, and 2165 MiB VRAM safety buffer. Ideal for iterative codebase modification."
+    },
+    "next_role": {
+      "assigned_roles": [
+        "Escalation Reasoner",
+        "Complex Logic Resolution"
+      ],
+      "justification": "80B parameter MoE architecture with DeepSeek thinking trace delivers 89.2/100 overall reasoning. However, cold start latency on SATA disk is ~809s (13.5 min) and VRAM peak is 20939 MiB. Keeping Next as an escalation-only tier avoids thrashing the workstation while maintaining deep-thinking fallback."
+    }
+  },
+  "applied_profile_changes": "None required. Current OpenHands agent profile mapping matches empirical optima exactly."
+}

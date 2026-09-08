@@ -1,0 +1,71 @@
+================================================================================
+STAGE 7D UPDATER MODIFICATIONS & DIFF SUMMARY
+================================================================================
+
+1. NEW FILE: K:\Project\OpenHands-Update\scripts\update-llama-swap.ps1
+--------------------------------------------------------------------------------
+- Purpose: Dedicated updater for mostlygeek/llama-swap router binary.
+- Features:
+  * -CheckOnly mode: Dynamically inspects GitHub releases, verifies asset availability via HTTP HEAD.
+  * -DryRun mode: Full execution simulation with zero files modified.
+  * -Update mode: Downloads Windows amd64 zip to staging, extracts, and runs candidate validation gate
+    on isolated test port 18080 with current production config.yaml (/health OK, /v1/models OK, no schema error).
+  * -Rollback mode: Restores previous binary from .bak or archive backup.
+  * Hard Station Stopped Gate: Requires ports 8000, 8080, 18000, 18001, 18002 to be free (-Force cannot bypass).
+  * Safe Default Invocation: Double-click or no args strictly defaults to -CheckOnly.
+
+2. NEW FILE: K:\Project\OpenHands-Update\UPDATE-LLAMA-SWAP.cmd
+--------------------------------------------------------------------------------
+- Safe batch launcher calling scripts\update-llama-swap.ps1.
+- Defaults to -CheckOnly if run without arguments.
+
+3. MODIFIED FILE: K:\Project\OpenHands-Update\scripts\update-openhands.ps1
+--------------------------------------------------------------------------------
+- Added -CheckOnly and -DryRun modes.
+- Added Hard Station Stopped Gate (ports 8000, 8080, 18000, 18001, 18002).
+- -CheckOnly independently discovers and reports:
+    AGENT_CANVAS_CURRENT & AGENT_CANVAS_LATEST (npm)
+    AGENT_SERVER_PINNED & AGENT_SERVER_LATEST (PyPI)
+    AUTOMATION_PINNED & AUTOMATION_LATEST (PyPI)
+    LOCALIZATION_PATCH_VERSION & VOICE_PATCH_VERSION
+- Implemented backend PyPI policy: standalone PyPI updates do NOT alter production pins.
+- Enforced strict localization gate (audit-localization.py verifying 0 missing keys).
+- Enforced strict voice UI patch gate (verifying tags in build/index.html).
+- Decoupled platform restart: station remains STOPPED by default.
+
+4. MODIFIED FILE: K:\Project\OpenHands-Update\scripts\rollback-openhands.ps1
+--------------------------------------------------------------------------------
+- Converted station restart to opt-in switch (-RestartPlatform). Defaults to STATION STOPPED.
+
+5. MODIFIED FILE: K:\Project\OpenHands-Update\UPDATE-OPENHANDS.cmd
+--------------------------------------------------------------------------------
+- Added check for empty arguments; defaults safely to -CheckOnly mode.
+
+6. MODIFIED FILE: K:\Project\OpenHands-Update\scripts\update-all.ps1
+--------------------------------------------------------------------------------
+- Completely redesigned from a blind sequential installer to a safe Update Dashboard & Orchestrator.
+- Default invocation: -CheckOnly.
+- Displays unified tabular matrix of all 4 regular components:
+    COMPONENT | CURRENT | LATEST | STATUS | UPDATER_READY
+- Automated multi-component batch promotion explicitly DISABLED to preserve isolation boundaries.
+- Uses rate-limit resilient query methods.
+
+7. MODIFIED FILE: K:\Project\OpenHands-Update\UPDATE-ALL.cmd
+--------------------------------------------------------------------------------
+- Added check for empty arguments; defaults safely to -CheckOnly mode.
+
+8. MODIFIED FILE: K:\Project\OpenHands-Update\scripts\update-ik-llama.ps1
+--------------------------------------------------------------------------------
+- Fixed syntax error in catch block.
+- Added -CheckOnly and -DryRun modes.
+- Added Hard Station Stopped Gate.
+- Default invocation defaults to -CheckOnly.
+
+9. MODIFIED FILE: K:\Project\OpenHands-Update\UPDATE-IK-LLAMA.cmd
+--------------------------------------------------------------------------------
+- Added check for empty arguments; defaults safely to -CheckOnly mode.
+
+10. EXPANDED FILE: K:\Project\Config\backend-versions.json
+--------------------------------------------------------------------------------
+- Added informational entries for agent_canvas, agent_server, automation, llama_swap, llama_mainline, ik_llama.
+================================================================================

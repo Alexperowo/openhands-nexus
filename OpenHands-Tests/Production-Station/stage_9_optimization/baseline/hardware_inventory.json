@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-09-06T13:15:20+00:00",
+  "cpu": {
+    "model": "AMD Ryzen 5 3600 6-Core Processor",
+    "cores": 6,
+    "threads": 12
+  },
+  "ram": {
+    "total_gb": 47.92,
+    "available_gb": 41.94,
+    "used_gb": 5.98,
+    "used_percent": 12.5
+  },
+  "gpu": {
+    "model": "NVIDIA GeForce RTX 2080 Ti (22 GB Modified VRAM)",
+    "vram_total_mib": 22528,
+    "vram_total_gb": 22.0,
+    "vram_free_baseline_mib": 22030,
+    "vram_free_baseline_gb": 21.51,
+    "vram_used_baseline_mib": 498,
+    "power_limit_watts": 155.0,
+    "driver_version": "610.88",
+    "cuda_umd_version": "13.3",
+    "cuda_kmd_version": "610.88",
+    "pci_bus_id": "00000000:06:00.0"
+  },
+  "station_status_at_baseline": "STOPPED",
+  "ports_free": [
+    8000,
+    8080,
+    18000,
+    18001,
+    18002
+  ]
+}

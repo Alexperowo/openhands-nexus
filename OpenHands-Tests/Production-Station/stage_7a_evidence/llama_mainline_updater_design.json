@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-09-06T12:33:04.298209",
+  "stage": "STAGE_7A",
+  "updater_script": "K:/Project/OpenHands-Update/update-llama-mainline.ps1",
+  "launcher": "K:/Project/OpenHands-Update/UPDATE-LLAMA-MAINLINE.cmd",
+  "target_backend": {
+    "component": "llama-mainline",
+    "served_model": "Qwen3-Next-80B-A3B-Thinking",
+    "root_directory": "K:/Project/llama-mainline",
+    "current_production_build": "b10816",
+    "current_production_path": "K:/Project/llama-mainline/b10816/llama-server.exe",
+    "upstream_repository": "https://github.com/ggml-org/llama.cpp"
+  },
+  "safety_design": {
+    "station_stopped_gate": {
+      "monitored_ports": [
+        8000,
+        8080,
+        18000,
+        18001,
+        18002
+      ],
+      "enforcement": "Mandatory in -Update and -Rollback; informative in -CheckOnly and -DryRun"
+    },
+    "isolated_versioned_storage": {
+      "pattern": "K:/Project/llama-mainline/<build_tag>/",
+      "in_place_overwrite": false,
+      "description": "Each upstream build is extracted into its own folder, preserving previous builds intact"
+    },
+    "release_discovery": {
+      "primary_method": "GitHub releases HTML scraping (immune to rate limits)",
+      "secondary_method": "curl -ILs redirect inspection on /releases/latest",
+      "tertiary_fallback": "GitHub REST API with custom User-Agent"
+    },
+    "capabilities_validation_gate": {
+      "companion_dlls_required": [
+        "cublas64_12.dll",
+        "cudart64_12.dll",
+        "ggml-cuda.dll",
+        "llama.dll"
+      ],
+      "cli_flags_verified": [
+        "--model / -m",
+        "--model-draft / -md",
+        "--spec-type",
+        "--cache-type-k / -ctk",
+        "--cache-type-v / -ctv",
+        "--flash-attn / -fa",
+        "--jinja",
+        "--reasoning-format",
+        "CUDA GPU offloading (-ngl / --n-gpu-layers)"
+      ],
+      "failure_behavior": "Abort immediately, retain current production config untouched"
+    },
+    "atomic_promotion_and_rollback": {
+      "config_path": "K:/Project/llama-swap/config.yaml",
+      "backup_pattern": "config.yaml.bak_<timestamp>",
+      "modified_field": "cmd: path only (arguments -m, -md, -c, -ngl, etc. remain strictly identical)",
+      "previous_build_marker": "K:/Project/llama-mainline/PREVIOUS_BUILD.txt",
+      "rollback_command": ".\\update-llama-mainline.ps1 -Rollback [-RollbackBuild <tag>]"
+    },
+    "safe_invocation_contract": {
+      "default_behavior": "Runs -CheckOnly if no parameters provided or on double-click",
+      "supported_switches": [
+        "-CheckOnly",
+        "-DryRun",
+        "-Update [-TargetBuild <tag>]",
+        "-Rollback [-RollbackBuild <tag>]"
+      ]
+    }
+  }
+}

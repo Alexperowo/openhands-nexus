@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-06T10:16:10.443587+00:00",
+  "component": "llama-swap",
+  "script_path": "K:\\Project\\OpenHands-Update\\scripts\\update-llama-swap.ps1",
+  "launcher_cmd": "K:\\Project\\OpenHands-Update\\UPDATE-LLAMA-SWAP.cmd",
+  "supported_modes": [
+    "-CheckOnly",
+    "-DryRun",
+    "-Update",
+    "-Rollback"
+  ],
+  "default_mode": "-CheckOnly",
+  "safety_gates": {
+    "station_stopped_gate": "HARD_GATE (ports 8000, 8080, 18000, 18001, 18002 must be FREE; -Force cannot bypass)",
+    "pre_promotion_candidate_gate": {
+      "port": 18080,
+      "checks": [
+        "CANDIDATE_PROCESS_STARTED",
+        "CURRENT_CONFIG_PARSED (K:\\Project\\llama-swap\\config.yaml)",
+        "TEST_PORT_LISTENING (127.0.0.1:18080)",
+        "HEALTH_ENDPOINT_OK (/health returns OK)",
+        "V1_MODELS_ENDPOINT (/v1/models returns model array)",
+        "NO_CONFIG_SCHEMA_ERROR"
+      ]
+    },
+    "backup_strategy": "Archive to K:\\Project\\Archive\\backups\\llama-swap\\<timestamp>\\ and K:\\Project\\llama-swap\\bin\\llama-swap.exe.bak",
+    "promotion_strategy": "Atomic copy from staging to production binary",
+    "rollback_strategy": "Atomic restoration from .bak or archive backup",
+    "station_lifecycle": "STATION_REMAINS_STOPPED (No automatic restart unless -RestartPlatform passed)"
+  }
+}

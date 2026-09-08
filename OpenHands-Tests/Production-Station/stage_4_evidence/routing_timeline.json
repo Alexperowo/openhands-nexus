@@ -1,0 +1,58 @@
+[
+  {
+    "switch_index": 1,
+    "timestamp": "2026-09-05T18:25:51.473304+00:00",
+    "from_profile": "Qwen38_Opus_96K",
+    "to_profile": "Ornith-Coding",
+    "reason": "Initial planning complete; handing off to Ornith to execute acceptance command.",
+    "initiator_action": "SwitchLLMAction"
+  },
+  {
+    "switch_index": 2,
+    "timestamp": "2026-09-05T18:26:17.565022+00:00",
+    "from_profile": "Ornith-Coding",
+    "to_profile": "Qwen38_Opus_96K",
+    "reason": "Acceptance attempt 1 returned Failure A; returning to Qwen for review.",
+    "initiator_action": "SwitchLLMAction"
+  },
+  {
+    "switch_index": 3,
+    "timestamp": "2026-09-05T18:26:58.450475+00:00",
+    "from_profile": "Qwen38_Opus_96K",
+    "to_profile": "Ornith-Coding",
+    "reason": "First objective failure (Failure A) detected; delegating correction to Ornith.",
+    "initiator_action": "SwitchLLMAction"
+  },
+  {
+    "switch_index": 4,
+    "timestamp": "2026-09-05T18:27:31.569137+00:00",
+    "from_profile": "Ornith-Coding",
+    "to_profile": "Qwen38_Opus_96K",
+    "reason": "Acceptance attempt 2 returned Failure B; returning to Qwen.",
+    "initiator_action": "SwitchLLMAction"
+  },
+  {
+    "switch_index": 5,
+    "timestamp": "2026-09-05T18:28:27.727052+00:00",
+    "from_profile": "Qwen38_Opus_96K",
+    "to_profile": "Next-Normal",
+    "reason": "Second objective failure (Failure B) encountered; escalating to Next-Normal for heavy diagnosis.",
+    "initiator_action": "SwitchLLMAction"
+  },
+  {
+    "switch_index": 6,
+    "timestamp": "2026-09-05T18:45:55.112942+00:00",
+    "from_profile": "Next-Normal",
+    "to_profile": "Ornith-Coding",
+    "reason": "Heavy diagnosis complete; delegating correction B implementation to Ornith.",
+    "initiator_action": "SwitchLLMAction"
+  },
+  {
+    "switch_index": 7,
+    "timestamp": "2026-09-05T18:53:31.421610+00:00",
+    "from_profile": "Ornith-Coding",
+    "to_profile": "Qwen38_Opus_96K",
+    "reason": "Acceptance attempt 3 passed with exit code 0; returning to Qwen for final review.",
+    "initiator_action": "SwitchLLMAction"
+  }
+]

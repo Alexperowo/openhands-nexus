@@ -1,0 +1,18 @@
+System Design & Architecture Review: High-Throughput Distributed Financial Ledger
+
+Context:
+You are the Principal Architect designing a mission-critical, globally distributed double-entry financial ledger and payment processing platform.
+The system will process 50,000 transactions/second across millions of bank accounts with zero tolerance for financial loss, phantom debits, or data corruption.
+
+Design Requirements:
+Provide an exhaustive, production-grade architecture covering:
+1. Core Event-Sourcing & CQRS design: Event structure, aggregate root boundaries, and snapshotting mechanisms.
+2. Ingestion & Storage: Elimination of dual-writes, atomic outbox/CDC, partitioning strategy, and strict sequential ordering guarantees.
+3. Concurrency & Deduplication: Optimistic locking, versioning, and end-to-end idempotency from client to storage.
+4. Distributed Multi-Account Transfers: Orchestration vs Choreography, Saga compensation patterns, and partition isolation.
+5. Network Partitions & Failure Handling: Consensus models, split-brain prevention, and disaster recovery (RPO/RTO).
+6. Schema Evolution: Upcasting historical events and backward/forward compatibility.
+7. Read Models & Client Consistency: Addressing read-after-write consistency and backpressure on projections.
+8. Audit, Compliance, & Observability: Tamper-evident verification, audit trails, and distributed tracing.
+
+Avoid generic summaries. Specify precise architectural patterns, data structures, failure modes, and recovery protocols.

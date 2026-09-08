@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-09-06T10:26:02.996496+00:00",
+  "station_stopped": true,
+  "active_ports": [],
+  "current_llama_swap_version": "v252",
+  "raw_version_string": "version: v252 (e31a1ad), built at 2026-08-31T16:54:46Z",
+  "current_llama_swap_sha256": "2C9E252256D5B418EE103295215F3A92583C5A48E739675920E9522A54D4CA4C",
+  "current_config_sha256": "94D75C25C76534FA05F7FA9CFD1183837734822A35DDCE6B607F8D653A7F609F",
+  "upstream_target": "v255",
+  "checkonly_stdout": "[2026-09-06 13:26:03] [STEP] === llama-swap Updater (CheckOnly Mode) ===\n[2026-09-06 13:26:03] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 13:26:03] [INFO] Current Production Binary:  K:\\Project\\llama-swap\\bin\\llama-swap.exe\n[2026-09-06 13:26:03] [INFO] Current Production Version: v252\n[2026-09-06 13:26:03] [INFO] Current Production SHA256:  2C9E252256D5B418EE103295215F3A92583C5A48E739675920E9522A54D4CA4C\n[2026-09-06 13:26:03] [INFO] Querying llama-swap releases from GitHub API...\n[2026-09-06 13:26:04] [WARN] GitHub REST API returned: \u0420\u0408\u0420\u0491\u0420\u00b0\u0420\u00bb\u0420\u00b5\u0420\u0405\u0420\u0405\u0421\u2039\u0420\u2116 \u0421\u0403\u0420\u00b5\u0421\u0402\u0420\u0406\u0420\u00b5\u0421\u0402 \u0420\u0406\u0420\u0455\u0420\u00b7\u0420\u0406\u0421\u0402\u0420\u00b0\u0421\u201a\u0420\u0451\u0420\u00bb \u0420\u0455\u0421\u20ac\u0420\u0451\u0420\u00b1\u0420\u0454\u0421\u0453: (403) \u0420\u2014\u0420\u00b0\u0420\u0457\u0421\u0402\u0420\u00b5\u0421\u2030\u0420\u00b5\u0420\u0405\u0420\u0455.. Falling back to releases scraping...\n[2026-09-06 13:26:05] [INFO] Latest Upstream Tag:        v255\n[2026-09-06 13:26:05] [INFO] Windows Asset Name:         llama-swap_255_windows_amd64.zip\n[2026-09-06 13:26:05] [INFO] Windows Asset URL:          https://github.com/mostlygeek/llama-swap/releases/download/v255/llama-swap_255_windows_amd64.zip\n[2026-09-06 13:26:05] [INFO] Windows Asset Size:         22755929 bytes\n[2026-09-06 13:26:06] [SUCCESS] Asset availability verified: HTTP 200/302 OK\n[2026-09-06 13:26:06] [WARN] Status: UPDATE AVAILABLE (v252 -> v255)\n[2026-09-06 13:26:06] [INFO] To preview update: .\\update-llama-swap.ps1 -DryRun\n[2026-09-06 13:26:06] [INFO] To execute update: .\\update-llama-swap.ps1 -Update -TargetVersion v255",
+  "checkonly_passed": true
+}

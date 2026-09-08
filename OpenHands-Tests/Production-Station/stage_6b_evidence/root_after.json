@@ -1,0 +1,187 @@
+{
+  "timestamp": "2026-09-06T06:51:27.272108+00:00",
+  "root_path": "K:\\Project",
+  "total_items": 26,
+  "directories_count": 22,
+  "files_count": 4,
+  "items": [
+    {
+      "name": ".git",
+      "path": "K:\\Project\\.git",
+      "type": "DIRECTORY",
+      "file_count": 18,
+      "total_size_bytes": 26293
+    },
+    {
+      "name": ".openhands-local",
+      "path": "K:\\Project\\.openhands-local",
+      "type": "DIRECTORY",
+      "file_count": 16,
+      "total_size_bytes": 213731
+    },
+    {
+      "name": "AgentCanvas-Test",
+      "path": "K:\\Project\\AgentCanvas-Test",
+      "type": "DIRECTORY",
+      "file_count": 21,
+      "total_size_bytes": 54455
+    },
+    {
+      "name": "Archive",
+      "path": "K:\\Project\\Archive",
+      "type": "DIRECTORY",
+      "file_count": 6,
+      "total_size_bytes": 24702079
+    },
+    {
+      "name": "DIAGNOSTICS-OPENHANDS-LOCAL.cmd",
+      "path": "K:\\Project\\DIAGNOSTICS-OPENHANDS-LOCAL.cmd",
+      "type": "FILE",
+      "size_bytes": 375
+    },
+    {
+      "name": "Docs",
+      "path": "K:\\Project\\Docs",
+      "type": "DIRECTORY",
+      "file_count": 2,
+      "total_size_bytes": 395046
+    },
+    {
+      "name": "LLM-tests",
+      "path": "K:\\Project\\LLM-tests",
+      "type": "DIRECTORY",
+      "file_count": 396,
+      "total_size_bytes": 1816600228
+    },
+    {
+      "name": "Logs",
+      "path": "K:\\Project\\Logs",
+      "type": "DIRECTORY",
+      "file_count": 3,
+      "total_size_bytes": 19126
+    },
+    {
+      "name": "Models",
+      "path": "K:\\Project\\Models",
+      "type": "DIRECTORY",
+      "file_count": 9,
+      "total_size_bytes": 121570867872
+    },
+    {
+      "name": "OpenHands-Tests",
+      "path": "K:\\Project\\OpenHands-Tests",
+      "type": "DIRECTORY",
+      "file_count": 440,
+      "total_size_bytes": 119604282
+    },
+    {
+      "name": "OpenHands-Update",
+      "path": "K:\\Project\\OpenHands-Update",
+      "type": "DIRECTORY",
+      "file_count": 95,
+      "total_size_bytes": 356151871
+    },
+    {
+      "name": "RESTART-OPENHANDS-LOCAL.cmd",
+      "path": "K:\\Project\\RESTART-OPENHANDS-LOCAL.cmd",
+      "type": "FILE",
+      "size_bytes": 635
+    },
+    {
+      "name": "START-OPENHANDS-LOCAL.cmd",
+      "path": "K:\\Project\\START-OPENHANDS-LOCAL.cmd",
+      "type": "FILE",
+      "size_bytes": 404
+    },
+    {
+      "name": "STOP-OPENHANDS-LOCAL.cmd",
+      "path": "K:\\Project\\STOP-OPENHANDS-LOCAL.cmd",
+      "type": "FILE",
+      "size_bytes": 173
+    },
+    {
+      "name": "Temp",
+      "path": "K:\\Project\\Temp",
+      "type": "DIRECTORY",
+      "file_count": 0,
+      "total_size_bytes": 0
+    },
+    {
+      "name": "Tests",
+      "path": "K:\\Project\\Tests",
+      "type": "DIRECTORY",
+      "file_count": 33,
+      "total_size_bytes": 60725
+    },
+    {
+      "name": "android-mcp",
+      "path": "K:\\Project\\android-mcp",
+      "type": "DIRECTORY",
+      "file_count": 3773,
+      "total_size_bytes": 42547997
+    },
+    {
+      "name": "ik_llama",
+      "path": "K:\\Project\\ik_llama",
+      "type": "DIRECTORY",
+      "file_count": 5596,
+      "total_size_bytes": 1714397862
+    },
+    {
+      "name": "ksenia-android",
+      "path": "K:\\Project\\ksenia-android",
+      "type": "DIRECTORY",
+      "file_count": 111,
+      "total_size_bytes": 686872
+    },
+    {
+      "name": "llama-mainline",
+      "path": "K:\\Project\\llama-mainline",
+      "type": "DIRECTORY",
+      "file_count": 57,
+      "total_size_bytes": 1166448402
+    },
+    {
+      "name": "llama-swap",
+      "path": "K:\\Project\\llama-swap",
+      "type": "DIRECTORY",
+      "file_count": 13,
+      "total_size_bytes": 25077338
+    },
+    {
+      "name": "llama.cpp",
+      "path": "K:\\Project\\llama.cpp",
+      "type": "DIRECTORY",
+      "file_count": 55,
+      "total_size_bytes": 1166133533
+    },
+    {
+      "name": "local-voice",
+      "path": "K:\\Project\\local-voice",
+      "type": "DIRECTORY",
+      "file_count": 13,
+      "total_size_bytes": 4592755
+    },
+    {
+      "name": "openhands-localization",
+      "path": "K:\\Project\\openhands-localization",
+      "type": "DIRECTORY",
+      "file_count": 7,
+      "total_size_bytes": 254983
+    },
+    {
+      "name": "transcribe-build",
+      "path": "K:\\Project\\transcribe-build",
+      "type": "DIRECTORY",
+      "file_count": 518,
+      "total_size_bytes": 86172237
+    },
+    {
+      "name": "transcribe-build-shared",
+      "path": "K:\\Project\\transcribe-build-shared",
+      "type": "DIRECTORY",
+      "file_count": 401,
+      "total_size_bytes": 44513973
+    }
+  ]
+}

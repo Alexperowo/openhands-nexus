@@ -1,0 +1,89 @@
+﻿{
+    "active_profile_id":  "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+    "timestamp":  "2026-09-06T09:02:08.8672857+03:00",
+    "team_full_available":  true,
+    "restart_gate_passed":  true,
+    "endpoints":  {
+                      "AGENT_SERVER_18000":  {
+                                                 "port":  18000,
+                                                 "http_preview":  "{\"uptime\":28.0,\"idle_time\":28.0,\"title\":\"OpenHands Agent Server\",\"version\":\"1.44.0\",\"sdk_version\":\"1.44.0\",\"tools_version\":\"1.44.0\",\"workspace_version\":\"1.44.0\",\"build_git_sha\":\"unknown\",\"build_git_re",
+                                                 "http_status":  "HTTP_200",
+                                                 "process":  {
+                                                                 "path":  "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                                                                 "pid":  10056,
+                                                                 "process_name":  "python"
+                                                             },
+                                                 "listener":  true
+                                             },
+                      "AUTOMATION_18001":  {
+                                               "port":  18001,
+                                               "http_preview":  "{\"status\":\"ok\"}",
+                                               "http_status":  "HTTP_200",
+                                               "process":  {
+                                                               "path":  "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                                                               "pid":  7620,
+                                                               "process_name":  "python"
+                                                           },
+                                               "listener":  true
+                                           },
+                      "UI_8000":  {
+                                      "port":  8000,
+                                      "http_preview":  "﻿\u003c!DOCTYPE html\u003e\u003chtml lang=\"en\"\u003e\u003chead\u003e\u003cmeta charSet=\"utf-8\"/\u003e\u003cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/\u003e\u003ctitle\u003eOpenHands\u003c/title\u003e\u003cmeta name=\"description\" content=\"Let\u0026#x27;s S",
+                                      "http_status":  "HTTP_200",
+                                      "process":  {
+                                                      "path":  "C:\\Program Files\\nodejs\\node.exe",
+                                                      "pid":  4416,
+                                                      "process_name":  "node"
+                                                  },
+                                      "listener":  true
+                                  },
+                      "VOICE_BRIDGE_18002":  {
+                                                 "port":  18002,
+                                                 "http_preview":  "{\"status\": \"ok\", \"uptime_s\": 39.7, \"stt_engine\": \"gigaam-v3-e2e-rnnt (FUTO transcribe.cpp)\", \"tts_engine\": \"supertonic-3 (Supertone ONNX)\", \"voices\": [\"M1\", \"F1\"], \"ram_mb\": 745.9, \"metrics\": {\"stt_lo",
+                                                 "http_status":  "HTTP_200",
+                                                 "process":  {
+                                                                 "path":  "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe",
+                                                                 "pid":  8764,
+                                                                 "process_name":  "pythonw"
+                                                             },
+                                                 "listener":  true
+                                             },
+                      "LLAMA_SWAP_8080":  {
+                                              "port":  8080,
+                                              "http_preview":  "OK",
+                                              "http_status":  "HTTP_200",
+                                              "process":  {
+                                                              "path":  "K:\\Project\\llama-swap\\bin\\llama-swap.exe",
+                                                              "pid":  13000,
+                                                              "process_name":  "llama-swap"
+                                                          },
+                                              "listener":  true
+                                          }
+                  },
+    "foreign_process":  {
+                            "is_alive":  true,
+                            "pid":  14236
+                        },
+    "session":  {
+                    "swap_pid":  13000,
+                    "llama_pid":  null,
+                    "canvas_pids":  [
+                                        8040,
+                                        10892,
+                                        6000,
+                                        12544,
+                                        12184,
+                                        14476,
+                                        7560,
+                                        5544,
+                                        4416,
+                                        10056,
+                                        7620
+                                    ],
+                    "swap_owned":  true,
+                    "voice_owned":  true,
+                    "voice_pid":  8764,
+                    "canvas_owned":  true,
+                    "llama_owned":  false
+                }
+}

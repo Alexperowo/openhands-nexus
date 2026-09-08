@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-09-06T09:36:02Z",
+  "all_verified": true,
+  "qwen38_copy_complete": true,
+  "source_preserved": true,
+  "manifest": [
+    {
+      "file_name": "Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "source_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "destination_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "source_size": 16810714688,
+      "destination_size": 16810714688,
+      "size_match": true,
+      "sha256_source": "424b98a8f5add2fb66b92902d98ee9288badc82f4b986e70ade5f8d5ca615991",
+      "sha256_destination": "424b98a8f5add2fb66b92902d98ee9288badc82f4b986e70ade5f8d5ca615991",
+      "hash_match": "YES",
+      "verified": true
+    },
+    {
+      "file_name": "Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "source_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "destination_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "source_size": 927607296,
+      "destination_size": 927607296,
+      "size_match": true,
+      "sha256_source": "de0d58cea206add6ff82392027785ff294ad9cca22b74fc949f4eb15add35512",
+      "sha256_destination": "de0d58cea206add6ff82392027785ff294ad9cca22b74fc949f4eb15add35512",
+      "hash_match": "YES",
+      "verified": true
+    }
+  ]
+}

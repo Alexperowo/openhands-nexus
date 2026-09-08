@@ -1,0 +1,35 @@
+{
+  "STAGE": "STAGE_8",
+  "STATUS": "PASS",
+  "TIMESTAMP": "2026-09-06T13:08:00.974885+00:00",
+  "K_DRIVE_PROJECTS_FOUND": 12,
+  "D_DRIVE_PROJECTS_FOUND": 19,
+  "TOTAL_PROJECT_ROOTS_IDENTIFIED": 31,
+  "SPACE_BEFORE_K": "96.06 GB free (127.4 GB used)",
+  "SPACE_AFTER_K": "96.06 GB free (127.4 GB used)",
+  "SPACE_RECOVERED_K": "6.95 MB",
+  "SPACE_BEFORE_D": "40.01 GB free (198.34 GB used)",
+  "SPACE_AFTER_D": "40.01 GB free (198.34 GB used)",
+  "SPACE_RECOVERED_D": "-1.7 MB",
+  "FILES_DELETED": 0,
+  "DIRECTORIES_DELETED": 1,
+  "DIRECTORIES_DELETED_LIST": [
+    "K:\\models"
+  ],
+  "ITEMS_ARCHIVED": 2,
+  "ITEMS_ARCHIVED_LIST": [
+    "K:\\Project\\llama.cpp -> K:\\Project\\Archive\\deprecated-builds\\llama.cpp",
+    "K:\\Project\\transcribe-build -> K:\\Project\\Archive\\deprecated-builds\\transcribe-build"
+  ],
+  "LLAMA_CPP_STATUS": "ARCHIVED (to K:\\Project\\Archive\\deprecated-builds\\llama.cpp)",
+  "TRANSCRIBE_BUILD_STATUS": "ARCHIVED (to K:\\Project\\Archive\\deprecated-builds\\transcribe-build)",
+  "TRANSCRIBE_BUILD_SHARED_STATUS": "PROTECTED (active production voice dependency)",
+  "LLAMA_MAINLINE_ROLLBACK_BUILD": "PROTECTED (K:\\Project\\llama-mainline\\b10816)",
+  "D_QWEN_STATUS": "SAFE_TO_REMOVE_LATER (verified 100% SHA256 match with canonical K: copies; unreferenced by production; retained per Stage 8 policy)",
+  "PRODUCTION_PATHS_VALID": true,
+  "CANONICAL_START": "PASS (ports 8000, 8080, 18000, 18001, 18002 online)",
+  "CANONICAL_STOP": "PASS (ports released, 0 orphans)",
+  "PORTS_RELEASED": "PASS (all ports free)",
+  "ACCIDENTAL_PROJECT_MODIFICATIONS": 0,
+  "EVIDENCE_PATH": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_8_safe_disk_cleanup"
+}

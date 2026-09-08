@@ -1,0 +1,10 @@
+{
+  "stt_model_load_time_s": 0.1832,
+  "stt_cold_latency_ms": 440.0,
+  "stt_warm_latency_ms": 448.1,
+  "tts_model_load_time_s": 1.1977,
+  "tts_ttfa_ms": 1652.3,
+  "tts_total_gen_time_s": 1.652,
+  "tts_audio_duration_s": 8.77,
+  "tts_rtf": 0.188
+}

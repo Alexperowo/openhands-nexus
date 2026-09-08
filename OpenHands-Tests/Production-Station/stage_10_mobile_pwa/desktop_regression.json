@@ -1,0 +1,32 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:02:00+03:00",
+  "endpoints_verified": [
+    {
+      "name": "Agent Canvas Web Ingress",
+      "url": "http://127.0.0.1:8000/",
+      "status": 200
+    },
+    {
+      "name": "Agent Canvas Server Info",
+      "url": "http://127.0.0.1:8000/server_info",
+      "status": 200
+    },
+    {
+      "name": "Agent Profiles API",
+      "url": "http://127.0.0.1:8000/api/agent-profiles",
+      "status": 200
+    },
+    {
+      "name": "Local Voice Bridge Health",
+      "url": "http://127.0.0.1:18002/health",
+      "status": 200
+    },
+    {
+      "name": "llama-swap Router Health",
+      "url": "http://127.0.0.1:8080/health",
+      "status": 200
+    }
+  ],
+  "verdict": "PASS"
+}

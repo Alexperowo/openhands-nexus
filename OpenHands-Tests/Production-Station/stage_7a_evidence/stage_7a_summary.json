@@ -1,0 +1,93 @@
+{
+  "stage": "STAGE_7A",
+  "status": "PASS",
+  "timestamp": "2026-09-06T12:33:47.685001",
+  "backends": {
+    "ik_llama": {
+      "production_path": "K:/Project/ik_llama/bin/llama-server.exe",
+      "version": "version: 1 (3c58ae3)",
+      "compiler": "MSVC 19.44.35228.0 for x64",
+      "commit": "3c58ae373a0081c884099f435fb16ca720852bf7",
+      "sha256": "D8A860D7D608D563239C56EDA69912B771A2E26317EBB58C3A6413BAAE29320A",
+      "served_models": [
+        "Qwen3.8",
+        "Ornith"
+      ]
+    },
+    "llama_mainline": {
+      "production_path": "K:/Project/llama-mainline/b10816/llama-server.exe",
+      "version": "version: 0.4.0-dev (build 10816, commit 427291b5b)",
+      "compiler": "Clang 20.1.8 for Windows x86_64",
+      "cuda_build": "Windows x64 CUDA 12.4",
+      "build_tag": "b10816",
+      "commit": "427291b5b34cd914a31b3fd3b61a68f6184f4b9f",
+      "sha256": "907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA",
+      "served_models": [
+        "Qwen3-Next-80B-A3B-Thinking"
+      ]
+    },
+    "llama_swap": {
+      "production_path": "K:/Project/llama-swap/bin/llama-swap.exe",
+      "version": "v252 (e31a1ad)",
+      "build_time": "2026-08-31T16:54:46Z",
+      "sha256": "2C9E252256D5B418EE103295215F3A92583C5A48E739675920E9522A54D4CA4C",
+      "role": "Reverse proxy router on port 8080"
+    }
+  },
+  "updater_audit": {
+    "ik_llama_updater": {
+      "script": "K:/Project/OpenHands-Update/scripts/update-ik-llama.ps1",
+      "status": "NEEDS_FIX",
+      "issues": [
+        "Stale reference to D:/Project/models/... at line 27 (needs K:/Project/Models/Qwen3.8/)",
+        "Unconditional restart of entire station upon promotion at line 363"
+      ]
+    },
+    "openhands_updater": {
+      "script": "K:/Project/OpenHands-Update/scripts/update-openhands.ps1",
+      "status": "NEEDS_FIX",
+      "issues": [
+        "Direct global npm update in user roaming AppData",
+        "Strict localization audit halts update on any new untranslated upstream keys"
+      ]
+    },
+    "llama_swap_updater": {
+      "script": null,
+      "status": "MISSING",
+      "recommendation": "Create safe release fetcher or build updater for llama-swap router"
+    },
+    "official_llama_mainline_updater": {
+      "script": "K:/Project/OpenHands-Update/update-llama-mainline.ps1",
+      "launcher": "K:/Project/OpenHands-Update/UPDATE-LLAMA-MAINLINE.cmd",
+      "status": "CREATED",
+      "checkonly_test": "PASS",
+      "dryrun_test": "PASS",
+      "default_invocation_test": "PASS (defaults to -CheckOnly)"
+    }
+  },
+  "legacy_builds_audit": {
+    "K:/Project/llama.cpp": {
+      "build": "b10752",
+      "size_mb": 1112.11,
+      "active_runtime_references": 0,
+      "status": "ARCHIVE_CANDIDATE_PENDING_REFERENCE_AUDIT",
+      "action": "Retain untouched in Stage 7A; safe to archive in Stage 8"
+    },
+    "K:/Project/transcribe-build": {
+      "build": "CMake CLI build tree",
+      "size_mb": 82.18,
+      "active_runtime_references": 0,
+      "status": "ARCHIVE_CANDIDATE_PENDING_REFERENCE_AUDIT",
+      "action": "Retain untouched in Stage 7A; safe to archive in Stage 8"
+    }
+  },
+  "invariance_verification": {
+    "production_binary_changed": "NO",
+    "production_config_changed": "NO",
+    "models_moved": "NO",
+    "station_stopped_verified": "YES",
+    "unresolved": "NONE"
+  },
+  "manifest_path": "K:/Project/Config/backend-versions.json",
+  "evidence_dir": "K:/Project/OpenHands-Tests/Production-Station/stage_7a_evidence/"
+}

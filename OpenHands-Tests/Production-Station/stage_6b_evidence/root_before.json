@@ -1,0 +1,415 @@
+{
+  "timestamp": "2026-09-06T06:47:40.877035+00:00",
+  "root_path": "K:\\Project",
+  "total_items": 64,
+  "directories_count": 22,
+  "files_count": 42,
+  "items": [
+    {
+      "name": ".git",
+      "path": "K:\\Project\\.git",
+      "type": "DIRECTORY",
+      "file_count": 18,
+      "total_size_bytes": 26293
+    },
+    {
+      "name": ".openhands-local",
+      "path": "K:\\Project\\.openhands-local",
+      "type": "DIRECTORY",
+      "file_count": 18,
+      "total_size_bytes": 252265
+    },
+    {
+      "name": "AgentCanvas-Test",
+      "path": "K:\\Project\\AgentCanvas-Test",
+      "type": "DIRECTORY",
+      "file_count": 21,
+      "total_size_bytes": 54455
+    },
+    {
+      "name": "Archive",
+      "path": "K:\\Project\\Archive",
+      "type": "DIRECTORY",
+      "file_count": 0,
+      "total_size_bytes": 0
+    },
+    {
+      "name": "DIAGNOSTICS-OPENHANDS-LOCAL.cmd",
+      "path": "K:\\Project\\DIAGNOSTICS-OPENHANDS-LOCAL.cmd",
+      "type": "FILE",
+      "size_bytes": 375
+    },
+    {
+      "name": "Docs",
+      "path": "K:\\Project\\Docs",
+      "type": "DIRECTORY",
+      "file_count": 0,
+      "total_size_bytes": 0
+    },
+    {
+      "name": "LLM-tests",
+      "path": "K:\\Project\\LLM-tests",
+      "type": "DIRECTORY",
+      "file_count": 396,
+      "total_size_bytes": 1816600228
+    },
+    {
+      "name": "Logs",
+      "path": "K:\\Project\\Logs",
+      "type": "DIRECTORY",
+      "file_count": 0,
+      "total_size_bytes": 0
+    },
+    {
+      "name": "Models",
+      "path": "K:\\Project\\Models",
+      "type": "DIRECTORY",
+      "file_count": 11,
+      "total_size_bytes": 121570885248
+    },
+    {
+      "name": "OpenHands",
+      "path": "K:\\Project\\OpenHands",
+      "type": "DIRECTORY",
+      "file_count": 0,
+      "total_size_bytes": 0
+    },
+    {
+      "name": "OpenHands-Tests",
+      "path": "K:\\Project\\OpenHands-Tests",
+      "type": "DIRECTORY",
+      "file_count": 429,
+      "total_size_bytes": 119554793
+    },
+    {
+      "name": "OpenHands-Update",
+      "path": "K:\\Project\\OpenHands-Update",
+      "type": "DIRECTORY",
+      "file_count": 95,
+      "total_size_bytes": 356151871
+    },
+    {
+      "name": "RESTART-OPENHANDS-LOCAL.cmd",
+      "path": "K:\\Project\\RESTART-OPENHANDS-LOCAL.cmd",
+      "type": "FILE",
+      "size_bytes": 635
+    },
+    {
+      "name": "START-OPENHANDS-LOCAL.cmd",
+      "path": "K:\\Project\\START-OPENHANDS-LOCAL.cmd",
+      "type": "FILE",
+      "size_bytes": 404
+    },
+    {
+      "name": "STOP-OPENHANDS-LOCAL.cmd",
+      "path": "K:\\Project\\STOP-OPENHANDS-LOCAL.cmd",
+      "type": "FILE",
+      "size_bytes": 173
+    },
+    {
+      "name": "Temp",
+      "path": "K:\\Project\\Temp",
+      "type": "DIRECTORY",
+      "file_count": 0,
+      "total_size_bytes": 0
+    },
+    {
+      "name": "Three-Model-Integration-Full-Archive.zip",
+      "path": "K:\\Project\\Three-Model-Integration-Full-Archive.zip",
+      "type": "FILE",
+      "size_bytes": 11931757
+    },
+    {
+      "name": "Three-Model-Integration-Supplemental-Evidence.zip",
+      "path": "K:\\Project\\Three-Model-Integration-Supplemental-Evidence.zip",
+      "type": "FILE",
+      "size_bytes": 12745547
+    },
+    {
+      "name": "all_modes_results.json",
+      "path": "K:\\Project\\all_modes_results.json",
+      "type": "FILE",
+      "size_bytes": 5000
+    },
+    {
+      "name": "android-mcp",
+      "path": "K:\\Project\\android-mcp",
+      "type": "DIRECTORY",
+      "file_count": 3773,
+      "total_size_bytes": 42547997
+    },
+    {
+      "name": "benchmark_voice_full.py",
+      "path": "K:\\Project\\benchmark_voice_full.py",
+      "type": "FILE",
+      "size_bytes": 3477
+    },
+    {
+      "name": "final_about_tablet.png",
+      "path": "K:\\Project\\final_about_tablet.png",
+      "type": "FILE",
+      "size_bytes": 319922
+    },
+    {
+      "name": "ik_llama",
+      "path": "K:\\Project\\ik_llama",
+      "type": "DIRECTORY",
+      "file_count": 5596,
+      "total_size_bytes": 1714397862
+    },
+    {
+      "name": "ik_llama_help.txt",
+      "path": "K:\\Project\\ik_llama_help.txt",
+      "type": "FILE",
+      "size_bytes": 75124
+    },
+    {
+      "name": "inspect_conv_req.py",
+      "path": "K:\\Project\\inspect_conv_req.py",
+      "type": "FILE",
+      "size_bytes": 383
+    },
+    {
+      "name": "ksenia-android",
+      "path": "K:\\Project\\ksenia-android",
+      "type": "DIRECTORY",
+      "file_count": 111,
+      "total_size_bytes": 686872
+    },
+    {
+      "name": "llama-mainline",
+      "path": "K:\\Project\\llama-mainline",
+      "type": "DIRECTORY",
+      "file_count": 57,
+      "total_size_bytes": 1166448402
+    },
+    {
+      "name": "llama-swap",
+      "path": "K:\\Project\\llama-swap",
+      "type": "DIRECTORY",
+      "file_count": 14,
+      "total_size_bytes": 25078320
+    },
+    {
+      "name": "llama.cpp",
+      "path": "K:\\Project\\llama.cpp",
+      "type": "DIRECTORY",
+      "file_count": 55,
+      "total_size_bytes": 1166133533
+    },
+    {
+      "name": "llama.log",
+      "path": "K:\\Project\\llama.log",
+      "type": "FILE",
+      "size_bytes": 3358
+    },
+    {
+      "name": "local-voice",
+      "path": "K:\\Project\\local-voice",
+      "type": "DIRECTORY",
+      "file_count": 13,
+      "total_size_bytes": 4592755
+    },
+    {
+      "name": "openhands-localization",
+      "path": "K:\\Project\\openhands-localization",
+      "type": "DIRECTORY",
+      "file_count": 7,
+      "total_size_bytes": 254983
+    },
+    {
+      "name": "setup_openhands_profiles.py",
+      "path": "K:\\Project\\setup_openhands_profiles.py",
+      "type": "FILE",
+      "size_bytes": 3079
+    },
+    {
+      "name": "test_all_modes.py",
+      "path": "K:\\Project\\test_all_modes.py",
+      "type": "FILE",
+      "size_bytes": 2573
+    },
+    {
+      "name": "test_barge_in.py",
+      "path": "K:\\Project\\test_barge_in.py",
+      "type": "FILE",
+      "size_bytes": 1450
+    },
+    {
+      "name": "test_bgt.py",
+      "path": "K:\\Project\\test_bgt.py",
+      "type": "FILE",
+      "size_bytes": 1133
+    },
+    {
+      "name": "test_budget.py",
+      "path": "K:\\Project\\test_budget.py",
+      "type": "FILE",
+      "size_bytes": 1497
+    },
+    {
+      "name": "test_comb.py",
+      "path": "K:\\Project\\test_comb.py",
+      "type": "FILE",
+      "size_bytes": 857
+    },
+    {
+      "name": "test_combined_memory.py",
+      "path": "K:\\Project\\test_combined_memory.py",
+      "type": "FILE",
+      "size_bytes": 1141
+    },
+    {
+      "name": "test_compare.py",
+      "path": "K:\\Project\\test_compare.py",
+      "type": "FILE",
+      "size_bytes": 1542
+    },
+    {
+      "name": "test_direct2.py",
+      "path": "K:\\Project\\test_direct2.py",
+      "type": "FILE",
+      "size_bytes": 690
+    },
+    {
+      "name": "test_direct_deepseek.py",
+      "path": "K:\\Project\\test_direct_deepseek.py",
+      "type": "FILE",
+      "size_bytes": 1591
+    },
+    {
+      "name": "test_direct_inst.py",
+      "path": "K:\\Project\\test_direct_inst.py",
+      "type": "FILE",
+      "size_bytes": 1334
+    },
+    {
+      "name": "test_direct_prompt.py",
+      "path": "K:\\Project\\test_direct_prompt.py",
+      "type": "FILE",
+      "size_bytes": 2381
+    },
+    {
+      "name": "test_exact.py",
+      "path": "K:\\Project\\test_exact.py",
+      "type": "FILE",
+      "size_bytes": 2089
+    },
+    {
+      "name": "test_futo_stt.py",
+      "path": "K:\\Project\\test_futo_stt.py",
+      "type": "FILE",
+      "size_bytes": 2230
+    },
+    {
+      "name": "test_jinja_render.py",
+      "path": "K:\\Project\\test_jinja_render.py",
+      "type": "FILE",
+      "size_bytes": 915
+    },
+    {
+      "name": "test_litellm.py",
+      "path": "K:\\Project\\test_litellm.py",
+      "type": "FILE",
+      "size_bytes": 648
+    },
+    {
+      "name": "test_litellm_both.py",
+      "path": "K:\\Project\\test_litellm_both.py",
+      "type": "FILE",
+      "size_bytes": 665
+    },
+    {
+      "name": "test_litellm_budget.py",
+      "path": "K:\\Project\\test_litellm_budget.py",
+      "type": "FILE",
+      "size_bytes": 613
+    },
+    {
+      "name": "test_litellm_direct.py",
+      "path": "K:\\Project\\test_litellm_direct.py",
+      "type": "FILE",
+      "size_bytes": 647
+    },
+    {
+      "name": "test_off_modes.py",
+      "path": "K:\\Project\\test_off_modes.py",
+      "type": "FILE",
+      "size_bytes": 2080
+    },
+    {
+      "name": "test_persistent_stt.py",
+      "path": "K:\\Project\\test_persistent_stt.py",
+      "type": "FILE",
+      "size_bytes": 1875
+    },
+    {
+      "name": "test_raw_prompt.py",
+      "path": "K:\\Project\\test_raw_prompt.py",
+      "type": "FILE",
+      "size_bytes": 1441
+    },
+    {
+      "name": "test_reasoning_syntax.py",
+      "path": "K:\\Project\\test_reasoning_syntax.py",
+      "type": "FILE",
+      "size_bytes": 2203
+    },
+    {
+      "name": "test_rf.py",
+      "path": "K:\\Project\\test_rf.py",
+      "type": "FILE",
+      "size_bytes": 1323
+    },
+    {
+      "name": "test_save_profile.py",
+      "path": "K:\\Project\\test_save_profile.py",
+      "type": "FILE",
+      "size_bytes": 1027
+    },
+    {
+      "name": "test_single_profile.py",
+      "path": "K:\\Project\\test_single_profile.py",
+      "type": "FILE",
+      "size_bytes": 5326
+    },
+    {
+      "name": "test_val.py",
+      "path": "K:\\Project\\test_val.py",
+      "type": "FILE",
+      "size_bytes": 685
+    },
+    {
+      "name": "test_voice_bridge_stt.py",
+      "path": "K:\\Project\\test_voice_bridge_stt.py",
+      "type": "FILE",
+      "size_bytes": 1701
+    },
+    {
+      "name": "test_voice_bridge_tts.py",
+      "path": "K:\\Project\\test_voice_bridge_tts.py",
+      "type": "FILE",
+      "size_bytes": 1271
+    },
+    {
+      "name": "transcribe-build",
+      "path": "K:\\Project\\transcribe-build",
+      "type": "DIRECTORY",
+      "file_count": 518,
+      "total_size_bytes": 86172237
+    },
+    {
+      "name": "transcribe-build-shared",
+      "path": "K:\\Project\\transcribe-build-shared",
+      "type": "DIRECTORY",
+      "file_count": 401,
+      "total_size_bytes": 44513973
+    },
+    {
+      "name": "verify_openhands_profiles.py",
+      "path": "K:\\Project\\verify_openhands_profiles.py",
+      "type": "FILE",
+      "size_bytes": 5858
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "timestamp": "2026-09-06T12:08:18.420053",
+  "stage": "STAGE_6D",
+  "total_relocated": 18,
+  "records": [
+    {
+      "source": "K:\\Project\\llama.log",
+      "destination": "K:\\Project\\Logs\\llama-server\\llama.log.1",
+      "size_bytes": 596,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\llama-swap\\llama.log",
+      "destination": "K:\\Project\\Logs\\llama-server\\llama.log.2",
+      "size_bytes": 738,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\llama-swap\\logs\\llama-swap.log",
+      "destination": "K:\\Project\\Logs\\llama-swap\\llama-swap-historical.log",
+      "size_bytes": 640542,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\llama-swap\\logs\\diag_next_after_qwen.log",
+      "destination": "K:\\Project\\Logs\\Diagnostics\\diag_next_after_qwen.log",
+      "size_bytes": 876,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\llama-swap\\logs\\next_direct_test.log",
+      "destination": "K:\\Project\\Logs\\Diagnostics\\next_direct_test.log",
+      "size_bytes": 876,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\agent-canvas.log",
+      "destination": "K:\\Project\\Logs\\OpenHands\\agent-canvas.log.1",
+      "size_bytes": 37265,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\agent-canvas.log.old",
+      "destination": "K:\\Project\\Logs\\OpenHands\\agent-canvas.log.2",
+      "size_bytes": 37343,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\agent-canvas.err.log",
+      "destination": "K:\\Project\\Logs\\OpenHands\\agent-canvas.err.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\launcher.log",
+      "destination": "K:\\Project\\Logs\\OpenHands\\launcher.log.1",
+      "size_bytes": 1443,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\launcher.log.old",
+      "destination": "K:\\Project\\Logs\\OpenHands\\launcher.log.2",
+      "size_bytes": 1444,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\llama-server.log",
+      "destination": "K:\\Project\\Logs\\llama-server\\llama-server.log.1",
+      "size_bytes": 29554,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\llama-server.log.old",
+      "destination": "K:\\Project\\Logs\\llama-server\\llama-server.log.2",
+      "size_bytes": 18840,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\llama-server.err.log",
+      "destination": "K:\\Project\\Logs\\llama-server\\llama-server.err.log",
+      "size_bytes": 17163,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\llama-swap.log",
+      "destination": "K:\\Project\\Logs\\llama-swap\\llama-swap.log.1",
+      "size_bytes": 25003,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\llama-swap.log.old",
+      "destination": "K:\\Project\\Logs\\llama-swap\\llama-swap.log.2",
+      "size_bytes": 22245,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\voice-bridge.log",
+      "destination": "K:\\Project\\Logs\\Voice\\voice-bridge.log.1",
+      "size_bytes": 519,
+      "category": "ACTIVE_RUNTIME_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\voice-bridge.log.old",
+      "destination": "K:\\Project\\Logs\\Voice\\voice-bridge.log.2",
+      "size_bytes": 519,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    },
+    {
+      "source": "K:\\Project\\.openhands-local\\logs\\voice-bridge.err.log",
+      "destination": "K:\\Project\\Logs\\Voice\\voice-bridge.err.log",
+      "size_bytes": 0,
+      "category": "HISTORICAL_LOG",
+      "reference_check": "PASSED_NO_ACTIVE_REFERENCES",
+      "result": "SUCCESS"
+    }
+  ]
+}

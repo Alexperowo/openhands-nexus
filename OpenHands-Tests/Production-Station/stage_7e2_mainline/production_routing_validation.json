@@ -1,0 +1,109 @@
+{
+  "timestamp": "2026-09-06T14:07:32.171267",
+  "stage": "7E-2.3",
+  "target_build": "b10821",
+  "router": {
+    "url": "http://127.0.0.1:8080",
+    "model": "next",
+    "status_code": 200,
+    "elapsed_seconds": 15.55
+  },
+  "spawned_process": {
+    "pid": 3040,
+    "ppid": 3084,
+    "exe": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+    "cmdline": [
+      "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+      "-m",
+      "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+      "-md",
+      "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf",
+      "-c",
+      "98304",
+      "-ngl",
+      "26",
+      "-fa",
+      "on",
+      "-ctk",
+      "q8_0",
+      "-ctv",
+      "q8_0",
+      "-np",
+      "1",
+      "-t",
+      "6",
+      "-dev",
+      "CUDA0",
+      "--spec-type",
+      "draft-mtp",
+      "--spec-draft-n-max",
+      "1",
+      "--reasoning-format",
+      "deepseek",
+      "--reasoning-budget-message",
+      "Conclude reasoning immediately and output the final answer now.",
+      "--jinja",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "5800",
+      "--temp",
+      "0.6"
+    ]
+  },
+  "response": {
+    "status_code": 200,
+    "completion_snippet": "Okay, the user said \"Respond with: NEXT_READY\". Let me check",
+    "full_response": {
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "Okay, the user said \"Respond with: NEXT_READY\". Let me check"
+          }
+        }
+      ],
+      "created": 1788692852,
+      "model": "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+      "system_fingerprint": "b10821-971595d66",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 15,
+        "prompt_tokens": 15,
+        "total_tokens": 30,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "id": "chatcmpl-rcUVFDXMzQC95OrRmVqtemfppMor8YqT",
+      "timings": {
+        "cache_n": 0,
+        "prompt_n": 15,
+        "prompt_ms": 893.059,
+        "prompt_per_token_ms": 59.53726666666667,
+        "prompt_per_second": 16.79620271449031,
+        "predicted_n": 15,
+        "predicted_ms": 1042.287,
+        "predicted_per_token_ms": 74.44907142857143,
+        "predicted_per_second": 13.432000974779498,
+        "draft_n": 7,
+        "draft_n_accepted": 7
+      }
+    }
+  },
+  "reasoning_budget_verification": {
+    "Next-Normal": 2048,
+    "Next-Deep": 4096,
+    "verified": true
+  },
+  "validation_verdicts": {
+    "NEW_LLAMA_MAINLINE_BACKEND_SPAWNED": "PASS",
+    "CANONICAL_NEXT_MAIN_PATH": "PASS",
+    "CANONICAL_Q4_K_M_DRAFT_PATH": "PASS",
+    "HTTP_200": "PASS",
+    "REAL_COMPLETION": "PASS"
+  }
+}

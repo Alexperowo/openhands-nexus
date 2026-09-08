@@ -1,0 +1,466 @@
+{
+  "generated_at": "2026-09-06T06:38:47.632495+00:00",
+  "stage": "STAGE_6A",
+  "rules": {
+    "files_moved_in_6a": "NONE",
+    "files_deleted_in_6a": "NONE",
+    "production_config_changed": "NO",
+    "qwen38_source_preserved": "YES"
+  },
+  "summary_counts": {
+    "total_migration_entries": 50,
+    "logs_to_relocate_count": 4,
+    "temp_items_to_relocate_count": 3,
+    "duplicate_candidates_count": 6,
+    "obsolete_candidates_count": 34
+  },
+  "migration_entries": [
+    {
+      "current_path": "K:\\Project\\llama.log",
+      "proposed_path": "K:\\Project\\Logs\\llama.log",
+      "category": "LOG",
+      "size_bytes": 3358,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Scattered root log file. Unreferenced by any production script."
+    },
+    {
+      "current_path": "K:\\Project\\Models\\smoke_test.err.log",
+      "proposed_path": "K:\\Project\\Logs\\smoke_test.err.log",
+      "category": "LOG",
+      "size_bytes": 14512,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Misplaced stderr test log in Models directory."
+    },
+    {
+      "current_path": "K:\\Project\\Models\\smoke_test.out.log",
+      "proposed_path": "K:\\Project\\Logs\\smoke_test.out.log",
+      "category": "LOG",
+      "size_bytes": 2864,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Misplaced stdout test log in Models directory."
+    },
+    {
+      "current_path": "K:\\Project\\llama-swap\\llama.log",
+      "proposed_path": "K:\\Project\\Logs\\llama-swap\\llama.log",
+      "category": "LOG",
+      "size_bytes": 738,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Local swap log. Production logs configured in start.ps1 to .openhands-local\\logs."
+    },
+    {
+      "current_path": "K:\\Project\\Three-Model-Integration-Full-Archive.zip",
+      "proposed_path": "K:\\Project\\Archive\\zip_archives\\Three-Model-Integration-Full-Archive.zip",
+      "category": "ARCHIVE",
+      "size_bytes": 11931770,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Historical test evidence zip archive."
+    },
+    {
+      "current_path": "K:\\Project\\Three-Model-Integration-Supplemental-Evidence.zip",
+      "proposed_path": "K:\\Project\\Archive\\zip_archives\\Three-Model-Integration-Supplemental-Evidence.zip",
+      "category": "ARCHIVE",
+      "size_bytes": 12745550,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Historical test evidence zip archive."
+    },
+    {
+      "current_path": "K:\\Project\\.openhands-local\\start.ps1.bak",
+      "proposed_path": "K:\\Project\\Archive\\backups\\start.ps1.bak",
+      "category": "BACKUP",
+      "size_bytes": 13570,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Previous backup of start.ps1."
+    },
+    {
+      "current_path": "K:\\Project\\.openhands-local\\stop.ps1.bak",
+      "proposed_path": "K:\\Project\\Archive\\backups\\stop.ps1.bak",
+      "category": "BACKUP",
+      "size_bytes": 7935,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Previous backup of stop.ps1."
+    },
+    {
+      "current_path": "K:\\Project\\llama-swap\\config.yaml.backup.20260905_105239",
+      "proposed_path": "K:\\Project\\Archive\\backups\\config.yaml.backup.20260905_105239",
+      "category": "BACKUP",
+      "size_bytes": 1006,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Previous backup of config.yaml."
+    },
+    {
+      "current_path": "K:\\Project\\ik_llama_help.txt",
+      "proposed_path": "K:\\Project\\Docs\\ik_llama_help.txt",
+      "category": "DOCUMENTATION",
+      "size_bytes": 75163,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Reference command line help output for ik_llama."
+    },
+    {
+      "current_path": "K:\\Project\\final_about_tablet.png",
+      "proposed_path": "K:\\Project\\Docs\\final_about_tablet.png",
+      "category": "DOCUMENTATION",
+      "size_bytes": 319896,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "UI reference screenshot."
+    },
+    {
+      "current_path": "K:\\Project\\all_modes_results.json",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\all_modes_results.json",
+      "category": "TEST_ARTIFACT",
+      "size_bytes": 5014,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone test execution results."
+    },
+    {
+      "current_path": "K:\\Project\\AgentCanvas-Test\\screenshot_safe.png",
+      "proposed_path": "K:\\Project\\Temp\\screenshot_safe.png",
+      "category": "TEMP",
+      "size_bytes": 28050,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Smoke test capture artifact in test workspace."
+    },
+    {
+      "current_path": "K:\\Project\\AgentCanvas-Test\\test.txt",
+      "proposed_path": "K:\\Project\\Temp\\test.txt",
+      "category": "TEMP",
+      "size_bytes": 44,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Smoke test text fixture."
+    },
+    {
+      "current_path": "K:\\Project\\AgentCanvas-Test\\test.ps1",
+      "proposed_path": "K:\\Project\\Temp\\test.ps1",
+      "category": "TEMP",
+      "size_bytes": 68,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Smoke test script fixture."
+    },
+    {
+      "current_path": "K:\\Project\\benchmark_voice_full.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\benchmark_voice_full.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 3477,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\inspect_conv_req.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\inspect_conv_req.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 383,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_all_modes.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_all_modes.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 2573,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_barge_in.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_barge_in.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1450,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_bgt.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_bgt.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1133,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_budget.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_budget.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1497,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_comb.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_comb.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 857,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_combined_memory.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_combined_memory.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1141,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_compare.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_compare.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1542,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_direct2.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_direct2.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 690,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_direct_deepseek.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_direct_deepseek.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1591,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_direct_inst.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_direct_inst.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1334,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_direct_prompt.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_direct_prompt.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 2381,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_exact.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_exact.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 2089,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_futo_stt.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_futo_stt.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 2230,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_jinja_render.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_jinja_render.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 915,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_litellm.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_litellm.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 648,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_litellm_both.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_litellm_both.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 665,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_litellm_budget.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_litellm_budget.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 613,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_litellm_direct.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_litellm_direct.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 647,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_off_modes.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_off_modes.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 2080,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_persistent_stt.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_persistent_stt.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1875,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_raw_prompt.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_raw_prompt.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1441,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_reasoning_syntax.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_reasoning_syntax.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 2203,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_rf.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_rf.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1323,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_save_profile.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_save_profile.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1027,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_single_profile.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_single_profile.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 5326,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_val.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_val.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 685,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_voice_bridge_stt.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_voice_bridge_stt.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1701,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\test_voice_bridge_tts.py",
+      "proposed_path": "K:\\Project\\Tests\\legacy_root\\test_voice_bridge_tts.py",
+      "category": "TEST_SCRIPT",
+      "size_bytes": 1271,
+      "action_type": "RELOCATE_FILE",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Standalone development/test script not referenced by production runtime."
+    },
+    {
+      "current_path": "K:\\Project\\llama.cpp",
+      "proposed_path": "K:\\Project\\Archive\\deprecated_builds\\llama.cpp",
+      "category": "DUPLICATE_BACKEND",
+      "action_type": "RELOCATE_OR_REMOVE_DIRECTORY",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Duplicate of llama-mainline\\b10816. Unreferenced."
+    },
+    {
+      "current_path": "K:\\Project\\transcribe-build",
+      "proposed_path": "K:\\Project\\Archive\\deprecated_builds\\transcribe-build",
+      "category": "DUPLICATE_BUILD",
+      "action_type": "RELOCATE_OR_REMOVE_DIRECTORY",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Static build directory. Active service links to transcribe-build-shared."
+    },
+    {
+      "current_path": "K:\\Project\\OpenHands",
+      "proposed_path": "NONE (REMOVE_EMPTY_DIR)",
+      "category": "EMPTY_DIRECTORY",
+      "action_type": "REMOVE_EMPTY_DIRECTORY",
+      "status": "PLANNED_STAGE_6B",
+      "safety_note": "Completely empty directory remnant (0 bytes)."
+    },
+    {
+      "current_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "proposed_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "category": "MODEL",
+      "size_bytes": 16810714688,
+      "action_type": "COPIED_AND_VERIFIED",
+      "status": "COPIED_IN_STAGE_6A_CONFIG_SWITCH_PENDING_STAGE_6B",
+      "safety_note": "File copied to K: and SHA256 verified. Source on D: preserved untouched. Production config.yaml still points to D: until Stage 6B."
+    },
+    {
+      "current_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "proposed_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "category": "MODEL",
+      "size_bytes": 927607296,
+      "action_type": "COPIED_AND_VERIFIED",
+      "status": "COPIED_IN_STAGE_6A_CONFIG_SWITCH_PENDING_STAGE_6B",
+      "safety_note": "Vision companion copied to K: and SHA256 verified. Source on D: preserved untouched."
+    }
+  ]
+}

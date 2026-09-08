@@ -1,0 +1,43 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:02:00+03:00",
+  "firewall_configuration": {
+    "rule_name": "OpenHands-LAN-PWA",
+    "direction": "Inbound",
+    "action": "Allow",
+    "protocol": "TCP",
+    "local_port": 8443,
+    "profile": "Private",
+    "remote_address": "LocalSubnet",
+    "public_network_blocked": true,
+    "internet_blocked": true
+  },
+  "loopback_isolation_verification": {
+    "port_8080_llama_swap": {
+      "bound_address": "127.0.0.1",
+      "loopback_only": true
+    },
+    "port_18000_agent_server": {
+      "bound_address": "127.0.0.1",
+      "loopback_only": true
+    },
+    "port_18001_automation": {
+      "bound_address": "127.0.0.1",
+      "loopback_only": true
+    },
+    "port_18002_voice_bridge": {
+      "bound_address": "127.0.0.1",
+      "loopback_only": true
+    }
+  },
+  "exposed_lan_ports": [
+    8443
+  ],
+  "private_key_protection": {
+    "path": "K:\\Project\\openhands-pwa\\certs\\openhands-lan.pfx",
+    "outside_web_root": true,
+    "git_ignored": true,
+    "evidence_excluded": true
+  },
+  "verdict": "PASS"
+}

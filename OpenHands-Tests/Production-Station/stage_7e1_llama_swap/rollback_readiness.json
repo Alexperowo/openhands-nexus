@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-09-06T10:26:54.356251+00:00",
+  "previous_binary_exists": true,
+  "previous_version": "v252",
+  "previous_sha256": "2C9E252256D5B418EE103295215F3A92583C5A48E739675920E9522A54D4CA4C",
+  "matches_baseline_sha256": true,
+  "rollback_command": "powershell -NoProfile -ExecutionPolicy Bypass -File K:\\Project\\OpenHands-Update\\scripts\\update-llama-swap.ps1 -Rollback",
+  "rollback_ready": true
+}

@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-09-06T16:11:43.855706+00:00",
+  "model": "qwen",
+  "requests_run": 3,
+  "all_http_200": true,
+  "no_oom": true,
+  "mmproj_initialization_present": true,
+  "mtp_active": true,
+  "mtp_accepted_tokens": 29,
+  "mtp_drafted_tokens": 45,
+  "mtp_acceptance_rate": 0.6444,
+  "peak_vram_mib": 22126,
+  "vram_headroom_mib": 402,
+  "vram_headroom": "TIGHT_BUT_RUNTIME_VERIFIED",
+  "generation_speed_tok_s": 25.54,
+  "queries": [
+    {
+      "query_idx": 1,
+      "status": 200,
+      "elapsed_s": 13.88,
+      "content": "",
+      "vram_mib": 22124
+    },
+    {
+      "query_idx": 2,
+      "status": 200,
+      "elapsed_s": 2.23,
+      "content": "Semaphore: integer variable controlling concurrent access to shared resources.",
+      "vram_mib": 22124
+    },
+    {
+      "query_idx": 3,
+      "status": 200,
+      "elapsed_s": 1.7,
+      "content": "{\"status\": \"ok\", \"count\": 42}",
+      "vram_mib": 22126
+    }
+  ]
+}

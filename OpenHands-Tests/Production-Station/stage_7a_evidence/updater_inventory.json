@@ -1,0 +1,111 @@
+{
+  "timestamp": "2026-09-06T12:28:04.122669",
+  "stage": "STAGE_7A",
+  "updaters": [
+    {
+      "script": "K:/Project/OpenHands-Update/scripts/update-ik-llama.ps1",
+      "launcher": "K:/Project/OpenHands-Update/UPDATE-IK-LLAMA.cmd",
+      "target": "K:/Project/ik_llama/bin/llama-server.exe",
+      "currently_used": true,
+      "update_source": "Git remote origin/main (https://github.com/ikawrakow/ik_llama.cpp.git)",
+      "download_build_method": "Isolated git worktree in src-staging, CMake 3.x + MSVC 2022 vcvars64 + CUDA sm_75 in build-staging",
+      "backup_method": "Full mirror copy of bin/ to OpenHands-Update/backups/ik_llama/<timestamp>-<commit>/ with backup-info.json",
+      "rollback_method": "Automatic and manual rollback via rollback-ik-llama.ps1",
+      "validation_method": "Staging execution on port 18080, model init check, chat completion request, TPS benchmark gate (rejects if >20% below baseline)",
+      "risks": [
+        "Hardcoded reference to D:/Project/models/Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf (needs fix to K:/Project/Models/Qwen3.8/)",
+        "Unconditional restart of whole station on promotion",
+        "Builds only ik_llama fork; incompatible with vanilla llama.cpp options"
+      ],
+      "status": "NEEDS_FIX"
+    },
+    {
+      "script": "K:/Project/OpenHands-Update/scripts/rollback-ik-llama.ps1",
+      "launcher": "K:/Project/OpenHands-Update/ROLLBACK-IK-LLAMA.cmd",
+      "target": "K:/Project/ik_llama/bin/",
+      "currently_used": true,
+      "update_source": "OpenHands-Update/backups/ik_llama/<timestamp>-<commit>/",
+      "download_build_method": "Fast-CopyDir -Mirror from backup folder",
+      "backup_method": "N/A",
+      "rollback_method": "Stops station, terminates locking processes, copies backup to bin, restarts station, tests port 8080",
+      "validation_method": "HTTP GET to http://127.0.0.1:8080/v1/models",
+      "risks": [
+        "Automatic station restart without prompt"
+      ],
+      "status": "GOOD"
+    },
+    {
+      "script": "K:/Project/OpenHands-Update/scripts/update-openhands.ps1",
+      "launcher": "K:/Project/OpenHands-Update/UPDATE-OPENHANDS.cmd",
+      "target": "C:/Users/User/AppData/Roaming/npm/node_modules/@openhands/agent-canvas",
+      "currently_used": true,
+      "update_source": "npm registry (@openhands/agent-canvas)",
+      "download_build_method": "npm install -g @openhands/agent-canvas@<targetVersion>",
+      "backup_method": "Full copy of package dir to OpenHands-Update/backups/openhands/<timestamp>-v<version>/",
+      "rollback_method": "Automatic on failure or manual via rollback-openhands.ps1",
+      "validation_method": "Re-applies Russian localization and voice patches, audits 2400 dictionary keys, runs smoke test",
+      "risks": [
+        "Alters global user npm environment",
+        "Aborts with LOCALIZATION_UPDATE_REQUIRED if upstream adds new untranslated strings",
+        "Restarts station automatically"
+      ],
+      "status": "NEEDS_FIX"
+    },
+    {
+      "script": "K:/Project/OpenHands-Update/scripts/rollback-openhands.ps1",
+      "launcher": "K:/Project/OpenHands-Update/ROLLBACK-OPENHANDS.cmd",
+      "target": "C:/Users/User/AppData/Roaming/npm/node_modules/@openhands/agent-canvas",
+      "currently_used": true,
+      "update_source": "OpenHands-Update/backups/openhands/<timestamp>-v<version>/",
+      "download_build_method": "Fast-CopyDir -Mirror from backup folder",
+      "backup_method": "N/A",
+      "rollback_method": "Stops station, restores package files, restarts station, tests port 8000",
+      "validation_method": "HTTP GET http://localhost:8000",
+      "risks": [
+        "Direct overwrite of global npm directory"
+      ],
+      "status": "GOOD"
+    },
+    {
+      "script": "K:/Project/OpenHands-Update/scripts/update-all.ps1",
+      "launcher": "K:/Project/OpenHands-Update/UPDATE-ALL.cmd",
+      "target": "Orchestrates ik_llama and OpenHands updates",
+      "currently_used": true,
+      "update_source": "Composite updater",
+      "download_build_method": "Calls child updater scripts",
+      "backup_method": "Delegated to child scripts",
+      "rollback_method": "Delegated to child scripts",
+      "validation_method": "Delegated to child scripts",
+      "risks": [
+        "Does not update llama-mainline or llama-swap"
+      ],
+      "status": "NEEDS_FIX"
+    },
+    {
+      "script": "K:/Project/OpenHands-Update/update-llama-mainline.ps1",
+      "launcher": "None (to be created in Stage 7A)",
+      "target": "K:/Project/llama-mainline/<version>/llama-server.exe",
+      "currently_used": false,
+      "update_source": "Official llama.cpp GitHub Releases (CUDA 12.4 Windows binaries)",
+      "download_build_method": "Download official release ZIPs, extract into new versioned directory",
+      "backup_method": "Preserve previous versioned directory intact + backup llama-swap config",
+      "rollback_method": "Atomic switch of backend path in llama-swap config.yaml back to previous build",
+      "validation_method": "Static capabilities check (--help, CUDA presence, -m, -md, KV cache, FA, jinja)",
+      "risks": "Requires network access to GitHub releases; strict validation gates prevent runtime degradation",
+      "status": "CREATED"
+    },
+    {
+      "script": "None",
+      "launcher": "None",
+      "target": "K:/Project/llama-swap/bin/llama-swap.exe",
+      "currently_used": false,
+      "update_source": "N/A (GitHub releases for llama-swap)",
+      "download_build_method": "N/A",
+      "backup_method": "N/A",
+      "rollback_method": "N/A",
+      "validation_method": "N/A",
+      "risks": "No updater exists for llama-swap router",
+      "status": "MISSING"
+    }
+  ]
+}

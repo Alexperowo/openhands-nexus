@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-09-06T12:44:25.663823",
+  "stage": "STAGE_7B",
+  "simulation_name": "True Safe Config Promotion Sequence & Gate Simulation",
+  "subtests": [
+    {
+      "case": "Valid Promotion Simulation",
+      "description": "Simulate promotion of candidate b10819 binary path into copied config",
+      "exit_code": 0,
+      "stdout": "[STEP] Initiating Safe Config Promotion sequence...\n[INFO] Generated candidate config in temporary file: C:\\Users\\User\\AppData\\Local\\Temp\\tmp1hw43oum\\config.yaml.tmp_20260906_sim\n[STEP] Verifying candidate config integrity before promotion...\n[SUCCESS]   [PASS] Candidate YAML parse check passed.\n[SUCCESS]   [PASS] Exactly 1 line modified in config.\n[SUCCESS]   [PASS] Qwen3-Next main and draft model paths preserved intact.\n[SUCCESS] Saved rollback copy to: C:\\Users\\User\\AppData\\Local\\Temp\\tmp1hw43oum\\backups\\config.yaml.bak_20260906_sim\n[SUCCESS] Promoted candidate config to: C:\\Users\\User\\AppData\\Local\\Temp\\tmp1hw43oum\\config.yaml\n[SUCCESS] Post-promotion verification confirmed exact intended backend path.",
+      "is_yaml_parseable": true,
+      "changed_lines_count": 1,
+      "changed_lines_detail": [
+        "OLD: cmd: K:\\Project\\llama-mainline\\b10816\\llama-server.exe -m K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf -> NEW: cmd: K:\\Project\\llama-mainline\\b10819\\llama-server.exe -m K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
+      ],
+      "qwen_next_models_preserved": true,
+      "status": "PASS"
+    },
+    {
+      "case": "Corrupted YAML Rejection Gate",
+      "description": "Attempt to promote into invalid YAML structure; must abort and reject promotion",
+      "exit_code": 1,
+      "rejected_successfully": true,
+      "status": "PASS"
+    }
+  ],
+  "overall_status": "PASS"
+}

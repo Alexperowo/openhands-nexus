@@ -1,0 +1,56 @@
+{
+  "health": {
+    "status_code": 200,
+    "data": {
+      "status": "ok",
+      "uptime_s": 32.0,
+      "stt_engine": "gigaam-v3-e2e-rnnt (FUTO transcribe.cpp)",
+      "tts_engine": "supertonic-3 (Supertone ONNX)",
+      "voices": [
+        "M1",
+        "F1"
+      ],
+      "ram_mb": 745.9,
+      "metrics": {
+        "stt_load_time_s": 0.184,
+        "tts_load_time_s": 1.621,
+        "stt_count": 0,
+        "tts_count": 0,
+        "last_stt_latency_ms": 0.0,
+        "last_tts_latency_ms": 0.0,
+        "last_tts_rtf": 0.0
+      }
+    },
+    "verdict": "PASS"
+  },
+  "stt": {
+    "status_code": 200,
+    "latency_sec": 0.559,
+    "transcript": "\u041e\u0442\u043a\u0440\u043e\u0439 \u043f\u0430\u043f\u043a\u0443 \u043f\u0440\u043e\u0435\u043a\u0442\u0430 \u0438 \u043f\u043e\u043a\u0430\u0436\u0438 \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u0438\u0437\u043c\u0435\u043d\u0451\u043d\u043d\u044b\u0435 \u0444\u0430\u0439\u043b\u044b.",
+    "audio_duration_s": 4.24,
+    "verdict": "PASS"
+  },
+  "tts": {
+    "status_code": 200,
+    "content_type": "audio/wav",
+    "audio_bytes_len": 288812,
+    "is_wav": true,
+    "latency_sec": 0.837,
+    "text_synthesized": "\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u0441\u0438\u043d\u0442\u0435\u0437\u0430 \u0440\u0435\u0447\u0438 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430 \u0443\u0441\u043f\u0435\u0448\u043d\u043e.",
+    "verdict": "PASS"
+  },
+  "ui_assets": {
+    "/voice-bridge.css": {
+      "status_code": 200,
+      "content_length": 2695,
+      "verdict": "PASS"
+    },
+    "/voice-bridge.js": {
+      "status_code": 200,
+      "content_length": 14391,
+      "verdict": "PASS"
+    }
+  },
+  "overall_verdict": "PASS",
+  "timestamp": "2026-09-06T12:17:00.232090+00:00"
+}

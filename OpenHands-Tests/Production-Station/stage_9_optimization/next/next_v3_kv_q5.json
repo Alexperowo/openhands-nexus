@@ -1,0 +1,47 @@
+{
+  "variant": "next_v3_kv_q5",
+  "description": "KV cache ctv q5_0 to reduce VRAM pressure and expand headroom",
+  "timestamp": "2026-09-06T14:00:33.730956+00:00",
+  "load_time_s": 14.15,
+  "vram_load_mib": 20925,
+  "vram_peak_mib": 20939,
+  "gen_tok_s_avg": 18.28,
+  "pp_tok_s_avg": 25.76,
+  "runs": [
+    {
+      "run": 1,
+      "gen_tok_s": 17.16878913514717,
+      "pp_tok_s": 18.65903719368081,
+      "pred_n": 32,
+      "elapsed_s": 2.790858268737793
+    },
+    {
+      "run": 2,
+      "gen_tok_s": 18.987814723029036,
+      "pp_tok_s": 31.677899121730245,
+      "pred_n": 32,
+      "elapsed_s": 1.7865123748779297
+    },
+    {
+      "run": 3,
+      "gen_tok_s": 18.683342654915045,
+      "pp_tok_s": 26.95054574855141,
+      "pred_n": 32,
+      "elapsed_s": 1.8456368446350098
+    }
+  ],
+  "extra_args": [
+    "-ngl",
+    "26",
+    "-t",
+    "6",
+    "-ctk",
+    "q8_0",
+    "-ctv",
+    "q5_0",
+    "--spec-type",
+    "draft-mtp",
+    "--spec-draft-n-max",
+    "1"
+  ]
+}

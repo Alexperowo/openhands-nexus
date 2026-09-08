@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-09-06T10:26:54.356251+00:00",
+  "production_binary": "K:\\Project\\llama-swap\\bin\\llama-swap.exe",
+  "reported_version": "version: v255 (7761aa1), built at 2026-09-06T05:46:05Z",
+  "target_version_matched": true,
+  "new_sha256": "41FCCA0870EA3EC6E159C18224E7589B325419C6A5685E7C53482DCD81817B3E",
+  "old_binary_backup_exists": true,
+  "old_binary_backup_path": "K:\\Project\\llama-swap\\bin\\llama-swap.exe.bak",
+  "archive_backup_folders": [
+    "20260906-132616-vv252"
+  ],
+  "current_config_sha256": "94D75C25C76534FA05F7FA9CFD1183837734822A35DDCE6B607F8D653A7F609F",
+  "config_unchanged": true,
+  "model_commands_unchanged": true,
+  "status": "PASS"
+}

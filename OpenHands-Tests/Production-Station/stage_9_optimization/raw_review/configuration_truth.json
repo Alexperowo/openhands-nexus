@@ -1,0 +1,145 @@
+{
+  "timestamp": "2026-09-06T17:10:46.099032+00:00",
+  "config_sha256": "A19C3CC2CCDE10783204B5777BFCB52CFEE660EE7315D4105008A180EB53DA89",
+  "sha256_match": true,
+  "all_files_exist": true,
+  "files_verified": {
+    "K:\\Project\\ik_llama\\bin\\llama-server.exe": {
+      "exists": true,
+      "size_mib": 7.71
+    },
+    "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf": {
+      "exists": true,
+      "size_mib": 16031.95
+    },
+    "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf": {
+      "exists": true,
+      "size_mib": 884.64
+    },
+    "K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf": {
+      "exists": true,
+      "size_mib": 17950.58
+    },
+    "K:\\Project\\llama-mainline\\b10821\\llama-server.exe": {
+      "exists": true,
+      "size_mib": 0.01
+    },
+    "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf": {
+      "exists": true,
+      "size_mib": 33850.17
+    },
+    "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf": {
+      "exists": true,
+      "size_mib": 1437.39
+    }
+  },
+  "models": {
+    "qwen": {
+      "name": "Qwen 3.8 Opus Distill v2 (27B)",
+      "executable": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "main_model": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "mmproj": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "draft_mtp": "embedded_in_weights",
+      "context": 98304,
+      "ngl": 999,
+      "k_kv": "q8_0",
+      "v_kv": "q5_0",
+      "fa": "on",
+      "batch": "default",
+      "ubatch": "default",
+      "threads": "default",
+      "spec_type": "mtp",
+      "mtp_depth": 3,
+      "mtp_p_min": 0.05,
+      "current_cmd": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf --mmproj K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=3,p_min=0.05 --jinja --host 127.0.0.1 --port ${PORT} --temp 0.7 --top-p 0.8 --min-p 0.05",
+      "baseline_cmd": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf --mmproj K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=3,p_min=0.0 --jinja --host 127.0.0.1 --port ${PORT} --temp 0.7 --top-p 0.8 --min-p 0.05",
+      "parameter_difference": "Only --spec-type mtp:n_max=3,p_min changed from 0.0 (baseline) to 0.05 (current winner)"
+    },
+    "ornith": {
+      "name": "Ornith 1.5 35B MTP ICE (MoE)",
+      "executable": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "main_model": "K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "mmproj": null,
+      "draft_mtp": "embedded_in_weights",
+      "context": 98304,
+      "ngl": 999,
+      "k_kv": "q8_0",
+      "v_kv": "q5_0",
+      "fa": "on",
+      "batch": 2048,
+      "ubatch": 512,
+      "threads": "default",
+      "spec_type": "mtp",
+      "mtp_depth": 1,
+      "mtp_p_min": 0.75,
+      "current_cmd": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 -b 2048 -ub 512 --spec-type mtp:n_max=1,p_min=0.75 --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0",
+      "baseline_cmd": "K:\\Project\\ik_llama\\bin\\llama-server.exe -m K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75 --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0",
+      "parameter_difference": "Added -b 2048 -ub 512 in current winner configuration"
+    },
+    "next": {
+      "name": "Qwen3-Next 80B A3B Thinking UD (MoE)",
+      "executable": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
+      "main_model": "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf",
+      "mmproj": null,
+      "draft_mtp": "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf",
+      "context": 98304,
+      "ngl": 26,
+      "k_kv": "q8_0",
+      "v_kv": "q5_0",
+      "fa": "on",
+      "batch": "default",
+      "ubatch": "default",
+      "threads": 6,
+      "spec_type": "draft-mtp",
+      "mtp_depth": 1,
+      "mtp_p_min": "N/A",
+      "current_cmd": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe -m K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf -md K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf -c 98304 -ngl 26 -fa on -ctk q8_0 -ctv q5_0 -np 1 -t 6 -dev CUDA0 --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek --reasoning-budget-message Conclude reasoning immediately and output the final answer now. --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6",
+      "baseline_cmd": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe -m K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf -md K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf -c 98304 -ngl 26 -fa on -ctk q8_0 -ctv q8_0 -np 1 -t 6 -dev CUDA0 --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek --reasoning-budget-message Conclude reasoning immediately and output the final answer now. --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6",
+      "parameter_difference": "Changed -ctv q8_0 to -ctv q5_0 in current winner configuration"
+    }
+  },
+  "discrepancy_audit": [
+    {
+      "component": "qwen_kv_v",
+      "report_claim": "Stage 9/9C report summary text stated 'KV: qwen: -ctk q8_0 -ctv q8_0'",
+      "actual_config": "config.yaml has '-ctk q8_0 -ctv q5_0' in both baseline and current",
+      "status": "DISCREPANCY_IDENTIFIED"
+    },
+    {
+      "component": "qwen_batch_ubatch_threads",
+      "report_claim": "Stage 9/9C report stated 'batch/ubatch: -b 2048 -ub 512, threads: 6, ngl: 99'",
+      "actual_config": "config.yaml does NOT specify -b, -ub, or -t (uses defaults), and has -ngl 999",
+      "status": "DISCREPANCY_IDENTIFIED"
+    },
+    {
+      "component": "qwen_mmproj_filename",
+      "report_claim": "Stage 9C report cited 'K:\\Project\\Models\\qwen3.8-opus-mmproj.gguf'",
+      "actual_config": "config.yaml specifies 'K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf'",
+      "status": "DISCREPANCY_IDENTIFIED"
+    },
+    {
+      "component": "ornith_kv_v_and_ngl",
+      "report_claim": "Stage 9/9C report stated 'KV: ornith: -ctk q8_0 -ctv q8_0, ngl: 99, threads: 6'",
+      "actual_config": "config.yaml has '-ctk q8_0 -ctv q5_0', '-ngl 999', and no -t flag",
+      "status": "DISCREPANCY_IDENTIFIED"
+    },
+    {
+      "component": "next_model_filenames",
+      "report_claim": "Stage 9C report cited 'qwen3-next-q4_k_m.gguf' and 'qwen3-next-mtp-q8_0.gguf'",
+      "actual_config": "config.yaml specifies 'Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf' and 'Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf'",
+      "status": "DISCREPANCY_IDENTIFIED"
+    },
+    {
+      "component": "next_batch_ubatch",
+      "report_claim": "Stage 9/9C report stated Next has '-b 2048 -ub 512'",
+      "actual_config": "config.yaml does NOT specify -b or -ub for Next (uses engine defaults)",
+      "status": "DISCREPANCY_IDENTIFIED"
+    },
+    {
+      "component": "next_mtp_counters_copy",
+      "report_claim": "Stage 9C report stated Next MTP: accepted=29, drafted=45, 64.44%",
+      "actual_config": "These exact counters were accidentally copied from Qwen's run; Next must be measured independently",
+      "status": "DISCREPANCY_IDENTIFIED"
+    }
+  ]
+}

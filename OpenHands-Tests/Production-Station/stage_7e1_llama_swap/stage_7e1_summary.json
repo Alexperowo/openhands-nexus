@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-09-06T13:38:02.080106",
+  "stage": "7E-1",
+  "stage_name": "REAL LLAMA-SWAP UPDATE VALIDATION",
+  "component": "llama-swap",
+  "verdict": "PASS",
+  "baseline": {
+    "installed_version": "v252",
+    "installed_sha256": "2C9E252256D5B418EE103295215F3A92583C5A48E739675920E9522A54D4CA4C",
+    "config_path": "K:\\Project\\llama-swap\\config.yaml",
+    "config_sha256": "94D75C25C76534FA05F7FA9CFD1183837734822A35DDCE6B607F8D653A7F609F",
+    "ports_free_before_start": true
+  },
+  "backup": {
+    "archive_backup": "K:\\Project\\Archive\\backups\\llama-swap\\20260906-132616-vv252\\llama-swap.exe",
+    "binary_bak": "K:\\Project\\llama-swap\\bin\\llama-swap.exe.bak"
+  },
+  "candidate_validation_gate": {
+    "target_version": "v255",
+    "target_commit": "7761aa1",
+    "test_port": 18080,
+    "health_check": "PASS",
+    "models_route_check": "PASS",
+    "schema_errors": 0,
+    "pre_promotion_verdict": "PASS"
+  },
+  "promotion": {
+    "promoted_binary": "K:\\Project\\llama-swap\\bin\\llama-swap.exe",
+    "promoted_version": "v255 (7761aa1)",
+    "promoted_sha256": "41FCCA0870EA3EC6E159C18224E7589B325419C6A5685E7C53482DCD81817B3E",
+    "config_modified": false,
+    "rollback_readiness": "VERIFIED"
+  },
+  "production_station_lifecycle": {
+    "start_launcher": "K:\\Project\\START-OPENHANDS-LOCAL.cmd",
+    "ports_online": [
+      8000,
+      8080,
+      18000,
+      18001,
+      18002
+    ],
+    "router_pid": 13976,
+    "stop_launcher": "K:\\Project\\STOP-OPENHANDS-LOCAL.cmd",
+    "stop_exit_code": 0,
+    "all_ports_freed": true,
+    "orphan_llama_processes": 0
+  },
+  "production_routing_validation": {
+    "tested_model": "ornith",
+    "canonical_model_path": "K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf",
+    "spawned_backend_exe": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+    "spawned_backend_pid": 11964,
+    "spawned_backend_ppid": 13976,
+    "ROUTER_ACCEPTED_MODEL_REQUEST": "PASS",
+    "CORRECT_BACKEND_SPAWNED": "PASS",
+    "CANONICAL_ORNITH_PATH_USED": "PASS",
+    "HTTP_COMPLETION": "PASS"
+  },
+  "manifest_update": {
+    "manifest_file": "K:\\Project\\Config\\backend-versions.json",
+    "previous_version": "v252",
+    "current_version": "v255",
+    "diff_file": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_7e1_llama_swap\\manifest_diff.txt"
+  },
+  "final_active_agent_profile": {
+    "profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+    "name": "Team-Full",
+    "status": "CONFIRMED_ACTIVE"
+  },
+  "scope_constraints_adherence": {
+    "only_llama_swap_updated": true,
+    "llama_mainline_updated": false,
+    "ik_llama_updated": false,
+    "openhands_stack_updated": false,
+    "stage_7e2_started": false
+  }
+}

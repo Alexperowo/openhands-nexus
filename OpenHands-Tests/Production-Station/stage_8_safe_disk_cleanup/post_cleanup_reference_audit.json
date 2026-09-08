@@ -1,0 +1,117 @@
+{
+  "timestamp": "2026-09-06T13:07:14.363817+00:00",
+  "all_paths_valid": true,
+  "archived_paths_unreferenced_in_production": true,
+  "paths": {
+    "K:\\Project\\llama-swap\\bin\\llama-swap.exe": {
+      "exists": true,
+      "size_bytes": 42107392,
+      "status": "VALID"
+    },
+    "K:\\Project\\llama-swap\\config.yaml": {
+      "exists": true,
+      "size_bytes": 2432,
+      "status": "VALID"
+    },
+    "K:\\Project\\llama-mainline\\b10821\\llama-server.exe": {
+      "exists": true,
+      "size_bytes": 9216,
+      "status": "VALID"
+    },
+    "K:\\Project\\llama-mainline\\b10816\\llama-server.exe": {
+      "exists": true,
+      "size_bytes": 9216,
+      "status": "VALID"
+    },
+    "K:\\Project\\ik_llama\\bin\\llama-server.exe": {
+      "exists": true,
+      "size_bytes": 8086016,
+      "status": "VALID"
+    },
+    "K:\\Project\\transcribe-build-shared\\bin\\Release\\transcribe.dll": {
+      "exists": true,
+      "size_bytes": 1796608,
+      "status": "VALID"
+    },
+    "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf": {
+      "exists": true,
+      "size_bytes": 16810714688,
+      "status": "VALID"
+    },
+    "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf": {
+      "exists": true,
+      "size_bytes": 927607296,
+      "status": "VALID"
+    },
+    "K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf": {
+      "exists": true,
+      "size_bytes": 18822546944,
+      "status": "VALID"
+    },
+    "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf": {
+      "exists": true,
+      "size_bytes": 35494473888,
+      "status": "VALID"
+    },
+    "K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf": {
+      "exists": true,
+      "size_bytes": 1507217408,
+      "status": "VALID"
+    },
+    "D:\\Project\\futo-keyboard-gigaam\\voiceinput-shared\\models\\cache\\assets\\voice-models\\gigaam-v3-e2e-rnnt-Q8_0.gguf": {
+      "exists": true,
+      "size_bytes": 273724832,
+      "status": "VALID"
+    },
+    "D:\\AI\\Models\\Speech\\supertonic": {
+      "exists": true,
+      "size_bytes": 403521106,
+      "status": "VALID"
+    },
+    "K:\\Project\\START-OPENHANDS-LOCAL.cmd": {
+      "exists": true,
+      "size_bytes": 404,
+      "status": "VALID"
+    },
+    "K:\\Project\\STOP-OPENHANDS-LOCAL.cmd": {
+      "exists": true,
+      "size_bytes": 173,
+      "status": "VALID"
+    },
+    "K:\\Project\\.openhands-local\\start.ps1": {
+      "exists": true,
+      "size_bytes": 14233,
+      "status": "VALID"
+    },
+    "K:\\Project\\.openhands-local\\stop.ps1": {
+      "exists": true,
+      "size_bytes": 9172,
+      "status": "VALID"
+    },
+    "K:\\Project\\local-voice\\service.py": {
+      "exists": true,
+      "size_bytes": 14254,
+      "status": "VALID"
+    },
+    "K:\\Project\\local-voice\\patch-agent-canvas-voice.ps1": {
+      "exists": true,
+      "size_bytes": 1486,
+      "status": "VALID"
+    },
+    "K:\\Project\\openhands-localization\\patch-agent-canvas-localization.ps1": {
+      "exists": true,
+      "size_bytes": 9415,
+      "status": "VALID"
+    },
+    "K:\\Project\\openhands-localization\\ru.json": {
+      "exists": true,
+      "size_bytes": 228808,
+      "status": "VALID"
+    },
+    "K:\\Project\\OpenHands-Update\\scripts\\update-all.ps1": {
+      "exists": true,
+      "size_bytes": 9547,
+      "status": "VALID"
+    }
+  }
+}

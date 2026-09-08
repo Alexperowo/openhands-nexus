@@ -1,0 +1,55 @@
+{
+  "stage": "7E-4",
+  "component": "OpenHands App Stack",
+  "timestamp": "2026-09-06T12:15:24.556972+00:00",
+  "status": "PASS",
+  "mode": "Path B (Same-Version Rehearsal)",
+  "baseline": {
+    "canvas_package_version": "1.16.0",
+    "agent_server_pin": "1.44.0",
+    "automation_pin": "1.9.0",
+    "defaults_json_sha256": "93E39C2E5106B527F88481F00428613206C2AF32CD324CB87879237E2EA3B477"
+  },
+  "rehearsal_execution": {
+    "backup_path": "K:\\Project\\Archive\\backups\\OpenHands\\20260906-150738-v1.16.0",
+    "npm_reinstall": "PASS (@openhands/agent-canvas@1.16.0)",
+    "canvas_cli_works": true,
+    "agent_server_resolves": true,
+    "automation_resolves": true
+  },
+  "patches": {
+    "localization": {
+      "status": "PASS",
+      "en_keys": 2400,
+      "ru_keys": 2400,
+      "missing_in_ru": 0,
+      "audit_verdict": "PASS"
+    },
+    "voice_ui": {
+      "status": "PASS",
+      "voice_bridge_css_injected": true,
+      "voice_bridge_js_injected": true,
+      "audit_verdict": "PASS"
+    }
+  },
+  "agent_workflow_validation": {
+    "status": "PASS",
+    "conversation_id": "b0e5260b-df62-49d0-8a11-5c61424a822b",
+    "artifact_file": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_7e4_workspace\\app_stack_rehearsal.txt",
+    "artifact_created": true,
+    "artifact_content": "REHEARSAL_VALIDATION_PASS_2026",
+    "artifact_valid": true,
+    "voice_bridge_healthy": true,
+    "elapsed_seconds": 26.42
+  },
+  "station_shutdown": {
+    "status": "PASS",
+    "ports_free": [
+      8000,
+      8080,
+      18000,
+      18001,
+      18002
+    ]
+  }
+}

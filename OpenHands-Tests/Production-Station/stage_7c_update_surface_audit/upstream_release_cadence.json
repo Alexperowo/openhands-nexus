@@ -1,0 +1,126 @@
+{
+  "timestamp": "2026-09-06T10:07:05.991294+00:00",
+  "observation_window_days": 180,
+  "sources_audited": {
+    "npm": [
+      "@openhands/agent-canvas"
+    ],
+    "pypi": [
+      "openhands-agent-server",
+      "openhands-automation",
+      "supertonic"
+    ],
+    "github_releases": [
+      "ggml-org/llama.cpp",
+      "mostlygeek/llama-swap",
+      "ikawrakow/ik_llama.cpp"
+    ],
+    "github_commits": [
+      "ikawrakow/ik_llama.cpp",
+      "qalvinahmad/android-mcp"
+    ]
+  },
+  "cadence_metrics": [
+    {
+      "component": "@openhands/agent-canvas",
+      "upstream": "npm registry",
+      "current_version": "1.16.0",
+      "latest_upstream_version": "1.16.0",
+      "releases_last_90_days": 28,
+      "releases_last_180_days": 52,
+      "update_class": "FREQUENT",
+      "update_available": false,
+      "cadence_description": "Extremely frequent updates (~2 releases/week)"
+    },
+    {
+      "component": "openhands-agent-server",
+      "upstream": "PyPI registry",
+      "current_version": "1.44.0 (pinned in defaults.json)",
+      "latest_upstream_version": "1.44.1",
+      "releases_last_90_days": 31,
+      "releases_last_180_days": 53,
+      "update_class": "FREQUENT",
+      "update_available": true,
+      "cadence_description": "Extremely frequent updates (~2 releases/week)"
+    },
+    {
+      "component": "openhands-automation",
+      "upstream": "PyPI registry",
+      "current_version": "1.9.0 (pinned in defaults.json)",
+      "latest_upstream_version": "1.10.0",
+      "releases_last_90_days": 30,
+      "releases_last_180_days": 36,
+      "update_class": "FREQUENT",
+      "update_available": true,
+      "cadence_description": "Frequent updates (~1-2 releases/week)"
+    },
+    {
+      "component": "llama-mainline",
+      "upstream": "github.com/ggml-org/llama.cpp",
+      "current_version": "b10816",
+      "latest_upstream_version": "b10821",
+      "releases_last_90_days": 100,
+      "releases_last_180_days": 100,
+      "update_class": "FREQUENT",
+      "update_available": true,
+      "cadence_description": "Continuous delivery (multiple releases daily/weekly)"
+    },
+    {
+      "component": "llama-swap",
+      "upstream": "github.com/mostlygeek/llama-swap",
+      "current_version": "v252",
+      "latest_upstream_version": "v255",
+      "releases_last_90_days": 32,
+      "releases_last_180_days": 58,
+      "update_class": "FREQUENT",
+      "update_available": true,
+      "cadence_description": "Frequent updates (~1-2 releases/week)"
+    },
+    {
+      "component": "ik_llama",
+      "upstream": "github.com/ikawrakow/ik_llama.cpp",
+      "current_version": "commit 3c58ae3",
+      "latest_upstream_version": "commit fe215a8 (tag t0002)",
+      "releases_last_90_days": 0,
+      "releases_last_180_days": 0,
+      "commits_last_90_days": 100,
+      "update_class": "PERIODIC",
+      "update_available": true,
+      "cadence_description": "Continuous commit-level active development; release tags rare"
+    },
+    {
+      "component": "android-mcp",
+      "upstream": "github.com/qalvinahmad/android-mcp",
+      "current_version": "1.0.0",
+      "latest_upstream_version": "1.0.0 (commit 04f3bf0)",
+      "releases_last_90_days": 0,
+      "releases_last_180_days": 0,
+      "commits_last_180_days": 1,
+      "update_class": "RARE",
+      "update_available": false,
+      "cadence_description": "Static stable codebase with rare commits"
+    },
+    {
+      "component": "supertonic",
+      "upstream": "PyPI registry",
+      "current_version": "1.3.1",
+      "latest_upstream_version": "1.3.1",
+      "releases_last_90_days": 0,
+      "releases_last_180_days": 6,
+      "update_class": "RARE",
+      "update_available": false,
+      "cadence_description": "Infrequent updates, model/library currently stable"
+    },
+    {
+      "component": "transcribe_cpp",
+      "upstream": "github.com/futo-org/android-keyboard (transcribe.cpp)",
+      "current_version": "git d63298f",
+      "latest_upstream_version": "pinned",
+      "releases_last_90_days": 0,
+      "releases_last_180_days": 0,
+      "update_class": "PINNED_FOR_COMPATIBILITY",
+      "update_available": false,
+      "cadence_description": "Strictly pinned to GigaAM RNN-T GGML model format"
+    }
+  ]
+}

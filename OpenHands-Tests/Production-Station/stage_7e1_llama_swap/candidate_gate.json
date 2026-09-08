@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-09-06T10:26:16.006131+00:00",
+  "candidate_port": 18080,
+  "candidate_process_started": true,
+  "current_config_parsed": true,
+  "test_port_listening": true,
+  "v1_models_endpoint": true,
+  "no_config_schema_error": true,
+  "candidate_validation_status": "PASS"
+}

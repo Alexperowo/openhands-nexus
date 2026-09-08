@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-09-06T18:40:31.257963+00:00",
+  "status_code": 200,
+  "elapsed_seconds": 22.19,
+  "content": "",
+  "has_ngl27_in_cmd": true,
+  "has_ctx98k_in_cmd": true,
+  "has_b10821_backend": true,
+  "has_mtp_loaded": true,
+  "vram_used_mib": 22133,
+  "vram_free_mib": 98,
+  "error": null,
+  "smoke_verdict": "PASS"
+}

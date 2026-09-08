@@ -1,0 +1,60 @@
+{
+  "stage": "STAGE_7B",
+  "status": "PASS",
+  "timestamp": "2026-09-06T12:44:32.638121",
+  "hardened_components": {
+    "mainline_updater": {
+      "path": "K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1",
+      "status": "READY",
+      "station_stop_hard_gate": "ENFORCED (no -Force bypass)",
+      "config_promotion_safe": "VERIFIED (YAML check, line diff=1, model paths preserved, backups stored in K:/Project/Archive/backups/llama-mainline/)",
+      "candidate_runtime_gate_implemented": "YES (isolated test port 18081, Qwen3-Next real model & draft, 5 required checks)",
+      "rollback_safe": "VERIFIED (validates binary existence under llama-mainline, checks static capabilities, atomic config rollback)",
+      "auto_restart_default": "NO (station remains STOPPED unless -RestartPlatform specified)",
+      "release_asset_discovery": "DYNAMIC (HTML assets scraping + HTTP HEAD check 200/302, packaging-resilient)",
+      "checkonly_verified": "PASS",
+      "dryrun_verified": "PASS",
+      "default_invocation_verified": "PASS (strictly defaults to -CheckOnly)"
+    },
+    "ik_llama_updater": {
+      "path": "K:\\Project\\OpenHands-Update\\scripts\\update-ik-llama.ps1",
+      "status": "READY",
+      "qwen_canonical_path": "K:/Project/Models/Qwen3.8/Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf (FIXED, D: stale path removed)",
+      "ornith_compatibility_gate": "IMPLEMENTED (validates Ornith 1.5 production command family compatibility)",
+      "auto_restart_default": "NO (station remains STOPPED unless -RestartPlatform specified)"
+    },
+    "ik_llama_rollback": {
+      "path": "K:\\Project\\OpenHands-Update\\scripts\\rollback-ik-llama.ps1",
+      "status": "READY",
+      "auto_restart_default": "NO (station remains STOPPED unless -RestartPlatform specified)"
+    }
+  },
+  "other_components_audit": {
+    "openhands_updater": {
+      "status": "NEEDS_FIX",
+      "localization_strict_gate": "KEEP (strict 2400-key parity audit is a safety feature and will be preserved)"
+    },
+    "llama_swap_updater": {
+      "status": "MISSING"
+    },
+    "legacy_builds": {
+      "K:/Project/llama.cpp": "SAFE_TO_ARCHIVE (Historical b10752, not safe to delete yet, retain in place)",
+      "K:/Project/transcribe-build": "SAFE_TO_ARCHIVE (Historical build dependency, not safe to delete yet, retain in place)"
+    }
+  },
+  "invariance_proof": {
+    "MAINLINE_BINARY_CHANGED": "NO",
+    "IK_LLAMA_BINARY_CHANGED": "NO",
+    "PRODUCTION_CONFIG_CHANGED": "NO"
+  },
+  "evidence_files": [
+    "mainline_updater_diff.txt",
+    "ik_llama_updater_diff.txt",
+    "rollback_updater_diff.txt",
+    "mainline_safety_tests.json",
+    "release_asset_discovery_test.json",
+    "config_promotion_simulation.json",
+    "updater_invariance.json",
+    "stage_7b_summary.json"
+  ]
+}

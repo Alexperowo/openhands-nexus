@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-09-06T16:26:01.009538+00:00",
+  "audit_finding": "Previous evaluation in capability_evaluation.json saved only truncated samples (250 chars) in 'response_sample'. Stage 9C repair executes each task through production llama-swap router, capturing 100% complete un-truncated RAW_OUTPUT, exact programmatic SCORING_RULE, and verified SCORE without self-scoring.",
+  "tasks_audited_count": 18,
+  "tasks_with_full_raw_linkage": 18,
+  "models_evaluated": [
+    "next",
+    "ornith",
+    "qwen"
+  ]
+}

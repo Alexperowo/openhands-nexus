@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-09-06T12:44:25.662519",
+  "stage": "STAGE_7B",
+  "test_name": "Official llama.cpp Release Asset Discovery & Existence Verification",
+  "command": "powershell -NoProfile -ExecutionPolicy Bypass -File K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1 -CheckOnly",
+  "exit_code": 0,
+  "stdout": "[2026-09-06 12:44:22] [STEP] === Official llama.cpp Updater (CheckOnly Mode) ===\n[2026-09-06 12:44:23] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 12:44:24] [INFO] Current Production Build: b10816\n[2026-09-06 12:44:24] [INFO] Current Production Binary: K:\\Project\\llama-mainline\\b10816\\llama-server.exe\n[2026-09-06 12:44:24] [INFO] Current Binary Exists: True\n[2026-09-06 12:44:24] [INFO] Current Binary SHA256: 907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA\n[2026-09-06 12:44:24] [INFO] Current Version String: version: 0.4.0-dev (build 10816, commit 427291b5b) built with Clang 20.1.8 for Windows x86_64\n[2026-09-06 12:44:24] [INFO] Discovering official llama.cpp release assets from GitHub...\n[2026-09-06 12:44:24] [SUCCESS] Discovered latest official build tag: b10819\n[2026-09-06 12:44:24] [STEP] Verifying existence of release assets via HTTP HEAD...\n[2026-09-06 12:44:25] [SUCCESS] Asset URLs verified successfully (HTTP 200/302).\n[2026-09-06 12:44:25] [STEP] ================ Release Asset Discovery ================\n[2026-09-06 12:44:25] [INFO] TARGET_TAG: b10819\n[2026-09-06 12:44:25] [INFO] BIN_ASSET: llama-b10819-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:44:25] [INFO] CUDA_RUNTIME_ASSET: cudart-llama-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:44:25] [INFO] BIN_ASSET_URL: https://github.com/ggml-org/llama.cpp/releases/download/b10819/llama-b10819-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:44:25] [INFO] CUDA_ASSET_URL: https://github.com/ggml-org/llama.cpp/releases/download/b10819/cudart-llama-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:44:25] [SUCCESS] ASSETS_VERIFIED_EXIST: True\n[2026-09-06 12:44:25] [STEP] =========================================================\n[2026-09-06 12:44:25] [WARN] Status: UPDATE AVAILABLE (b10816 -> b10819).\n[2026-09-06 12:44:25] [INFO] To preview update: .\\update-llama-mainline.ps1 -DryRun\n[2026-09-06 12:44:25] [INFO] To execute update: .\\update-llama-mainline.ps1 -Update -TargetBuild b10819",
+  "target_tag": "b10819",
+  "bin_asset": "llama-b10819-bin-win-cuda-12.4-x64.zip",
+  "cuda_runtime_asset": "cudart-llama-bin-win-cuda-12.4-x64.zip",
+  "bin_asset_url": "https://github.com/ggml-org/llama.cpp/releases/download/b10819/llama-b10819-bin-win-cuda-12.4-x64.zip",
+  "cuda_asset_url": "https://github.com/ggml-org/llama.cpp/releases/download/b10819/cudart-llama-bin-win-cuda-12.4-x64.zip",
+  "head_check_results": {
+    "bin_asset_http_code": 200,
+    "cuda_asset_http_code": 200,
+    "verified_exist_without_download": true
+  },
+  "packaging_change_resilience": "Dynamic matching via expanded_assets prevents hardcoded archive name assumption",
+  "status": "PASS"
+}

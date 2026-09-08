@@ -1,0 +1,92 @@
+{
+  "MTP_OFF": {
+    "mode": "MTP_OFF",
+    "turns": [
+      {
+        "turn": 1,
+        "total_prompt_tokens": 84005,
+        "new_prompt_tokens_evaluated": 84005,
+        "gen_tokens": 250,
+        "prompt_eval_ms": 81097.25,
+        "prompt_tps": 1035.86,
+        "gen_tps": 34.58162868958313,
+        "draft_n": 0,
+        "draft_n_accepted": 0,
+        "wall_time_s": 88.69,
+        "peak_vram_mib": 19333
+      },
+      {
+        "turn": 2,
+        "total_prompt_tokens": 84304,
+        "new_prompt_tokens_evaluated": 50,
+        "gen_tokens": 200,
+        "prompt_eval_ms": 194.6,
+        "prompt_tps": 256.94,
+        "gen_tps": 34.59181229098978,
+        "draft_n": 0,
+        "draft_n_accepted": 0,
+        "wall_time_s": 6.34,
+        "peak_vram_mib": 19337
+      },
+      {
+        "turn": 3,
+        "total_prompt_tokens": 84543,
+        "new_prompt_tokens_evaluated": 40,
+        "gen_tokens": 200,
+        "prompt_eval_ms": 175.05,
+        "prompt_tps": 228.51,
+        "gen_tps": 34.55872226727335,
+        "draft_n": 0,
+        "draft_n_accepted": 0,
+        "wall_time_s": 6.37,
+        "peak_vram_mib": 19337
+      }
+    ],
+    "peak_vram": 19337
+  },
+  "MTP_N1_P075": {
+    "mode": "MTP_N1_P075",
+    "turns": [
+      {
+        "turn": 1,
+        "total_prompt_tokens": 84005,
+        "new_prompt_tokens_evaluated": 84005,
+        "gen_tokens": 250,
+        "prompt_eval_ms": 98699.92,
+        "prompt_tps": 851.12,
+        "gen_tps": 39.733606827695844,
+        "draft_n": 151,
+        "draft_n_accepted": 98,
+        "wall_time_s": 105.36,
+        "peak_vram_mib": 20679
+      },
+      {
+        "turn": 2,
+        "total_prompt_tokens": 84304,
+        "new_prompt_tokens_evaluated": 50,
+        "gen_tokens": 200,
+        "prompt_eval_ms": 231.27,
+        "prompt_tps": 216.19,
+        "gen_tps": 43.61923634494354,
+        "draft_n": 108,
+        "draft_n_accepted": 90,
+        "wall_time_s": 5.23,
+        "peak_vram_mib": 20685
+      },
+      {
+        "turn": 3,
+        "total_prompt_tokens": 84546,
+        "new_prompt_tokens_evaluated": 43,
+        "gen_tokens": 200,
+        "prompt_eval_ms": 214.5,
+        "prompt_tps": 200.46,
+        "gen_tps": 37.25542280620512,
+        "draft_n": 123,
+        "draft_n_accepted": 75,
+        "wall_time_s": 5.96,
+        "peak_vram_mib": 20685
+      }
+    ],
+    "peak_vram": 20685
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-09-06T13:08:00.961389+00:00",
+  "start_command": "K:\\Project\\START-OPENHANDS-LOCAL.cmd",
+  "stop_command": "K:\\Project\\STOP-OPENHANDS-LOCAL.cmd",
+  "canonical_start_pass": true,
+  "canonical_stop_pass": true,
+  "ports_online_at_peak": {
+    "8000": true,
+    "8080": true,
+    "18000": true,
+    "18001": true,
+    "18002": true
+  },
+  "ports_released_after_stop": {
+    "8000": false,
+    "8080": false,
+    "18000": false,
+    "18001": false,
+    "18002": false
+  },
+  "station_sanity_status": "PASS"
+}

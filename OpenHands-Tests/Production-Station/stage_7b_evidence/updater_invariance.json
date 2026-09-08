@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-09-06T12:44:32.637119",
+  "stage": "STAGE_7B",
+  "mainline_binary": {
+    "path": "K:\\Project\\llama-mainline\\b10816\\llama-server.exe",
+    "baseline_sha256": "907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA",
+    "current_sha256": "907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA",
+    "changed": false
+  },
+  "ik_llama_binary": {
+    "path": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+    "baseline_sha256": "D8A860D7D608D563239C56EDA69912B771A2E26317EBB58C3A6413BAAE29320A",
+    "current_sha256": "D8A860D7D608D563239C56EDA69912B771A2E26317EBB58C3A6413BAAE29320A",
+    "changed": false
+  },
+  "production_config": {
+    "path": "K:\\Project\\llama-swap\\config.yaml",
+    "baseline_sha256": "94D75C25C76534FA05F7FA9CFD1183837734822A35DDCE6B607F8D653A7F609F",
+    "current_sha256": "94D75C25C76534FA05F7FA9CFD1183837734822A35DDCE6B607F8D653A7F609F",
+    "changed": false
+  },
+  "conclusions": {
+    "MAINLINE_BINARY_CHANGED": "NO",
+    "IK_LLAMA_BINARY_CHANGED": "NO",
+    "PRODUCTION_CONFIG_CHANGED": "NO"
+  },
+  "status": "PASS"
+}

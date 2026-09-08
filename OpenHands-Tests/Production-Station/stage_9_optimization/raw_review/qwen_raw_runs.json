@@ -1,0 +1,470 @@
+{
+  "model": "qwen",
+  "baseline": {
+    "name": "qwen_baseline",
+    "status": "PASS",
+    "load_time_s": 10.06,
+    "load_category": "WARM_CACHED_LOAD",
+    "cmd": [
+      "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "-m",
+      "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "--mmproj",
+      "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "-c",
+      "98304",
+      "-ctk",
+      "q8_0",
+      "-ctv",
+      "q5_0",
+      "-fa",
+      "on",
+      "-ngl",
+      "999",
+      "-np",
+      "1",
+      "-dev",
+      "CUDA0",
+      "--spec-type",
+      "mtp:n_max=3,p_min=0.0",
+      "--jinja",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "19001",
+      "--temp",
+      "0.7",
+      "--top-p",
+      "0.8",
+      "--min-p",
+      "0.05"
+    ],
+    "summary": {
+      "runs_count": 3,
+      "successful_runs": 3,
+      "gen_mean": 28.78,
+      "gen_median": 27.82,
+      "gen_min": 25.52,
+      "gen_max": 33.0,
+      "pp_mean": 147.15,
+      "pp_median": 146.47,
+      "pp_min": 143.47,
+      "pp_max": 151.52,
+      "vram_peak_max": 22107,
+      "vram_headroom_min": 124,
+      "mtp_acceptance_avg": 52.39,
+      "load_time_s": 10.06
+    },
+    "runs": [
+      {
+        "run_id": "qwen_baseline_run_1",
+        "prompt_tokens": 26,
+        "generated_tokens": 128,
+        "prompt_ms": 171.59,
+        "predict_ms": 4601.57,
+        "pp_tok_s": 151.52,
+        "gen_tok_s": 27.82,
+        "mtp_drafted": 153,
+        "mtp_accepted": 75,
+        "mtp_acceptance_rate": 49.02,
+        "vram_peak_mib": 22107,
+        "vram_free_min_mib": 124,
+        "ram_peak_mib": 26991.22,
+        "http_status": 200,
+        "exit_status": 0,
+        "oom": false,
+        "error_text": null,
+        "raw_timings": {
+          "prompt_n": 26,
+          "prompt_ms": 171.592,
+          "prompt_per_token_ms": 6.599692307692308,
+          "prompt_per_second": 151.52221548790152,
+          "predicted_n": 128,
+          "predicted_ms": 4601.573,
+          "predicted_per_token_ms": 35.9497890625,
+          "predicted_per_second": 27.816574897323154,
+          "n_ctx": 98304,
+          "n_past": 153,
+          "draft_n": 153,
+          "draft_n_accepted": 75,
+          "draft_by_depth": [
+            {
+              "depth": 1,
+              "draft_n": 51,
+              "draft_n_accepted": 36
+            },
+            {
+              "depth": 2,
+              "draft_n": 51,
+              "draft_n_accepted": 26
+            },
+            {
+              "depth": 3,
+              "draft_n": 51,
+              "draft_n_accepted": 13
+            }
+          ]
+        }
+      },
+      {
+        "run_id": "qwen_baseline_run_2",
+        "prompt_tokens": 26,
+        "generated_tokens": 128,
+        "prompt_ms": 177.51,
+        "predict_ms": 3878.67,
+        "pp_tok_s": 146.47,
+        "gen_tok_s": 33.0,
+        "mtp_drafted": 129,
+        "mtp_accepted": 84,
+        "mtp_acceptance_rate": 65.12,
+        "vram_peak_mib": 22107,
+        "vram_free_min_mib": 124,
+        "ram_peak_mib": 27104.73,
+        "http_status": 200,
+        "exit_status": 0,
+        "oom": false,
+        "error_text": null,
+        "raw_timings": {
+          "prompt_n": 26,
+          "prompt_ms": 177.513,
+          "prompt_per_token_ms": 6.827423076923077,
+          "prompt_per_second": 146.4681459949412,
+          "predicted_n": 128,
+          "predicted_ms": 3878.668,
+          "predicted_per_token_ms": 30.30209375,
+          "predicted_per_second": 33.00101993777245,
+          "n_ctx": 98304,
+          "n_past": 153,
+          "draft_n": 129,
+          "draft_n_accepted": 84,
+          "draft_by_depth": [
+            {
+              "depth": 1,
+              "draft_n": 43,
+              "draft_n_accepted": 36
+            },
+            {
+              "depth": 2,
+              "draft_n": 43,
+              "draft_n_accepted": 29
+            },
+            {
+              "depth": 3,
+              "draft_n": 43,
+              "draft_n_accepted": 19
+            }
+          ]
+        }
+      },
+      {
+        "run_id": "qwen_baseline_run_3",
+        "prompt_tokens": 26,
+        "generated_tokens": 128,
+        "prompt_ms": 181.22,
+        "predict_ms": 5016.07,
+        "pp_tok_s": 143.47,
+        "gen_tok_s": 25.52,
+        "mtp_drafted": 165,
+        "mtp_accepted": 71,
+        "mtp_acceptance_rate": 43.03,
+        "vram_peak_mib": 22107,
+        "vram_free_min_mib": 124,
+        "ram_peak_mib": 27394.06,
+        "http_status": 200,
+        "exit_status": 0,
+        "oom": false,
+        "error_text": null,
+        "raw_timings": {
+          "prompt_n": 26,
+          "prompt_ms": 181.22,
+          "prompt_per_token_ms": 6.97,
+          "prompt_per_second": 143.47202295552367,
+          "predicted_n": 128,
+          "predicted_ms": 5016.068,
+          "predicted_per_token_ms": 39.18803125,
+          "predicted_per_second": 25.517995370078715,
+          "n_ctx": 98304,
+          "n_past": 153,
+          "draft_n": 165,
+          "draft_n_accepted": 71,
+          "draft_by_depth": [
+            {
+              "depth": 1,
+              "draft_n": 55,
+              "draft_n_accepted": 35
+            },
+            {
+              "depth": 2,
+              "draft_n": 55,
+              "draft_n_accepted": 22
+            },
+            {
+              "depth": 3,
+              "draft_n": 55,
+              "draft_n_accepted": 14
+            }
+          ]
+        }
+      }
+    ],
+    "parsed_log_mtp": [
+      {
+        "rate_percent": 38.09,
+        "accepted": 8,
+        "drafted": 21
+      },
+      {
+        "rate_percent": 49.02,
+        "accepted": 75,
+        "drafted": 153
+      },
+      {
+        "rate_percent": 65.12,
+        "accepted": 84,
+        "drafted": 129
+      },
+      {
+        "rate_percent": 43.03,
+        "accepted": 71,
+        "drafted": 165
+      }
+    ],
+    "log_path": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_9_optimization\\raw_review\\logs\\qwen_baseline.log"
+  },
+  "current": {
+    "name": "qwen_current",
+    "status": "PASS",
+    "load_time_s": 9.88,
+    "load_category": "WARM_CACHED_LOAD",
+    "cmd": [
+      "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "-m",
+      "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "--mmproj",
+      "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "-c",
+      "98304",
+      "-ctk",
+      "q8_0",
+      "-ctv",
+      "q5_0",
+      "-fa",
+      "on",
+      "-ngl",
+      "999",
+      "-np",
+      "1",
+      "-dev",
+      "CUDA0",
+      "--spec-type",
+      "mtp:n_max=3,p_min=0.05",
+      "--jinja",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "19001",
+      "--temp",
+      "0.7",
+      "--top-p",
+      "0.8",
+      "--min-p",
+      "0.05"
+    ],
+    "summary": {
+      "runs_count": 3,
+      "successful_runs": 3,
+      "gen_mean": 26.24,
+      "gen_median": 24.92,
+      "gen_min": 24.69,
+      "gen_max": 29.12,
+      "pp_mean": 146.86,
+      "pp_median": 145.34,
+      "pp_min": 143.8,
+      "pp_max": 151.43,
+      "vram_peak_max": 22107,
+      "vram_headroom_min": 124,
+      "mtp_acceptance_avg": 47.63,
+      "load_time_s": 9.88
+    },
+    "runs": [
+      {
+        "run_id": "qwen_current_run_1",
+        "prompt_tokens": 26,
+        "generated_tokens": 128,
+        "prompt_ms": 171.69,
+        "predict_ms": 5185.16,
+        "pp_tok_s": 151.43,
+        "gen_tok_s": 24.69,
+        "mtp_drafted": 167,
+        "mtp_accepted": 71,
+        "mtp_acceptance_rate": 42.51,
+        "vram_peak_mib": 22107,
+        "vram_free_min_mib": 124,
+        "ram_peak_mib": 26976.92,
+        "http_status": 200,
+        "exit_status": 0,
+        "oom": false,
+        "error_text": null,
+        "raw_timings": {
+          "prompt_n": 26,
+          "prompt_ms": 171.695,
+          "prompt_per_token_ms": 6.603653846153846,
+          "prompt_per_second": 151.43131716124526,
+          "predicted_n": 128,
+          "predicted_ms": 5185.163,
+          "predicted_per_token_ms": 40.5090859375,
+          "predicted_per_second": 24.685819905758027,
+          "n_ctx": 98304,
+          "n_past": 153,
+          "draft_n": 167,
+          "draft_n_accepted": 71,
+          "draft_by_depth": [
+            {
+              "depth": 1,
+              "draft_n": 56,
+              "draft_n_accepted": 41
+            },
+            {
+              "depth": 2,
+              "draft_n": 56,
+              "draft_n_accepted": 21
+            },
+            {
+              "depth": 3,
+              "draft_n": 55,
+              "draft_n_accepted": 9
+            }
+          ]
+        }
+      },
+      {
+        "run_id": "qwen_current_run_2",
+        "prompt_tokens": 26,
+        "generated_tokens": 128,
+        "prompt_ms": 178.9,
+        "predict_ms": 5137.04,
+        "pp_tok_s": 145.34,
+        "gen_tok_s": 24.92,
+        "mtp_drafted": 165,
+        "mtp_accepted": 72,
+        "mtp_acceptance_rate": 43.64,
+        "vram_peak_mib": 22107,
+        "vram_free_min_mib": 124,
+        "ram_peak_mib": 27136.15,
+        "http_status": 200,
+        "exit_status": 0,
+        "oom": false,
+        "error_text": null,
+        "raw_timings": {
+          "prompt_n": 26,
+          "prompt_ms": 178.896,
+          "prompt_per_token_ms": 6.880615384615384,
+          "prompt_per_second": 145.33583758161168,
+          "predicted_n": 128,
+          "predicted_ms": 5137.037,
+          "predicted_per_token_ms": 40.1331015625,
+          "predicted_per_second": 24.917087418291906,
+          "n_ctx": 98304,
+          "n_past": 153,
+          "draft_n": 165,
+          "draft_n_accepted": 72,
+          "draft_by_depth": [
+            {
+              "depth": 1,
+              "draft_n": 55,
+              "draft_n_accepted": 37
+            },
+            {
+              "depth": 2,
+              "draft_n": 55,
+              "draft_n_accepted": 22
+            },
+            {
+              "depth": 3,
+              "draft_n": 55,
+              "draft_n_accepted": 13
+            }
+          ]
+        }
+      },
+      {
+        "run_id": "qwen_current_run_3",
+        "prompt_tokens": 26,
+        "generated_tokens": 128,
+        "prompt_ms": 180.8,
+        "predict_ms": 4395.26,
+        "pp_tok_s": 143.8,
+        "gen_tok_s": 29.12,
+        "mtp_drafted": 141,
+        "mtp_accepted": 80,
+        "mtp_acceptance_rate": 56.74,
+        "vram_peak_mib": 22107,
+        "vram_free_min_mib": 124,
+        "ram_peak_mib": 27403.99,
+        "http_status": 200,
+        "exit_status": 0,
+        "oom": false,
+        "error_text": null,
+        "raw_timings": {
+          "prompt_n": 26,
+          "prompt_ms": 180.802,
+          "prompt_per_token_ms": 6.953923076923076,
+          "prompt_per_second": 143.80371898540946,
+          "predicted_n": 128,
+          "predicted_ms": 4395.257,
+          "predicted_per_token_ms": 34.3379453125,
+          "predicted_per_second": 29.12230160830186,
+          "n_ctx": 98304,
+          "n_past": 153,
+          "draft_n": 141,
+          "draft_n_accepted": 80,
+          "draft_by_depth": [
+            {
+              "depth": 1,
+              "draft_n": 47,
+              "draft_n_accepted": 39
+            },
+            {
+              "depth": 2,
+              "draft_n": 47,
+              "draft_n_accepted": 25
+            },
+            {
+              "depth": 3,
+              "draft_n": 47,
+              "draft_n_accepted": 16
+            }
+          ]
+        }
+      }
+    ],
+    "parsed_log_mtp": [
+      {
+        "rate_percent": 31.82,
+        "accepted": 7,
+        "drafted": 22
+      },
+      {
+        "rate_percent": 42.52,
+        "accepted": 71,
+        "drafted": 167
+      },
+      {
+        "rate_percent": 43.64,
+        "accepted": 72,
+        "drafted": 165
+      },
+      {
+        "rate_percent": 56.74,
+        "accepted": 80,
+        "drafted": 141
+      }
+    ],
+    "log_path": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_9_optimization\\raw_review\\logs\\qwen_current.log"
+  },
+  "delta": {
+    "gen_tok_s_percent": -8.83,
+    "pp_tok_s_percent": -0.2,
+    "vram_delta_mib": 0
+  }
+}

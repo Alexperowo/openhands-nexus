@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-09-06T12:33:35.118146",
+  "stage": "STAGE_7A",
+  "script_tested": "K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1",
+  "tests": [
+    {
+      "test_name": "PowerShell Syntax Parser Check",
+      "command": "powershell -NoProfile -Command \"$errors = $null; $ast = [System.Management.Automation.Language.Parser]::ParseFile('K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1', [ref]$null, [ref]$errors); if ($errors.Count -eq 0) { Write-Output 'PARSER_OK' } else { Write-Output ('PARSER_FAIL: ' + $errors.Count) }\"",
+      "exit_code": 0,
+      "stdout": "PARSER_OK",
+      "stderr": "",
+      "status": "PASS"
+    },
+    {
+      "test_name": "CheckOnly Execution Test",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1 -CheckOnly",
+      "exit_code": 0,
+      "stdout": "[2026-09-06 12:33:29] [STEP] === Official llama.cpp Updater (CheckOnly Mode) ===\n[2026-09-06 12:33:30] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 12:33:30] [INFO] Current Production Build: b10816\n[2026-09-06 12:33:30] [INFO] Current Production Binary: K:\\Project\\llama-mainline\\b10816\\llama-server.exe\n[2026-09-06 12:33:30] [INFO] Current Binary Exists: True\n[2026-09-06 12:33:30] [INFO] Current Binary SHA256: 907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA\n[2026-09-06 12:33:30] [INFO] Current Version String: version: 0.4.0-dev (build 10816, commit 427291b5b) built with Clang 20.1.8 for Windows x86_64\n[2026-09-06 12:33:30] [INFO] Querying official llama.cpp release tags from GitHub...\n[2026-09-06 12:33:31] [SUCCESS] Discovered latest release tag via HTML: b10819\n[2026-09-06 12:33:31] [INFO] Latest Upstream Build Tag: b10819\n[2026-09-06 12:33:31] [WARN] Status: UPDATE AVAILABLE (b10816 -> b10819).\n[2026-09-06 12:33:31] [INFO] To preview update: .\\update-llama-mainline.ps1 -DryRun\n[2026-09-06 12:33:31] [INFO] To execute update: .\\update-llama-mainline.ps1 -Update -TargetBuild b10819",
+      "stderr": "",
+      "status": "PASS"
+    },
+    {
+      "test_name": "DryRun Execution Test",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1 -DryRun",
+      "exit_code": 0,
+      "stdout": "[2026-09-06 12:33:31] [STEP] === Official llama.cpp Updater (DryRun Mode) ===\n[2026-09-06 12:33:31] [DRYRUN] [DRYRUN] Simulating complete update workflow without making changes.\n[2026-09-06 12:33:32] [SUCCESS] [DRYRUN] [OK] Station is STOPPED. Ports check passed.\n[2026-09-06 12:33:32] [INFO] [DRYRUN] Current production build: b10816\n[2026-09-06 12:33:32] [INFO] [DRYRUN] Current binary: K:\\Project\\llama-mainline\\b10816\\llama-server.exe\n[2026-09-06 12:33:32] [INFO] Querying official llama.cpp release tags from GitHub...\n[2026-09-06 12:33:33] [SUCCESS] Discovered latest release tag via HTML: b10819\n[2026-09-06 12:33:33] [INFO] [DRYRUN] Target build to evaluate: b10819\n[2026-09-06 12:33:33] [INFO] [DRYRUN] Planned installation directory: K:\\Project\\llama-mainline\\b10819\n[2026-09-06 12:33:33] [INFO] [DRYRUN] Planned download 1: https://github.com/ggml-org/llama.cpp/releases/download/b10819/llama-b10819-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:33:33] [INFO] [DRYRUN] Planned download 2: https://github.com/ggml-org/llama.cpp/releases/download/b10819/cudart-llama-bin-win-cuda-12.4-x64.zip\n[2026-09-06 12:33:33] [INFO] [DRYRUN] Planned staging directory: K:\\Project\\OpenHands-Update\\staging\\llama-mainline\\b10819\n[2026-09-06 12:33:33] [INFO] [DRYRUN] Planned capability gates:\n[2026-09-06 12:33:33] [INFO]   1. Verify llama-server.exe, cublas64_12.dll, cudart64_12.dll, ggml-cuda.dll\n[2026-09-06 12:33:33] [INFO]   2. Test flags: -m, -md, --spec-type, -ctk, -ctv, -fa, --jinja, --reasoning-format\n[2026-09-06 12:33:33] [INFO]   3. Test CUDA presence and Clang compiler build tag\n[2026-09-06 12:33:33] [INFO] [DRYRUN] Planned rollback recording:\n[2026-09-06 12:33:33] [INFO]   Write current build 'b10816' to K:\\Project\\llama-mainline\\PREVIOUS_BUILD.txt\n[2026-09-06 12:33:33] [INFO] [DRYRUN] Planned atomic config switch:\n[2026-09-06 12:33:33] [INFO]   Target config: K:\\Project\\llama-swap\\config.yaml\n[2026-09-06 12:33:33] [INFO]   Backup to: K:\\Project\\llama-swap\\config.yaml.bak_<timestamp>\n[2026-09-06 12:33:33] [INFO]   Replace 'K:\\Project\\llama-mainline\\b10816\\llama-server.exe' with 'K:\\Project\\llama-mainline\\b10819\\llama-server.exe'\n[2026-09-06 12:33:33] [SUCCESS] [DRYRUN] Dry run completed successfully. Zero changes were made.",
+      "stderr": "",
+      "status": "PASS"
+    },
+    {
+      "test_name": "Default Invocation (No Parameters) Test",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File K:\\Project\\OpenHands-Update\\update-llama-mainline.ps1",
+      "exit_code": 0,
+      "stdout": "No action switch specified. Defaulting to -CheckOnly mode.\nUsage: .\\update-llama-mainline.ps1 [-CheckOnly | -DryRun | -Update | -Rollback] [-TargetBuild <tag>]\n\n[2026-09-06 12:33:33] [STEP] === Official llama.cpp Updater (CheckOnly Mode) ===\n[2026-09-06 12:33:34] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 12:33:34] [INFO] Current Production Build: b10816\n[2026-09-06 12:33:34] [INFO] Current Production Binary: K:\\Project\\llama-mainline\\b10816\\llama-server.exe\n[2026-09-06 12:33:34] [INFO] Current Binary Exists: True\n[2026-09-06 12:33:34] [INFO] Current Binary SHA256: 907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA\n[2026-09-06 12:33:34] [INFO] Current Version String: version: 0.4.0-dev (build 10816, commit 427291b5b) built with Clang 20.1.8 for Windows x86_64\n[2026-09-06 12:33:34] [INFO] Querying official llama.cpp release tags from GitHub...\n[2026-09-06 12:33:35] [SUCCESS] Discovered latest release tag via HTML: b10819\n[2026-09-06 12:33:35] [INFO] Latest Upstream Build Tag: b10819\n[2026-09-06 12:33:35] [WARN] Status: UPDATE AVAILABLE (b10816 -> b10819).\n[2026-09-06 12:33:35] [INFO] To preview update: .\\update-llama-mainline.ps1 -DryRun\n[2026-09-06 12:33:35] [INFO] To execute update: .\\update-llama-mainline.ps1 -Update -TargetBuild b10819",
+      "stderr": "",
+      "status": "PASS"
+    }
+  ],
+  "invariance_audit": {
+    "production_binary_sha256_baseline": "907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA",
+    "production_binary_sha256_post_test": "907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA",
+    "production_binary_changed": false,
+    "production_config_sha256_baseline": "94D75C25C76534FA05F7FA9CFD1183837734822A35DDCE6B607F8D653A7F609F",
+    "production_config_sha256_post_test": "94D75C25C76534FA05F7FA9CFD1183837734822A35DDCE6B607F8D653A7F609F",
+    "production_config_changed": false,
+    "all_tests_passed": true
+  }
+}

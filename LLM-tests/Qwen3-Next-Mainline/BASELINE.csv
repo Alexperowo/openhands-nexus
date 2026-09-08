@@ -1,0 +1,4 @@
+ngl,pp_tps,tg_tps,completion_tokens,wall_time_s,vram_mib,ram_mib,finish_reason
+25,20.59,14.26,1024,73.26,18426,23087,length
+26,20.61,15.64,1024,66.91,19124,23685,length
+28,22.56,16.54,1024,63.24,20492,24890,length

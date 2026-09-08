@@ -1,0 +1,46 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:02:00+03:00",
+  "standards_reference": "W3C Web App Manifest & Chromium PWA Installability Specifications",
+  "requirements": {
+    "secure_context": {
+      "required": true,
+      "status": "PASS",
+      "detail": "Android Chrome strictly requires HTTPS for non-localhost origins. Remote LAN IP 192.168.0.14 over HTTP is marked Insecure, blocking PWA installation and getUserMedia."
+    },
+    "service_worker": {
+      "required": true,
+      "status": "PASS",
+      "detail": "Minimal network-first service worker (sw.js) registered and activated. Bypasses APIs and WebSockets to prevent stale agent state."
+    },
+    "web_manifest": {
+      "required": true,
+      "status": "PASS",
+      "detail": "manifest.webmanifest specifies name, short_name, start_url (/), display (standalone), background_color, theme_color, and icons."
+    },
+    "icons": {
+      "required": true,
+      "status": "PASS",
+      "detail": "Provides 192x192 PNG, 512x512 PNG, and SVG maskable/any icons."
+    },
+    "media_devices_access": {
+      "required": true,
+      "status": "PASS",
+      "detail": "Microphone permission for local voice STT is enabled by Secure Context (HTTPS)."
+    }
+  },
+  "access_modes_comparison": {
+    "lan_web_access": {
+      "url": "http://192.168.0.14:8000",
+      "pwa_installable": false,
+      "voice_stt_available": false,
+      "status": "PASS (Web-only)"
+    },
+    "lan_pwa_access": {
+      "url": "https://192.168.0.14:8443",
+      "pwa_installable": true,
+      "voice_stt_available": true,
+      "status": "PASS (Full PWA)"
+    }
+  }
+}

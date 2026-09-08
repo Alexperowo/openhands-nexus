@@ -1,0 +1,37 @@
+{
+  "timestamp": "2026-09-06T12:11:12.199314",
+  "stage": "STAGE_6D_CLEANLINESS_AUDIT",
+  "audit_scope": "Scan K:/Project root and active subsystem roots after station STOP",
+  "approved_directories": [
+    "K:/Project/Logs",
+    "K:/Project/Temp",
+    "K:/Project/OpenHands-Tests",
+    "K:/Project/LLM-tests",
+    "K:/Project/OpenHands-Update",
+    "K:/Project/Archive"
+  ],
+  "new_scattered_runtime_files_count": 0,
+  "new_scattered_files": [],
+  "subsystem_roots_checked": {
+    "K:/Project (root)": "CLEAN (0 loose log/tmp/out/err files)",
+    "K:/Project/.openhands-local": "CLEAN (session.json preserved; logs/ directory empty)",
+    "K:/Project/llama-swap": "CLEAN (0 loose log files; logs/ directory empty)",
+    "K:/Project/local-voice": "CLEAN (0 loose log files; logging centralized to Logs/Voice)",
+    "K:/Project/Models": "CLEAN (4 canonical subdirectories, 0 loose files)",
+    "K:/Project/Temp": "CLEAN (disposable scratch roots maintained)"
+  },
+  "pre_existing_repository_files_documented": [
+    {
+      "path": "K:/Project/ik_llama/bin/llama.log",
+      "size_bytes": 142,
+      "mtime": "2026-09-02T13:46:38.632165",
+      "reason": "Pre-existing build/smoke test artifact inside protected backend directory (Section 12: Do NOT move ik_llama)"
+    },
+    {
+      "path": "K:/Project/ik_llama/src/models/*.gguf.out",
+      "count": 13,
+      "reason": "Upstream git repository vocabulary test files inside ik_llama source tree"
+    }
+  ],
+  "verdict": "PASS"
+}

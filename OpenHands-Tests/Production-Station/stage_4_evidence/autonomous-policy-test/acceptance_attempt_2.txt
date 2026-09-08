@@ -1,0 +1,5 @@
+COMMAND = python K:\Project\OpenHands-Tests\Production-Station\stage_4_fixture\acceptance_check.py
+ACTUAL_EXIT_CODE = 0
+
+RAW_TERMINAL_OBSERVATION =
+[TextContent(cache_prompt=False, type='text', text="[ACCEPTANCE CHECK]: PASS\r\nAll acceptance criteria satisfied:\r\n - Correction A verified: 'correction_a.txt' -> CORRECTION_A_RESOLVED\r\n - Correction B verified: 'correction_b.txt' -> CORRECTION_B_RESOLVED\r\nEXIT CODE: 0")]

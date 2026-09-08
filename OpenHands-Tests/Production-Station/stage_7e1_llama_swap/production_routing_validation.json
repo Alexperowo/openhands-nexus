@@ -1,0 +1,115 @@
+{
+  "timestamp": "2026-09-06T13:36:57.884286",
+  "stage": "7E-1",
+  "router": {
+    "url": "http://127.0.0.1:8080",
+    "version": "v255",
+    "router_accepted_model_request": true
+  },
+  "request": {
+    "model": "ornith",
+    "max_tokens": 15,
+    "elapsed_seconds": 0.577
+  },
+  "response": {
+    "status_code": 200,
+    "content_snippet": "The user just said \"Hello\". This is a simple greeting. I should",
+    "full_response": {
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "The user just said \"Hello\". This is a simple greeting. I should"
+          }
+        }
+      ],
+      "created": 1788691017,
+      "model": "ornith",
+      "object": "chat.completion",
+      "usage": {
+        "completion_tokens": 15,
+        "prompt_tokens": 11,
+        "total_tokens": 26,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "id": "chatcmpl-6s3dMiMXlrOK87YPikZOBVKALD7uphYq",
+      "timings": {
+        "prompt_n": 11,
+        "prompt_ms": 309.777,
+        "prompt_per_token_ms": 28.161545454545454,
+        "prompt_per_second": 35.50941483712477,
+        "predicted_n": 15,
+        "predicted_ms": 162.065,
+        "predicted_per_token_ms": 10.804333333333334,
+        "predicted_per_second": 92.5554561441397,
+        "n_ctx": 98304,
+        "n_past": 25,
+        "draft_n": 7,
+        "draft_n_accepted": 7,
+        "draft_by_depth": [
+          {
+            "depth": 1,
+            "draft_n": 7,
+            "draft_n_accepted": 7
+          }
+        ]
+      }
+    }
+  },
+  "spawned_backend": {
+    "pid": 11964,
+    "ppid": 13976,
+    "exe": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+    "cmdline": [
+      "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+      "-m",
+      "K:\\Project\\Models\\Ornith\\Ornith-1.5-35B-MTP-19G-ICE.gguf",
+      "-c",
+      "98304",
+      "-ctk",
+      "q8_0",
+      "-ctv",
+      "q5_0",
+      "-fa",
+      "on",
+      "-ngl",
+      "999",
+      "-np",
+      "1",
+      "-dev",
+      "CUDA0",
+      "--spec-type",
+      "mtp:n_max=1,p_min=0.75",
+      "--jinja",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "5801",
+      "--temp",
+      "0.6",
+      "--top-p",
+      "0.95",
+      "--top-k",
+      "20",
+      "--min-p",
+      "0.0",
+      "--presence-penalty",
+      "0.0",
+      "--repeat-penalty",
+      "1.0"
+    ],
+    "correct_backend_spawned": true,
+    "canonical_ornith_path_used": true
+  },
+  "validation_verdicts": {
+    "ROUTER_ACCEPTED_MODEL_REQUEST": "PASS",
+    "CORRECT_BACKEND_SPAWNED": "PASS",
+    "CANONICAL_ORNITH_PATH_USED": "PASS",
+    "HTTP_COMPLETION": "PASS"
+  }
+}

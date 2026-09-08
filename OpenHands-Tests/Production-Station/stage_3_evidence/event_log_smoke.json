@@ -1,0 +1,50 @@
+[
+  {
+    "type": "SystemPromptEvent",
+    "details": {}
+  },
+  {
+    "type": "MessageEvent",
+    "details": {
+      "source": "user",
+      "content": "Hand off immediately to Ornith-Coding using the switch_llm tool with reason 'Handoff smoke verification'.\nDo not write any code files.\nOnce Ornith receives the conversation, Ornith must call finish wi"
+    }
+  },
+  {
+    "type": "ActionEvent",
+    "details": {
+      "tool_name": "switch_llm",
+      "action_type": "SwitchLLMAction",
+      "action_data": {
+        "profile_name": "Ornith-Coding",
+        "reason": "Handoff smoke verification",
+        "kind": "SwitchLLMAction"
+      }
+    }
+  },
+  {
+    "type": "ObservationEvent",
+    "details": {
+      "tool_name": "switch_llm",
+      "visualize": "Tool: switch_llm\nResult:\nSwitched LLM profile: Ornith-Coding (openai/ornith)\nReason: Handoff smoke verification"
+    }
+  },
+  {
+    "type": "ActionEvent",
+    "details": {
+      "tool_name": "finish",
+      "action_type": "FinishAction",
+      "action_data": {
+        "message": "Ornith ready",
+        "kind": "FinishAction"
+      }
+    }
+  },
+  {
+    "type": "ObservationEvent",
+    "details": {
+      "tool_name": "finish",
+      "visualize": ""
+    }
+  }
+]

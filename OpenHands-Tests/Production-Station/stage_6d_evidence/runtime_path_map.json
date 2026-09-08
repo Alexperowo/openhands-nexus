@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-09-06T12:06:28.597892",
+  "stage": "STAGE_6D",
+  "services": {
+    "Agent Canvas / Agent Server": {
+      "service_name": "openhands-canvas",
+      "current_location": "K:\\Project\\.openhands-local\\logs\u0007gent-canvas.log",
+      "target_canonical_location": "K:\\Project\\Logs\\OpenHands\u0007gent-canvas.log",
+      "mechanism": "stdout/stderr redirection in start.ps1",
+      "category": "ACTIVE_RUNTIME_LOG"
+    },
+    "OpenHands Launcher": {
+      "service_name": "openhands-launcher",
+      "current_location": "K:\\Project\\.openhands-local\\logs\\launcher.log",
+      "target_canonical_location": "K:\\Project\\Logs\\OpenHands\\launcher.log",
+      "mechanism": "Add-Content in start.ps1",
+      "category": "ACTIVE_RUNTIME_LOG"
+    },
+    "llama-swap": {
+      "service_name": "llama-swap-router",
+      "current_location": "K:\\Project\\.openhands-local\\logs\\llama-swap.log",
+      "target_canonical_location": "K:\\Project\\Logs\\llama-swap\\llama-swap.log",
+      "mechanism": "stdout/stderr redirection in start.ps1",
+      "internal_log_dir_required": false,
+      "category": "ACTIVE_RUNTIME_LOG"
+    },
+    "llama-server children": {
+      "service_name": "llama-server",
+      "current_location": "K:\\Project\\llama.log (scattered in root cwd) & streamed via llama-swap.log",
+      "target_canonical_location": "K:\\Project\\Logs\\llama-server\\llama.log",
+      "mechanism": "Working directory redirection of llama-swap process in start.ps1",
+      "category": "ACTIVE_RUNTIME_LOG"
+    },
+    "Voice Bridge": {
+      "service_name": "voice-bridge",
+      "current_location": "K:\\Project\\.openhands-local\\logs\u000boice-bridge.log",
+      "target_canonical_location": "K:\\Project\\Logs\\Voice\u000boice-bridge.log",
+      "mechanism": "pythonw service.py 18002",
+      "category": "ACTIVE_RUNTIME_LOG"
+    },
+    "Automation": {
+      "service_name": "openhands-automation",
+      "current_location": "None (streamed through agent-canvas.log)",
+      "target_canonical_location": "K:\\Project\\Logs\\Automation\u0007utomation.log",
+      "mechanism": "Reserved canonical logging directory",
+      "category": "ACTIVE_RUNTIME_LOG"
+    },
+    "Diagnostics": {
+      "service_name": "openhands-diagnostics",
+      "current_location": "Console only in diagnostics.ps1",
+      "target_canonical_location": "K:\\Project\\Logs\\Diagnostics\\diagnostics.log",
+      "mechanism": "diagnostics.ps1 updated to inspect canonical logs and optionally record runs",
+      "category": "ACTIVE_RUNTIME_LOG"
+    }
+  },
+  "state_metadata": {
+    "session_file": {
+      "path": "K:\\Project\\.openhands-local\\session.json",
+      "role": "PID ownership tracking for safe stop",
+      "action": "PRESERVE_IN_PLACE",
+      "disposable": false
+    }
+  }
+}

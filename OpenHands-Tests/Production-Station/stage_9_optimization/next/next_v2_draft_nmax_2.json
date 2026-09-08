@@ -1,0 +1,47 @@
+{
+  "variant": "next_v2_draft_nmax_2",
+  "description": "Speculative draft depth n_max=2",
+  "timestamp": "2026-09-06T14:00:07.944856+00:00",
+  "load_time_s": 14.14,
+  "vram_load_mib": 21207,
+  "vram_peak_mib": 21223,
+  "gen_tok_s_avg": 15.67,
+  "pp_tok_s_avg": 26.5,
+  "runs": [
+    {
+      "run": 1,
+      "gen_tok_s": 17.937084807115586,
+      "pp_tok_s": 19.12724506038896,
+      "pred_n": 32,
+      "elapsed_s": 2.6909351348876953
+    },
+    {
+      "run": 2,
+      "gen_tok_s": 14.297006944655823,
+      "pp_tok_s": 33.172171865022435,
+      "pred_n": 32,
+      "elapsed_s": 2.3170926570892334
+    },
+    {
+      "run": 3,
+      "gen_tok_s": 14.771611821101486,
+      "pp_tok_s": 27.189243935099277,
+      "pred_n": 32,
+      "elapsed_s": 2.3072171211242676
+    }
+  ],
+  "extra_args": [
+    "-ngl",
+    "26",
+    "-t",
+    "6",
+    "-ctk",
+    "q8_0",
+    "-ctv",
+    "q8_0",
+    "--spec-type",
+    "draft-mtp",
+    "--spec-draft-n-max",
+    "2"
+  ]
+}

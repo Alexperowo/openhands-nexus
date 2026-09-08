@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-09-06T12:27:29.208402",
+  "stage": "STAGE_7A",
+  "llama_cpp": {
+    "path": "K:\\Project\\llama.cpp",
+    "build_identified": "version: 0.3.0-dev (build 10752, commit b96806d96)",
+    "size_mb": 1112.11,
+    "active_production_references_count": 0,
+    "classification": {
+      "active": false,
+      "build_dependency": false,
+      "historical": true,
+      "duplicate": "Older mainline build (b10752) superseded by b10816",
+      "safe_to_archive": true,
+      "safe_to_delete": false
+    },
+    "status": "ARCHIVE_CANDIDATE_PENDING_REFERENCE_AUDIT",
+    "recommendation": "Retain in place for Stage 7A; safe to move to Archive\\deprecated_builds\\llama-b10752 in Stage 8"
+  },
+  "transcribe_build": {
+    "path": "K:\\Project\\transcribe-build",
+    "build_identified": "CMake build tree for transcribe-cli.exe",
+    "size_mb": 82.18,
+    "active_production_references_count": 0,
+    "classification": {
+      "active": false,
+      "build_dependency": "Historical CLI build tree (runtime uses transcribe-build-shared for transcribe.dll)",
+      "historical": true,
+      "duplicate": false,
+      "safe_to_archive": true,
+      "safe_to_delete": false
+    },
+    "status": "ARCHIVE_CANDIDATE_PENDING_REFERENCE_AUDIT",
+    "recommendation": "Retain in place for Stage 7A; safe to archive in Archive\\deprecated_builds\\transcribe-build in Stage 8"
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "qwen_exact_matches": {
+    "main": {
+      "canonical_k_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "d_source_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "k_exists": true,
+      "d_exists": true,
+      "k_size_bytes": 16810714688,
+      "d_size_bytes": 16810714688,
+      "sizes_match": true,
+      "k_sha256": "424b98a8f5add2fb66b92902d98ee9288badc82f4b986e70ade5f8d5ca615991",
+      "d_sha256": "424b98a8f5add2fb66b92902d98ee9288badc82f4b986e70ade5f8d5ca615991",
+      "sha256_match": true,
+      "production_references_k_only": true,
+      "classification": "SAFE_TO_REMOVE_LATER"
+    },
+    "mmproj": {
+      "canonical_k_path": "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "d_source_path": "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "k_exists": true,
+      "d_exists": true,
+      "k_size_bytes": 927607296,
+      "d_size_bytes": 927607296,
+      "sizes_match": true,
+      "k_sha256": "de0d58cea206add6ff82392027785ff294ad9cca22b74fc949f4eb15add35512",
+      "d_sha256": "de0d58cea206add6ff82392027785ff294ad9cca22b74fc949f4eb15add35512",
+      "sha256_match": true,
+      "production_references_k_only": true,
+      "classification": "SAFE_TO_REMOVE_LATER"
+    }
+  },
+  "filename_and_size_duplicate_candidates": [
+    {
+      "filename": "Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+      "size_bytes": 927607296,
+      "size_mb": 884.64,
+      "occurrences": [
+        "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+        "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf"
+      ],
+      "status": "DUPLICATE_CANDIDATE"
+    },
+    {
+      "filename": "Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+      "size_bytes": 16810714688,
+      "size_mb": 16031.95,
+      "occurrences": [
+        "K:\\Project\\Models\\Qwen3.8\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+        "D:\\Project\\models\\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
+      ],
+      "status": "DUPLICATE_CANDIDATE"
+    },
+    {
+      "filename": "Laguna-XS-2.1-APEX-I-Quality.gguf",
+      "size_bytes": 21819407136,
+      "size_mb": 20808.61,
+      "occurrences": [
+        "D:\\Project\\models\\Laguna-XS-2.1-APEX-I-Quality.gguf",
+        "D:\\AI\\Models\\Laguna-XS-2.1-APEX-I-Quality.gguf"
+      ],
+      "status": "DUPLICATE_CANDIDATE"
+    },
+    {
+      "filename": "Laguna-XS-2.1-DFlash-Q8_0.gguf",
+      "size_bytes": 494735712,
+      "size_mb": 471.82,
+      "occurrences": [
+        "D:\\Project\\models\\Laguna-XS-2.1-DFlash-Q8_0.gguf",
+        "D:\\AI\\Models\\Laguna-XS-2.1-DFlash-Q8_0.gguf"
+      ],
+      "status": "DUPLICATE_CANDIDATE"
+    },
+    {
+      "filename": "Ornith-1.5-35B-A3B-MTP-APEX-I-Compact.gguf",
+      "size_bytes": 17437861472,
+      "size_mb": 16630.04,
+      "occurrences": [
+        "D:\\Project\\models\\Ornith-1.5-35B-A3B-MTP-APEX-I-Compact.gguf",
+        "D:\\AI\\Models\\Ornith-1.5-35B-A3B-MTP-APEX-I-Compact.gguf"
+      ],
+      "status": "DUPLICATE_CANDIDATE"
+    },
+    {
+      "filename": "test-chat-auto-parser.exe",
+      "size_bytes": 1904640,
+      "size_mb": 1.82,
+      "occurrences": [
+        "K:\\Project\\ik_llama\\bin\\test-chat-auto-parser.exe",
+        "K:\\Project\\ik_llama\\src\\build\\bin\\Release\\test-chat-auto-parser.exe"
+      ],
+      "status": "DUPLICATE_CANDIDATE"
+    },
+    {
+      "filename": "test-chat-template.exe",
+      "size_bytes": 1750016,
+      "size_mb": 1.67,
+      "occurrences": [
+        "K:\\Project\\ik_llama\\bin\\test-chat-template.exe",
+        "K:\\Project\\ik_llama\\src\\build\\bin\\Release\\test-chat-template.exe"
+      ],
+      "status": "DUPLICATE_CANDIDATE"
+    }
+  ]
+}

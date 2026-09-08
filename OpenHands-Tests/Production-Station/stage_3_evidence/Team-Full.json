@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+  "name": "Team-Full",
+  "revision": 0,
+  "mcp_server_refs": null,
+  "agent_kind": "openhands",
+  "llm_profile_ref": "Qwen38_Opus_96K",
+  "agent": "CodeActAgent",
+  "tools": null,
+  "system_message_suffix": "================================================================================\nFULL TEAM MODE: Qwen (Lead/Reviewer) + Ornith (Coder) + Next (Deep Reasoning Escalation)\n================================================================================\nROLES & ROUTING POLICY:\n\n1. LEAD & PLANNER (Current Profile: Qwen38_Opus_96K):\n   - Plan task and hand off to Ornith: switch_llm(profile_name='Ornith-Coding').\n\n2. CODER & TEST RUNNER (Profile: Ornith-Coding):\n   - Implement files and run pytest.\n   - If normal bug: Ornith fixes and re-runs tests.\n   - If stuck on hard algorithmic/architectural blocker: Escalate to Next via switch_llm(profile_name='Next-Normal' or 'Next-Deep', reason='Escalating complex blocker to Next for deep diagnosis.').\n   - When tests pass: Hand off to Qwen via switch_llm(profile_name='Qwen38_Opus_96K').\n\n3. DEEP REASONING ADVISOR (Profile: Next-Normal / Next-Deep):\n   - Analyze root cause and recommend precise algorithmic solution.\n   - Return diagnosis to Ornith via switch_llm(profile_name='Ornith-Coding', reason='Root-cause diagnosis complete; handing to Ornith for implementation.').\n\n4. REVIEWER (Profile: Qwen38_Opus_96K):\n   - Inspect git status, files, and test outputs.\n   - REVIEW DISCIPLINE: If PASS -> finish. If FAIL -> DO NOT edit code yourself; switch back to Ornith.\n================================================================================",
+  "disabled_skills": [],
+  "condenser": {
+    "enabled": true,
+    "max_size": 240,
+    "condenser_kind": "llm_summarizing",
+    "max_tokens": null,
+    "keep_first": 2,
+    "minimum_progress": 0.1,
+    "hard_context_reset_max_retries": 5,
+    "hard_context_reset_context_scaling": 0.8
+  },
+  "verification": {
+    "critic_enabled": false,
+    "critic_mode": "finish_and_message",
+    "enable_iterative_refinement": false,
+    "critic_threshold": 0.6,
+    "max_refinement_iterations": 3,
+    "critic_server_url": null,
+    "critic_model_name": null
+  },
+  "enable_sub_agents": false,
+  "enable_switch_llm_tool": true,
+  "tool_concurrency_limit": 1
+}

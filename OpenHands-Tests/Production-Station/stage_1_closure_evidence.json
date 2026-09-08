@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-09-05T16:52:22Z",
+  "stage": "STAGE_1_CLOSURE",
+  "results": {
+    "duplicate_budget_removed": "YES",
+    "wire_budget_after_cleanup": 2048,
+    "real_openhands_agent_session": "PASS",
+    "smoke_test": {
+      "profile": "Next-Normal",
+      "wire_thinking_budget_tokens": 2048,
+      "chat_template_kwargs": null,
+      "finish_reason": "stop",
+      "content": "144",
+      "backend_pid": 6576,
+      "status": "PASS"
+    },
+    "agent_session_test": {
+      "session_id": "0567afd9-ec35-4d6c-9312-8977612a6c09",
+      "profile": "Next-Normal",
+      "agent_class": "Agent",
+      "conversation_class": "LocalConversation",
+      "outgoing_wire_keys": [
+        "messages",
+        "model",
+        "max_completion_tokens",
+        "prompt_cache_key",
+        "temperature",
+        "tools",
+        "top_p",
+        "thinking_budget_tokens"
+      ],
+      "wire_thinking_budget_tokens": 2048,
+      "chat_template_kwargs_budget": null,
+      "backend_pid": 6576,
+      "finish_reason": "tool_calls",
+      "agent_action": "finish",
+      "final_content": "144",
+      "reasoning_length": 1331,
+      "status": "PASS"
+    },
+    "same_next_runtime": "YES"
+  },
+  "overall_status": "PASS"
+}

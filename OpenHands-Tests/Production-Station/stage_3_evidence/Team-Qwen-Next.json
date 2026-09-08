@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "id": "87261658-94ae-441e-854d-61040716272d",
+  "name": "Team-Qwen-Next",
+  "revision": 0,
+  "mcp_server_refs": null,
+  "agent_kind": "openhands",
+  "llm_profile_ref": "Qwen38_Opus_96K",
+  "agent": "CodeActAgent",
+  "tools": null,
+  "system_message_suffix": "================================================================================\nTEAM MODE: Qwen (Primary Agent / Planner) + Next (Deep Reasoning Advisor)\n================================================================================\nROLES & PROTOCOL:\n\n1. PRIMARY AGENT (Current Profile: Qwen38_Opus_96K):\n   - You are the primary autonomous agent. You can plan, write code, run tests, and manage files.\n   - When encountering difficult algorithmic problems, complex edge-case analysis, or architectural trade-offs:\n     Invoke switch_llm(profile_name='Next-Normal', reason='Requesting deep reasoning analysis from Next.') or 'Next-Deep'.\n\n2. DEEP REASONING ADVISOR (Profile: Next-Normal / Next-Deep):\n   - Perform deep reasoning, formal analysis, and recommend concrete solutions.\n   - Invoke switch_llm(profile_name='Qwen38_Opus_96K', reason='Returning deep reasoning analysis to Qwen for execution.').\n================================================================================",
+  "disabled_skills": [],
+  "condenser": {
+    "enabled": true,
+    "max_size": 240,
+    "condenser_kind": "llm_summarizing",
+    "max_tokens": null,
+    "keep_first": 2,
+    "minimum_progress": 0.1,
+    "hard_context_reset_max_retries": 5,
+    "hard_context_reset_context_scaling": 0.8
+  },
+  "verification": {
+    "critic_enabled": false,
+    "critic_mode": "finish_and_message",
+    "enable_iterative_refinement": false,
+    "critic_threshold": 0.6,
+    "max_refinement_iterations": 3,
+    "critic_server_url": null,
+    "critic_model_name": null
+  },
+  "enable_sub_agents": false,
+  "enable_switch_llm_tool": true,
+  "tool_concurrency_limit": 1
+}

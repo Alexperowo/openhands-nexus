@@ -1,0 +1,62 @@
+{
+  "campaign": "STAGE 7E - COMPLETE PRACTICAL UPDATER VALIDATION",
+  "timestamp": "2026-09-06T12:52:18.737077+00:00",
+  "overall_verdict": "PASS",
+  "substages": {
+    "7E-1_llama_swap": {
+      "status": "PASS",
+      "baseline_version": "v252",
+      "promoted_version": "v255 (commit 7761aa1)",
+      "routing_validation": "PASS",
+      "evidence_dir": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_7e1_llama_swap"
+    },
+    "7E-2_llama_mainline": {
+      "status": "PASS",
+      "baseline_version": "0.4.0-dev (b10816)",
+      "promoted_version": "0.4.0-dev (b10821, commit 971595d66)",
+      "candidate_gate": "PASS (Port 18081, Qwen3-Next 80B + MTP draft)",
+      "routing_validation": "PASS (llama-swap -> Next-Normal 2048 & Next-Deep 4096)",
+      "evidence_dir": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_7e2_mainline"
+    },
+    "7E-3_ik_llama": {
+      "status": "PASS",
+      "baseline_commit": "3c58ae3",
+      "promoted_commit": "fe215a8 (built sm_75 CUDA)",
+      "promoted_sha256": "81980FF3C20CB7C29240FCACDE37CE254B9D55DF58AED9A0FBC53A0A260F5D63",
+      "gate_a_qwen38_mmproj_mtp": "PASS (Port 18080)",
+      "gate_b_ornith15_mtp": "PASS (Port 18080)",
+      "routing_validation": "PASS (Qwen 3.8 29.74 tok/s & Ornith 1.5 68.73 tok/s)",
+      "evidence_dir": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_7e3_ik_llama"
+    },
+    "7E-4_openhands_app_stack": {
+      "status": "PASS",
+      "mode": "Path B (Same-Version Rehearsal)",
+      "canvas_version": "1.16.0",
+      "agent_server_pin": "1.44.0",
+      "automation_pin": "1.9.0",
+      "backup_path": "K:\\Project\\Archive\\backups\\OpenHands\\20260906-150738-v1.16.0",
+      "npm_reinstall": "PASS",
+      "localization_patch_and_audit": "PASS (2400 keys, 0 missing)",
+      "voice_ui_patch": "PASS (Injected into index.html)",
+      "agent_workflow_test": "PASS (Workspace artifact created & verified in 26.42s)",
+      "evidence_dir": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_7e4_openhands"
+    },
+    "7E-5_full_station_integration": {
+      "status": "PASS",
+      "active_profile": "Team-Full",
+      "cold_start_ports_online": true,
+      "multi_agent_workflow": "PASS (Qwen planner -> Ornith coder -> Qwen reviewer)",
+      "standalone_next_smoke": "PASS (openai/next, thinking_budget: 2048)",
+      "voice_bridge_stt_tts_api": "PASS",
+      "localization_http_bundle": "PASS",
+      "lifecycle_repeatability": "PASS (Clean stop, start, clean stop)",
+      "evidence_dir": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_7e5_full_integration"
+    }
+  },
+  "final_station_state": {
+    "status": "STOPPED",
+    "ports_8000_8080_18000_18001_18002_free": true,
+    "orphan_processes": 0,
+    "active_profile": "Team-Full"
+  }
+}

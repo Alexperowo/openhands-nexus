@@ -1,0 +1,82 @@
+{
+  "timestamp": "2026-09-06T10:07:05.991294+00:00",
+  "design_principle": "Strict component isolation: one failed update must identify the exact responsible component and permit isolated rollback without affecting unrelated components",
+  "update_groups": [
+    {
+      "group_id": "GROUP-1-ROUTING",
+      "group_name": "Core Routing Infrastructure",
+      "components": [
+        "llama-swap"
+      ],
+      "why_grouped": "Independent Go binary with zero dependency on Node or Python packages. Routes to all LLMs.",
+      "update_order": [
+        "llama-swap"
+      ],
+      "validation_gate": "Candidate binary passes -config config.yaml test, binds 8080, responds to /health and /v1/models",
+      "rollback_boundary": "Isolated binary rollback (restore llama-swap.exe from backup). Zero impact on models or UI."
+    },
+    {
+      "group_id": "GROUP-2A-MAINLINE-INFERENCE",
+      "group_name": "Official llama.cpp Mainline Engine",
+      "components": [
+        "llama-mainline"
+      ],
+      "why_grouped": "Independent official prebuilt binary used exclusively for Qwen3-Next.",
+      "update_order": [
+        "llama-mainline (b108xx)"
+      ],
+      "validation_gate": "Candidate boots with Qwen3-Next weights + draft-mtp flags, passes test prompt generation",
+      "rollback_boundary": "Isolated versioned directory rollback (llama-mainline\\<build>). Zero impact on Qwen 3.8 or Ornith."
+    },
+    {
+      "group_id": "GROUP-2B-IK-LLAMA-INFERENCE",
+      "group_name": "ik_llama Speculative & Vision Engine",
+      "components": [
+        "ik_llama"
+      ],
+      "why_grouped": "Custom MSVC build used for Qwen 3.8 (vision + MTP n_max=3) and Ornith (MTP n_max=1).",
+      "update_order": [
+        "ik_llama"
+      ],
+      "validation_gate": "Candidate boots Qwen 3.8 with --mmproj, verifies MTP speculative buffer, boots Ornith, passes test prompt",
+      "rollback_boundary": "Isolated binary rollback (ik_llama\\bin\\llama-server.exe). Zero impact on Qwen3-Next."
+    },
+    {
+      "group_id": "GROUP-3-OPENHANDS-APP-STACK",
+      "group_name": "OpenHands Application & UI Stack (Tightly Coupled)",
+      "components": [
+        "@openhands/agent-canvas",
+        "openhands-agent-server",
+        "openhands-automation",
+        "openhands-localization",
+        "local-voice-ui-patch"
+      ],
+      "why_grouped": "TIGHTLY COUPLED. Updating agent-canvas overwrites build/ index.html and JS assets, requiring immediate re-patching and localization parity verification.",
+      "update_order": [
+        "1. Create full backup of @openhands/agent-canvas",
+        "2. npm install -g @openhands/agent-canvas@<target>",
+        "3. Inspect defaults.json (verify agentServer & automation versions)",
+        "4. Run patch-agent-canvas-localization.ps1",
+        "5. Run audit-localization.py (FAIL if missing_in_ru > 0)",
+        "6. Run patch-agent-canvas-voice.ps1",
+        "7. Optional smoke test"
+      ],
+      "validation_gate": "Localization parity = 0 missing keys, patcher returncode = 0, ingress port 8000 responds HTTP 200",
+      "rollback_boundary": "Complete agent-canvas folder restoration from OpenHands-Update\\backups\\openhands\\"
+    },
+    {
+      "group_id": "GROUP-4-PERIPHERAL-SERVICES",
+      "group_name": "Peripheral & Bridge Services (On-Demand / Manual)",
+      "components": [
+        "local-voice-bridge",
+        "android-mcp"
+      ],
+      "why_grouped": "Decoupled peripheral tools with infrequent updates. Updates should only be triggered manually upon specific need.",
+      "update_order": [
+        "Manual update / test in isolation"
+      ],
+      "validation_gate": "Voice healthcheck on 18002; Android MCP stdio handshake with adb",
+      "rollback_boundary": "Isolated Git / venv rollback"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "stage": "STAGE_7D_COMPLETE_UPDATER_COVERAGE",
+  "status": "PASS",
+  "timestamp": "2026-09-06T10:16:10.443587+00:00",
+  "regular_update_components": [
+    "llama-swap",
+    "llama-mainline",
+    "ik_llama",
+    "OpenHands App Stack (@openhands/agent-canvas, openhands-agent-server, openhands-automation)"
+  ],
+  "statuses": {
+    "llama_swap_updater_status": "READY",
+    "llama_mainline_updater_status": "READY",
+    "ik_llama_updater_status": "READY",
+    "openhands_updater_status": "READY"
+  },
+  "openhands_stack_versions": {
+    "agent_canvas_current": "v1.16.0",
+    "agent_canvas_latest": "v1.16.0",
+    "agent_server_pinned": "v1.44.0",
+    "agent_server_latest": "v1.44.1",
+    "automation_pinned": "v1.9.0",
+    "automation_latest": "v1.10.0",
+    "localization_strict_gate": "KEEP",
+    "voice_patch_gate": "PASS"
+  },
+  "update_all_default_behavior": "CHECK_ONLY",
+  "all_regular_components_covered": true,
+  "missing_updaters": [],
+  "manual_only_components": [
+    "GGUF models",
+    "android-mcp",
+    "Supertonic",
+    "transcribe.cpp / transcribe.dll",
+    "ADB",
+    "Node",
+    "npm",
+    "Python",
+    "uv",
+    "Git",
+    "CMake",
+    "Ninja",
+    "CUDA"
+  ],
+  "production_changed": "NO"
+}

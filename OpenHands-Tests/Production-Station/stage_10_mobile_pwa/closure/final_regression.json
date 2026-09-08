@@ -1,0 +1,45 @@
+{
+  "stage": "STAGE_10B_CLOSURE",
+  "timestamp": "2026-09-07 10:36:09",
+  "lifecycle_steps": {
+    "step_1_start": {
+      "command": "start.ps1",
+      "result": "PASS",
+      "services_started": [
+        "llama-swap (8080)",
+        "local-voice (18002)",
+        "agent-canvas (8000)",
+        "lan-gateway (8443)"
+      ]
+    },
+    "step_2_listener_check": {
+      "result": "PASS",
+      "loopback_hardened_ports": [
+        8000,
+        8080,
+        18000,
+        18001,
+        18002
+      ],
+      "lan_port": 8443
+    },
+    "step_3_lan_auth_test": {
+      "result": "PASS",
+      "unauthenticated_blocked": true,
+      "authenticated_granted": true
+    },
+    "step_4_real_agent_task": {
+      "endpoint": "https://192.168.0.14:8443",
+      "conversation_id": "1e2bf6ef-4375-4062-be01-31fb0b6e11d1",
+      "created_file": "K:\\Project\\OpenHands-Tests\\Production-Station\\stage_10_workspace\\stage10b_closure_smoke.txt",
+      "file_content": "OPENHANDS_STAGE10B_CLOSURE_VERIFIED",
+      "result": "PASS"
+    },
+    "step_5_desktop_regression": {
+      "endpoint": "http://127.0.0.1:8000",
+      "result": "PASS",
+      "unaffected_by_lan_gateway": true
+    }
+  },
+  "status": "PASS"
+}

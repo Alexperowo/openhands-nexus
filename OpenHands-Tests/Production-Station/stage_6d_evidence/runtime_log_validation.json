@@ -1,0 +1,93 @@
+{
+  "timestamp": "2026-09-06T12:10:35.341700",
+  "stage": "STAGE_6D_RUNTIME_VALIDATION",
+  "ports": {
+    "8000": {
+      "service": "Agent Canvas UI",
+      "status": "LISTENING"
+    },
+    "8080": {
+      "service": "llama-swap router",
+      "status": "LISTENING"
+    },
+    "18000": {
+      "service": "OpenHands Agent Server",
+      "status": "LISTENING"
+    },
+    "18001": {
+      "service": "OpenHands Automation Backend",
+      "status": "LISTENING"
+    },
+    "18002": {
+      "service": "Local Voice Bridge",
+      "status": "LISTENING"
+    }
+  },
+  "all_ports_listening": true,
+  "session_ownership": {
+    "session_file": "K:/Project/.openhands-local/session.json",
+    "session_valid": true,
+    "session_data": {
+      "swap_pid": 9392,
+      "llama_pid": null,
+      "canvas_pids": [
+        14672,
+        15160,
+        2008,
+        12196,
+        1592,
+        11740,
+        12396,
+        12044,
+        1544,
+        7636,
+        5576
+      ],
+      "swap_owned": true,
+      "voice_owned": true,
+      "voice_pid": 7648,
+      "canvas_owned": true,
+      "llama_owned": false
+    }
+  },
+  "canonical_logs_verification": [
+    {
+      "service": "OpenHands Launcher",
+      "log_path": "K:/Project/Logs/OpenHands/launcher.log",
+      "exists": true,
+      "size_bytes": 1443,
+      "modified_time": "2026-09-06T12:10:29.995984",
+      "updated_during_run": true,
+      "tail_snippet": "[2026-09-06 12:10:29] \n[2026-09-06 12:10:29] =====================================================================\n[2026-09-06 12:10:29]    OPENHANDS LOCAL IS ACTIVE at http://localhost:8000\n[2026-09-06 12:10:29] =====================================================================\n[2026-09-06 12:10:29] \n"
+    },
+    {
+      "service": "Agent Canvas / Agent Server",
+      "log_path": "K:/Project/Logs/OpenHands/agent-canvas.log",
+      "exists": true,
+      "size_bytes": 37303,
+      "modified_time": "2026-09-06T12:10:28.346153",
+      "updated_during_run": true,
+      "tail_snippet": "\u001b[2m09:10:28\u001b[0m \u001b[32m[automation]\u001b[0m {\"message\": \"(AutomationGitSyncState|automation_git_sync_state) _post_configure_properties() complete\", \"severity\": \"INFO\"}\n\u001b[2m09:10:28\u001b[0m \u001b[32m[automation]\u001b[0m {\"message\": \"Watchdog started, scanning every 60s\", \"severity\": \"INFO\"}\n\u001b[2m09:10:28\u001b[0m \u001b[32m[automation]\u001b[0m {\"message\": \"Git sync loop started (repo= branch=main path=automations); interval is set from the UI, 0 means manual-only\", \"severity\": \"INFO\"}\n\u001b[2m09:10:28\u001b[0m \u001b[32m[automation]\u001b[0m {\"message\": \"Application startup complete.\", \"severity\": \"INFO\"}\n\u001b[2m09:10:28\u001b[0m \u001b[32m[automation]\u001b[0m {\"message\": \"Uvicorn running on http://127.0.0.1:18001 (Press CTRL+C to quit)\", \"severity\": \"INFO\", \"color_message\": \"Uvicorn running on \\u001b[1mhttp://127.0.0.1:18001\\u001b[0m (Press CTRL+C to quit)\"}\n"
+    },
+    {
+      "service": "llama-swap router",
+      "log_path": "K:/Project/Logs/llama-swap/llama-swap.log",
+      "exists": true,
+      "size_bytes": 255,
+      "modified_time": "2026-09-06T12:10:07.484412",
+      "updated_during_run": true,
+      "tail_snippet": "[DEBUG] PID: 9392\n[INFO] using nvidia-smi for GPU monitoring\n[INFO] llama-swap listening on http://127.0.0.1:8080\n[INFO] Request 127.0.0.1 \"GET /health HTTP/1.1\" 200 2 \"Mozilla/5.0 (Windows NT; Windows NT 10.0; ru-RU) WindowsPowerShell/5.1.26100.9168\" 0s\n"
+    },
+    {
+      "service": "Local Voice Bridge",
+      "log_path": "K:/Project/Logs/Voice/voice-bridge.log",
+      "exists": true,
+      "size_bytes": 489,
+      "modified_time": "2026-09-06T12:10:11.936431",
+      "updated_during_run": true,
+      "tail_snippet": " Endpoints: /health, /stt, /tts, /stop, /shutdown\n Initial RAM: 745.5 MB\n=======================================================\n\n[HTTP] GET /health -> 200\n"
+    }
+  ],
+  "all_logs_active_under_canonical_root": true,
+  "verdict": "PASS"
+}

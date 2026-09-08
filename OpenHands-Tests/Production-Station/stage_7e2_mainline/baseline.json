@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-09-06T13:46:04.533772",
+  "stage": "7E-2.1",
+  "ports_free": true,
+  "current_backend": {
+    "path": "K:\\Project\\llama-mainline\\b10816\\llama-server.exe",
+    "version_text": "version: 0.4.0-dev (build 10816, commit 427291b5b)\nbuilt with Clang 20.1.8 for Windows x86_64",
+    "sha256": "907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA",
+    "build": "b10816"
+  },
+  "config": {
+    "path": "K:\\Project\\llama-swap\\config.yaml",
+    "sha256": "94D75C25C76534FA05F7FA9CFD1183837734822A35DDCE6B607F8D653A7F609F",
+    "current_next_command": "K:\\Project\\llama-mainline\\b10816\\llama-server.exe -m K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf -md K:\\Project\\Models\\Qwen3-Next\\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf -c 98304 -ngl 26 -fa on -ctk q8_0 -ctv q8_0 -np 1 -t 6 -dev CUDA0 --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek --reasoning-budget-message \"Conclude reasoning immediately and output the final answer now.\" --jinja --host 127.0.0.1 --port ${PORT} --temp 0.6"
+  },
+  "check_only": {
+    "exit_code": 0,
+    "stdout": "[2026-09-06 13:46:00] [STEP] === Official llama.cpp Updater (CheckOnly Mode) ===\n[2026-09-06 13:46:01] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 13:46:01] [INFO] Current Production Build: b10816\n[2026-09-06 13:46:01] [INFO] Current Production Binary: K:\\Project\\llama-mainline\\b10816\\llama-server.exe\n[2026-09-06 13:46:01] [INFO] Current Binary Exists: True\n[2026-09-06 13:46:01] [INFO] Current Binary SHA256: 907A7AC7FDEF3B315BF8D85ADE354A004698115D8FC50039872CDCCCF061D4CA\n[2026-09-06 13:46:01] [INFO] Current Version String: version: 0.4.0-dev (build 10816, commit 427291b5b) built with Clang 20.1.8 for Windows x86_64\n[2026-09-06 13:46:01] [INFO] Discovering official llama.cpp release assets from GitHub...\n[2026-09-06 13:46:02] [SUCCESS] Discovered latest official build tag: b10821\n[2026-09-06 13:46:03] [STEP] Verifying existence of release assets via HTTP HEAD...\n[2026-09-06 13:46:04] [SUCCESS] Asset URLs verified successfully (HTTP 200/302).\n[2026-09-06 13:46:04] [STEP] ================ Release Asset Discovery ================\n[2026-09-06 13:46:04] [INFO] TARGET_TAG: b10821\n[2026-09-06 13:46:04] [INFO] BIN_ASSET: llama-b10821-bin-win-cuda-12.4-x64.zip\n[2026-09-06 13:46:04] [INFO] CUDA_RUNTIME_ASSET: cudart-llama-bin-win-cuda-12.4-x64.zip\n[2026-09-06 13:46:04] [INFO] BIN_ASSET_URL: https://github.com/ggml-org/llama.cpp/releases/download/b10821/llama-b10821-bin-win-cuda-12.4-x64.zip\n[2026-09-06 13:46:04] [INFO] CUDA_ASSET_URL: https://github.com/ggml-org/llama.cpp/releases/download/b10821/cudart-llama-bin-win-cuda-12.4-x64.zip\n[2026-09-06 13:46:04] [SUCCESS] ASSETS_VERIFIED_EXIST: True\n[2026-09-06 13:46:04] [STEP] =========================================================\n[2026-09-06 13:46:04] [WARN] Status: UPDATE AVAILABLE (b10816 -> b10821).\n[2026-09-06 13:46:04] [INFO] To preview update: .\\update-llama-mainline.ps1 -DryRun\n[2026-09-06 13:46:04] [INFO] To execute update: .\\update-llama-mainline.ps1 -Update -TargetBuild b10821\n",
+    "stderr": "",
+    "state": null,
+    "frozen_target_build": "b10821"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-09-06T17:29:05.803447+00:00",
+  "models": {
+    "qwen": {
+      "baseline_gen_avg": 28.78,
+      "current_gen_avg": 26.24,
+      "gen_delta_percent": -8.83,
+      "baseline_pp_avg": 147.15,
+      "current_pp_avg": 146.86,
+      "pp_delta_percent": -0.2,
+      "mtp_acceptance_rate": 47.63,
+      "vram_peak_mib": 22107,
+      "vram_headroom_min": 124,
+      "vram_headroom_assessment": "TIGHT_BUT_RUNTIME_VERIFIED"
+    },
+    "ornith": {
+      "baseline_gen_avg": 75.2,
+      "current_gen_avg": 76.0,
+      "gen_delta_percent": 1.06,
+      "baseline_pp_avg": 301.78,
+      "current_pp_avg": 295.49,
+      "pp_delta_percent": -2.08,
+      "mtp_acceptance_rate": 73.53,
+      "vram_peak_mib": 20363,
+      "vram_headroom_min": 1868
+    },
+    "next": {
+      "baseline_gen_avg": 18.99,
+      "current_gen_avg": 19.0,
+      "gen_delta_percent": 0.05,
+      "baseline_pp_avg": 22.36,
+      "current_pp_avg": 22.11,
+      "pp_delta_percent": -1.12,
+      "mtp_acceptance_rate": 87.3,
+      "vram_peak_mib": 20939,
+      "vram_headroom_min": 1292
+    }
+  },
+  "ngl_decision": {
+    "ngl26_gen_avg": 19.0,
+    "ngl27_gen_avg": 0.0,
+    "ngl27_delta_percent": -100.0,
+    "ngl26_headroom": 1292,
+    "ngl27_headroom": null,
+    "ngl27_98k_stable": "FAIL",
+    "recommendation": "KEEP_NGL26"
+  }
+}

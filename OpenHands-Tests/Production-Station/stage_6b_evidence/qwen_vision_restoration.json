@@ -1,0 +1,18 @@
+{
+  "stage": "STAGE_6B_VISION_RESTORE",
+  "status": "PASS",
+  "previous_android_mcp_vision_artifacts": "K:/Project/OpenHands-Tests/Android-Smoke-01/ (RESULT.md, agent-transcript.md, tool-calls.json, 10 screenshot PNGs, initial-screen.png, final-about-tablet.png)",
+  "previous_real_image_inference": "PASS",
+  "previous_vision_backend": "ik_llama (K:/Project/ik_llama/bin/llama-server.exe)",
+  "previous_working_mmproj_config": "--mmproj D:/Project/models/Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+  "production_qwen_main": "K:/Project/Models/Qwen3.8/Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+  "production_qwen_mmproj": "K:/Project/Models/Qwen3.8/Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+  "mmproj_restored": "YES",
+  "runtime_main_path": "K:/Project/Models/Qwen3.8/Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf",
+  "runtime_mmproj_path": "K:/Project/Models/Qwen3.8/Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf",
+  "mmproj_initialization": "SUCCESS (clip_model_loader: loaded vision encoder, qwen3vl_merger projector 884.62 MiB, status: loaded in llama-swap)",
+  "runtime_errors": "NONE",
+  "final_active_profile": "Team-Full (ba66f66f-f9fb-4764-b5b9-22f27bf84b3a)",
+  "production_stop": "CLEAN (exit 0, all ports free)",
+  "vision_production_status": "RESTORED"
+}

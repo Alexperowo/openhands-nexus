@@ -1,0 +1,109 @@
+{
+  "timestamp": "2026-09-06T16:01:25.000000+00:00",
+  "baseline_ports": {
+    "8000": {
+      "name": "OpenHands Agent Canvas",
+      "open": false
+    },
+    "8080": {
+      "name": "llama-swap",
+      "open": false
+    },
+    "18000": {
+      "name": "Agent Server",
+      "open": false
+    },
+    "18001": {
+      "name": "Speech-to-Text (STT)",
+      "open": false
+    },
+    "18002": {
+      "name": "Text-to-Speech (TTS)",
+      "open": false
+    }
+  },
+  "start_results": {
+    "all_online": true,
+    "elapsed_s": 2.0,
+    "port_status": {
+      "8000": {
+        "name": "OpenHands Agent Canvas",
+        "open": true
+      },
+      "8080": {
+        "name": "llama-swap",
+        "open": true
+      },
+      "18000": {
+        "name": "Agent Server",
+        "open": true
+      },
+      "18001": {
+        "name": "Speech-to-Text (STT)",
+        "open": true
+      },
+      "18002": {
+        "name": "Text-to-Speech (TTS)",
+        "open": true
+      }
+    }
+  },
+  "model_tests": {
+    "ornith": {
+      "status": "PASS",
+      "elapsed_s": 10.76,
+      "prompt_tok_s": 125.49,
+      "gen_tok_s": 84.43,
+      "mtp_acceptance_rate": 0.875
+    },
+    "qwen": {
+      "status": "PASS",
+      "elapsed_s": 149.71,
+      "description": "Swapped from Ornith to Qwen on demand, full vision projector initialization verified"
+    }
+  },
+  "service_health": {
+    "agent_canvas": {
+      "status": 200
+    },
+    "llama_swap": {
+      "status": 200
+    },
+    "agent_server": {
+      "status": 200
+    },
+    "stt": {
+      "status": 200
+    },
+    "tts": {
+      "status": 200
+    }
+  },
+  "stop_results": {
+    "clean": true,
+    "remaining_open": []
+  },
+  "final_ports": {
+    "8000": {
+      "name": "OpenHands Agent Canvas",
+      "open": false
+    },
+    "8080": {
+      "name": "llama-swap",
+      "open": false
+    },
+    "18000": {
+      "name": "Agent Server",
+      "open": false
+    },
+    "18001": {
+      "name": "Speech-to-Text (STT)",
+      "open": false
+    },
+    "18002": {
+      "name": "Text-to-Speech (TTS)",
+      "open": false
+    }
+  },
+  "verdict": "PASS"
+}

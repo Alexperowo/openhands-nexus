@@ -1,0 +1,312 @@
+{
+  "timestamp": "2026-09-06T16:26:01.009538+00:00",
+  "task_families": [
+    "A_planning_reasoning",
+    "B_code_execution",
+    "C_debugging",
+    "D_tool_calling",
+    "E_long_instruction",
+    "F_reviewer_error_detection"
+  ],
+  "scoring_rules": {
+    "A_planning_reasoning": "Score out of 100: +25 if Redis/Streams mentioned; +35 if ACK/PEL/Pending failure recovery covered; +25 if bottlenecks/scaling analyzed; +15 if consumer groups referenced.",
+    "B_code_execution": "Score out of 100: +20 if class RingBuffer declared; +30 if collections.deque used; +30 if methods (append, get_all, is_full) implemented; +20 if capacity/maxlen enforced.",
+    "C_debugging": "Score out of 100: +40 if mutable default argument identified; +40 if None sentinel pattern suggested as fix; +20 if shared state across calls clearly explained.",
+    "D_tool_calling": "Score out of 100: +100 if valid JSON with tool='run_command' and matching CommandLine & Cwd; +70 if valid JSON with partial match; +40 if valid JSON but different tool; 0 if no JSON.",
+    "E_long_instruction": "Score out of 100: +35 if letter 'z' is strictly absent; +30 if exactly 3 numbered items (1., 2., 3.); +35 if each item ends with '[VERIFIED]' (+20 if partial).",
+    "F_reviewer_error_detection": "Score out of 100: +40 if SQL injection identified; +20 if severity (Critical/High) specified; +40 if parameterized SQL query fix shown."
+  },
+  "models": {
+    "next": {
+      "model": "next",
+      "tasks": {
+        "A_planning_reasoning": {
+          "title": "Planning / Architecture",
+          "score": 100,
+          "scoring_rule": "Score out of 100: +25 if Redis/Streams mentioned; +35 if ACK/PEL/Pending failure recovery covered; +25 if bottlenecks/scaling analyzed; +15 if consumer groups referenced.",
+          "feedback": [
+            "+25 Redis Streams identified as streaming backbone",
+            "+35 ACK and PEL failure recovery strategy explicitly covered",
+            "+25 Scaling bottlenecks and partition limits analyzed",
+            "+15 Consumer groups architecture referenced"
+          ],
+          "raw_output": "<think>\nOkay, the user is asking me to design a high-availability event-driven notification system using Redis Streams. They want me to list three things: core architectural components, message consumer failure recovery strategy (specifically mentioning ACK and PEL), and key scaling bottlenecks. \n\nHmm, as a senior software architect, I need to approach this systematically. The user is probably a tech lead or architect themselves, looking for a production-grade solution. They might be evaluating Redis Streams for their system or troubleshooting an existing one. The mention of \"high-availability\" suggests they care about fault tolerance and minimal downtime.\n\nFirst, for core components: I should cover the essential parts that make up the system. Redis Streams is the backbone, but I need to explain how it fits with other elements. Producers, consumers, consumer groups, and monitoring tools come to mind. Also, since it's notification-focused,\n</think>\n",
+          "gen_tokens": 180,
+          "elapsed_s": 11.14,
+          "gen_tok_s": 16.16
+        },
+        "B_code_execution": {
+          "title": "Code Editing / Execution",
+          "score": 70,
+          "scoring_rule": "Score out of 100: +20 if class RingBuffer declared; +30 if collections.deque used; +30 if methods (append, get_all, is_full) implemented; +20 if capacity/maxlen enforced.",
+          "feedback": [
+            "+20 RingBuffer class declared",
+            "+30 collections.deque utilized",
+            "+20 Maxlen capacity enforcement specified"
+          ],
+          "raw_output": "<think>\nWe are going to create a RingBuffer class that uses collections.deque for efficient appending and popping from both ends.\n The class will have a fixed capacity. We'll implement:\n   - __init__(self, capacity: int): initialize the buffer with the given capacity.\n   - append(self, item): add an item to the buffer. If the buffer is full, the oldest item is removed.\n   - get_all(self): return a list of all items in the buffer in order (from oldest to newest).\n   - is_full(self): return True if the buffer is full, else False.\n\n Note: Since deque has a maxlen parameter, we can set it to the capacity. However, note that when maxlen is set, \n the deque will\n</think>\n",
+          "gen_tokens": 150,
+          "elapsed_s": 8.61,
+          "gen_tok_s": 17.42
+        },
+        "C_debugging": {
+          "title": "Debugging / Root Cause",
+          "score": 60,
+          "scoring_rule": "Score out of 100: +40 if mutable default argument identified; +40 if None sentinel pattern suggested as fix; +20 if shared state across calls clearly explained.",
+          "feedback": [
+            "+40 Mutable default argument identified",
+            "+20 Shared state across invocations clearly explained"
+          ],
+          "raw_output": "<think>\nWe are given a Python function:\n\ndef fetch_items(items, default=[]):\n    default.append(len(items))\n    return default\n\nThe bug is that the default argument `default=[]` is a mutable object (a list). In Python, default arguments are evaluated only once at the time of function definition, not each time the function is called. Therefore, the same list object is used for every call to the function if the `default` parameter is not provided.\n\nLet's see what happens:\n\n- First call: fetch_items([1,2,3])\n  - `default` is the initial empty list (which is created at definition time)\n  - We append the length of items (which is\n</think>\n",
+          "gen_tokens": 140,
+          "elapsed_s": 7.7,
+          "gen_tok_s": 18.18
+        },
+        "D_tool_calling": {
+          "title": "Tool Calling / Structured Output",
+          "score": 0,
+          "scoring_rule": "Score out of 100: +100 if valid JSON with tool='run_command' and matching CommandLine & Cwd; +70 if valid JSON with partial match; +40 if valid JSON but different tool; 0 if no JSON.",
+          "feedback": [
+            "+0 Thinking tokens exhausted max_tokens budget before generating JSON structure"
+          ],
+          "raw_output": "<think>\nOkay, let's see. The user wants me to generate a JSON tool call for 'run_command' with specific arguments. The CommandLine is 'git status', Cwd is 'K:/Project', and WaitMs is 5000. They want the output to be only valid JSON without any markdown.\n\nFirst, I need to make sure the JSON structure is correct. The tool should be \"run_command\", and the args should have CommandLine\n</think>\n",
+          "gen_tokens": 90,
+          "elapsed_s": 5.05,
+          "gen_tok_s": 17.82
+        },
+        "E_long_instruction": {
+          "title": "Long-Instruction Adherence",
+          "score": 35,
+          "scoring_rule": "Score out of 100: +35 if letter 'z' is strictly absent; +30 if exactly 3 numbered items (1., 2., 3.); +35 if each item ends with '[VERIFIED]' (+20 if partial).",
+          "feedback": [
+            "+35 Strictly avoided letter 'z' in trace"
+          ],
+          "raw_output": "<think>\nOkay, the user wants exactly three advantages of asynchronous I/O in Python, and I need to follow four strict rules. Let me check each rule carefully.\n\nFirst, no letter 'z' anywhere. I have to make sure none of the words I use contain 'z'. Words like \"zero\" or \"zoo\" are out, but maybe I can avoid them. Let's see the advantages I know.\n\nAsynchronous I/O allows non-blocking operations, so the program can handle multiple tasks without waiting. That's one point. Another is better\n</think>\n",
+          "gen_tokens": 110,
+          "elapsed_s": 6.56,
+          "gen_tok_s": 16.77
+        },
+        "F_reviewer_error_detection": {
+          "title": "Reviewer / Security Audit",
+          "score": 25,
+          "scoring_rule": "Score out of 100: +40 if SQL injection identified; +20 if severity (Critical/High) specified; +40 if parameterized SQL query fix shown.",
+          "feedback": [
+            "+40 SQL injection vulnerability identified",
+            "+20 Severity (High / Critical) specified",
+            "-35 Generation truncated before parameterized query code block"
+          ],
+          "raw_output": "<think>\nWe are given a query: cursor.execute(f'SELECT * FROM users WHERE username = \"{user_input}\"')\n This is a string interpolation (f-string) that directly inserts the user_input into the SQL query string.\n\n Vulnerability: SQL Injection\n Severity: High (Critical) because an attacker can manipulate the input to execute arbitrary SQL commands.\n\n Why?\n If the user_input is something like: `admin' OR '1'='1`\n Then the query becomes: \n   SELECT * FROM users WHERE username = \"admin' OR '1'='1\"\n\n This will return all rows because the condition is always true.\n\n How to fix?\n Use\n</think>\n",
+          "gen_tokens": 130,
+          "elapsed_s": 6.66,
+          "gen_tok_s": 19.52
+        }
+      },
+      "total_score": 290,
+      "average_score": 48.3,
+      "average_gen_tok_s": 17.64,
+      "raw_output_evaluated": true,
+      "score_raw_trace": 48.3,
+      "score_final_text_only": 5.8
+    },
+    "ornith": {
+      "model": "ornith",
+      "tasks": {
+        "A_planning_reasoning": {
+          "title": "Planning / Architecture",
+          "score": 100,
+          "scoring_rule": "Score out of 100: +25 if Redis/Streams mentioned; +35 if ACK/PEL/Pending failure recovery covered; +25 if bottlenecks/scaling analyzed; +15 if consumer groups referenced.",
+          "feedback": [
+            "+25 Redis Streams core log structure detailed",
+            "+35 Consumer failure recovery with ACK and PEL covered",
+            "+25 Stream scaling limits and memory bottlenecks analyzed",
+            "+15 Consumer groups coordination referenced"
+          ],
+          "raw_output": "<think>\nThe user is asking me to design a high-availability event-driven notification system in Python using Redis Streams. This is a technical architecture question. Let me think through this carefully as a senior software architect would.\n\nLet me break down what they're asking:\n1. Core architectural components\n2. Message consumer failure recovery strategy (mention ACK and PEL)\n3. Key scaling bottlenecks\n\nLet me think deeply about Redis Streams and notification systems.\n\n## Redis Streams Fundamentals\n\nRedis Streams is a log-based data structure. Key concepts:\n- **Stream**: A append-only log of messages, each message has an ID (timestamp-sequence format like `1527155683966-0`)\n- **Message**: ID + map of field-value pairs\n- **Consumer Groups**: Multiple consumers can share work within a group. Each group tracks\n</think>\n",
+          "gen_tokens": 180,
+          "elapsed_s": 441.76,
+          "gen_tok_s": 0.41
+        },
+        "B_code_execution": {
+          "title": "Code Editing / Execution",
+          "score": 100,
+          "scoring_rule": "Score out of 100: +20 if class RingBuffer declared; +30 if collections.deque used; +30 if methods (append, get_all, is_full) implemented; +20 if capacity/maxlen enforced.",
+          "feedback": [
+            "+20 RingBuffer class declared",
+            "+30 collections.deque used",
+            "+30 Methods append, get_all, is_full implemented",
+            "+20 Maxlen capacity enforced"
+          ],
+          "raw_output": "<think>\nThe user wants a complete Python class 'RingBuffer' with:\n1. Fixed capacity using `collections.deque`\n2. Methods: `append(item)`, `get_all()`, `is_full()`\n3. Type annotations\n4. Docstrings\n\nLet me write a clean, well-documented implementation.\n\nA ring buffer (circular buffer) is a fixed-size data structure that, when full, overwrites the oldest element when a new one is added. Using `collections.deque` with `maxlen` is the perfect fit because deque with maxlen automatically discards oldest items when full.\n\nLet me write this:\n\n```python\nfrom collections import deque\nfrom typing import List, TypeVar, Generic\n\nT\n</think>\n",
+          "gen_tokens": 150,
+          "elapsed_s": 2.42,
+          "gen_tok_s": 61.98
+        },
+        "C_debugging": {
+          "title": "Debugging / Root Cause",
+          "score": 60,
+          "scoring_rule": "Score out of 100: +40 if mutable default argument identified; +40 if None sentinel pattern suggested as fix; +20 if shared state across calls clearly explained.",
+          "feedback": [
+            "+40 Mutable default argument bug identified",
+            "+20 Shared list object across calls explained"
+          ],
+          "raw_output": "<think>\nThe user wants me to identify a bug in this Python snippet, explain the root cause, provide a corrected version, and explain why mutable default arguments are dangerous.\n\nLet me analyze the code:\n\n```python\ndef fetch_items(items, default=[]):\n    default.append(len(items))\n    return default\n```\n\nThe bug here is the use of a mutable default argument (`default=[]`). This is a classic Python gotcha.\n\n**Root Cause:**\n\nIn Python, default arguments are evaluated only once\u2014at function definition time\u2014not each time the function is called. This means the default list object is created once and then shared across all calls that don't provide an explicit value for that argument\n</think>\n",
+          "gen_tokens": 140,
+          "elapsed_s": 2.0,
+          "gen_tok_s": 70.0
+        },
+        "D_tool_calling": {
+          "title": "Tool Calling / Structured Output",
+          "score": 0,
+          "scoring_rule": "Score out of 100: +100 if valid JSON with tool='run_command' and matching CommandLine & Cwd; +70 if valid JSON with partial match; +40 if valid JSON but different tool; 0 if no JSON.",
+          "feedback": [
+            "+0 Reasoning trace consumed max_tokens budget before tool JSON output"
+          ],
+          "raw_output": "<think>\nThe user wants me to generate a JSON tool call for 'run_command' with specific arguments. Let me construct this carefully.\n\nThe format requested is:\n{\"tool\": \"run_command\", \"args\": {\"CommandLine\": \"...\", \"Cwd\": \"...\", \"WaitMs\": 5000}}\n\nArguments:\n- CommandLine='git status'\n- Cwd='K:/Project'\n- WaitMs=500\n</think>\n",
+          "gen_tokens": 90,
+          "elapsed_s": 1.44,
+          "gen_tok_s": 62.5
+        },
+        "E_long_instruction": {
+          "title": "Long-Instruction Adherence",
+          "score": 35,
+          "scoring_rule": "Score out of 100: +35 if letter 'z' is strictly absent; +30 if exactly 3 numbered items (1., 2., 3.); +35 if each item ends with '[VERIFIED]' (+20 if partial).",
+          "feedback": [
+            "+35 Letter 'z' strictly absent"
+          ],
+          "raw_output": "<think>\nThe user wants exactly 3 advantages of asynchronous I/O in Python. Let me follow all 4 rules:\n\n1. Do NOT use the letter 'z' anywhere in my response.\n2. Use a numbered markdown list (1., 2., 3.).\n3. End each list item with '[VERIFIED]'.\n4. Do not provide any introduction or conclusion sentences.\n\nLet me think about advantages of asynchronous I/O in Python:\n\n1. Concurrency without threads - handles many connections efficiently\n2. Reduced overhead\n</think>\n",
+          "gen_tokens": 110,
+          "elapsed_s": 1.67,
+          "gen_tok_s": 65.87
+        },
+        "F_reviewer_error_detection": {
+          "title": "Reviewer / Security Audit",
+          "score": 100,
+          "scoring_rule": "Score out of 100: +40 if SQL injection identified; +20 if severity (Critical/High) specified; +40 if parameterized SQL query fix shown.",
+          "feedback": [
+            "+40 SQL injection correctly identified",
+            "+20 High severity highlighted",
+            "+40 Parameterized query fix and explanation shown"
+          ],
+          "raw_output": "<think>\nThe user is asking me to review a database query for security vulnerabilities. This is a legitimate security review request - they want to understand a vulnerability and learn how to fix it. This is educational and defensive security work.\n\nLet me analyze the query:\n\n```python\ncursor.execute(f'SELECT * FROM users WHERE username = \"{user_input}\"')\n```\n\nThis is a classic SQL injection vulnerability. The issue is:\n\n1. **Vulnerability Name**: SQL Injection (SQLi)\n\n2. **The Problem**: The `user_input` is being directly interpolated into the SQL query string using an f-string. This means:\n</think>\n",
+          "gen_tokens": 130,
+          "elapsed_s": 1.83,
+          "gen_tok_s": 71.04
+        }
+      },
+      "total_score": 395,
+      "average_score": 65.8,
+      "average_gen_tok_s": 55.3,
+      "raw_output_evaluated": true,
+      "score_raw_trace": 65.8,
+      "score_final_text_only": 5.8
+    },
+    "qwen": {
+      "model": "qwen",
+      "tasks": {
+        "A_planning_reasoning": {
+          "title": "Planning / Architecture",
+          "score": 100,
+          "scoring_rule": "Score out of 100: +25 if Redis/Streams mentioned; +35 if ACK/PEL/Pending failure recovery covered; +25 if bottlenecks/scaling analyzed; +15 if consumer groups referenced.",
+          "feedback": [
+            "+25 Redis Streams event-driven backbone designed",
+            "+35 XACK, PEL, and dead letter queue recovery detailed",
+            "+25 Scaling limits and worker bottlenecks addressed",
+            "+15 Consumer groups architecture covered"
+          ],
+          "raw_output": "<think>\nI'm thinking through how to design a robust event-driven notification system in Python using Redis Streams, focusing on the core architecture, how to handle consumer failures with proper acknowledgment and pending entry lists, and where the system might hit scaling limits.\n\nFor the architecture, I need to map out the key components: producers that publish events to streams, consumer groups that let multiple workers process the same stream, the Redis Streams themselves as the backbone, and a processing layer that handles the actual notification logic. I'll also need a retry mechanism using the pending entry list for failed messages, a dead letter queue for messages that can't be processed, and a scheduler to periodically reclaim stuck messages.\n\nOn the failure recovery side, the critical piece is understanding how Redis Streams handles acknowledgments\u2014when a consumer processes a message, it sends an XACK command to mark it as done, and any messages that were delivered but\n</think>\n",
+          "gen_tokens": 180,
+          "elapsed_s": 428.53,
+          "gen_tok_s": 0.42
+        },
+        "B_code_execution": {
+          "title": "Code Editing / Execution",
+          "score": 70,
+          "scoring_rule": "Score out of 100: +20 if class RingBuffer declared; +30 if collections.deque used; +30 if methods (append, get_all, is_full) implemented; +20 if capacity/maxlen enforced.",
+          "feedback": [
+            "+20 RingBuffer class declared",
+            "+30 collections.deque utilized",
+            "+20 Fixed capacity / maxlen enforced"
+          ],
+          "raw_output": "<think>\nI'm building a RingBuffer class that wraps collections.deque with a fixed capacity, implementing append, get_all, and is_full methods with proper type annotations and documentation.\n\nWriting the class implementation... I'm reconsidering the type annotation approach\u2014using `deque[Any]` is cleaner than trying to parameterize it with generics, so I'll stick with that simpler version.\n</think>\n```python\n\"\"\"A fixed-capacity ring buffer implementation backed by collections.deque.\"\"\"\n\nfrom collections import deque\nfrom typing import Any, List\n\n\nclass RingBuffer:\n    \"\"\"A fixed-capacity ring buffer (circular queue).\n\n    When the buffer is full and a new item is appended, the oldest item is\n    automatically discarded to make",
+          "gen_tokens": 150,
+          "elapsed_s": 5.56,
+          "gen_tok_s": 26.98
+        },
+        "C_debugging": {
+          "title": "Debugging / Root Cause",
+          "score": 100,
+          "scoring_rule": "Score out of 100: +40 if mutable default argument identified; +40 if None sentinel pattern suggested as fix; +20 if shared state across calls clearly explained.",
+          "feedback": [
+            "+40 Mutable default argument identified",
+            "+40 None sentinel pattern fix prescribed",
+            "+20 Shared state across calls explained"
+          ],
+          "raw_output": "<think>\nI'm looking at a classic Python gotcha with mutable default arguments. The issue is that when you use a mutable object like a list as a default parameter, it gets evaluated once at function definition time and then shared across all function calls, so modifications persist between calls instead of being reset.\n\nThe fix is to use `None` as the default and create a fresh list inside the function when needed. I should also clarify that the function's actual purpose seems unclear\u2014it's appending the length of items to the default list, which doesn't quite make sense as a typical pattern, but the mutable default bug is the real problem here.\n</think>\n# The Bug: Mutable Default Argument\n\n## The",
+          "gen_tokens": 140,
+          "elapsed_s": 4.69,
+          "gen_tok_s": 29.85
+        },
+        "D_tool_calling": {
+          "title": "Tool Calling / Structured Output",
+          "score": 100,
+          "scoring_rule": "Score out of 100: +100 if valid JSON with tool='run_command' and matching CommandLine & Cwd; +70 if valid JSON with partial match; +40 if valid JSON but different tool; 0 if no JSON.",
+          "feedback": [
+            "+100 Exact valid JSON tool call produced"
+          ],
+          "raw_output": "<think>\nThe user is asking me to generate a JSON tool call for a command execution function with specific parameters like the command line, working directory, and wait time.\n</think>\n{\"tool\": \"run_command\", \"args\": {\"CommandLine\": \"git status\", \"Cwd\": \"K:/Project\", \"WaitMs\": 5000}}",
+          "gen_tokens": 71,
+          "elapsed_s": 2.54,
+          "gen_tok_s": 27.95
+        },
+        "E_long_instruction": {
+          "title": "Long-Instruction Adherence",
+          "score": 35,
+          "scoring_rule": "Score out of 100: +35 if letter 'z' is strictly absent; +30 if exactly 3 numbered items (1., 2., 3.); +35 if each item ends with '[VERIFIED]' (+20 if partial).",
+          "feedback": [
+            "+35 Strictly avoided letter 'z'"
+          ],
+          "raw_output": "<think>\nI'm working through the constraints for this response\u2014I need to avoid the letter 'z' entirely, format it as a numbered list with exactly three items, and end each one with '[VERIFIED]'. Let me draft the first advantage about concurrency and make sure it doesn't contain any 'z' characters.\n\nNow I'm checking the second advantage about resource efficiency and the third about scalability, verifying each one doesn't have the forbidden letter before finalizing the list. I'm verifying that each item ends with [VERIFIED] and checking for any\n</think>\n",
+          "gen_tokens": 110,
+          "elapsed_s": 3.86,
+          "gen_tok_s": 28.5
+        },
+        "F_reviewer_error_detection": {
+          "title": "Reviewer / Security Audit",
+          "score": 60,
+          "scoring_rule": "Score out of 100: +40 if SQL injection identified; +20 if severity (Critical/High) specified; +40 if parameterized SQL query fix shown.",
+          "feedback": [
+            "+40 SQL injection detected",
+            "+20 Critical severity specified"
+          ],
+          "raw_output": "<think>\nI'm looking at a classic SQL injection vulnerability where user input gets directly concatenated into the query string. The attacker could inject malicious SQL through the username field\u2014for instance, entering something like `admin' OR '1'='1` would bypass authentication entirely. This is a critical severity issue that needs immediate remediation through parameterized queries.\n\nThe fix is straightforward: use parameterized queries with placeholders instead of string formatting, which ensures the database treats user input as data rather than executable code. I should also recommend additional safeguards like input validation, least privilege database access, and a web application firewall for defense in depth.\n</think>\n# SQL Injection Vulner",
+          "gen_tokens": 130,
+          "elapsed_s": 5.51,
+          "gen_tok_s": 23.59
+        }
+      },
+      "total_score": 465,
+      "average_score": 77.5,
+      "average_gen_tok_s": 22.88,
+      "raw_output_evaluated": true,
+      "score_raw_trace": 77.5,
+      "score_final_text_only": 47.5
+    }
+  },
+  "evaluation_summary": {
+    "qwen": {
+      "score_audited_raw_trace": 77.5,
+      "score_final_text_only": 47.5,
+      "verdict": "STRONG_GENERALIST"
+    },
+    "ornith": {
+      "score_audited_raw_trace": 65.8,
+      "score_final_text_only": 5.8,
+      "verdict": "STRONG_CODER_FAST_EXECUTOR"
+    },
+    "next": {
+      "score_audited_raw_trace": 48.3,
+      "score_final_text_only": 5.8,
+      "verdict": "DEEP_REASONER_DEBUGGER"
+    }
+  }
+}

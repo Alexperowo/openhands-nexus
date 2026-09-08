@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-09-06T10:16:10.443587+00:00",
+  "tests": [
+    {
+      "test_name": "CHECKONLY_TEST",
+      "command": "update-llama-swap.ps1 -CheckOnly",
+      "exit_code": 1,
+      "passed": false,
+      "output_snippet": "[2026-09-06 13:16:10] [STEP] === llama-swap Updater (CheckOnly Mode) ===\n[2026-09-06 13:16:11] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 13:16:11] [INFO] Current Production Binary:  K:\\Project\\llama-swap\\bin\\llama-swap.exe\n[2026-09-06 13:16:11] [INFO] Current Production Version: v252\n[2026-09-06 13:16:11] [INFO] Current Production SHA256:  2C9E252256D5B418EE103295215F3A92583C5A48E739675920E9522A54D4CA4C\n[2026-09-06 13:16:11] [INFO] Querying llama-swap releases fro"
+    },
+    {
+      "test_name": "DRYRUN_TEST",
+      "command": "update-llama-swap.ps1 -DryRun",
+      "exit_code": 1,
+      "passed": false,
+      "output_snippet": "[2026-09-06 13:16:12] [STEP] === llama-swap Updater (DryRun Simulation Mode) ===\n[2026-09-06 13:16:12] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 13:16:12] [INFO] Querying llama-swap releases from GitHub API...\n[2026-09-06 13:16:12] [ERROR] Failed to query GitHub release API: \u0420\u0408\u0420\u0491\u0420\u00b0\u0420\u00bb\u0420\u00b5\u0420\u0405\u0420\u0405\u0421\u2039\u0420\u2116 \u0421\u0403\u0420\u00b5\u0421\u0402\u0420\u0406\u0420\u00b5\u0421\u0402 \u0420\u0406\u0420\u0455\u0420\u00b7\u0420\u0406\u0421\u0402\u0420\u00b0\u0421\u201a\u0420\u0451\u0420\u00bb \u0420\u0455\u0421\u20ac\u0420\u0451\u0420\u00b1\u0420\u0454\u0421\u0453: (403) \u0420\u2014\u0420\u00b0\u0420\u0457\u0421\u0402\u0420\u00b5\u0421\u2030\u0420\u00b5\u0420\u0405\u0420\u0455.\n[2026-09-06 13:16:12] [ERROR] DryRun aborted: Release discovery failed.\n"
+    },
+    {
+      "test_name": "DEFAULT_INVOCATION_TEST",
+      "command": "update-llama-swap.ps1 (no arguments)",
+      "exit_code": 1,
+      "passed": false,
+      "output_snippet": "[2026-09-06 13:16:12] [INFO] No execution mode specified. Defaulting safely to -CheckOnly.\n[2026-09-06 13:16:13] [STEP] === llama-swap Updater (CheckOnly Mode) ===\n[2026-09-06 13:16:13] [SUCCESS] Station status: STOPPED (All production ports free)\n[2026-09-06 13:16:13] [INFO] Current Production Binary:  K:\\Project\\llama-swap\\bin\\llama-swap.exe\n[2026-09-06 13:16:13] [INFO] Current Production Version: v252\n[2026-09-06 13:16:13] [INFO] Current Production SHA256:  2C9E252256D5B418EE103295215F3A92583"
+    }
+  ]
+}

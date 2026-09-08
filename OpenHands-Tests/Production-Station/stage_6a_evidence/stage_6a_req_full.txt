@@ -1,0 +1,347 @@
+<USER_REQUEST>
+OPENHANDS PRODUCTION BASELINE = ACCEPTED.
+
+Начинаем новый блок:
+
+STAGE 6A — PROJECT INVENTORY + CANONICAL STRUCTURE PREPARATION
+
+ЦЕЛЬ:
+привести K:\Project к понятной структуре, но на этом этапе
+НЕ ломать рабочую production-конфигурацию и НЕ выполнять массовые переносы.
+
+ВАЖНОЕ РЕШЕНИЕ ПО МОДЕЛЯМ:
+
+K: должен стать каноническим диском для рабочих моделей.
+
+Не искать модели по всем дискам.
+
+Предположительно только Qwen 3.8 сейчас находится на D:.
+Нужно определить его ФАКТИЧЕСКИЙ путь только через текущие
+production profiles/config/runtime references.
+
+Qwen 3.8 с D: КОПИРОВАТЬ на K:, а не переносить.
+
+Исходник на D:
+НЕ удалять.
+НЕ переименовывать.
+НЕ изменять.
+
+Production configs пока НЕ переключать на новую копию.
+
+==================================================
+1. FREEZE WORKING BASELINE
+==================================================
+
+Не изменять:
+
+- START-OPENHANDS-LOCAL.cmd
+- STOP-OPENHANDS-LOCAL.cmd
+- K:\Project\.openhands-local\start.ps1
+- K:\Project\.openhands-local\stop.ps1
+- production Agent Profiles
+- LLM profiles
+- llama-swap production config
+- backend binaries
+- model launch parameters
+- reasoning/MTP/KV/VRAM settings
+
+Никакого model/backend tuning.
+
+==================================================
+2. SCOPE
+==================================================
+
+Инвентаризировать:
+
+K:\Project\
+
+целиком.
+
+Дополнительно на D: смотреть ТОЛЬКО файлы/каталоги,
+на которые реально ссылаются production configs для Qwen 3.8.
+
+НЕ делать:
+
+Get-ChildItem D:\ -Recurse
+Get-ChildItem K:\ -Recurse
+
+по всему диску.
+
+Не искать "все модели на компьютере".
+
+==================================================
+3. INVENTORY K:\PROJECT
+==================================================
+
+Построить реальную карту верхнего уровня и важных вложенных каталогов.
+
+Для каждого объекта определить категорию:
+
+PRODUCTION
+MODEL
+BACKEND
+CONFIG
+SCRIPT
+TEST
+LOG
+TEMP
+CACHE
+DOCUMENTATION
+ARCHIVE
+OBSOLETE_CANDIDATE
+UNKNOWN
+
+Особенно найти:
+
+- модели;
+- backend binaries;
+- llama.cpp / ik_llama / llama-swap;
+- OpenHands runtime;
+- START/STOP scripts;
+- updater scripts;
+- тестовые каталоги;
+- evidence;
+- старые экспериментальные каталоги;
+- разбросанные *.log;
+- *.tmp / temp;
+- cache;
+- старые копии configs;
+- backup-файлы;
+- потенциальные дубли.
+
+НЕ удалять ничего.
+
+==================================================
+4. DISCOVER ACTUAL MODEL REFERENCES
+==================================================
+
+Из текущих production sources определить реальные пути:
+
+Qwen 3.8
+Ornith
+Qwen3-Next
+
+Для каждой модели записать:
+
+MODEL_NAME =
+CURRENT_PATH =
+DISK =
+FILES =
+TOTAL_SIZE =
+REFERENCED_BY =
+BACKEND =
+LLM_PROFILE_REFERENCES =
+
+Для Qwen 3.8 отдельно определить точный runtime package:
+
+- основной GGUF;
+- все split GGUF shards, если есть;
+- MTP/draft model, если используется;
+- необходимые sidecar-файлы, если реально используются.
+
+Не копировать случайные старые quant'ы из соседних каталогов.
+
+==================================================
+5. CANONICAL TARGET STRUCTURE
+==================================================
+
+Подготовить минимальную каноническую схему под K:\Project.
+
+Ориентир:
+
+K:\Project\Models\
+K:\Project\Backends\
+K:\Project\Config\
+K:\Project\Scripts\
+K:\Project\Runtime\
+K:\Project\Tests\
+K:\Project\Logs\
+K:\Project\Temp\
+K:\Project\Docs\
+K:\Project\Archive\
+
+Но:
+
+не навязывать эту схему вслепую.
+
+Сначала сопоставить её с уже существующей структурой и
+не создавать бессмысленные дубли вроде:
+
+Backends\llama-mainline
+
+если текущий каталог уже является хорошим каноническим местом.
+
+Главный принцип:
+минимум перемещений + понятная структура.
+
+На Stage 6A разрешено создавать только необходимые
+пустые target directories.
+
+НЕ перемещать существующие production directories.
+
+==================================================
+6. COPY QWEN 3.8 FROM D: TO K:
+==================================================
+
+После точного определения runtime package Qwen 3.8:
+
+создать логичный каталог внутри:
+
+K:\Project\Models\
+
+и СКОПИРОВАТЬ туда только актуальный production package Qwen 3.8.
+
+Не MOVE.
+
+Не удалять D: source.
+
+Сохранить исходные имена файлов.
+
+Если GGUF split:
+копировать все необходимые shards.
+
+После копирования проверить каждый файл:
+
+SOURCE_PATH
+DESTINATION_PATH
+SOURCE_SIZE
+DESTINATION_SIZE
+SHA256_SOURCE
+SHA256_DESTINATION
+HASH_MATCH = YES/NO
+
+PASS только при полном совпадении.
+
+Если объём/место на K: недостаточно:
+ничего частично не копировать и сообщить BLOCKER.
+
+==================================================
+7. DUPLICATE ANALYSIS
+==================================================
+
+Найти потенциальные дубли ВНУТРИ K:\Project.
+
+Сначала использовать:
+
+- имя;
+- размер;
+- путь;
+- timestamps.
+
+SHA256 считать только для действительно подозрительных дублей,
+а не хэшировать весь K:\Project без необходимости.
+
+Разделить:
+
+SAFE_DUPLICATE_CANDIDATE
+OLD_TEST_ARTIFACT
+ACTIVE_PRODUCTION
+UNCERTAIN_DO_NOT_TOUCH
+
+Ничего не удалять.
+
+==================================================
+8. LOG / TEMP POLICY DESIGN
+==================================================
+
+Подготовить будущую политику:
+
+Production logs:
+K:\Project\Logs\...
+
+Temporary runtime:
+K:\Project\Temp\...
+
+Tests/evidence:
+K:\Project\Tests\...
+
+Archive:
+K:\Project\Archive\...
+
+Но пока НЕ переписывать production scripts.
+
+Составить карту:
+
+CURRENT_PATH -> PROPOSED_PATH
+
+для разбросанных logs/temp/test artifacts.
+
+==================================================
+9. DO NOT TOUCH
+==================================================
+
+На Stage 6A запрещено:
+
+- удалять файлы;
+- массово перемещать файлы;
+- менять production paths;
+- менять model configs;
+- менять llama-swap config;
+- менять profiles;
+- удалять исходный Qwen на D:;
+- чистить весь K: или D:;
+- reorganize другие диски;
+- делать updater work.
+
+==================================================
+10. EVIDENCE
+==================================================
+
+Создать только:
+
+K:\Project\OpenHands-Tests\Production-Station\stage_6a_evidence\
+
+Сохранить:
+
+project_inventory.json
+model_inventory.json
+qwen38_copy_manifest.json
+duplicate_candidates.json
+proposed_structure.json
+migration_map.json
+stage_6a_summary.json
+
+Не создавать отчёты по случайным каталогам.
+
+==================================================
+11. FINAL REPORT
+==================================================
+
+STAGE_6A = PASS / FAIL
+
+K_PROJECT_INVENTORIED =
+PRODUCTION_BASELINE_UNCHANGED =
+
+QWEN38_SOURCE_PATH =
+QWEN38_DESTINATION_PATH =
+QWEN38_COPY_COMPLETE =
+QWEN38_HASH_VERIFIED =
+QWEN38_SOURCE_PRESERVED =
+
+ORNITH_CURRENT_PATH =
+NEXT_CURRENT_PATH =
+
+CANONICAL_MODEL_ROOT =
+PROPOSED_STRUCTURE =
+
+DUPLICATE_CANDIDATES_COUNT =
+OBSOLETE_CANDIDATES_COUNT =
+LOGS_TO_RELOCATE_COUNT =
+TEMP_ITEMS_TO_RELOCATE_COUNT =
+
+FILES_MOVED = NONE
+FILES_DELETED = NONE
+PRODUCTION_CONFIG_CHANGED = NO
+
+EVIDENCE_PATH =
+UNRESOLVED =
+
+После этого STOP.
+
+Не начинать Stage 6B.
+Не удалять оригинал Qwen с D:.
+Не переключать production на новую копию.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-06T09:19:47+03:00.
+</ADDITIONAL_METADATA>

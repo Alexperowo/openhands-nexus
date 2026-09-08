@@ -1,0 +1,54 @@
+{
+  "stage": "10",
+  "timestamp": "2026-09-06T22:02:00+03:00",
+  "description": "Station network topology before mobile PWA gateway addition",
+  "internal_ports": {
+    "8000": {
+      "service": "OpenHands Agent Canvas Web Ingress",
+      "binding": "0.0.0.0 / ::",
+      "protocol": "HTTP",
+      "purpose": "Desktop browser UI and frontend reverse proxy to agent-server",
+      "lan_usable_directly": false,
+      "lan_limitations": [
+        "HTTP origin over remote LAN IP is treated as Insecure Context by Chromium/Android",
+        "Service Worker registration is blocked on insecure remote origins",
+        "PWA installation (beforeinstallprompt) is disabled on insecure origins",
+        "Microphone access (getUserMedia) is blocked on insecure origins, breaking voice STT",
+        "No mobile-optimized responsive styles for Android viewports (<768px)"
+      ]
+    },
+    "8080": {
+      "service": "llama-swap Model Router",
+      "binding": "127.0.0.1",
+      "protocol": "HTTP",
+      "purpose": "Dynamic model router for Qwen 3.8 and Ornith 1.5 backends",
+      "lan_usable_directly": false,
+      "security_requirement": "Must strictly remain loopback-only to prevent unauthorized LLM access"
+    },
+    "18000": {
+      "service": "OpenHands agent-server",
+      "binding": "127.0.0.1",
+      "protocol": "HTTP",
+      "purpose": "Core agent execution engine, workspace management, event stream",
+      "lan_usable_directly": false,
+      "security_requirement": "Loopback-only, protected by X-Session-API-Key"
+    },
+    "18001": {
+      "service": "OpenHands Automation Backend",
+      "binding": "127.0.0.1",
+      "protocol": "HTTP",
+      "purpose": "Automation actions and tools API",
+      "lan_usable_directly": false,
+      "security_requirement": "Loopback-only"
+    },
+    "18002": {
+      "service": "Local Voice Bridge",
+      "binding": "127.0.0.1",
+      "protocol": "HTTP",
+      "purpose": "Local neural STT (GigaAM v3) and TTS (Supertonic 3) endpoints",
+      "lan_usable_directly": false,
+      "security_requirement": "Loopback-only; mobile voice must route via secure LAN gateway proxy"
+    }
+  },
+  "conclusion": "Plain HTTP on port 8000 does not satisfy Chrome PWA installability or mobile voice requirements. Dedicated secure LAN Gateway on port 8443 is required."
+}

@@ -1,0 +1,86 @@
+{
+  "timestamp": "2026-09-06T10:07:05.991294+00:00",
+  "toolchains": [
+    {
+      "tool": "Git",
+      "used_for": "Source control, inspecting commits, updater rollbacks",
+      "current_version": "2.48.1.windows.1",
+      "path": "D:\\Project\\git\\cmd\\git.EXE",
+      "update_sensitivity": "LOW",
+      "should_project_updater_manage_it": false,
+      "reason": "System-wide toolchain; automatic updates could disrupt environment or PATH"
+    },
+    {
+      "tool": "Node.js",
+      "used_for": "Runtime for @openhands/agent-canvas (port 8000 ingress) and android-mcp",
+      "current_version": "v24.19.0",
+      "path": "C:\\Program Files\\nodejs\\node.EXE",
+      "update_sensitivity": "HIGH",
+      "should_project_updater_manage_it": false,
+      "reason": "Core JavaScript runtime; Node major version upgrades can break native dependencies"
+    },
+    {
+      "tool": "npm",
+      "used_for": "Installing and updating @openhands/agent-canvas globally and managing android-mcp packages",
+      "current_version": "11.17.0",
+      "path": "C:\\Program Files\\nodejs\\npm.CMD",
+      "update_sensitivity": "MEDIUM",
+      "should_project_updater_manage_it": false,
+      "reason": "Bundled with Node.js; project updaters should use npm as a client, not manage its installation"
+    },
+    {
+      "tool": "Python",
+      "used_for": "Core system Python, script execution, diagnostics, test runners",
+      "current_version": "3.12.10",
+      "path": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\python.EXE",
+      "update_sensitivity": "HIGH",
+      "should_project_updater_manage_it": false,
+      "reason": "Language runtime; minor/major version bumps can break C-extensions and venvs"
+    },
+    {
+      "tool": "Astral uv / uvx",
+      "used_for": "Launching openhands-agent-server and openhands-automation on-demand from PyPI",
+      "current_version": "0.12.5 (210d1f678 2026-08-14)",
+      "path": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\uv.EXE",
+      "update_sensitivity": "MEDIUM",
+      "should_project_updater_manage_it": false,
+      "reason": "Crucial package execution engine; stable pinned CLI interface is preferred"
+    },
+    {
+      "tool": "CUDA Toolkit / Driver",
+      "used_for": "GPU acceleration for llama-server, ik_llama, and PyTorch/transcribe engines",
+      "current_version": "v13.3 (Driver supports CUDA 12.4 and 12.6 binaries)",
+      "path": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.3\\bin\\nvcc.EXE",
+      "update_sensitivity": "CRITICAL",
+      "should_project_updater_manage_it": false,
+      "reason": "Hardware driver coupling; must only be managed via official NVIDIA installers by host admin"
+    },
+    {
+      "tool": "CMake & Ninja",
+      "used_for": "Compiling transcribe.dll or local C++ extensions",
+      "current_version": "cmake 4.4.2 / ninja 1.13.0",
+      "path": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python312\\Scripts\\cmake.EXE",
+      "update_sensitivity": "LOW",
+      "should_project_updater_manage_it": false,
+      "reason": "Build toolchains for development only; not executed in production runtime"
+    },
+    {
+      "tool": "Android Platform Tools (adb)",
+      "used_for": "Android device bridge used by android-mcp for mobile automation and screenshots",
+      "current_version": "1.0.41",
+      "path": "C:\\Users\\User\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe\\platform-tools\\adb.EXE",
+      "update_sensitivity": "MEDIUM",
+      "should_project_updater_manage_it": false,
+      "reason": "WinGet package; stable protocol to connected Android devices"
+    },
+    {
+      "tool": "Windows PowerShell",
+      "used_for": "Launcher scripts, updater scripts, service management",
+      "current_version": "5.1.26100.9168",
+      "path": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.EXE",
+      "update_sensitivity": "HIGH",
+      "should_project_updater_manage_it": false,
+      "reason": "Built-in Windows OS subsystem; project must maintain compatibility with Windows PowerShell 5.1"
+    }
+  ]
+}

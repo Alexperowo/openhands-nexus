@@ -1,0 +1,126 @@
+[
+  {
+    "path": "K:\\OpenCode",
+    "reason": "RUNTIME - OpenCode Electron App (Project Tree)"
+  },
+  {
+    "path": "K:\\poolside-llama",
+    "reason": "RUNTIME - poolside-llama backend / runtime (Project Tree)"
+  },
+  {
+    "path": "K:\\llama.cpp",
+    "reason": "UNKNOWN - UNKNOWN (Project Tree)"
+  },
+  {
+    "path": "K:\\scripts",
+    "reason": "UNKNOWN - UNKNOWN (Project Tree)"
+  },
+  {
+    "path": "K:\\models",
+    "reason": "RUNTIME - AI Models Store (Project Tree)"
+  },
+  {
+    "path": "K:\\Project",
+    "reason": "ACTIVE_PROJECT - OpenHands Local Production Root (Git Repo)"
+  },
+  {
+    "path": "K:\\Project\\android-mcp",
+    "reason": "ACTIVE_PROJECT - Android Project / MCP (Project Tree)"
+  },
+  {
+    "path": "K:\\Project\\ksenia-android",
+    "reason": "ACTIVE_PROJECT - Android Project / MCP (Git Repo)"
+  },
+  {
+    "path": "K:\\Project\\ik_llama",
+    "reason": "ACTIVE_PROJECT - ik_llama backend (Project Tree)"
+  },
+  {
+    "path": "K:\\Project\\llama-mainline",
+    "reason": "ACTIVE_PROJECT - OpenHands Local Production Subsystem (Project Tree)"
+  },
+  {
+    "path": "K:\\Project\\llama-swap",
+    "reason": "ACTIVE_PROJECT - OpenHands Local Production Subsystem (Project Tree)"
+  },
+  {
+    "path": "K:\\Project\\local-voice",
+    "reason": "ACTIVE_PROJECT - OpenHands Local Production Subsystem (Project Tree)"
+  },
+  {
+    "path": "K:\\Project\\openhands-localization",
+    "reason": "UNKNOWN - UNKNOWN (Project Tree)"
+  },
+  {
+    "path": "K:\\Project\\OpenHands-Tests",
+    "reason": "UNKNOWN - UNKNOWN (Project Tree)"
+  },
+  {
+    "path": "K:\\Project\\OpenHands-Update",
+    "reason": "UNKNOWN - UNKNOWN (Project Tree)"
+  },
+  {
+    "path": "D:\\AI",
+    "reason": "UNKNOWN - UNKNOWN (Project Tree)"
+  },
+  {
+    "path": "D:\\AI\\Butler",
+    "reason": "RUNTIME - Python Butler venv / tools (Project Tree)"
+  },
+  {
+    "path": "D:\\AI\\Models",
+    "reason": "RUNTIME - AI Models Store (Project Tree)"
+  },
+  {
+    "path": "D:\\Project",
+    "reason": "ACTIVE_PROJECT - D: Multi-Project Workspace Root (Project Tree)"
+  },
+  {
+    "path": "D:\\Project\\agent-zero",
+    "reason": "ACTIVE_PROJECT - AgentZero Multi-Agent Framework (Git Repo)"
+  },
+  {
+    "path": "D:\\Project\\assistant-ksenia",
+    "reason": "ACTIVE_PROJECT - Voice Assistant Ksenia (Git Repo)"
+  },
+  {
+    "path": "D:\\Project\\AgentZero-Control",
+    "reason": "ACTIVE_PROJECT - AgentZero Multi-Agent Framework (Project Tree)"
+  },
+  {
+    "path": "D:\\Project\\build-tools",
+    "reason": "UNKNOWN - UNKNOWN (Project Tree)"
+  },
+  {
+    "path": "D:\\Project\\futo-keyboard-gigaam",
+    "reason": "ACTIVE_PROJECT - FUTO Keyboard / STT models (Git Repo)"
+  },
+  {
+    "path": "D:\\Project\\GPU_155W_Portable",
+    "reason": "ACTIVE_PROJECT - GPU Tuning / Benchmark utility (Project Tree)"
+  },
+  {
+    "path": "D:\\Project\\Portable_GPU_Tuner",
+    "reason": "ACTIVE_PROJECT - GPU Tuning / Benchmark utility (Project Tree)"
+  },
+  {
+    "path": "D:\\Project\\ik_llama-current",
+    "reason": "ARCHIVE - ik_llama backend (Project Tree)"
+  },
+  {
+    "path": "D:\\Project\\ik_llama-dflash",
+    "reason": "ARCHIVE - ik_llama backend (Project Tree)"
+  },
+  {
+    "path": "D:\\Project\\poolside-llama-laguna-current",
+    "reason": "RUNTIME - poolside-llama backend / runtime (Project Tree)"
+  },
+  {
+    "path": "D:\\Project\\poolside-llama-laguna-current-src",
+    "reason": "BUILD_DEPENDENCY - poolside-llama backend / runtime (Git Repo)"
+  },
+  {
+    "path": "D:\\Project\\models",
+    "reason": "RUNTIME - AI Models Store (Project Tree)"
+  }
+]

@@ -1,0 +1,28 @@
+[
+  {
+    "ACTION": "MOVE_TO_ARCHIVE",
+    "SOURCE": "K:\\Project\\llama.cpp",
+    "DESTINATION": "K:\\Project\\Archive\\deprecated-builds\\llama.cpp",
+    "TYPE": "DIRECTORY",
+    "SIZE_BYTES": 1166133533,
+    "FILE_COUNT": 55,
+    "REASON": "Approved Stage 6 archive candidate: historical old llama-mainline build/source",
+    "REFERENCE_CHECK": "PASS - Verified unreferenced by production Station lifecycle",
+    "PROJECT_BOUNDARY_CHECK": "PASS - Source inside K:\\Project production root; Destination inside K:\\Project\\Archive",
+    "RESULT": "SUCCESS",
+    "TIMESTAMP": "2026-09-06T13:06:19.347123+00:00"
+  },
+  {
+    "ACTION": "MOVE_TO_ARCHIVE",
+    "SOURCE": "K:\\Project\\transcribe-build",
+    "DESTINATION": "K:\\Project\\Archive\\deprecated-builds\\transcribe-build",
+    "TYPE": "DIRECTORY",
+    "SIZE_BYTES": 86172237,
+    "FILE_COUNT": 518,
+    "REASON": "Approved Stage 6 archive candidate: historical build artifact; transcribe-build-shared preserved",
+    "REFERENCE_CHECK": "PASS - Verified unreferenced; transcribe-build-shared remains untouched",
+    "PROJECT_BOUNDARY_CHECK": "PASS - Source inside K:\\Project production root; Destination inside K:\\Project\\Archive",
+    "RESULT": "SUCCESS",
+    "TIMESTAMP": "2026-09-06T13:06:19.370512+00:00"
+  }
+]

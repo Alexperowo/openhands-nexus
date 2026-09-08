@@ -1,0 +1,96 @@
+{
+  "timestamp": "2026-09-06T10:07:05.991294+00:00",
+  "couplings": [
+    {
+      "coupling_id": "CANVAS_LOCALIZATION",
+      "components": [
+        "@openhands/agent-canvas",
+        "openhands-localization"
+      ],
+      "nature_of_coupling": "STATIC_BINARY_ASSET_PATCHING",
+      "risk_description": "Agent Canvas ships bundled JS assets with Vite-generated content hashes (e.g. active-backend-context-*.js, settings-*.js). Updating agent-canvas overwrites build/ and invalidates previous string anchors (value:`uk`}, language:`en`). Localization patcher must be validated against every new canvas version.",
+      "failure_mode": "UI falls back to English or fails to render language switcher",
+      "mitigation": "Strict parity audit script (audit-localization.py) + automatic rollback if missing keys > 0 or patch fails"
+    },
+    {
+      "coupling_id": "CANVAS_VOICE_UI",
+      "components": [
+        "@openhands/agent-canvas",
+        "local-voice"
+      ],
+      "nature_of_coupling": "HTML_INJECTION",
+      "risk_description": "Updating agent-canvas overwrites build/index.html, erasing the injected <link> and <script> tags for voice-bridge.css and voice-bridge.js.",
+      "failure_mode": "Voice recording button disappears from Agent Canvas UI",
+      "mitigation": "Idempotent voice patch script run immediately after canvas update"
+    },
+    {
+      "coupling_id": "CANVAS_SERVER_VERSIONS",
+      "components": [
+        "@openhands/agent-canvas",
+        "openhands-agent-server",
+        "openhands-automation"
+      ],
+      "nature_of_coupling": "CONFIGURATION_PIN_PROPAGATION",
+      "risk_description": "agent-canvas config/defaults.json defines exact versions for agentServer (1.44.0) and automation (1.9.0) launched via uvx. Updating agent-canvas can automatically pull newer PyPI versions of agent-server and automation without separate notice.",
+      "failure_mode": "Newer backend might have broken tools or breaking schema changes with agent_settings",
+      "mitigation": "Inspect defaults.json during agent-canvas check/staging"
+    },
+    {
+      "coupling_id": "IK_LLAMA_QWEN_VISION_MTP",
+      "components": [
+        "ik_llama",
+        "Qwen 3.8",
+        "Qwen 3.8 MMPROJ"
+      ],
+      "nature_of_coupling": "CLI_FLAGS_AND_TENSOR_ARCHITECTURE",
+      "risk_description": "Qwen 3.8 relies on ik_llama's custom speculative decoding (--spec-type mtp:n_max=3,p_min=0.0) and multimodal projector (--mmproj). If ik_llama modifies CLI syntax or breaks multimodal projector loading, Qwen multimodal inference fails.",
+      "failure_mode": "Inference crash, silent degradation to non-speculative, or vision load failure",
+      "mitigation": "Stage 7B hardened staging gate (QWEN_MAIN_LOAD, QWEN_MMPROJ_LOAD, QWEN_MTP_AVAILABLE, SHORT_TEXT_COMPLETION)"
+    },
+    {
+      "coupling_id": "IK_LLAMA_ORNITH_MTP",
+      "components": [
+        "ik_llama",
+        "Ornith 1.5-35B"
+      ],
+      "nature_of_coupling": "CLI_FLAGS_AND_TENSOR_ARCHITECTURE",
+      "risk_description": "Ornith relies on custom MTP speculative decoding (--spec-type mtp:n_max=1,p_min=0.75).",
+      "failure_mode": "Ornith fails to boot under llama-swap",
+      "mitigation": "Stage 7B Ornith compatibility gate in update-ik-llama.ps1"
+    },
+    {
+      "coupling_id": "MAINLINE_NEXT_EXTERNAL_MTP",
+      "components": [
+        "llama-mainline",
+        "Qwen3-Next"
+      ],
+      "nature_of_coupling": "SPECULATIVE_DRAFT_FLAG_SYNTAX",
+      "risk_description": "Qwen3-Next relies on official llama.cpp draft-mtp flags (-md <mtp-model> --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek). If mainline llama.cpp renames draft-mtp arguments, Next will fail to start.",
+      "failure_mode": "llama-swap fails to launch Next, returning HTTP 502/500",
+      "mitigation": "Command flag validation before promoting candidate build"
+    },
+    {
+      "coupling_id": "LLAMA_SWAP_CONFIG_SCHEMA",
+      "components": [
+        "llama-swap",
+        "config.yaml"
+      ],
+      "nature_of_coupling": "YAML_SCHEMA_COMPATIBILITY",
+      "risk_description": "llama-swap parses K:\\Project\\llama-swap\\config.yaml. If upstream v255 changes YAML structure, healthCheckTimeout format, or env var interpolation syntax (${PORT}), router fails to boot.",
+      "failure_mode": "All model routing collapses; OpenHands cannot reach any LLM",
+      "mitigation": "Staging config dry-run with candidate binary before swapping production exe"
+    },
+    {
+      "coupling_id": "VOICE_TRANSCRIBE_DLL_ABI",
+      "components": [
+        "local-voice",
+        "transcribe.dll",
+        "gigaam-v3-e2e-rnnt-Q8_0.gguf"
+      ],
+      "nature_of_coupling": "CTYPES_ABI_AND_GGUF_RNNT_TENSORS",
+      "risk_description": "transcribe_cpp Python module binds via ctypes to transcribe.dll, which expects specific RNN-T GGML tensor structures. Updating transcribe.cpp without updating the model or vice-versa causes segfaults.",
+      "failure_mode": "Process crash on audio transcription",
+      "mitigation": "Keep transcribe.dll pinned unless model is updated in lockstep"
+    }
+  ]
+}

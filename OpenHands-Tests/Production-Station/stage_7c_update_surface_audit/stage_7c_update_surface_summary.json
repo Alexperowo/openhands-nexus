@@ -1,0 +1,75 @@
+{
+  "stage": "STAGE_7C_COMPLETE_UPDATE_SURFACE_AUDIT",
+  "status": "PASS",
+  "timestamp": "2026-09-06T10:07:05.991294+00:00",
+  "metrics": {
+    "total_production_components": 10,
+    "externally_maintained_components": 8,
+    "frequent_update_components": 5,
+    "periodic_update_components": 1,
+    "rare_or_pinned_components": 4,
+    "production_critical_components": 7,
+    "existing_safe_updaters": 2,
+    "updaters_needing_fix": 2,
+    "missing_updaters": 1
+  },
+  "frequent_components": [
+    "@openhands/agent-canvas",
+    "openhands-agent-server",
+    "openhands-automation",
+    "llama-mainline",
+    "llama-swap"
+  ],
+  "periodic_components": [
+    "ik_llama"
+  ],
+  "rare_or_pinned_components": [
+    "android-mcp",
+    "supertonic",
+    "transcribe_cpp",
+    "openhands-localization"
+  ],
+  "production_critical_components": [
+    "@openhands/agent-canvas",
+    "openhands-agent-server",
+    "openhands-automation",
+    "llama-swap",
+    "ik_llama",
+    "llama-mainline",
+    "openhands-localization"
+  ],
+  "existing_safe_updaters": [
+    "K:\\Project\\OpenHands-Update\\scripts\\update-llama-mainline.ps1 (READY)",
+    "K:\\Project\\OpenHands-Update\\scripts\\update-ik-llama.ps1 (READY)"
+  ],
+  "updaters_needing_fix": [
+    "K:\\Project\\OpenHands-Update\\scripts\\update-openhands.ps1 (Lacks -CheckOnly, -DryRun, auto-restarts platform)",
+    "Backend PyPI package version visibility in defaults.json"
+  ],
+  "missing_updaters": [
+    "llama-swap updater (update-llama-swap.ps1 does not exist)"
+  ],
+  "update_gaps": [
+    "GAP-01: llama-swap has frequent releases (v252 -> v255) but 0 automated updater",
+    "GAP-02: update-openhands.ps1 lacks standard Stage 7B hardening (-CheckOnly, -DryRun, decoupled restart)",
+    "GAP-03: backend PyPI versions (agentServer 1.44.0, automation 1.9.0) lack pre-update check visibility"
+  ],
+  "automation_policy": {
+    "auto_check": "PERMITTED (Daily/Weekly read-only queries)",
+    "auto_stage": "PERMITTED (Download to isolated staging directory without modifying production)",
+    "auto_promote": "FORBIDDEN (All production promotions require human confirmation and validation passing)"
+  },
+  "legacy_components_excluded": [
+    "K:\\Project\\llama.cpp (HISTORICAL - legacy build 10752)",
+    "K:\\Project\\transcribe-build (BUILD_ARTIFACT - CMake intermediate build dir)",
+    "K:\\Project\\ksenia-android (SEPARATE_PROJECT - mobile personal AI assistant)",
+    "K:\\Project\\AgentCanvas-Test (TEST_ARTIFACT - smoke test scratchpad)",
+    "K:\\Project\\LLM-tests (TEST_ARTIFACT - benchmark and test scripts)"
+  ],
+  "invariance": {
+    "production_binary_changed": "NO",
+    "production_config_changed": "NO",
+    "packages_installed": "NO",
+    "releases_downloaded": "NO"
+  }
+}

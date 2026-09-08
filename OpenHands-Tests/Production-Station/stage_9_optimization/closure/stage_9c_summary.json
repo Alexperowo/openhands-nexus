@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-09-06T16:46:08.515638+00:00",
+  "stage_9c_verdict": "PASS",
+  "clean_stop": true,
+  "open_ports_remaining": [],
+  "orphan_count": 0,
+  "orphan_pids": [],
+  "final_vram_mib": 498,
+  "final_vram_free_mib": 21733,
+  "qwen_status": "TIGHT_BUT_RUNTIME_VERIFIED",
+  "next_status": "PASS",
+  "ornith_status": "PASS",
+  "capability_audit_complete": true,
+  "team_full_policy": "KEEP",
+  "team_full_smoke": "PASS"
+}

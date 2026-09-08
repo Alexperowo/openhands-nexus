@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
+  "name": "Team-Full",
+  "revision": 0,
+  "mcp_server_refs": null,
+  "agent_kind": "openhands",
+  "llm_profile_ref": "Qwen38_Opus_96K",
+  "agent": "CodeActAgent",
+  "tools": null,
+  "system_message_suffix": "================================================================================\nFULL TEAM MODE: Qwen (Lead/Reviewer/Router) + Ornith (Executor/Fixer) + Next (Heavy Debugger)\n================================================================================\nROLES & ROUTING POLICY:\n\n1. ARCHITECT / PLANNER / ROUTER / REVIEWER (Profile: Qwen38_Opus_96K):\n   - Phase 1 (Planning): Formulate the task strategy and testing plan. Do NOT edit code or workspace files. Hand off to Ornith: invoke switch_llm(profile_name='Ornith-Coding', reason='Handing off task and test instructions to Ornith.').\n   - Reviewer / Router Role: Inspect acceptance command execution outputs (exit code and logs) and files.\n     * STRICT CODE INTEGRITY: You are STRICTLY FORBIDDEN from editing or creating code/workspace files yourself during review!\n     * IF ACCEPTANCE PASSES (exit code 0): Call the finish tool with the final summary.\n     * IF FIRST OBJECTIVE FAILURE (failure_count = 1, exit code != 0): Formulate a clear defect report. Delegate correction to Ornith: invoke switch_llm(profile_name='Ornith-Coding', reason='First acceptance failure detected; delegating correction to Ornith.').\n     * IF SECOND OBJECTIVE FAILURE (failure_count = 2, two failures with exit code != 0): Escalate to Next-Normal for heavy root-cause diagnosis: invoke switch_llm(profile_name='Next-Normal', reason='Second objective acceptance failure encountered; escalating to Next-Normal for heavy diagnosis.').\n\n2. EXECUTOR & FIXER (Profile: Ornith-Coding):\n   - Implement the required corrections/markers in the workspace using terminal or file_editor.\n   - Run the acceptance command via the terminal tool to verify the current state.\n   - MANDATORY HANDOFF: Once the acceptance command has run, do NOT call the finish tool! Return the full test evidence and exit code to Qwen: invoke switch_llm(profile_name='Qwen38_Opus_96K', reason='Acceptance command executed; returning evidence to Qwen for review and routing.').\n\n3. HEAVY REVIEWER & DEBUGGER (Profile: Next-Normal):\n   - Analyze the accumulated conversation evidence: the initial goal, Failure A, correction A, Failure B, and exit codes.\n   - Perform deep root-cause diagnosis and establish the concrete correction plan for Failure B.\n   - DO NOT edit code or workspace files directly.\n   - Delegate the implementation to Ornith: invoke switch_llm(profile_name='Ornith-Coding', reason='Heavy diagnosis complete; delegating correction implementation to Ornith.').\n================================================================================",
+  "disabled_skills": [],
+  "condenser": {
+    "enabled": true,
+    "max_size": 240,
+    "condenser_kind": "llm_summarizing",
+    "max_tokens": null,
+    "keep_first": 2,
+    "minimum_progress": 0.1,
+    "hard_context_reset_max_retries": 5,
+    "hard_context_reset_context_scaling": 0.8
+  },
+  "verification": {
+    "critic_enabled": false,
+    "critic_mode": "finish_and_message",
+    "enable_iterative_refinement": false,
+    "critic_threshold": 0.6,
+    "max_refinement_iterations": 3,
+    "critic_server_url": null,
+    "critic_model_name": null
+  },
+  "enable_sub_agents": false,
+  "enable_switch_llm_tool": true,
+  "tool_concurrency_limit": 1
+}

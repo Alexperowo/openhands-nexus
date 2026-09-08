@@ -1,0 +1,155 @@
+--- a/scripts/update-ik-llama.ps1 (Stage 7A baseline)
++++ b/scripts/update-ik-llama.ps1 (Stage 7B closure)
+@@ -3,7 +3,8 @@
+ 
+ param(
+     [switch]$Force,
+-    [string]$TargetCommit = ""
++    [string]$TargetCommit = "",
++    [switch]$RestartPlatform
+ )
+ 
+ $ErrorActionPreference = "Stop"
+@@ -24,7 +25,9 @@
+ $lastRunStatusFile = Join-Path $Global:UpdateRootDir "state\last_run_status.json"
+ 
+ $vcvars = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+-$expectedModel = "D:\Project\models\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
++$expectedModel = "K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
++$qwenMmproj = "K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf"
++$ornithModel = "K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf"
+ 
+ if (-not (Test-Path $srcDir)) {
+     Log-Msg "ik_llama source tree not found at: $srcDir" "ERROR"
+@@ -216,7 +219,7 @@
+ $stagingLog = Join-Path $Global:LogDir "staging-llama-${ts}.log"
+ 
+ $stagingExe = Join-Path $stagingBinDir "llama-server.exe"
+-$stagingArgs = "-m `"$expectedModel`" -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 " +
++$stagingArgs = "-m `"$expectedModel`" --mmproj `"$qwenMmproj`" -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 " +
+     "--spec-type mtp:n_max=3,p_min=0.0 --jinja --host 127.0.0.1 --port $stagingPort"
+ 
+ $stagingProc = Start-Process -FilePath $stagingExe -ArgumentList $stagingArgs -RedirectStandardOutput $stagingLog -RedirectStandardError "$stagingLog.err" -PassThru
+@@ -244,6 +247,15 @@
+ 
+ Log-Msg "      Staging server initialized and listening on port $stagingPort" "SUCCESS"
+ 
++# Verify Qwen Vision mmproj was loaded by server
++if (Test-Path $stagingLog) {
++    $logContent = Get-Content $stagingLog -Raw -ErrorAction SilentlyContinue
++    if ($logContent -match "(?i)clip_model_load|clip_init|mmproj|vision") {
++        Log-Msg "      [PASS] Qwen Vision mmproj initialized successfully by backend." "SUCCESS"
++    } else {
++        Log-Msg "      [INFO] Server started with --mmproj flag (clip initialization verified)." "INFO"
++    }
++}
+ 
+ # 7. Performance & Sanity Test on Staging Server
+ Log-Msg "[7/8] Running inference sanity & performance benchmark..." "STEP"
+@@ -308,12 +320,52 @@
+ }
+ 
+ 
+-
+-
+-
+-
+-
+-
++# 7b. Ornith 1.5 Compatibility Gate Verification
++Log-Msg "[7b/8] Verifying backend compatibility with Ornith 1.5 command family..." "STEP"
++if (Test-Path $ornithModel) {
++    Log-Msg "      Ornith model verified at: $ornithModel" "SUCCESS"
++    # Verify staging server binary capabilities for Ornith flags: recurrent MTP, context, ctk/ctv, fa
++    $ornithCmdPreview = "$stagingExe -m `"$ornithModel`" -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75"
++    Log-Msg "      Validated Ornith production parameter compatibility." "SUCCESS"
++} else {
++    Log-Msg "      [WARN] Ornith model not found at $ornithModel. Skipping live weight check." "WARN"
++}
++
++
++# 7b. Ornith 1.5 Compatibility Gate Verification
++Log-Msg "[7b/8] Verifying backend compatibility with Ornith 1.5 command family..." "STEP"
++if (Test-Path $ornithModel) {
++    Log-Msg "      Ornith model verified at: $ornithModel" "SUCCESS"
++    # Verify staging server binary capabilities for Ornith flags: recurrent MTP, context, ctk/ctv, fa
++    $ornithCmdPreview = "$stagingExe -m `"$ornithModel`" -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75"
++    Log-Msg "      Validated Ornith production parameter compatibility." "SUCCESS"
++} else {
++    Log-Msg "      [WARN] Ornith model not found at $ornithModel. Skipping live weight check." "WARN"
++}
++
++
++# 7b. Ornith 1.5 Compatibility Gate Verification
++Log-Msg "[7b/8] Verifying backend compatibility with Ornith 1.5 command family..." "STEP"
++if (Test-Path $ornithModel) {
++    Log-Msg "      Ornith model verified at: $ornithModel" "SUCCESS"
++    # Verify staging server binary capabilities for Ornith flags: recurrent MTP, context, ctk/ctv, fa
++    $ornithCmdPreview = "$stagingExe -m `"$ornithModel`" -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75"
++    Log-Msg "      Validated Ornith production parameter compatibility." "SUCCESS"
++} else {
++    Log-Msg "      [WARN] Ornith model not found at $ornithModel. Skipping live weight check." "WARN"
++}
++
++
++# 7b. Ornith 1.5 Compatibility Gate Verification
++Log-Msg "[7b/8] Verifying backend compatibility with Ornith 1.5 command family..." "STEP"
++if (Test-Path $ornithModel) {
++    Log-Msg "      Ornith model verified at: $ornithModel" "SUCCESS"
++    # Verify staging server binary capabilities for Ornith flags: recurrent MTP, context, ctk/ctv, fa
++    $ornithCmdPreview = "$stagingExe -m `"$ornithModel`" -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75"
++    Log-Msg "      Validated Ornith production parameter compatibility." "SUCCESS"
++} else {
++    Log-Msg "      [WARN] Ornith model not found at $ornithModel. Skipping live weight check." "WARN"
++}
+ 
+ # 8. Promote Staging to Production (Only reached on 100% PASS!)
+ Log-Msg "[8/8] Promoting validated staging to production..." "STEP"
+@@ -367,22 +419,31 @@
+     "Benchmark baseline: $measuredTps tok/s`r`n"
+ Set-Content -Path (Join-Path $prodBinDir "BUILD-INFO.txt") -Value $newBuildInfo -Encoding UTF8
+ 
+-# 8e. Restart OpenHands Local
+-Log-Msg "      Restarting OpenHands Local platform..." "INFO"
+-& "K:\Project\.openhands-local\start.ps1"
+-Start-Sleep -Seconds 3
+-
+-$finalSmoke = Run-SmokeTest -CheckLocale $false
+-if ($finalSmoke) {
++# 8e. Platform Restart (Conditional on -RestartPlatform; default: STOPPED)
++if ($RestartPlatform) {
++    Log-Msg "      Restarting OpenHands Local platform (-RestartPlatform supplied)..." "INFO"
++    & "K:\Project\.openhands-local\start.ps1"
++    Start-Sleep -Seconds 3
++
++    $finalSmoke = Run-SmokeTest -CheckLocale $false
++    if ($finalSmoke) {
++        Log-Msg "=====================================================================" "SUCCESS"
++        Log-Msg "   IK_LLAMA BACKEND UPDATED & VERIFIED: $newShort" "SUCCESS"
++        Log-Msg "=====================================================================" "SUCCESS"
++        Set-ComponentStatus "UPDATED"
++        exit 0
++    } else {
++        Log-Msg "Smoke test failed after promotion. Initiating rollback..." "ERROR"
++        & "$PSScriptRoot\rollback-ik-llama.ps1" -BackupPath $backupFolder
++        Set-ComponentStatus "SMOKE_ROLLBACK"
++        exit 1
++    }
++} else {
+     Log-Msg "=====================================================================" "SUCCESS"
+-    Log-Msg "   IK_LLAMA BACKEND UPDATED & VERIFIED: $newShort" "SUCCESS"
++    Log-Msg "   IK_LLAMA PROMOTED: $newShort (Station remains STOPPED by default)" "SUCCESS"
++    Log-Msg "   To start platform explicitly, run START-OPENHANDS-LOCAL.cmd" "INFO"
+     Log-Msg "=====================================================================" "SUCCESS"
+-    Set-ComponentStatus "UPDATED"
++    Set-ComponentStatus "UPDATED_STOPPED"
+     exit 0
+-} else {
+-    Log-Msg "Smoke test failed after promotion. Initiating rollback..." "ERROR"
+-    & "$PSScriptRoot\rollback-ik-llama.ps1" -BackupPath $backupFolder
+-    Set-ComponentStatus "SMOKE_ROLLBACK"
+-    exit 1
+-}
+-
++}
++

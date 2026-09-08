@@ -1,0 +1,159 @@
+{
+  "K": [
+    {
+      "name": "$RECYCLE.BIN",
+      "path": "K:\\$RECYCLE.BIN",
+      "is_directory": true,
+      "size_bytes": 129,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    },
+    {
+      "name": "OpenCode",
+      "path": "K:\\OpenCode",
+      "is_directory": true,
+      "size_bytes": 517326090,
+      "size_mb": 493.36,
+      "size_gb": 0.482,
+      "file_count": 125
+    },
+    {
+      "name": "OpenCode_Setup.exe",
+      "path": "K:\\OpenCode_Setup.exe",
+      "is_directory": false,
+      "size_bytes": 126211368,
+      "size_mb": 120.36,
+      "size_gb": 0.118,
+      "file_count": 1
+    },
+    {
+      "name": "Project",
+      "path": "K:\\Project",
+      "is_directory": true,
+      "size_bytes": 132928881295,
+      "size_mb": 126770.86,
+      "size_gb": 123.8,
+      "file_count": 155779
+    },
+    {
+      "name": "System Volume Information",
+      "path": "K:\\System Volume Information",
+      "is_directory": true,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 0
+    },
+    {
+      "name": "llama.cpp",
+      "path": "K:\\llama.cpp",
+      "is_directory": true,
+      "size_bytes": 1571478792,
+      "size_mb": 1498.68,
+      "size_gb": 1.464,
+      "file_count": 54
+    },
+    {
+      "name": "models",
+      "path": "K:\\models",
+      "is_directory": true,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 0
+    },
+    {
+      "name": "poolside-llama",
+      "path": "K:\\poolside-llama",
+      "is_directory": true,
+      "size_bytes": 1160030349,
+      "size_mb": 1106.29,
+      "size_gb": 1.08,
+      "file_count": 57
+    },
+    {
+      "name": "scripts",
+      "path": "K:\\scripts",
+      "is_directory": true,
+      "size_bytes": 12800,
+      "size_mb": 0.01,
+      "size_gb": 0.0,
+      "file_count": 5
+    },
+    {
+      "name": "start_server_laguna_dflash.bat",
+      "path": "K:\\start_server_laguna_dflash.bat",
+      "is_directory": false,
+      "size_bytes": 3385,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    },
+    {
+      "name": "start_server_poolside_laguna_dflash.bat",
+      "path": "K:\\start_server_poolside_laguna_dflash.bat",
+      "is_directory": false,
+      "size_bytes": 3440,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    }
+  ],
+  "D": [
+    {
+      "name": "$RECYCLE.BIN",
+      "path": "D:\\$RECYCLE.BIN",
+      "is_directory": true,
+      "size_bytes": 258,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 2
+    },
+    {
+      "name": "AI",
+      "path": "D:\\AI",
+      "is_directory": true,
+      "size_bytes": 167385445338,
+      "size_mb": 159631.2,
+      "size_gb": 155.89,
+      "file_count": 30196
+    },
+    {
+      "name": "Project",
+      "path": "D:\\Project",
+      "is_directory": true,
+      "size_bytes": 84788159062,
+      "size_mb": 80860.29,
+      "size_gb": 78.965,
+      "file_count": 97888
+    },
+    {
+      "name": "System Volume Information",
+      "path": "D:\\System Volume Information",
+      "is_directory": true,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 0
+    },
+    {
+      "name": "body.bin",
+      "path": "D:\\body.bin",
+      "is_directory": false,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    },
+    {
+      "name": "header.bin",
+      "path": "D:\\header.bin",
+      "is_directory": false,
+      "size_bytes": 0,
+      "size_mb": 0.0,
+      "size_gb": 0.0,
+      "file_count": 1
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-09-06T16:01:25+00:00",
+  "model": "ornith",
+  "backend": "ik_llama (commit fe215a8)",
+  "route": "llama-swap:8080 -> 127.0.0.1:5801",
+  "http_status": 200,
+  "elapsed_s": 10.76,
+  "prompt_tokens": 35,
+  "prompt_eval_ms": 278.90,
+  "prompt_tok_s": 125.49,
+  "gen_tokens": 16,
+  "gen_eval_ms": 189.52,
+  "gen_tok_s": 84.43,
+  "mtp_calls": 8,
+  "mtp_drafted_tokens": 8,
+  "mtp_accepted_tokens": 7,
+  "mtp_acceptance_rate": 0.875,
+  "peak_vram_mib": 20363,
+  "vram_headroom_mib": 2165,
+  "raw_log_source": "K:\\Project\\Logs\\llama-swap\\llama-swap.log",
+  "evidence_proven": true
+}

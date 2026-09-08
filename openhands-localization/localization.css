@@ -1,0 +1,12 @@
+﻿/* OpenHands Local - Runtime Localization Styles */
+/* Improve Cyrillic typography and prevent button label overflow */
+
+body {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Ensure buttons with slightly longer Russian words don't clip */
+button, [role="button"], [role="tab"] {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}

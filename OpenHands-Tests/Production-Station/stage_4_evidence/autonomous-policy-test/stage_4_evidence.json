@@ -1,0 +1,86 @@
+{
+  "timestamp": "2026-09-05T19:05:07.885734+00:00",
+  "stage": "STAGE_4_AUTONOMOUS_POLICY_TEST",
+  "status": "FAIL",
+  "conversation_id": "8b815a52-03c8-4022-ad1f-f6a9792d96ba",
+  "elapsed_seconds": 136.1,
+  "user_prompt_scripted_route": "NO",
+  "fixture_hash_before": "f5633699465f554e1c74349d9545266994d2b0875c8820898f08ce138a31f820",
+  "fixture_hash_after": "f5633699465f554e1c74349d9545266994d2b0875c8820898f08ce138a31f820",
+  "fixture_hash_unchanged": "YES",
+  "model_timeline": [
+    "qwen",
+    "qwen",
+    "qwen",
+    "qwen",
+    "qwen",
+    "ornith",
+    "ornith",
+    "ornith",
+    "ornith",
+    "qwen",
+    "qwen",
+    "qwen"
+  ],
+  "routing_timeline": [
+    {
+      "switch_index": 1,
+      "timestamp": "2026-09-05T19:03:36.559668+00:00",
+      "from_profile": "Qwen38_Opus_96K",
+      "to_profile": "Ornith-Coding",
+      "reason": "Delegating implementation of correction markers (A and B) to the Executor.",
+      "initiator_action": "SwitchLLMAction"
+    },
+    {
+      "switch_index": 2,
+      "timestamp": "2026-09-05T19:04:07.557050+00:00",
+      "from_profile": "Ornith-Coding",
+      "to_profile": "Qwen38_Opus_96K",
+      "reason": "Acceptance command executed with exit code 0; returning evidence for review and routing.",
+      "initiator_action": "SwitchLLMAction"
+    }
+  ],
+  "acceptance_runs": [
+    {
+      "attempt_number": 1,
+      "timestamp": "2026-09-05T19:03:14.410819+00:00",
+      "command": "python K:\\Project\\OpenHands-Tests\\Production-Station\\stage_4_fixture\\acceptance_check.py",
+      "raw_terminal_observation": [
+        "cache_prompt=False type='text' text=\"[ACCEPTANCE CHECK]: FAILURE A\\r\\nObjective Failure: Missing correction-A marker in workspace.\\r\\nRequirement A: Create file 'correction_a.txt' containing 'CORRECTION_A_RESOLVED'.\\r\\nEXIT CODE: 1\""
+      ],
+      "actual_exit_code": 1
+    },
+    {
+      "attempt_number": 2,
+      "timestamp": "2026-09-05T19:04:04.519152+00:00",
+      "command": "python K:\\Project\\OpenHands-Tests\\Production-Station\\stage_4_fixture\\acceptance_check.py",
+      "raw_terminal_observation": [
+        "cache_prompt=False type='text' text=\"[ACCEPTANCE CHECK]: PASS\\r\\nAll acceptance criteria satisfied:\\r\\n - Correction A verified: 'correction_a.txt' -> CORRECTION_A_RESOLVED\\r\\n - Correction B verified: 'correction_b.txt' -> CORRECTION_B_RESOLVED\\r\\nEXIT CODE: 0\""
+      ],
+      "actual_exit_code": 0
+    },
+    {
+      "attempt_number": 3,
+      "timestamp": "2026-09-05T19:04:53.094200+00:00",
+      "command": "python K:\\Project\\OpenHands-Tests\\Production-Station\\stage_4_fixture\\acceptance_check.py",
+      "raw_terminal_observation": [
+        "cache_prompt=False type='text' text=\"[ACCEPTANCE CHECK]: PASS\\r\\nAll acceptance criteria satisfied:\\r\\n - Correction A verified: 'correction_a.txt' -> CORRECTION_A_RESOLVED\\r\\n - Correction B verified: 'correction_b.txt' -> CORRECTION_B_RESOLVED\\r\\nEXIT CODE: 0\""
+      ],
+      "actual_exit_code": 0
+    }
+  ],
+  "gates": {
+    "TEAM_FULL_USED": "YES",
+    "USER_PROMPT_SCRIPTED_ROUTE": "NO",
+    "FIRST_FAILURE_ACTUAL_EXIT_CODE": 1,
+    "SECOND_FAILURE_ACTUAL_EXIT_CODE": 0,
+    "QWEN_TO_NEXT_AFTER_REAL_FAILURES": "FAIL",
+    "NEXT_TO_ORNITH": "FAIL",
+    "FINAL_ACCEPTANCE_ACTUAL_EXIT_CODE": 0,
+    "ORNITH_TO_QWEN": "MODEL_GENERATED",
+    "QWEN_FINAL_REVIEW": "PASS",
+    "HARNESS_FORCED_SWITCH": "NO",
+    "HARNESS_CHANGED_FAILURE_COUNT": "NO",
+    "FIXTURE_HASH_UNCHANGED": "YES"
+  }
+}
