@@ -356,19 +356,30 @@
     line-height: 1.4 !important;
 }
 
-/* Generous width for root page prompt container on desktop & tablets */
-div.flex.w-full.max-w-\[800px\].flex-col,
-div[class*="max-w-[800px]"] {
-    max-width: 1040px !important;
+/* Responsive width for root page prompt container on desktop & tablets */
+@media (min-width: 1040px) {
+    div.flex.w-full.max-w-\[800px\].flex-col,
+    div[class*="max-w-[800px]"] {
+        max-width: 1040px !important;
+    }
+}
+@media (max-width: 1039px) {
+    div.flex.w-full.max-w-\[800px\].flex-col,
+    div[class*="max-w-[800px]"] {
+        max-width: 100% !important;
+    }
 }
 
-/* Ensure composer model picker and ALL ancestor containers are ALWAYS visible and never hidden */
-[data-testid="chat-input-actions"] div:has([data-testid="chat-input-llm-profile"]),
-div.hidden:has([data-testid="chat-input-llm-profile"]),
-div[class*="hidden"]:has([data-testid="chat-input-llm-profile"]),
-div:has(> div > [data-testid="chat-input-llm-profile"]),
-div:has(> [data-testid="chat-input-llm-profile"]),
-[data-testid="chat-input-llm-profile"] {
+/* Guard root layout against horizontal overflow on all viewports */
+[data-testid="root-layout"] {
+    max-width: 100vw !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+}
+
+/* Ensure composer model picker is ALWAYS visible inside chat-input-actions without affecting root-layout */
+[data-testid="chat-input-actions"] div:has(> [data-testid="chat-input-llm-profile"]),
+[data-testid="chat-input-actions"] [data-testid="chat-input-llm-profile"] {
     display: inline-flex !important;
     visibility: visible !important;
 }
