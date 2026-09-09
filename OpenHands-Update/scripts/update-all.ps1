@@ -9,6 +9,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. "$PSScriptRoot\common.ps1"
 
 # Canonical Centralized Logs
 $LogDir = Join-Path $Global:ProjectRootDir "Logs\Updater"
