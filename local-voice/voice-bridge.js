@@ -495,7 +495,111 @@
             <span id="oh-voice-pill-text">Голос готов</span>
         `;
 
+        // Drag-to-reposition logic for voice pill
+        let isDragging = false;
+        let startX = 0, startY = 0;
+        let initialLeft = 0, initialTop = 0;
+        let hasMoved = false;
+
+        function restorePillPosition() {
+            try {
+                const saved = localStorage.getItem("oh_voice_pill_pos");
+                if (saved) {
+                    const pos = JSON.parse(saved);
+                    const pillWidth = pill.offsetWidth || 140;
+                    const pillHeight = pill.offsetHeight || 36;
+                    const maxLeft = window.innerWidth - pillWidth - 10;
+                    const maxTop = window.innerHeight - pillHeight - 10;
+                    const validLeft = Math.max(10, Math.min(pos.left, maxLeft));
+                    const validTop = Math.max(10, Math.min(pos.top, maxTop));
+                    pill.style.left = `${validLeft}px`;
+                    pill.style.top = `${validTop}px`;
+                    pill.style.bottom = "auto";
+                    pill.style.right = "auto";
+                }
+            } catch (e) {}
+        }
+
+        function onPointerDown(e) {
+            if (e.target.closest("#oh-voice-popover")) return;
+            isDragging = true;
+            hasMoved = false;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startX = clientX;
+            startY = clientY;
+
+            const rect = pill.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            pill.classList.add("dragging");
+            pill.style.transition = "none";
+        }
+
+        function onPointerMove(e) {
+            if (!isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const deltaX = clientX - startX;
+            const deltaY = clientY - startY;
+
+            if (Math.hypot(deltaX, deltaY) > 5) {
+                hasMoved = true;
+                if (e.cancelable && e.type === "touchmove") {
+                    e.preventDefault();
+                }
+            }
+
+            if (hasMoved) {
+                const pillWidth = pill.offsetWidth || 140;
+                const pillHeight = pill.offsetHeight || 36;
+                const newLeft = Math.max(10, Math.min(initialLeft + deltaX, window.innerWidth - pillWidth - 10));
+                const newTop = Math.max(10, Math.min(initialTop + deltaY, window.innerHeight - pillHeight - 10));
+
+                pill.style.left = `${newLeft}px`;
+                pill.style.top = `${newTop}px`;
+                pill.style.bottom = "auto";
+                pill.style.right = "auto";
+
+                if (isPopoverOpen) {
+                    positionPopoverNearPill();
+                }
+            }
+        }
+
+        function onPointerUp() {
+            if (!isDragging) return;
+            isDragging = false;
+            pill.classList.remove("dragging");
+            pill.style.transition = "";
+
+            if (hasMoved) {
+                const rect = pill.getBoundingClientRect();
+                try {
+                    localStorage.setItem("oh_voice_pill_pos", JSON.stringify({
+                        left: Math.round(rect.left),
+                        top: Math.round(rect.top)
+                    }));
+                } catch (e) {}
+            }
+        }
+
+        pill.addEventListener("mousedown", onPointerDown);
+        document.addEventListener("mousemove", onPointerMove);
+        document.addEventListener("mouseup", onPointerUp);
+
+        pill.addEventListener("touchstart", onPointerDown, { passive: true });
+        document.addEventListener("touchmove", onPointerMove, { passive: false });
+        document.addEventListener("touchend", onPointerUp);
+
+        setTimeout(restorePillPosition, 50);
+
         pill.addEventListener("click", () => {
+            if (hasMoved) {
+                hasMoved = false;
+                return;
+            }
             if (pill.classList.contains("speaking")) {
                 stopSpeech(true);
             } else {
@@ -571,11 +675,43 @@
         }
     }
 
+    function positionPopoverNearPill() {
+        const pill = document.getElementById("oh-voice-pill");
+        const popover = document.getElementById("oh-voice-popover");
+        if (!pill || !popover) return;
+
+        const pillRect = pill.getBoundingClientRect();
+        const popWidth = Math.min(320, window.innerWidth - 24);
+        const popHeight = 240;
+
+        let left = pillRect.left;
+        if (left + popWidth > window.innerWidth - 12) {
+            left = window.innerWidth - popWidth - 12;
+        }
+        if (left < 12) left = 12;
+
+        let top;
+        if (pillRect.top > popHeight + 20) {
+            top = pillRect.top - popHeight - 12;
+        } else {
+            top = pillRect.bottom + 12;
+        }
+
+        popover.style.left = `${Math.round(left)}px`;
+        popover.style.top = `${Math.round(top)}px`;
+        popover.style.bottom = "auto";
+        popover.style.right = "auto";
+        popover.style.width = `${popWidth}px`;
+    }
+
     function togglePopover(force) {
         const popover = document.getElementById("oh-voice-popover");
         if (!popover) return;
         isPopoverOpen = force !== undefined ? force : (popover.style.display === "none");
         popover.style.display = isPopoverOpen ? "flex" : "none";
+        if (isPopoverOpen) {
+            positionPopoverNearPill();
+        }
     }
 
     // -------------------------------------------------------------

@@ -1,6 +1,35 @@
 /* OpenHands Local - Working Profile & Remote Control UI Styles */
 /* High-Contrast, Accessible Theme for Low-Vision Accessibility */
 
+:root {
+    --oh-bg-primary: #141418;
+    --oh-bg-card: linear-gradient(180deg, #18181f 0%, #141418 100%);
+    --oh-bg-input: #1f1f23;
+    --oh-bg-info: #18181c;
+    --oh-border-default: #3f3f46;
+    --oh-border-subtle: #27272a;
+    --oh-border-hover: #6366f1;
+    --oh-accent-primary: #6366f1;
+    --oh-accent-light: #a5b4fc;
+    --oh-status-success: #22c55e;
+    --oh-status-error: #ef4444;
+    --oh-text-primary: #ffffff;
+    --oh-text-secondary: #a1a1aa;
+    --oh-text-muted: #71717a;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .oh-wp-container {
     width: 100%;
     margin-bottom: 16px;
@@ -9,15 +38,25 @@
 }
 
 .oh-wp-card {
-    background: #141418;
-    border: 2px solid #3f3f46;
+    background: var(--oh-bg-card);
+    border: 2px solid var(--oh-border-default);
     border-radius: 16px;
     padding: 16px 20px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     display: flex;
     flex-direction: column;
     gap: 14px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.oh-wp-card.is-changing {
+    animation: oh-wp-pulse-change 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes oh-wp-pulse-change {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.012); box-shadow: 0 4px 22px rgba(99, 102, 241, 0.25); }
+    100% { transform: scale(1); }
 }
 
 .oh-wp-card:hover,
@@ -465,6 +504,38 @@
     .oh-wp-desc-mode {
         font-size: 12px !important;
         line-height: 1.3 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .oh-wp-controls-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+
+    .oh-wp-select {
+        min-height: 44px !important;
+        font-size: 15px !important;
+    }
+
+    /* Hide secondary mode explanation on very narrow mobile screens to save composer height */
+    .oh-wp-desc-mode {
+        display: none !important;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 540px) {
+    .oh-wp-container {
+        margin-bottom: 6px !important;
+    }
+
+    .oh-wp-card {
+        padding: 8px 12px !important;
+        gap: 6px !important;
+    }
+
+    .oh-wp-info-box {
+        display: none !important;
     }
 }
 

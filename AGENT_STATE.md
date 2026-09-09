@@ -1,17 +1,18 @@
-OBJECTIVE:      OpenHands Nexus — Integrate Approved Audit Optimizations & Repository Hygiene
-PHASE:          Integration, Hardening & GitHub Cleanup Complete (PASS)
-STATE:          Approved architectural recommendations from Qwen Studio second-pass review integrated; security-critical .gitignore preserved; high-value UI/Voice/Patcher optimizations applied and validated.
+OBJECTIVE:      OpenHands Nexus — UI/UX Optimization Audit Implementation (Stages 1-3)
+PHASE:          UI/UX Optimization & Mobile Hardening Complete (PASS)
+STATE:          Implemented high-priority recommendations from UI-OPTIMIZATION-AUDIT.md: visibility-aware polling, ARIA-live announcer, CSS custom properties, responsive mobile layout (<480px, landscape), and drag-to-reposition voice pill with persistent coordinates.
 DONE:
-  - Security Preservation: Protected repository against stripped .gitignore; retained exclusions for tokens, certificates (*.pfx, *.key), and large model weights (*.gguf, Models/).
-  - Audit Documentation: Integrated AUDIT-REPORT.md (architecture score 9.2/10) and Docs/SELF-REVIEW-OPTIMIZATION.md into master.
-  - HI-01 & REG-01 (Working Profile UI): Added 150ms debounce to MutationObserver in working-profile-ui.js to eliminate high CPU usage and DOM churn during streaming tokens; added resilient fallback selectors for LLM profile detection.
-  - HI-02 (Voice Bridge Lifecycle): Solved microphone stream leaks in voice-bridge.js by tracking activeMediaStream, terminating tracks on onstop, catch, stopSpeech, beforeunload, and pagehide; debounced assistant observer (150ms).
-  - REG-02 (Patcher Resilience): Added explicit verification of </head> and </body> tags across patch-agent-canvas-working-profile.ps1, patch-agent-canvas-voice.ps1, and patch-agent-canvas-pwa.ps1.
+  - UI-02 (Visibility API Polling): working-profile-ui.js pauses periodic 3s polling when document.hidden, saving battery and CPU on mobile/background tabs, and resumes immediately upon tab focus.
+  - UI-06 (Accessibility Announcer): Added ARIA-live polite announcer in working-profile-ui.js for screen-reader feedback upon profile/reasoning mode switch.
+  - UI-07 (Draggable Voice Pill): Implemented touch & mouse drag-to-reposition in voice-bridge.js with localStorage persistence (oh_voice_pill_pos), dynamic popover alignment, drag-vs-tap detection, and bounded drag coordinates.
+  - UI-10 (CSS Variables & Pulse): Added semantic CSS custom properties in working-profile-ui.css and gentle pulse animation (.is-changing) on profile selection.
+  - UI-05 & UI-12 (Mobile Responsive Hardening): Enhanced working-profile-ui.css with max-width: 480px stack layout (44px min touch target) and landscape rules (max-height: 540px) hiding verbose descriptions to maximize composer visibility on tablets/phones.
+  - Patcher Verification: Successfully re-applied patch-agent-canvas-working-profile.ps1 and patch-agent-canvas-voice.ps1 with exit code 0.
 EVIDENCE:
-  - Syntax verification: node --check (working-profile-ui.js, voice-bridge.js, working_profile_manager.mjs) -> exit code 0.
+  - Syntax verification: node --check (working-profile-ui.js, voice-bridge.js) -> exit code 0.
   - Python compilation: python -m py_compile (working_profiles.py, service.py) -> exit code 0.
-  - PowerShell validation: AST parser on all 3 modified patchers -> 0 errors (VALID).
-  - Security audit: git diff confirmed 0 tokens, keys, or certs staged.
+  - Patcher execution: applied cleanly to agent-canvas build with exit code 0.
+  - Clean working tree: 0 unexpected modifications, 0 secrets/tokens exposed.
 OPEN_ISSUES:    None
-NEXT_ACTION:    Commit to master, push to origin/master, delete remote branch local-agent-control-a3425.
+NEXT_ACTION:    Commit changes to master and push to origin/master.
 

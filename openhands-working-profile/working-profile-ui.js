@@ -51,10 +51,32 @@
         }
     }
 
+    function announceStatus(message) {
+        let announcer = document.getElementById("oh-wp-status-announcer");
+        if (!announcer) {
+            announcer = document.createElement("div");
+            announcer.id = "oh-wp-status-announcer";
+            announcer.setAttribute("aria-live", "polite");
+            announcer.setAttribute("aria-atomic", "true");
+            announcer.className = "sr-only";
+            document.body.appendChild(announcer);
+        }
+        announcer.textContent = message;
+        setTimeout(() => {
+            if (announcer) announcer.textContent = "";
+        }, 1500);
+    }
+
     // Switch profile / reasoning mode on server
     async function switchProfile(wpId, rmId) {
         if (isSubmitting) return;
         isSubmitting = true;
+
+        const card = document.getElementById("oh-wp-card") || document.querySelector(".oh-wp-card");
+        if (card) {
+            card.classList.add("is-changing");
+            setTimeout(() => card.classList.remove("is-changing"), 350);
+        }
 
         const syncEl = document.getElementById("oh-wp-sync");
         if (syncEl) {
@@ -84,6 +106,10 @@
                 syncEl.textContent = "✓ Активно";
                 syncEl.className = "oh-wp-sync-indicator";
             }
+
+            const targetWp = availableProfiles.find(p => p.id === wpId);
+            const targetMode = targetWp?.reasoning?.modes?.find(m => m.id === rmId)?.label || rmId;
+            announceStatus(`Выбран профиль: ${targetWp ? targetWp.name : wpId}, режим: ${targetMode}`);
 
             renderUI();
         } catch (err) {
@@ -463,15 +489,48 @@
         observer.observe(document.body, { childList: true, subtree: true });
     }
 
-    // Periodic sync poll every 3 seconds for Desktop <-> Mobile convergence
-    setInterval(() => {
-        loadWorkingProfiles(true);
-    }, 3000);
+    // Periodic sync poll every 3 seconds with Visibility API pause to save mobile battery
+    let syncIntervalId = null;
 
-    // Also sync on window focus
-    window.addEventListener("focus", () => {
-        loadWorkingProfiles(true);
+    function startSyncPolling() {
+        stopSyncPolling();
+        syncIntervalId = setInterval(() => {
+            if (document.hidden) return;
+            loadWorkingProfiles(true);
+        }, 3000);
+    }
+
+    function stopSyncPolling() {
+        if (syncIntervalId) {
+            clearInterval(syncIntervalId);
+            syncIntervalId = null;
+        }
+    }
+
+    // Pause polling when tab is hidden or backgrounded, resume immediately on focus/visibility
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            stopSyncPolling();
+        } else {
+            startSyncPolling();
+            loadWorkingProfiles(true);
+        }
     });
+
+    window.addEventListener("focus", () => {
+        if (!document.hidden) {
+            startSyncPolling();
+            loadWorkingProfiles(true);
+        }
+    });
+
+    window.addEventListener("blur", () => {
+        if (document.hidden) {
+            stopSyncPolling();
+        }
+    });
+
+    startSyncPolling();
 
     // Startup initialization
     async function init() {

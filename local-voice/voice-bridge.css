@@ -122,7 +122,7 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
     animation: oh-mic-pulse 1s infinite;
 }
 
-/* 3. Floating Voice Status & Settings Pill (Non-blocking bottom-left) */
+/* 3. Floating Voice Status & Settings Pill (Non-blocking draggable) */
 .oh-voice-pill {
     position: fixed;
     bottom: 20px;
@@ -140,10 +140,17 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
     font-weight: 600;
     color: #e2e8f0;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-    cursor: pointer;
+    cursor: grab;
+    touch-action: none;
     user-select: none;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, opacity 0.2s ease;
     box-sizing: border-box;
+}
+
+.oh-voice-pill.dragging {
+    cursor: grabbing;
+    opacity: 0.92;
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
 }
 
 .oh-voice-pill:hover,
@@ -178,10 +185,9 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
 /* 4. Voice Settings Popover */
 .oh-voice-popover {
     position: fixed;
-    bottom: 64px;
-    left: 20px;
     z-index: 1001;
     width: 300px;
+    max-width: calc(100vw - 24px);
     background: #141418;
     border: 2px solid #3f3f46;
     border-radius: 14px;
