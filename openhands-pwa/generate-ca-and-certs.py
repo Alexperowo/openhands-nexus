@@ -41,9 +41,32 @@ else:
     token = AUTH_TOKEN_FILE.read_text(encoding="utf-8").strip()
     print(f"[AUTH] Using existing LAN Auth Token from: {AUTH_TOKEN_FILE.name}")
 
-# 2. Hostname and IP
+# 2. Hostname and Dynamic LAN IP Detection
+def get_local_lan_ip() -> str:
+    env_ip = os.environ.get("OPENHANDS_LAN_IP", "").strip()
+    if env_ip:
+        return env_ip
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(1.0)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        if ip and not ip.startswith("127."):
+            return ip
+    except Exception:
+        pass
+    try:
+        host_ip = socket.gethostbyname(socket.gethostname())
+        if host_ip and not host_ip.startswith("127."):
+            return host_ip
+    except Exception:
+        pass
+    return "192.168.0.14"
+
 hostname = os.environ.get("COMPUTERNAME", "DESKTOP-L0FBHL4")
-lan_ip = "192.168.0.14"
+lan_ip = get_local_lan_ip()
 
 print(f"[CERT] Target Hostname: {hostname}")
 print(f"[CERT] Target LAN IP:   {lan_ip}")
@@ -101,12 +124,16 @@ leaf_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 leaf_name = x509.Name([
     x509.NameAttribute(NameOID.COMMON_NAME, hostname)
 ])
+san_ips = {ipaddress.IPv4Address("127.0.0.1"), ipaddress.IPv4Address(lan_ip)}
+try:
+    san_ips.add(ipaddress.IPv4Address("192.168.0.14"))
+except Exception:
+    pass
+
 san_list = [
     x509.DNSName(hostname),
-    x509.DNSName("localhost"),
-    x509.IPAddress(ipaddress.IPv4Address(lan_ip)),
-    x509.IPAddress(ipaddress.IPv4Address("127.0.0.1"))
-]
+    x509.DNSName("localhost")
+] + [x509.IPAddress(ip) for ip in sorted(san_ips, key=lambda x: str(x))]
 leaf_cert = (
     x509.CertificateBuilder()
     .subject_name(leaf_name)

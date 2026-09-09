@@ -1,0 +1,27 @@
+﻿title = OpenHands Nexus Gitleaks Config
+
+[allowlist]
+description = Global allowlist
+paths = [
+    '''node_modules''',
+    '''.git''',
+    '''dist''',
+    '''build''',
+    '''certs/openhands-ca.crt''',
+    '''certs/openhands-lan.crt'''
+]
+
+[[rules]]
+id = private-key
+description = Private Key
+regex = '''-----BEGIN (RSA|EC|OPENSSH|DSA|PGP) PRIVATE KEY-----'''
+
+[[rules]]
+id = api-key
+description = API Key
+regex = '''[aA][pP][iI][-_]?[kK][eE][yY]\s*[:=]\s*['][a-zA-Z0-9]{20,}[']'''
+
+[[rules]]
+id = auth-token
+description = Auth Token
+regex = '''[aA][uU][tT][hH][-_]?[tT][oO][kK][eE][nN]\s*[:=]\s*['][a-zA-Z0-9]{20,}[']'''

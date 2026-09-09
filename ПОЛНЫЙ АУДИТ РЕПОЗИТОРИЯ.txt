@@ -1,0 +1,2646 @@
+# 📋 ПОЛНЫЙ АУДИТ РЕПОЗИТОРИЯ
+## `Alexperowo/openhands-nexus`
+
+**Дата аудита:** 9 сентября 2026  
+**Основание:** Публичные данные репозитория, извлечённые через GitHub  
+**Последний коммит:** `eadf6cd` — 50 минут назад (09.09.2026)  
+**Всего коммитов:** 18 за ~16 часов разработки
+
+---
+
+## СОДЕРЖАНИЕ
+1. [Общее описание проекта](#1-общее-описание)
+2. [Архитектура системы](#2-архитектура)
+3. [Критические проблемы безопасности](#3-безопасность)
+4. [Качество кода](#4-качество-кода)
+5. [Тестирование](#5-тестирование)
+6. [Документация](#6-документация)
+7. [Пользовательский опыт](#7-ux)
+8. [Производительность](#8-производительность)
+9. [Надёжность](#9-надёжность)
+10. [Мобильный PWA](#10-pwa)
+11. [Голосовой интерфейс](#11-голос)
+12. [Оркестрация моделей](#12-модели)
+13. [Чистота репозитория](#13-чистота)
+14. [План исправлений](#14-план)
+15. [Итоговая оценка](#15-оценка)
+
+---
+
+## 1. ОБЩЕЕ ОПИСАНИЕ ПРОЕКТА
+
+### Что это такое
+**OpenHands Nexus** — локальная автономная мультимодельная рабочая станция для AI-разработки, работающая на Windows 11 с поддержкой CUDA.
+
+### Назначение (по определению пользователя)
+> Стабильный локальный AI Remote Control для Windows 11, которым можно управлять с компьютера и Android без технической настройки моделей, с Working Profiles, Team-Full, голосом, PWA, accessibility.
+
+### Ключевые возможности
+- Оркестрация 3 локальных LLM моделей
+- Адаптивное голосовое управление (STT/TTS)
+- Защищённый мобильный PWA Remote Control
+- Динамический Thinking UX
+- Рабочие профили (соло, тандемы, команда)
+
+### Технический стек
+| Компонент | Технология |
+|-----------|------------|
+| Ядро | Python (61.9%) |
+| Скрипты управления | PowerShell (25.4%) |
+| Фронтенд | JavaScript (7.1%), TypeScript (3.1%) |
+| Стили | CSS (1.8%) |
+| Пакетные файлы | Batchfile (0.7%) |
+| Среда | Windows 11, CUDA, Node.js v24 |
+
+---
+
+## 2. АРХИТЕКТУРА СИСТЕМЫ
+
+### Схема компонентов
+
+```
++-----------------------------------------------------------------------------------+
+| Рабочая станция OpenHands Nexus (Windows 11 / CUDA)                               |
+|                                                                                   |
+|  [ Мобильный LAN клиент: 192.168.x.x:8443 (HTTPS / PWA / WebSockets) ]           |
+|                                     |                                             |
+|                                     v                                             |
+|  +-----------------------------------------------------------------------------+  |
+|  | HTTPS LAN Gateway (Port 8443, Node.js v24)                                  |  |
+|  | - Двухуровневая X.509 архитектура (Root CA + Leaf SAN 192.168.0.14)        |  |
+|  | - Service Worker & Web App Manifest (PWA)                                   |  |
+|  | - Проксирование запросов к Agent Canvas и Voice Bridge                      |  |
+|  +-----------------------------------------------------------------------------+  |
+|         |                                      |                                  |
+|         | HTTP / WebSockets                    | /voice-api/*                     |
+|         v                                      v                                  |
+|  +------------------------------------+  +-------------------------------------+  |
+|  | Agent Canvas Ingress (Port 8000)   |  | Local Voice Bridge (Port 18002)     |  |
+|  | - Web UI, селектор моделей, чат    |  | - GigaAM v3 On-Device STT (Русский) |  |
+|  | - Синхронизация Working Profiles    |  | - Supertonic LAN TTS + Native Web   |  |
+|  | - Адаптивный CSS/JS ПВА-интерфейс  |  +-------------------------------------+  |
+|  +------------------------------------+                                           |
+|         |                                                                         |
+|         v (внутренний loopback)                                                   |
+|  +------------------------------------+  +-------------------------------------+  |
+|  | OpenHands Core (Port 18000)        |  | llama-swap Router (Port 8080)       |  |
+|  | - Агентские циклы, тулы, сессии    |  | - Qwen 3.8 27B (План / Ревью)       |  |
+|  | - Мультиагентная ротация моделей   |  | - Ornith 1.5 35B ICE (Код / Тесты)  |  |
+|  |                                    |  | - Qwen3-Next 80B (Глубокий дебаг)   |  |
+|  +------------------------------------+  +-------------------------------------+  |
++-----------------------------------------------------------------------------------+
+```
+
+### Порты сервисов
+| Порт | Сервис | Назначение |
+|------|--------|------------|
+| 8000 | Agent Canvas | Основной Web UI |
+| 8443 | LAN Gateway | Мобильный HTTPS доступ |
+| 18000 | OpenHands Core | Агентские циклы |
+| 18002 | Voice Bridge | Голосовой интерфейс |
+| 8080 | llama-swap | Роутер моделей |
+
+### Структура директорий
+```
+├── Config/                     # Менеджер рабочих профилей
+├── openhands-working-profile/  # UI для Working Profile
+├── openhands-pwa/              # HTTPS LAN Gateway, PWA
+├── local-voice/                # Голосовой мост (GigaAM v3)
+├── openhands-localization/     # Русская локализация
+├── OpenHands-Update/           # Скрипты обновления
+├── OpenHands-Tests/            # Тесты и валидация
+├── Docs/                       # Документация
+├── *.cmd                       # Скрипты управления
+├── AGENT_STATE.md              # Состояние агента
+├── AUDIT-REPORT.md             # Отчёт аудита
+└── UI-OPTIMIZATION-AUDIT.md    # Аудит UI оптимизаций
+```
+
+### ✅ Положительные аспекты архитектуры
+
+1. **Чёткое разделение ответственности** — каждый компонент имеет свою зону
+2. **Портовая изоляция** — разные сервисы на разных портах
+3. **Модульность** — компоненты можно обновлять независимо
+4. **Двухуровневая PWA архитектура** — Gateway отделён от основного приложения
+5. **LLM оркестрация через роутер** — грамотное использование llama-swap
+
+### ⚠️ Проблемы архитектуры
+
+#### Проблема 1: Жёстко заданный IP-адрес
+**Где:** HTTPS LAN Gateway, Leaf SAN сертификат  
+**Что:** `192.168.0.14` захардкожен в конфигурации  
+**Почему плохо:** При смене сети или IP система перестаёт работать  
+**Как исправить:**
+```javascript
+// Вместо хардкода:
+const HARDCODED_IP = '192.168.0.14';
+
+// Использовать динамическое определение:
+import os from 'os';
+
+function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
+const LOCAL_IP = getLocalIP();
+```
+
+#### Проблема 2: Отсутствие контейнеризации
+**Где:** Весь стек  
+**Что:** Все сервисы работают как нативные Windows-процессы  
+**Почему плохо:** Нет изоляции, сложно управлять зависимостями  
+**Как исправить:** Рассмотреть варианты:
+- **Вариант A:** WSL2 для Linux-компонентов
+- **Вариант B:** Docker Compose для сервисов
+- **Вариант C:** Минимальный — использовать PM2 для Node.js процессов
+
+#### Проблема 3: Монолитность скриптов управления
+**Где:** 8 различных `.cmd` файлов в корне  
+**Что:** Каждый скрипт делает одну операцию  
+**Почему плохо:** Пользователю нужно помнить 8 команд  
+**Как исправить:** Создать единый CLI:
+```batch
+@echo off
+REM openhands.cmd - единая точка входа
+
+if "%1"=="" goto usage
+if "%1"=="start" goto start
+if "%1"=="stop" goto stop
+if "%1"=="restart" goto restart
+if "%1"=="setup" goto setup
+if "%1"=="backup" goto backup
+if "%1"=="restore" goto restore
+if "%1"=="diagnose" goto diagnose
+goto usage
+
+:start
+call START-OPENHANDS-LOCAL.cmd
+goto end
+
+:stop
+call STOP-OPENHANDS-LOCAL.cmd
+goto end
+
+:restart
+call RESTART-OPENHANDS-LOCAL.cmd
+goto end
+
+:setup
+call SETUP-OPENHANDS-LOCAL.cmd
+goto end
+
+:backup
+call BACKUP-OPENHANDS.cmd
+goto end
+
+:restore
+call RESTORE-OPENHANDS.cmd
+goto end
+
+:diagnose
+call DIAGNOSTICS-OPENHANDS-LOCAL.cmd
+goto end
+
+:usage
+echo OpenHands Nexus CLI
+echo Usage: openhands [start^|stop^|restart^|setup^|backup^|restore^|diagnose]
+
+:end
+```
+
+---
+
+## 3. КРИТИЧЕСКИЕ ПРОБЛЕМЫ БЕЗОПАСНОСТИ
+
+### 🔴 КРИТИЧНО: Отсутствие аутентификации в LAN API
+
+**Где:** Все эндпоинты на порту 8443  
+**Что:** Любой в локальной сети может получить доступ к `/api/working-profiles`, `/voice-api/*`  
+**Риск:** Высокий — любой в вашей сети может управлять вашей AI-станцией
+
+**Как исправить:**
+
+#### Шаг 1: Добавить токен аутентификации
+```javascript
+// В openhands-pwa/server.js или аналогичном файле
+
+import crypto from 'crypto';
+
+// Генерация токена при первом запуске
+function generateAuthToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Middleware для проверки токена
+function authMiddleware(req, res, next) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    
+    if (!token) {
+        return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    }
+    
+    if (token !== process.env.AUTH_TOKEN) {
+        return res.status(403).json({ error: 'Forbidden: Invalid token' });
+    }
+    
+    next();
+}
+
+// Применение ко всем API роутам
+app.use('/api', authMiddleware);
+app.use('/voice-api', authMiddleware);
+```
+
+#### Шаг 2: Хранить токен в защищённом месте
+```javascript
+// config/auth.js
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+
+const TOKEN_FILE = path.join(os.homedir(), '.openhands', 'auth.token');
+
+export function getAuthToken() {
+    if (fs.existsSync(TOKEN_FILE)) {
+        return fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+    }
+    
+    const token = generateAuthToken();
+    fs.writeFileSync(TOKEN_FILE, token, { mode: 0o600 });
+    return token;
+}
+```
+
+#### Шаг 3: Обновить PWA для использования токена
+```javascript
+// В Service Worker или основном коде PWA
+async function apiRequest(url, options = {}) {
+    const token = await getStoredToken(); // Из localStorage или настройки
+    
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`
+        }
+    });
+    
+    if (response.status === 401) {
+        // Показать экран ввода токена
+        showAuthScreen();
+        return null;
+    }
+    
+    return response;
+}
+```
+
+#### Шаг 4: Добавить экран настройки токена в PWA
+```html
+<!-- auth-screen.html -->
+<div id="auth-screen" class="hidden">
+    <h2>Подключение к OpenHands Nexus</h2>
+    <p>Введите токен доступа с сервера:</p>
+    <input type="password" id="auth-token" placeholder="Введите токен">
+    <button onclick="saveToken()">Подключиться</button>
+    <div class="help">
+        <p>Токен можно найти в файле:</p>
+        <code>%USERPROFILE%\.openhands\auth.token</code>
+    </div>
+</div>
+```
+
+### 🔴 КРИТИЧНО: Отсутствие логирования подключений
+
+**Где:** Все сетевые сервисы  
+**Что:** Нет аудита кто и когда подключался  
+**Риск:** Невозможно отследить несанкционированный доступ
+
+**Как исправить:**
+```javascript
+// middleware/logger.js
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const LOG_DIR = path.join(__dirname, 'logs');
+const ACCESS_LOG = path.join(LOG_DIR, 'access.log');
+
+// Создаём директорию если не существует
+if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+}
+
+export function accessLogger(req, res, next) {
+    const timestamp = new Date().toISOString();
+    const ip = req.ip || req.connection.remoteAddress;
+    const method = req.method;
+    const url = req.url;
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    
+    const logEntry = `[${timestamp}] ${ip} ${method} ${url} "${userAgent}"\n`;
+    
+    fs.appendFile(ACCESS_LOG, logEntry, (err) => {
+        if (err) console.error('Failed to write access log:', err);
+    });
+    
+    next();
+}
+
+// Применение в сервере
+app.use(accessLogger);
+```
+
+### 🔴 КРИТИЧНО: Хранение приватных ключей
+
+**Где:** Сертификаты для HTTPS  
+**Что:** Неясно как защищены приватные ключи  
+**Риск:** Компрометация ключей позволяет расшифровать трафик
+
+**Как исправить:**
+
+#### Вариант 1: Использовать DPAPI Windows (рекомендуется)
+```javascript
+// crypto/dpapi.js
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+export async function encryptKey(keyData) {
+    // Используем PowerShell для шифрования через DPAPI
+    const script = `
+        $key = [Convert]::FromBase64String('${keyData.toString('base64')}')
+        $encrypted = [System.Security.Cryptography.ProtectedData]::Protect(
+            $key, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser
+        )
+        [Convert]::ToBase64String($encrypted)
+    `;
+    
+    const { stdout } = await execAsync(`powershell -Command "${script}"`);
+    return stdout.trim();
+}
+
+export async function decryptKey(encryptedData) {
+    const script = `
+        $encrypted = [Convert]::FromBase64String('${encryptedData}')
+        $decrypted = [System.Security.Cryptography.ProtectedData]::Unprotect(
+            $encrypted, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser
+        )
+        [Convert]::ToBase64String($decrypted)
+    `;
+    
+    const { stdout } = await execAsync(`powershell -Command "${script}"`);
+    return Buffer.from(stdout.trim(), 'base64');
+}
+```
+
+#### Вариант 2: Минимальный — зашифрованная папка
+```javascript
+// crypto/key-storage.js
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+
+const KEYS_DIR = path.join(os.homedir(), '.openhands', 'keys');
+const ALGORITHM = 'aes-256-gcm';
+
+// Пароль должен запрашиваться у пользователя или храниться в переменных окружения
+export function encryptKeyFile(keyPath, password) {
+    const key = fs.readFileSync(keyPath);
+    const salt = crypto.randomBytes(16);
+    const iv = crypto.randomBytes(12);
+    const passwordHash = crypto.scryptSync(password, salt, 32);
+    
+    const cipher = crypto.createCipheriv(ALGORITHM, passwordHash, iv);
+    let encrypted = cipher.update(key);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    
+    // Сохраняем: salt + iv + authTag + encrypted
+    const result = Buffer.concat([salt, iv, authTag, encrypted]);
+    fs.writeFileSync(keyPath + '.enc', result, { mode: 0o600 });
+    
+    // Удаляем оригинальный ключ
+    fs.unlinkSync(keyPath);
+}
+```
+
+### 🟡 ВАЖНО: Rate Limiting для API
+
+**Где:** Все эндпоинты  
+**Что:** Нет ограничения на количество запросов  
+**Риск:** DoS атака в локальной сети
+
+**Как исправить:**
+```javascript
+// middleware/rate-limit.js
+const requestCounts = new Map();
+const WINDOW_MS = 60 * 1000; // 1 минута
+const MAX_REQUESTS = 100; // Максимум запросов в минуту
+
+export function rateLimiter(req, res, next) {
+    const ip = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    
+    if (!requestCounts.has(ip)) {
+        requestCounts.set(ip, { count: 1, resetTime: now + WINDOW_MS });
+        return next();
+    }
+    
+    const record = requestCounts.get(ip);
+    
+    // Сброс счётчика если окно прошло
+    if (now > record.resetTime) {
+        requestCounts.set(ip, { count: 1, resetTime: now + WINDOW_MS });
+        return next();
+    }
+    
+    record.count++;
+    
+    if (record.count > MAX_REQUESTS) {
+        return res.status(429).json({ 
+            error: 'Too many requests',
+            retryAfter: Math.ceil((record.resetTime - now) / 1000)
+        });
+    }
+    
+    next();
+}
+
+// Очистка старых записей каждые 5 минут
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, record] of requestCounts) {
+        if (now > record.resetTime) {
+            requestCounts.delete(ip);
+        }
+    }
+}, 5 * 60 * 1000);
+```
+
+---
+
+## 4. КАЧЕСТВО КОДА
+
+### Текущее состояние
+
+| Язык | % | Типизация | Линтеры |
+|------|---|-----------|---------|
+| Python | 61.9% | Частичная | Не настроены |
+| PowerShell | 25.4% | Нет | Не настроены |
+| JavaScript | 7.1% | Нет | Не настроены |
+| TypeScript | 3.1% | Да | Не настроены |
+| CSS | 1.8% | N/A | Не настроены |
+| Batchfile | 0.7% | Нет | Нет линтеров |
+
+### Проблема 1: Отсутствие конфигурации линтеров
+
+**Где:** Корень репозитория  
+**Что:** Нет файлов конфигурации для линтеров  
+**Почему плохо:** Нет автоматической проверки стиля и ошибок
+
+**Как исправить — создать файлы:**
+
+#### `.editorconfig`
+```ini
+# .editorconfig
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.py]
+indent_style = space
+indent_size = 4
+max_line_length = 100
+
+[*.js,*.ts,*.jsx,*.tsx]
+indent_style = space
+indent_size = 2
+
+[*.json]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cmd,*.bat]
+end_of_line = crlf
+```
+
+#### `pyproject.toml` (для Python)
+```toml
+[project]
+name = "openhands-nexus"
+version = "0.1.0"
+description = "Local autonomous multimodel OpenHands workstation"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["openhands"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+```
+
+#### `.eslintrc.json` (для JavaScript/TypeScript)
+```json
+{
+    "env": {
+        "browser": true,
+        "es2022": true,
+        "node": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "plugins": ["@typescript-eslint"],
+    "rules": {
+        "no-console": "warn",
+        "no-unused-vars": "error",
+        "prefer-const": "error",
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/explicit-function-return-type": "off"
+    }
+}
+```
+
+#### `.prettierrc`
+```json
+{
+    "semi": true,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "printWidth": 100,
+    "bracketSpacing": true,
+    "arrowParens": "always"
+}
+```
+
+### Проблема 2: Низкая доля TypeScript
+
+**Где:** `openhands-pwa/`, `openhands-working-profile/`  
+**Что:** Большая часть фронтенда на JavaScript без типов  
+**Почему плохо:** Ошибки обнаруживаются только в рантайме
+
+**Как исправить — план миграции:**
+
+#### Шаг 1: Настроить TypeScript
+```json
+// tsconfig.json
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "declaration": true,
+        "sourceMap": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist"]
+}
+```
+
+#### Шаг 2: Переименовать файлы и добавить типы
+```javascript
+// Было: working-profile.js
+function updateProfile(profile) {
+    document.getElementById('profile-name').textContent = profile.name;
+    // ...
+}
+
+// Стало: working-profile.ts
+interface WorkingProfile {
+    id: string;
+    name: string;
+    models: string[];
+    thinkingLevel: 'direct' | 'low' | 'medium' | 'high';
+    isActive: boolean;
+}
+
+function updateProfile(profile: WorkingProfile): void {
+    const element = document.getElementById('profile-name');
+    if (element) {
+        element.textContent = profile.name;
+    }
+    // ...
+}
+```
+
+#### Шаг 3: Настроить постепенную миграцию
+```json
+// В package.json
+{
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "migrate:check": "tsc --noEmit --allowJs --checkJs"
+    }
+}
+```
+
+### Проблема 3: Хрупкие .cmd скрипты
+
+**Где:** 8 файлов в корне: `*.cmd`  
+**Что:** Пакетные файлы сложно отлаживать и поддерживать  
+**Почему плохо:** Нет обработки ошибок, сложная логика, проблемы с кодировкой
+
+**Как исправить — миграция на PowerShell:**
+
+```powershell
+# openhands.ps1 - единый скрипт управления
+param(
+    [Parameter(Mandatory=$true)]
+    [ValidateSet('start', 'stop', 'restart', 'setup', 'backup', 'restore', 'diagnose', 'status')]
+    [string]$Action,
+    
+    [switch]$Verbose
+)
+
+$ErrorActionPreference = "Stop"
+$OpenHandsRoot = $PSScriptRoot
+$LogsDir = Join-Path $OpenHandsRoot "logs"
+
+# Создание директории логов
+if (-not (Test-Path $LogsDir)) {
+    New-Item -ItemType Directory -Path $LogsDir -Force | Out-Null
+}
+
+function Write-Log {
+    param([string]$Message, [string]$Level = "INFO")
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] [$Level] $Message"
+    Write-Host $logMessage
+    Add-Content -Path (Join-Path $LogsDir "openhands.log") -Value $logMessage
+}
+
+function Start-OpenHands {
+    Write-Log "Starting OpenHands Nexus services..."
+    
+    # Проверка портов
+    $ports = @(8000, 8443, 18000, 18002, 8080)
+    foreach ($port in $ports) {
+        $connection = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+        if ($connection) {
+            Write-Log "Port $port is already in use by PID $($connection.OwningProcess)" -Level "ERROR"
+            return $false
+        }
+    }
+    
+    # Запуск сервисов
+    try {
+        Write-Log "Starting llama-swap router on port 8080..."
+        Start-Process -FilePath "llama-swap" -ArgumentList "--port 8080" -WindowStyle Hidden
+        
+        Write-Log "Starting voice bridge on port 18002..."
+        Start-Process -FilePath "python" -ArgumentList "local-voice/main.py" -WindowStyle Hidden
+        
+        Write-Log "Starting agent server on port 18000..."
+        Start-Process -FilePath "python" -ArgumentList "-m openhands.server" -WindowStyle Hidden
+        
+        Write-Log "Starting agent canvas on port 8000..."
+        Start-Process -FilePath "node" -ArgumentList "openhands-pwa/agent-canvas.js" -WindowStyle Hidden
+        
+        Write-Log "Starting LAN gateway on port 8443..."
+        Start-Process -FilePath "node" -ArgumentList "openhands-pwa/gateway.js" -WindowStyle Hidden
+        
+        Write-Log "All services started successfully" -Level "SUCCESS"
+        return $true
+    }
+    catch {
+        Write-Log "Failed to start services: $_" -Level "ERROR"
+        return $false
+    }
+}
+
+function Stop-OpenHands {
+    Write-Log "Stopping OpenHands Nexus services..."
+    
+    $processes = @(
+        @{ Name = "llama-swap"; Pattern = "llama-swap" },
+        @{ Name = "Voice Bridge"; Pattern = "local-voice/main.py" },
+        @{ Name = "Agent Server"; Pattern = "openhands.server" },
+        @{ Name = "Agent Canvas"; Pattern = "agent-canvas.js" },
+        @{ Name = "LAN Gateway"; Pattern = "gateway.js" }
+    )
+    
+    foreach ($proc in $processes) {
+        $found = Get-Process | Where-Object { 
+            $_.CommandLine -like "*$($proc.Pattern)*" 
+        } -ErrorAction SilentlyContinue
+        
+        if ($found) {
+            Write-Log "Stopping $($proc.Name)..."
+            $found | Stop-Process -Force
+        }
+    }
+    
+    Write-Log "All services stopped" -Level "SUCCESS"
+}
+
+# Основная логика
+switch ($Action) {
+    'start' { Start-OpenHands }
+    'stop' { Stop-OpenHands }
+    'restart' { 
+        Stop-OpenHands
+        Start-Sleep -Seconds 2
+        Start-OpenHands 
+    }
+    'setup' { 
+        Write-Log "Running setup..."
+        & (Join-Path $OpenHandsRoot "SETUP-OPENHANDS-LOCAL.ps1")
+    }
+    'backup' { 
+        Write-Log "Creating backup..."
+        & (Join-Path $OpenHandsRoot "BACKUP-OPENHANDS.ps1")
+    }
+    'restore' { 
+        Write-Log "Restoring from backup..."
+        & (Join-Path $OpenHandsRoot "RESTORE-OPENHANDS.ps1")
+    }
+    'diagnose' { 
+        Write-Log "Running diagnostics..."
+        & (Join-Path $OpenHandsRoot "DIAGNOSTICS-OPENHANDS-LOCAL.ps1")
+    }
+    'status' {
+        Write-Log "Checking service status..."
+        # Реализация проверки статуса
+    }
+}
+```
+
+### Проблема 4: Отсутствие единого стиля именования
+
+**Где:** Структура директорий  
+**Что:** Смешение стилей: `openhands-working-profile` (kebab-case) и `OpenHands-Tests` (PascalCase)  
+**Как исправить:** Привести всё к `kebab-case`:
+```
+openhands-working-profile  ✅ (уже правильно)
+openhands-pwa              ✅ (уже правильно)
+openhands-tests            ❌ -> openhands-tests
+openhands-update           ❌ -> openhands-update
+local-voice                ✅ (уже правильно)
+```
+
+---
+
+## 5. ТЕСТИРОВАНИЕ
+
+### Текущее состояние
+- **34 комплексных теста** в `CHECK-DEPENDENCIES.cmd`
+- Директория `OpenHands-Tests/` с валидационными тестами
+- Директория `LLM-tests/` для тестирования моделей
+- Логи верификации и чекпоинты целостности
+
+### Проблема 1: Нет структуры тестов
+
+**Где:** Корень репозитория  
+**Что:** Нет стандартной структуры `tests/`  
+**Как исправить:**
+```
+├── tests/
+│   ├── __init__.py
+│   ├── unit/
+│   │   ├── __init__.py
+│   │   ├── test_profile_manager.py
+│   │   ├── test_voice_bridge.py
+│   │   └── test_llm_router.py
+│   ├── integration/
+│   │   ├── __init__.py
+│   │   ├── test_api_endpoints.py
+│   │   ├── test_pwa_gateway.py
+│   │   └── test_model_orchestration.py
+│   ├── e2e/
+│   │   ├── __init__.py
+│   │   ├── test_full_workflow.py
+│   │   └── test_mobile_pwa.py
+│   └── fixtures/
+│       ├── sample_profiles.json
+│       └── mock_llm_responses.json
+├── conftest.py
+└── pytest.ini
+```
+
+#### `pytest.ini`
+```ini
+[pytest]
+testpaths = tests
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+addopts = -v --tb=short --strict-markers
+markers =
+    unit: Unit tests
+    integration: Integration tests
+    e2e: End-to-end tests
+    slow: Slow running tests
+    gpu: Tests requiring GPU
+```
+
+### Проблема 2: Нет CI/CD
+
+**Где:** `.github/workflows/` отсутствует  
+**Что:** Нет автоматической проверки кода  
+**Как исправить — создать `.github/workflows/ci.yml`:**
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff mypy black
+      
+      - name: Run Ruff linter
+        run: ruff check .
+      
+      - name: Run MyPy type checker
+        run: mypy .
+      
+      - name: Run Black formatter check
+        run: black --check .
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+      
+      - name: Run unit tests
+        run: pytest tests/unit/ -v --cov=. --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Проблема 3: Тесты зависят от железа
+
+**Где:** `CHECK-DEPENDENCIES.cmd`  
+**Что:** 34 теста проверяют CUDA/VRAM  
+**Почему плохо:** Невозможно запустить в CI без GPU  
+**Как исправить — разделить тесты:**
+
+```python
+# tests/conftest.py
+import pytest
+import torch
+
+def has_gpu():
+    return torch.cuda.is_available()
+
+def has_cuda():
+    try:
+        import pynvml
+        pynvml.nvmlInit()
+        return True
+    except:
+        return False
+
+# Маркеры для тестов
+pytest.mark.gpu = pytest.mark.skipif(not has_gpu(), reason="Requires GPU")
+pytest.mark.cuda = pytest.mark.skipif(not has_cuda(), reason="Requires CUDA")
+```
+
+```python
+# tests/unit/test_profile_manager.py
+import pytest
+from config.working_profile_manager import ProfileManager
+
+class TestProfileManager:
+    def test_create_profile(self):
+        """Unit test без зависимости от железа"""
+        manager = ProfileManager()
+        profile = manager.create_profile(
+            name="Test Profile",
+            models=["qwen-3.8"],
+            thinking_level="medium"
+        )
+        assert profile.name == "Test Profile"
+        assert profile.is_valid()
+
+@pytest.mark.gpu
+def test_model_loading():
+    """Тест требующий GPU - будет пропущен в CI"""
+    from llama_swap.router import ModelRouter
+    router = ModelRouter()
+    model = router.load_model("qwen-3.8-27b")
+    assert model.is_loaded
+```
+
+### Проблема 4: Нет тестов для PWA
+
+**Где:** `openhands-pwa/`  
+**Что:** Нет тестов для Service Worker и PWA функциональности  
+**Как исправить — добавить тесты с Playwright:**
+
+```javascript
+// tests/e2e/pwa.spec.js
+import { test, expect } from '@playwright/test';
+
+test.describe('PWA Functionality', () => {
+    test('should load main page', async ({ page }) => {
+        await page.goto('https://localhost:8443');
+        await expect(page).toHaveTitle(/OpenHands/);
+    });
+
+    test('should install as PWA', async ({ page }) => {
+        await page.goto('https://localhost:8443');
+        
+        // Проверка наличия manifest
+        const manifest = await page.evaluate(() => {
+            return document.querySelector('link[rel="manifest"]')?.href;
+        });
+        expect(manifest).toBeTruthy();
+        
+        // Проверка Service Worker
+        const swRegistered = await page.evaluate(async () => {
+            const registration = await navigator.serviceWorker.getRegistration();
+            return !!registration;
+        });
+        expect(swRegistered).toBe(true);
+    });
+
+    test('should work offline', async ({ page, context }) => {
+        await page.goto('https://localhost:8443');
+        
+        // Эмуляция офлайн режима
+        await context.setOffline(true);
+        await page.reload();
+        
+        // PWA должна показать кэшированную версию
+        await expect(page.locator('body')).toContainText('OpenHands');
+    });
+});
+```
+
+---
+
+## 6. ДОКУМЕНТАЦИЯ
+
+### ✅ Сильные стороны
+- Подробный README с ASCII-диаграммой
+- Таблица структуры репозитория
+- Пошаговый быстрый старт
+- Раздел безопасности
+- Наличие `Docs/` директории
+- `AGENT_STATE.md`, `AUDIT-REPORT.md`, `UI-OPTIMIZATION-AUDIT.md`
+
+### Проблема 1: Нет LICENSE файла
+
+**Где:** Корень репозитория  
+**Что:** Отсутствует файл лицензии  
+**Почему критично:** Без лицензии код юридически не может быть использован другими
+
+**Как исправить — создать `LICENSE`:**
+```text
+MIT License
+
+Copyright (c) 2026 Alexperowo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### Проблема 2: Нет CONTRIBUTING.md
+
+**Как исправить — создать `CONTRIBUTING.md`:**
+```markdown
+# Contributing to OpenHands Nexus
+
+Спасибо за интерес к проекту! Вот как вы можете помочь.
+
+## Сообщение об ошибках
+
+1. Проверьте существующие issues
+2. Создайте новое issue с:
+   - Описанием проблемы
+   - Шагами воспроизведения
+   - Ожидаемым и фактическим поведением
+   - Системной информацией (ОС, версия, железо)
+
+## Предложение улучшений
+
+1. Создайте issue с пометкой `enhancement`
+2. Опишите предлагаемое изменение
+3. Обоснуйте его полезность
+
+## Процесс разработки
+
+1. Форкните репозиторий
+2. Создайте ветку: `git checkout -b feature/amazing-feature`
+3. Внесите изменения
+4. Запустите тесты: `pytest tests/`
+5. Закоммитьте: `git commit -m 'feat: add amazing feature'`
+6. Запушьте: `git push origin feature/amazing-feature`
+7. Создайте Pull Request
+
+## Стиль кода
+
+- Python: следуйте PEP 8, используйте `black` и `ruff`
+- JavaScript/TypeScript: используйте `eslint` и `prettier`
+- Коммиты: следуйте [Conventional Commits](https://www.conventionalcommits.org/)
+
+## Тестирование
+
+Все изменения должны:
+- Проходить существующие тесты
+- Включать новые тесты для новой функциональности
+- Не снижать покрытие кода
+
+## Вопросы?
+
+Создайте issue с пометкой `question`.
+```
+
+### Проблема 3: Нет CHANGELOG.md
+
+**Как исправить — создать `CHANGELOG.md`:**
+```markdown
+# Changelog
+
+Все значимые изменения проекта документируются в этом файле.
+
+Формат основан на [Keep a Changelog](https://keepachangelog.com/),
+проект придерживается [Semantic Versioning](https://semver.org/).
+
+## [Unreleased]
+
+### Added
+- Collapsible compact bar for Working Profile card
+- Portable release with recovery stack
+- PWA asset delivery and end-to-end regression validation
+- Dependency checker with 34 comprehensive tests
+
+### Fixed
+- Mic stream leaks in voice bridge
+- Profile state consistency issues
+- Mobile selector collapse on resize
+
+### Changed
+- Hardened patchers and removed butler paths
+- Added profile templates
+- Enhanced accessibility features
+
+## [0.1.0] - 2026-09-08
+
+### Added
+- Initial commit for OpenHands Local Workstation
+- Tri-model orchestration (Qwen 3.8, Ornith 1.5, Qwen3-Next)
+- Working Profiles system
+- Mobile PWA Remote Control
+- Local voice interface (GigaAM v3 STT, Supertonic TTS)
+- HTTPS LAN Gateway with X.509 certificates
+```
+
+### Проблема 4: Нет API документации
+
+**Как исправить — создать `docs/API.md`:**
+```markdown
+# API Reference
+
+## Authentication
+
+Все API запросы требуют токен аутентификации:
+
+```
+Authorization: Bearer <token>
+```
+
+Токен хранится в `%USERPROFILE%\.openhands\auth.token`
+
+## Endpoints
+
+### Working Profiles
+
+#### GET /api/working-profiles
+Получить список всех рабочих профилей.
+
+**Ответ:**
+```json
+{
+    "profiles": [
+        {
+            "id": "qwen-single",
+            "name": "Qwen 3.8 (Автономный)",
+            "models": ["qwen-3.8-27b"],
+            "thinking_level": "medium",
+            "is_active": true
+        }
+    ]
+}
+```
+
+#### POST /api/working-profiles
+Создать новый профиль.
+
+**Тело запроса:**
+```json
+{
+    "name": "Custom Profile",
+    "models": ["qwen-3.8-27b", "ornith-1.5-35b"],
+    "thinking_level": "high"
+}
+```
+
+#### PUT /api/working-profiles/:id
+Обновить профиль.
+
+#### DELETE /api/working-profiles/:id
+Удалить профиль.
+
+### Voice API
+
+#### POST /voice-api/transcribe
+Распознать речь из аудио.
+
+**Тело запроса:** `multipart/form-data` с аудио файлом
+
+**Ответ:**
+```json
+{
+    "text": "распознанный текст",
+    "confidence": 0.95,
+    "duration_ms": 250
+}
+```
+
+#### POST /voice-api/speak
+Синтезировать речь.
+
+**Тело запроса:**
+```json
+{
+    "text": "текст для озвучки",
+    "engine": "supertonic" | "native"
+}
+```
+```
+
+---
+
+## 7. ПОЛЬЗОВАТЕЛЬСКИЙ ОПЫТ (UX)
+
+### ✅ Выдающиеся стороны
+- Простые имена скриптов: `START-OPENHANDS-LOCAL.cmd`
+- Автоматическая проверка зависимостей
+- Диагностика проблем
+- ARIA announcer и accessibility
+- Защита от схлопывания мобильного селектора
+- Комфортная высота поля ввода (52px)
+
+### Проблема 1: Нет индикатора прогресса при запуске
+
+**Где:** `START-OPENHANDS-LOCAL.cmd`  
+**Что:** Пользователь не видит прогресс запуска 5 сервисов  
+**Как исправить:**
+
+```powershell
+# start-openhands.ps1 с прогресс-баром
+function Show-Progress {
+    param(
+        [string]$Activity,
+        [string]$Status,
+        [int]$PercentComplete
+    )
+    Write-Progress -Activity $Activity -Status $Status -PercentComplete $PercentComplete
+}
+
+function Start-OpenHands {
+    $services = @(
+        @{ Name = "llama-swap Router"; Port = 8080; Command = "llama-swap --port 8080" },
+        @{ Name = "Voice Bridge"; Port = 18002; Command = "python local-voice/main.py" },
+        @{ Name = "Agent Server"; Port = 18000; Command = "python -m openhands.server" },
+        @{ Name = "Agent Canvas"; Port = 8000; Command = "node openhands-pwa/agent-canvas.js" },
+        @{ Name = "LAN Gateway"; Port = 8443; Command = "node openhands-pwa/gateway.js" }
+    )
+    
+    $total = $services.Count
+    $current = 0
+    
+    foreach ($service in $services) {
+        $current++
+        $percent = [math]::Round(($current / $total) * 100)
+        
+        Show-Progress -Activity "Starting OpenHands Nexus" `
+                      -Status "Starting $($service.Name)..." `
+                      -PercentComplete $percent
+        
+        Write-Host "[$current/$total] Starting $($service.Name) on port $($service.Port)..."
+        
+        try {
+            # Проверка занятости порта
+            $portInUse = Get-NetTCPConnection -LocalPort $service.Port -ErrorAction SilentlyContinue
+            if ($portInUse) {
+                Write-Warning "Port $($service.Port) is already in use"
+                continue
+            }
+            
+            # Запуск сервиса
+            Start-Process -FilePath $service.Command.Split(' ')[0] `
+                         -ArgumentList $service.Command.Split(' ')[1..10] `
+                         -WindowStyle Hidden
+            
+            # Ожидание запуска
+            $timeout = 30
+            $elapsed = 0
+            while ($elapsed -lt $timeout) {
+                Start-Sleep -Seconds 1
+                $elapsed++
+                
+                $connection = Test-NetConnection -ComputerName localhost -Port $service.Port -ErrorAction SilentlyContinue
+                if ($connection.TcpTestSucceeded) {
+                    Write-Host "✓ $($service.Name) started successfully" -ForegroundColor Green
+                    break
+                }
+            }
+            
+            if ($elapsed -ge $timeout) {
+                Write-Warning "$($service.Name) failed to start within $timeout seconds"
+            }
+        }
+        catch {
+            Write-Error "Failed to start $($service.Name): $_"
+        }
+    }
+    
+    Write-Progress -Activity "Starting OpenHands Nexus" -Completed
+    Write-Host "`nAll services started!" -ForegroundColor Green
+    Write-Host "Desktop: http://127.0.0.1:8000"
+    Write-Host "Mobile:  https://$(Get-LocalIP):8443"
+}
+```
+
+### Проблема 2: Нет автоматического health-check
+
+**Где:** Отсутствует  
+**Что:** Если сервис падает, система не перезапускает его  
+**Как исправить — создать `health-check.ps1`:**
+
+```powershell
+# health-check.ps1 - автоматический мониторинг
+$services = @(
+    @{ Name = "llama-swap"; Port = 8080; RestartCommand = "llama-swap --port 8080" },
+    @{ Name = "Voice Bridge"; Port = 18002; RestartCommand = "python local-voice/main.py" },
+    @{ Name = "Agent Server"; Port = 18000; RestartCommand = "python -m openhands.server" },
+    @{ Name = "Agent Canvas"; Port = 8000; RestartCommand = "node openhands-pwa/agent-canvas.js" },
+    @{ Name = "LAN Gateway"; Port = 8443; RestartCommand = "node openhands-pwa/gateway.js" }
+)
+
+$checkInterval = 30 # секунд
+$maxRestarts = 3
+$restartCounts = @{}
+
+Write-Host "OpenHands Nexus Health Check started" -ForegroundColor Cyan
+Write-Host "Checking every $checkInterval seconds..."
+
+while ($true) {
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    
+    foreach ($service in $services) {
+        try {
+            $connection = Test-NetConnection -ComputerName localhost -Port $service.Port -WarningAction SilentlyContinue
+            
+            if (-not $connection.TcpTestSucceeded) {
+                Write-Warning "[$timestamp] $($service.Name) (port $($service.Port)) is DOWN"
+                
+                # Проверка лимита перезапусков
+                if (-not $restartCounts.ContainsKey($service.Name)) {
+                    $restartCounts[$service.Name] = 0
+                }
+                
+                if ($restartCounts[$service.Name] -lt $maxRestarts) {
+                    Write-Host "[$timestamp] Attempting to restart $($service.Name)..."
+                    $restartCounts[$service.Name]++
+                    
+                    Start-Process -FilePath $service.RestartCommand.Split(' ')[0] `
+                                 -ArgumentList $service.RestartCommand.Split(' ')[1..10] `
+                                 -WindowStyle Hidden
+                    
+                    Start-Sleep -Seconds 5
+                }
+                else {
+                    Write-Error "[$timestamp] $($service.Name) exceeded max restarts ($maxRestarts)"
+                    # Отправить уведомление или алерт
+                }
+            }
+            else {
+                Write-Host "[$timestamp] $($service.Name) (port $($service.Port)) is OK" -ForegroundColor Green
+                $restartCounts[$service.Name] = 0 # Сброс счётчика при успешной работе
+            }
+        }
+        catch {
+            Write-Error "[$timestamp] Error checking $($service.Name): $_"
+        }
+    }
+    
+    Start-Sleep -Seconds $checkInterval
+}
+```
+
+### Проблема 3: Нет админ-панели
+
+**Где:** Отсутствует  
+**Что:** Управление только через скрипты или мобильный PWA  
+**Как исправить — добавить локальную админ-панель:**
+
+```javascript
+// admin-panel/server.js
+import express from 'express';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+const app = express();
+app.use(express.json());
+app.use(express.static('admin-panel/public'));
+
+// Статус сервисов
+app.get('/api/status', async (req, res) => {
+    const services = [
+        { name: 'llama-swap', port: 8080 },
+        { name: 'voice-bridge', port: 18002 },
+        { name: 'agent-server', port: 18000 },
+        { name: 'agent-canvas', port: 8000 },
+        { name: 'lan-gateway', port: 8443 }
+    ];
+    
+    const results = await Promise.all(services.map(async (service) => {
+        try {
+            const { stdout } = await execAsync(
+                `powershell -Command "Test-NetConnection -ComputerName localhost -Port ${service.port} | Select-Object -ExpandProperty TcpTestSucceeded"`
+            );
+            return { ...service, running: stdout.trim() === 'True' };
+        } catch {
+            return { ...service, running: false };
+        }
+    }));
+    
+    res.json({ services: results });
+});
+
+// Управление сервисами
+app.post('/api/services/:name/:action', async (req, res) => {
+    const { name, action } = req.params;
+    const allowedActions = ['start', 'stop', 'restart'];
+    
+    if (!allowedActions.includes(action)) {
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+    
+    try {
+        const { stdout, stderr } = await execAsync(
+            `powershell -File scripts/${action}-service.ps1 -ServiceName ${name}`
+        );
+        res.json({ success: true, output: stdout });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Логи
+app.get('/api/logs/:service', async (req, res) => {
+    const { service } = req.params;
+    const logPath = `logs/${service}.log`;
+    
+    try {
+        const { stdout } = await execAsync(`powershell -Command "Get-Content '${logPath}' -Tail 100"`);
+        res.json({ logs: stdout });
+    } catch {
+        res.json({ logs: 'No logs available' });
+    }
+});
+
+app.listen(8001, () => {
+    console.log('Admin panel running on http://127.0.0.1:8001');
+});
+```
+
+---
+
+## 8. ПРОИЗВОДИТЕЛЬНОСТЬ
+
+### ✅ Сильные стороны
+- LRU-выгрузка моделей из VRAM
+- Динамическая ротация моделей
+- Локальный STT с откликом 100-300 мс
+- Оптимизации: debounce observers, visibility-aware polling
+
+### Проблема 1: Нет мониторинга VRAM
+
+**Где:** Отсутствует  
+**Что:** Пользователь не видит использование видеопамяти  
+**Как исправить:**
+
+```python
+# monitoring/vram_monitor.py
+import pynvml
+import time
+import json
+from datetime import datetime
+
+class VRAMMonitor:
+    def __init__(self):
+        pynvml.nvmlInit()
+        self.handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+    
+    def get_vram_info(self):
+        info = pynvml.nvmlDeviceGetMemoryInfo(self.handle)
+        return {
+            'total_mb': info.total // (1024 * 1024),
+            'used_mb': info.used // (1024 * 1024),
+            'free_mb': info.free // (1024 * 1024),
+            'utilization_percent': (info.used / info.total) * 100
+        }
+    
+    def get_model_memory_usage(self):
+        """Получить использование памяти по процессам"""
+        processes = pynvml.nvmlDeviceGetComputeRunningProcesses(self.handle)
+        return [
+            {
+                'pid': p.pid,
+                'memory_mb': p.usedGpuMemory // (1024 * 1024) if p.usedGpuMemory else 0
+            }
+            for p in processes
+        ]
+    
+    def log_to_file(self, filepath='logs/vram.log'):
+        info = self.get_vram_info()
+        timestamp = datetime.now().isoformat()
+        with open(filepath, 'a') as f:
+            f.write(f"{timestamp}: {json.dumps(info)}\n")
+    
+    def check_thresholds(self, warning_threshold=80, critical_threshold=95):
+        info = self.get_vram_info()
+        if info['utilization_percent'] >= critical_threshold:
+            return 'CRITICAL', info
+        elif info['utilization_percent'] >= warning_threshold:
+            return 'WARNING', info
+        return 'OK', info
+
+# Использование
+if __name__ == '__main__':
+    monitor = VRAMMonitor()
+    while True:
+        status, info = monitor.check_thresholds()
+        print(f"[{status}] VRAM: {info['used_mb']}/{info['total_mb']} MB ({info['utilization_percent']:.1f}%)")
+        monitor.log_to_file()
+        time.sleep(5)
+```
+
+### Проблема 2: Нет кэширования ответов моделей
+
+**Где:** Отсутствует  
+**Что:** Повторяющиеся запросы обрабатываются заново  
+**Как исправить:**
+
+```python
+# cache/semantic_cache.py
+import hashlib
+import json
+import sqlite3
+from datetime import datetime, timedelta
+from typing import Optional, Dict, Any
+import numpy as np
+
+class SemanticCache:
+    def __init__(self, db_path='cache/responses.db', ttl_hours=24):
+        self.db_path = db_path
+        self.ttl = timedelta(hours=ttl_hours)
+        self.init_db()
+    
+    def init_db(self):
+        conn = sqlite3.connect(self.db_path)
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS cache (
+                key TEXT PRIMARY KEY,
+                query_hash TEXT,
+                query_text TEXT,
+                response TEXT,
+                model TEXT,
+                created_at TIMESTAMP,
+                hits INTEGER DEFAULT 0
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    
+    def _get_query_hash(self, query: str, model: str) -> str:
+        """Создать хеш запроса для поиска"""
+        normalized = query.lower().strip()
+        return hashlib.sha256(f"{normalized}:{model}".encode()).hexdigest()
+    
+    def get(self, query: str, model: str) -> Optional[Dict[str, Any]]:
+        """Получить кэшированный ответ"""
+        query_hash = self._get_query_hash(query, model)
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT response, created_at FROM cache 
+            WHERE query_hash = ? AND created_at > ?
+        ''', (query_hash, datetime.now() - self.ttl))
+        
+        result = cursor.fetchone()
+        
+        if result:
+            # Увеличить счётчик попаданий
+            cursor.execute('UPDATE cache SET hits = hits + 1 WHERE query_hash = ?', (query_hash,))
+            conn.commit()
+            conn.close()
+            return json.loads(result[0])
+        
+        conn.close()
+        return None
+    
+    def set(self, query: str, model: str, response: Dict[str, Any]):
+        """Сохранить ответ в кэш"""
+        query_hash = self._get_query_hash(query, model)
+        conn = sqlite3.connect(self.db_path)
+        
+        conn.execute('''
+            INSERT OR REPLACE INTO cache 
+            (key, query_hash, query_text, response, model, created_at, hits)
+            VALUES (?, ?, ?, ?, ?, ?, 0)
+        ''', (
+            query_hash,
+            query_hash,
+            query,
+            json.dumps(response),
+            model,
+            datetime.now()
+        ))
+        
+        conn.commit()
+        conn.close()
+    
+    def cleanup_expired(self):
+        """Удалить устаревшие записи"""
+        conn = sqlite3.connect(self.db_path)
+        conn.execute('DELETE FROM cache WHERE created_at < ?', (datetime.now() - self.ttl,))
+        conn.commit()
+        conn.close()
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Получить статистику кэша"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT COUNT(*), SUM(hits) FROM cache')
+        total, hits = cursor.fetchone()
+        
+        conn.close()
+        
+        return {
+            'total_entries': total or 0,
+            'total_hits': hits or 0,
+            'hit_rate': (hits / total * 100) if total else 0
+        }
+
+# Использование в LLM router
+from cache.semantic_cache import SemanticCache
+
+cache = SemanticCache()
+
+async def get_llm_response(query: str, model: str) -> Dict[str, Any]:
+    # Проверить кэш
+    cached = cache.get(query, model)
+    if cached:
+        cached['from_cache'] = True
+        return cached
+    
+    # Получить новый ответ
+    response = await call_llm_model(query, model)
+    
+    # Сохранить в кэш
+    cache.set(query, model, response)
+    
+    return response
+```
+
+### Проблема 3: Нет оптимизации сетевых запросов
+
+**Где:** PWA клиент  
+**Что:** Вероятно используется polling вместо WebSocket  
+**Как исправить:**
+
+```javascript
+// pwa/websocket-client.js
+class RealtimeClient {
+    constructor(url) {
+        this.url = url;
+        this.ws = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectDelay = 1000;
+        this.listeners = new Map();
+    }
+    
+    connect() {
+        this.ws = new WebSocket(this.url);
+        
+        this.ws.onopen = () => {
+            console.log('WebSocket connected');
+            this.reconnectAttempts = 0;
+            this.emit('connected');
+        };
+        
+        this.ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.emit(data.type, data.payload);
+        };
+        
+        this.ws.onclose = () => {
+            console.log('WebSocket disconnected');
+            this.emit('disconnected');
+            this.attemptReconnect();
+        };
+        
+        this.ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            this.emit('error', error);
+        };
+    }
+    
+    attemptReconnect() {
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+            
+            console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+            
+            setTimeout(() => {
+                this.connect();
+            }, delay);
+        }
+    }
+    
+    subscribe(event, callback) {
+        if (!this.listeners.has(event)) {
+            this.listeners.set(event, new Set());
+        }
+        this.listeners.get(event).add(callback);
+    }
+    
+    unsubscribe(event, callback) {
+        if (this.listeners.has(event)) {
+            this.listeners.get(event).delete(callback);
+        }
+    }
+    
+    emit(event, data) {
+        if (this.listeners.has(event)) {
+            this.listeners.get(event).forEach(callback => callback(data));
+        }
+    }
+    
+    send(type, payload) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type, payload }));
+        }
+    }
+}
+
+// Использование
+const client = new RealtimeClient('wss://192.168.0.14:8443/ws');
+
+client.subscribe('profile-update', (data) => {
+    updateProfileUI(data);
+});
+
+client.subscribe('agent-response', (data) => {
+    appendMessage(data);
+});
+
+client.connect();
+```
+
+---
+
+## 9. НАДЁЖНОСТЬ
+
+### ✅ Сильные стороны
+- Скрипты резервного копирования и восстановления
+- Аварийное восстановление
+- Диагностика проблем
+
+### Проблема 1: Нет централизованного логирования
+
+**Где:** Отсутствует  
+**Что:** Логи разбросаны или отсутствуют  
+**Как исправить:**
+
+```python
+# utils/logger.py
+import logging
+import logging.handlers
+import os
+from datetime import datetime
+from pathlib import Path
+
+class OpenHandsLogger:
+    def __init__(self, log_dir='logs', max_size_mb=10, backup_count=5):
+        self.log_dir = Path(log_dir)
+        self.log_dir.mkdir(exist_ok=True)
+        
+        self.max_bytes = max_size_mb * 1024 * 1024
+        self.backup_count = backup_count
+        
+        self.loggers = {}
+    
+    def get_logger(self, name: str) -> logging.Logger:
+        if name in self.loggers:
+            return self.loggers[name]
+        
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.DEBUG)
+        
+        # Файловый обработчик с ротацией
+        log_file = self.log_dir / f'{name}.log'
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_file,
+            maxBytes=self.max_bytes,
+            backupCount=self.backup_count,
+            encoding='utf-8'
+        )
+        file_handler.setLevel(logging.DEBUG)
+        
+        # Консольный обработчик
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        
+        # Форматтеры
+        file_formatter = logging.Formatter(
+            '%(asctime)s | %(name)s | %(levelname)-8s | %(funcName)s:%(lineno)d | %(message)s'
+        )
+        console_formatter = logging.Formatter(
+            '%(asctime)s | %(levelname)-8s | %(message)s',
+            datefmt='%H:%M:%S'
+        )
+        
+        file_handler.setFormatter(file_formatter)
+        console_handler.setFormatter(console_formatter)
+        
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
+        
+        self.loggers[name] = logger
+        return logger
+    
+    def get_audit_logger(self) -> logging.Logger:
+        """Отдельный логгер для аудита безопасности"""
+        logger = logging.getLogger('audit')
+        logger.setLevel(logging.INFO)
+        
+        if not logger.handlers:
+            log_file = self.log_dir / 'audit.log'
+            handler = logging.handlers.RotatingFileHandler(
+                log_file,
+                maxBytes=self.max_bytes,
+                backupCount=self.backup_count
+            )
+            formatter = logging.Formatter(
+                '%(asctime)s | AUDIT | %(message)s'
+            )
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+        
+        return logger
+
+# Использование
+logger_manager = OpenHandsLogger()
+
+# В каждом модуле
+logger = logger_manager.get_logger('voice-bridge')
+logger.info("Voice bridge started")
+logger.error("Failed to process audio", exc_info=True)
+
+# Для аудита
+audit_logger = logger_manager.get_audit_logger()
+audit_logger.info(f"User connected from {ip_address}")
+audit_logger.info(f"Profile changed to {profile_name}")
+```
+
+### Проблема 2: Нет автоматического перезапуска при падении
+
+**Где:** Отсутствует  
+**Что:** Сервисы не перезапускаются автоматически  
+**Как исправить — создать Windows Service или использовать NSSM:**
+
+```powershell
+# install-service.ps1 - установка как Windows Service через NSSM
+$nssmPath = "C:\nssm\nssm.exe"
+$serviceName = "OpenHandsNexus"
+$servicePath = Join-Path $PSScriptRoot "openhands-service.ps1"
+
+# Скачать NSSM если не существует
+if (-not (Test-Path $nssmPath)) {
+    Write-Host "Downloading NSSM..."
+    Invoke-WebRequest -Uri "https://nssm.cc/release/nssm-2.24.zip" -OutFile "nssm.zip"
+    Expand-Archive -Path "nssm.zip" -DestinationPath "C:\nssm"
+}
+
+# Установить сервис
+& $nssmPath install $serviceName "powershell.exe" "-File `"$servicePath`""
+& $nssmPath set $serviceName AppDirectory $PSScriptRoot
+& $nssmPath set $serviceName DisplayName "OpenHands Nexus Service"
+& $nssmPath set $serviceName Description "Local AI workstation service manager"
+& $nssmPath set $serviceName Start SERVICE_AUTO_START
+& $nssmPath set $serviceName ObjectName LocalSystem
+& $nssmPath set $serviceName AppStdout (Join-Path $PSScriptRoot "logs\service.log")
+& $nssmPath set $serviceName AppStderr (Join-Path $PSScriptRoot "logs\service-error.log")
+
+Write-Host "Service installed. Start with: nssm start $serviceName"
+```
+
+---
+
+## 10. МОБИЛЬНЫЙ PWA
+
+### Проблема 1: Привязка к конкретному IP
+
+**Где:** `openhands-pwa/`  
+**Что:** `192.168.0.14` захардкожен  
+**Как исправить — добавить экран настройки:**
+
+```javascript
+// pwa/connection-manager.js
+class ConnectionManager {
+    constructor() {
+        this.serverUrl = localStorage.getItem('openhands_server_url') || '';
+        this.authToken = localStorage.getItem('openhands_auth_token') || '';
+    }
+    
+    async discoverServer() {
+        // Попытка обнаружить сервер через mDNS/Bonjour
+        // Для упрощения - попробовать локальную подсеть
+        
+        const subnet = this.getLocalSubnet();
+        const promises = [];
+        
+        for (let i = 1; i <= 254; i++) {
+            const ip = `${subnet}.${i}`;
+            promises.push(this.checkServer(ip));
+        }
+        
+        const results = await Promise.all(promises);
+        return results.filter(r => r.found);
+    }
+    
+    async checkServer(ip, timeout = 2000) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            const response = await fetch(`https://${ip}:8443/health`, {
+                signal: controller.signal,
+                mode: 'no-cors'
+            });
+            
+            clearTimeout(timeoutId);
+            return { found: true, ip };
+        } catch {
+            return { found: false, ip };
+        }
+    }
+    
+    getLocalSubnet() {
+        // Получить локальную подсеть (упрощённо)
+        // В реальном приложении использовать WebRTC или другой метод
+        return '192.168.0';
+    }
+    
+    async connect(ip, token) {
+        this.serverUrl = `https://${ip}:8443`;
+        this.authToken = token;
+        
+        localStorage.setItem('openhands_server_url', this.serverUrl);
+        localStorage.setItem('openhands_auth_token', this.authToken);
+        
+        // Проверить подключение
+        const response = await this.apiRequest('/api/status');
+        return response !== null;
+    }
+    
+    async apiRequest(endpoint, options = {}) {
+        try {
+            const response = await fetch(`${this.serverUrl}${endpoint}`, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${this.authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                return response.json();
+            }
+            return null;
+        } catch {
+            return null;
+        }
+    }
+}
+
+// UI для настройки подключения
+function showConnectionScreen() {
+    return `
+        <div class="connection-screen">
+            <h2>Подключение к OpenHands Nexus</h2>
+            
+            <div class="section">
+                <h3>Автоматический поиск</h3>
+                <button id="discover-btn">Найти сервер автоматически</button>
+                <div id="discovery-results"></div>
+            </div>
+            
+            <div class="section">
+                <h3>Ручная настройка</h3>
+                <input type="text" id="server-ip" placeholder="IP адрес (например: 192.168.0.14)">
+                <input type="password" id="auth-token" placeholder="Токен доступа">
+                <button id="connect-btn">Подключиться</button>
+            </div>
+            
+            <div class="help">
+                <p>Токен доступа находится в файле:</p>
+                <code>%USERPROFILE%\.openhands\auth.token</code>
+            </div>
+        </div>
+    `;
+}
+```
+
+---
+
+## 11. ГОЛОСОВОЙ ИНТЕРФЕЙС
+
+### Проблема 1: Нет обработки ошибок распознавания
+
+**Где:** `local-voice/`  
+**Что:** Неясно что происходит при неудачном распознавании  
+**Как исправить:**
+
+```python
+# local-voice/error_handler.py
+from enum import Enum
+from typing import Optional, Callable
+import logging
+
+class VoiceError(Enum):
+    NO_AUDIO = "no_audio"
+    LOW_CONFIDENCE = "low_confidence"
+    TIMEOUT = "timeout"
+    MICROPHONE_ERROR = "microphone_error"
+    MODEL_ERROR = "model_error"
+
+class VoiceErrorHandler:
+    def __init__(self):
+        self.logger = logging.getLogger('voice-error-handler')
+        self.error_callbacks = []
+        self.confidence_threshold = 0.7
+    
+    def add_error_callback(self, callback: Callable):
+        self.error_callbacks.append(callback)
+    
+    def handle_recognition_result(self, result) -> Optional[str]:
+        """Обработать результат распознавания"""
+        
+        if result is None:
+            self._notify_error(VoiceError.NO_AUDIO, "Аудио не получено")
+            return None
+        
+        if not hasattr(result, 'text') or not result.text:
+            self._notify_error(VoiceError.LOW_CONFIDENCE, "Речь не распознана")
+            return None
+        
+        if hasattr(result, 'confidence') and result.confidence < self.confidence_threshold:
+            self._notify_error(
+                VoiceError.LOW_CONFIDENCE,
+                f"Низкая уверенность распознавания: {result.confidence:.2f}"
+            )
+            # Можно запросить подтверждение у пользователя
+            return self._request_confirmation(result.text)
+        
+        return result.text
+    
+    def _request_confirmation(self, text: str) -> Optional[str]:
+        """Запросить подтверждение распознанного текста"""
+        # Отправить в UI запрос подтверждения
+        # Вернуть текст если подтверждён, иначе None
+        return text
+    
+    def _notify_error(self, error_type: VoiceError, message: str):
+        """Уведомить об ошибке"""
+        self.logger.warning(f"Voice error [{error_type.value}]: {message}")
+        
+        for callback in self.error_callbacks:
+            try:
+                callback(error_type, message)
+            except Exception as e:
+                self.logger.error(f"Error in error callback: {e}")
+
+# Использование в голосовом мосте
+error_handler = VoiceErrorHandler()
+
+# Регистрация обработчика для UI
+error_handler.add_error_callback(lambda error, msg: send_to_ui({
+    'type': 'voice_error',
+    'error': error.value,
+    'message': msg,
+    'suggestion': get_suggestion(error)
+}))
+
+def get_suggestion(error: VoiceError) -> str:
+    suggestions = {
+        VoiceError.NO_AUDIO: "Проверьте микрофон и попробуйте снова",
+        VoiceError.LOW_CONFIDENCE: "Говорите чётче или ближе к микрофону",
+        VoiceError.TIMEOUT: "Не удалось распознать речь. Попробуйте ещё раз",
+        VoiceError.MICROPHONE_ERROR: "Ошибка доступа к микрофону",
+        VoiceError.MODEL_ERROR: "Ошибка модели распознавания"
+    }
+    return suggestions.get(error, "Произошла неизвестная ошибка")
+```
+
+---
+
+## 12. ОРКЕСТРАЦИЯ МОДЕЛЕЙ
+
+### Проблема 1: Жёстко заданные модели
+
+**Где:** Конфигурация  
+**Что:** Нельзя добавить свою модель без изменения кода  
+**Как исправить — создать конфигурационный файл:**
+
+```yaml
+# config/models.yaml
+models:
+  - id: qwen-3.8-27b
+    name: "Qwen 3.8 27B"
+    role: architect
+    description: "Планирование, ревью, архитектура"
+    endpoint: "http://localhost:8081"
+    vram_limit_gb: 16
+    thinking_levels:
+      - name: direct
+        tokens: 0
+      - name: low
+        tokens: 512
+      - name: medium
+        tokens: 1024
+      - name: high
+        tokens: 2048
+  
+  - id: ornith-1.5-35b
+    name: "Ornith 1.5 Coder 35B"
+    role: executor
+    description: "Синтез кода, тесты, исполнение"
+    endpoint: "http://localhost:8082"
+    vram_limit_gb: 20
+    thinking_levels:
+      - name: coding
+        tokens: 256
+  
+  - id: qwen3-next-80b
+    name: "Qwen3-Next 80B"
+    role: analyst
+    description: "Глубокий анализ и дебаг"
+    endpoint: "http://localhost:8083"
+    vram_limit_gb: 48
+    thinking_levels:
+      - name: normal
+        tokens: 2048
+      - name: deep
+        tokens: 4096
+
+teams:
+  - id: qwen-single
+    name: "Qwen 3.8 (Автономный)"
+    models: [qwen-3.8-27b]
+    thinking_level: medium
+  
+  - id: qwen-ornith
+    name: "Qwen + Ornith (Кодинг)"
+    models: [qwen-3.8-27b, ornith-1.5-35b]
+    thinking_level: medium
+  
+  - id: team-full
+    name: "Team-Full (3 Модели)"
+    models: [qwen-3.8-27b, ornith-1.5-35b, qwen3-next-80b]
+    thinking_level: standard
+```
+
+```python
+# config/model_loader.py
+import yaml
+from dataclasses import dataclass
+from typing import List, Dict, Optional
+from pathlib import Path
+
+@dataclass
+class ModelConfig:
+    id: str
+    name: str
+    role: str
+    description: str
+    endpoint: str
+    vram_limit_gb: int
+    thinking_levels: List[Dict[str, int]]
+
+@dataclass
+class TeamConfig:
+    id: str
+    name: str
+    models: List[str]
+    thinking_level: str
+
+class ModelLoader:
+    def __init__(self, config_path: str = 'config/models.yaml'):
+        self.config_path = Path(config_path)
+        self.models: Dict[str, ModelConfig] = {}
+        self.teams: Dict[str, TeamConfig] = {}
+        self.load()
+    
+    def load(self):
+        with open(self.config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        
+        # Загрузить модели
+        for model_data in config.get('models', []):
+            model = ModelConfig(**model_data)
+            self.models[model.id] = model
+        
+        # Загрузить команды
+        for team_data in config.get('teams', []):
+            team = TeamConfig(**team_data)
+            self.teams[team.id] = team
+    
+    def get_model(self, model_id: str) -> Optional[ModelConfig]:
+        return self.models.get(model_id)
+    
+    def get_team(self, team_id: str) -> Optional[TeamConfig]:
+        return self.teams.get(team_id)
+    
+    def get_models_for_team(self, team_id: str) -> List[ModelConfig]:
+        team = self.get_team(team_id)
+        if not team:
+            return []
+        
+        return [self.models[model_id] for model_id in team.models if model_id in self.models]
+    
+    def add_custom_model(self, model_config: ModelConfig):
+        """Добавить пользовательскую модель"""
+        self.models[model_config.id] = model_config
+        self.save()
+    
+    def save(self):
+        """Сохранить конфигурацию обратно в файл"""
+        config = {
+            'models': [
+                {
+                    'id': m.id,
+                    'name': m.name,
+                    'role': m.role,
+                    'description': m.description,
+                    'endpoint': m.endpoint,
+                    'vram_limit_gb': m.vram_limit_gb,
+                    'thinking_levels': m.thinking_levels
+                }
+                for m in self.models.values()
+            ],
+            'teams': [
+                {
+                    'id': t.id,
+                    'name': t.name,
+                    'models': t.models,
+                    'thinking_level': t.thinking_level
+                }
+                for t in self.teams.values()
+            ]
+        }
+        
+        with open(self.config_path, 'w', encoding='utf-8') as f:
+            yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
+```
+
+---
+
+## 13. ЧИСТОТА РЕПОЗИТОРИЯ
+
+### Проблема 1: Нет .gitattributes
+
+**Как исправить — создать `.gitattributes`:**
+```gitattributes
+# .gitattributes
+
+# Нормализация окончаний строк
+* text=auto
+
+# Файлы с LF
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+
+# Файлы с CRLF (Windows)
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Бинарные файлы
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# Исключения из архива
+.gitattributes export-ignore
+.gitignore export-ignore
+```
+
+### Проблема 2: Нет проверки на секреты
+
+**Как исправить — создать `.gitleaks.toml`:**
+```toml
+# .gitleaks.toml
+title = "OpenHands Nexus Gitleaks Config"
+
+[allowlist]
+description = "Global allowlist"
+paths = [
+    '''node_modules''',
+    '''.git''',
+    '''dist''',
+    '''build'''
+]
+
+[[rules]]
+id = "private-key"
+description = "Private Key"
+regex = '''-----BEGIN (RSA|EC|OPENSSH|DSA|PGP) PRIVATE KEY-----'''
+
+[[rules]]
+id = "api-key"
+description = "API Key"
+regex = '''[aA][pP][iI][-_]?[kK][eE][yY]\s*[:=]\s*['"][a-zA-Z0-9]{20,}['"]'''
+
+[[rules]]
+id = "auth-token"
+description = "Auth Token"
+regex = '''[aA][uU][tT][hH][-_]?[tT][oO][kK][eE][nN]\s*[:=]\s*['"][a-zA-Z0-9]{20,}['"]'''
+
+[[rules]]
+id = "password"
+description = "Password in config"
+regex = '''[pP][aA][sS][sS][wW][oO][rR][dD]\s*[:=]\s*['"][^'"]{8,}['"]'''
+```
+
+### Проблема 3: Нет .gitignore для специфичных файлов
+
+**Как исправить — обновить `.gitignore`:**
+```gitignore
+# .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Secrets and certificates
+*.key
+*.pem
+*.pfx
+*.p12
+*.cert
+*.crt
+*.auth
+*.token
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# OpenHands specific
+auth.token
+user_profiles/
+cache/
+*.db
+*.sqlite
+
+# PWA
+service-worker.js.map
+manifest.json.map
+```
+
+---
+
+## 14. ПЛАН ИСПРАВЛЕНИЙ
+
+### 🔴 Критические (сделать немедленно)
+
+| # | Задача | Файлы для изменения | Время |
+|---|--------|---------------------|-------|
+| 1 | Добавить аутентификацию для LAN API | `openhands-pwa/gateway.js`, новый `middleware/auth.js` | 4 часа |
+| 2 | Добавить `LICENSE` файл | Новый `LICENSE` | 10 минут |
+| 3 | Динамическое определение IP | `openhands-pwa/gateway.js`, `config/` | 2 часа |
+| 4 | Централизованное логирование | Новый `utils/logger.py`, все модули | 4 часа |
+| 5 | Health-check сервисов | Новый `health-check.ps1` | 3 часа |
+
+### 🟡 Высокий приоритет (эта неделя)
+
+| # | Задача | Файлы для изменения | Время |
+|---|--------|---------------------|-------|
+| 6 | Настроить линтеры | `.eslintrc.json`, `pyproject.toml`, `.prettierrc` | 2 часа |
+| 7 | Миграция на TypeScript | `openhands-pwa/*.js` → `*.ts` | 8 часов |
+| 8 | Добавить unit-тесты | `tests/unit/` | 8 часов |
+| 9 | CI/CD GitHub Actions | `.github/workflows/ci.yml` | 2 часа |
+| 10 | Миграция .cmd на PowerShell | Все `*.cmd` → `*.ps1` | 6 часов |
+
+### 🟢 Средний приоритет (этот месяц)
+
+| # | Задача | Файлы для изменения | Время |
+|---|--------|---------------------|-------|
+| 11 | Админ-панель | `admin-panel/` | 8 часов |
+| 12 | Конфигурация моделей | `config/models.yaml`, `config/model_loader.py` | 4 часа |
+| 13 | Мониторинг VRAM | `monitoring/vram_monitor.py` | 4 часа |
+| 14 | Семантический кэш | `cache/semantic_cache.py` | 6 часов |
+| 15 | Документация | `CONTRIBUTING.md`, `CHANGELOG.md`, `docs/API.md` | 4 часа |
+
+### 🔵 Низкий приоритет (следующий месяц)
+
+| # | Задача | Файлы для изменения | Время |
+|---|--------|---------------------|-------|
+| 16 | Английский в голосовом интерфейсе | `local-voice/` | 6 часов |
+| 17 | Push-уведомления | `openhands-pwa/` | 8 часов |
+| 18 | Экспорт/импорт профилей | `Config/` | 4 часа |
+| 19 | Темизация интерфейса | `openhands-working-profile/` | 6 часов |
+| 20 | Статистика использования | `monitoring/` | 4 часа |
+
+---
+
+## 15. ИТОГОВАЯ ОЦЕНКА
+
+### Сводная таблица
+
+| Категория | Оценка | Комментарий |
+|-----------|--------|-------------|
+| Архитектура | ⭐⭐⭐⭐⭐ | Продуманная модульная структура |
+| Безопасность | ⭐⭐⭐☆☆ | Локальность — плюс, но нет аутентификации |
+| Качество кода | ⭐⭐⭐⭐☆ | Видна дисциплина, но нет линтеров |
+| Тестирование | ⭐⭐⭐⭐☆ | 34 теста — хорошо, но нет unit-тестов |
+| Документация | ⭐⭐⭐⭐⭐ | Отличный README, но нет LICENSE |
+| Пользовательский опыт | ⭐⭐⭐⭐⭐ | Максимально дружелюбно |
+| Масштабируемость | ⭐⭐⭐☆☆ | Жёсткая привязка к Windows 11 + CUDA |
+| Надёжность | ⭐⭐⭐⭐☆ | Backup/Recovery — хорошо, нет автоперезапуска |
+
+### Общая оценка: **8.2/10**
+
+### Заключение
+
+**OpenHands Nexus** — это впечатляющий проект с продуманной архитектурой и отличным пользовательским опытом. Проект демонстрирует высокий уровень технической зрелости автора.
+
+**Основные сильные стороны:**
+- Модульная архитектура с чётким разделением ответственности
+- Максимальная простота для нетехнических пользователей
+- 100% локальная работа обеспечивает приватность
+- Подробная документация и визуальные схемы
+- Инновационная оркестрация трёх моделей
+
+**Основные риски:**
+- Отсутствие аутентификации в локальной сети
+- Отсутствие лицензирования
+- Жёсткая привязка к конкретному окружению
+- Недостаточное автоматизированное тестирование
+
+**Рекомендация:** При устранении критических замечаний по безопасности проект может стать эталонным решением для локальных AI-рабочих станций.
+
+---
+
+## ПРИЛОЖЕНИЕ A: Структура файлов для создания
+
+```
+openhands-nexus/
+├── LICENSE                              # Создать немедленно
+├── .gitattributes                       # Создать
+├── .gitignore                           # Обновить
+├── .editorconfig                        # Создать
+├── .eslintrc.json                       # Создать
+├── .prettierrc                          # Создать
+├── .gitleaks.toml                       # Создать
+├── pyproject.toml                       # Создать/обновить
+├── tsconfig.json                        # Создать
+├── CONTRIBUTING.md                      # Создать
+├── CHANGELOG.md                         # Создать
+├── .github/
+│   └── workflows/
+│       └── ci.yml                       # Создать
+├── config/
+│   └── models.yaml                      # Создать
+├── middleware/
+│   ├── auth.js                          # Создать
+│   ├── logger.js                        # Создать
+│   └── rate-limit.js                    # Создать
+├── utils/
+│   └── logger.py                        # Создать
+├── monitoring/
+│   └── vram_monitor.py                  # Создать
+├── cache/
+│   └── semantic_cache.py                # Создать
+├── health-check.ps1                     # Создать
+├── install-service.ps1                  # Создать
+├── openhands.ps1                        # Создать (единый CLI)
+├── tests/
+│   ├── unit/                            # Создать
+│   ├── integration/                     # Создать
+│   ├── e2e/                             # Создать
+│   └── fixtures/                        # Создать
+├── docs/
+│   └── API.md                           # Создать
+└── admin-panel/
+    └── server.js                        # Создать
+```
+
+---
+
+**Конец отчёта**
+
+---
+
+## 💾 Как сохранить этот отчёт
+
+Скопируйте весь текст выше и сохраните в файл:
+
+1. **Способ 1:** Создайте файл `OpenHands-Nexus-Audit-Report.md` на рабочем столе
+2. **Способ 2:** Используйте команду в терминале:
+```powershell
+# Windows PowerShell
+@"
+[весь текст отчёта]
+"@ | Out-File -FilePath "$env:USERPROFILE\Desktop\OpenHands-Nexus-Audit-Report.md" -Encoding UTF8
+```
+
+3. **Способ 3:** Если хотите, я могу разбить отчёт на части для удобства копирования.
+
+Нужна ли дополнительная информация по какому-либо разделу или более детальный разбор конкретного аспекта?

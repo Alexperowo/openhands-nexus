@@ -159,7 +159,7 @@ function checkAuth(req) {
   return false;
 }
 
-function renderCaInstructionsPage() {
+function renderCaInstructionsPage(hostDisplay = "192.168.0.14") {
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -318,7 +318,7 @@ function renderCaInstructionsPage() {
     <a class="btn-secondary" href="/">Вернуться в OpenHands</a>
 
     <div class="note">
-      Сертификат выпущен исключительно для вашего локального ПК (<code>192.168.0.14</code>).
+      Сертификат выпущен исключительно для вашего локального ПК (<code>${hostDisplay}</code>).
     </div>
   </div>
 </body>
@@ -470,7 +470,7 @@ const httpsServer = createHttpsServer(
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "public, max-age=3600",
       });
-      res.end(renderCaInstructionsPage());
+      res.end(renderCaInstructionsPage(req.headers.host || "192.168.0.14"));
       return;
     }
 
