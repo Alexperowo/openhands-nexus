@@ -49,12 +49,36 @@
         }
     }
 
+    let pillIdleTimer = null;
+
+    function resetPillIdleTimer() {
+        const pill = document.getElementById("oh-voice-pill");
+        if (pill) {
+            pill.classList.remove("is-idle-dimmed");
+        }
+        if (pillIdleTimer) {
+            clearTimeout(pillIdleTimer);
+            pillIdleTimer = null;
+        }
+        if (!isRecording && !currentAudio && !isPopoverOpen) {
+            pillIdleTimer = setTimeout(() => {
+                const p = document.getElementById("oh-voice-pill");
+                if (p && !isRecording && !currentAudio && !isPopoverOpen) {
+                    p.classList.add("is-idle-dimmed");
+                }
+            }, 8000);
+        }
+    }
+
     function updatePillStatus(text, state = "idle") {
         const pill = document.getElementById("oh-voice-pill");
         const statusText = document.getElementById("oh-voice-pill-text");
         if (pill && statusText) {
             statusText.textContent = text;
             pill.className = `oh-voice-pill ${state}`;
+            if (state !== "idle") {
+                pill.classList.remove("is-idle-dimmed");
+            }
         }
     }
 
@@ -673,6 +697,12 @@
                 }
             });
         }
+
+        // Auto-dimming on idle (UI-08)
+        document.addEventListener("mousemove", resetPillIdleTimer, { passive: true });
+        document.addEventListener("touchstart", resetPillIdleTimer, { passive: true });
+        document.addEventListener("keydown", resetPillIdleTimer, { passive: true });
+        resetPillIdleTimer();
     }
 
     function positionPopoverNearPill() {
@@ -712,6 +742,7 @@
         if (isPopoverOpen) {
             positionPopoverNearPill();
         }
+        resetPillIdleTimer();
     }
 
     // -------------------------------------------------------------

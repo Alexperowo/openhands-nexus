@@ -153,8 +153,16 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
     box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
 }
 
+.oh-voice-pill.is-idle-dimmed {
+    opacity: 0.35;
+}
+
 .oh-voice-pill:hover,
-.oh-voice-pill:focus-visible {
+.oh-voice-pill:focus-visible,
+.oh-voice-pill.is-idle-dimmed:hover,
+.oh-voice-pill.is-idle-dimmed:focus-visible,
+.oh-voice-pill.is-idle-dimmed:active {
+    opacity: 1;
     border-color: #6366f1;
     box-shadow: 0 6px 24px rgba(99, 102, 241, 0.3);
 }
