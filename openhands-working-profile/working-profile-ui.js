@@ -67,9 +67,27 @@
         }, 1500);
     }
 
+    let lastTaskRunningState = false;
+
+    // Detect if agent is actively running a task
+    function isTaskRunning() {
+        const stopBtn = document.querySelector('[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Остановить" i], button[title*="Stop" i]');
+        if (stopBtn && stopBtn.offsetParent !== null) return true;
+
+        const loadingEl = document.querySelector('.loading-spinner, [data-streaming="true"], .typing-cursor, [data-testid="chat-input-loading"]');
+        if (loadingEl && loadingEl.offsetParent !== null) return true;
+
+        const chatInput = document.querySelector(".chat-input, [contenteditable='true'], textarea");
+        if (chatInput && (chatInput.hasAttribute("disabled") || chatInput.getAttribute("aria-disabled") === "true")) {
+            return true;
+        }
+
+        return false;
+    }
+
     // Switch profile / reasoning mode on server
     async function switchProfile(wpId, rmId) {
-        if (isSubmitting) return;
+        if (isSubmitting || isTaskRunning()) return;
         isSubmitting = true;
 
         const card = document.getElementById("oh-wp-card") || document.querySelector(".oh-wp-card");
@@ -112,6 +130,10 @@
             announceStatus(`Выбран профиль: ${targetWp ? targetWp.name : wpId}, режим: ${targetMode}`);
 
             renderUI();
+
+            if (activeState && activeState.resolved_llm_profile_name) {
+                syncComposerLlmProfile(activeState.resolved_llm_profile_name);
+            }
         } catch (err) {
             console.error("[WorkingProfileUI] Error switching profile/reasoning:", err);
             if (syncEl) {
@@ -174,133 +196,16 @@
         const activeModeId = activeState.active_reasoning_mode_id || (modes[0] ? modes[0].id : "");
         const activeModeObj = modes.find(m => m.id === activeModeId) || modes[0];
 
-        // 1. In-flight active conversation page
-        if (isConv) {
-            function getConversationModelInfo() {
-                let raw = "";
-                const modelBtn = document.querySelector('[data-testid="chat-input-llm-profile"]') ||
-                                 document.querySelector('[data-testid*="llm-profile"]') ||
-                                 document.querySelector('button[aria-label*="model" i]') ||
-                                 document.querySelector('.chat-input [role="button"]');
-                if (modelBtn) {
-                    raw = (modelBtn.getAttribute('title') || modelBtn.getAttribute('aria-label') || modelBtn.innerText || "").trim();
-                }
+        const running = isTaskRunning();
+        lastTaskRunningState = running;
 
-                if (!raw) return null;
+        const disabledAttr = running ? 'disabled="disabled"' : '';
+        const cardRunningClass = running ? ' is-running' : '';
+        const syncStatusHtml = running
+            ? '<span class="oh-wp-sync-indicator running" id="oh-wp-sync" title="Агент выполняет задачу. Переключение моделей заблокировано до завершения шага.">⏳ Выполняется...</span>'
+            : '<span class="oh-wp-sync-indicator" id="oh-wp-sync">✓ Активно</span>';
 
-                let name = raw;
-                let kindBadge = { text: "1 МОДЕЛЬ", class: "badge-1-models" };
-
-                // Match with available profiles
-                const matched = availableProfiles.find(p =>
-                    p.default_llm_profile_name === raw ||
-                    (p.reasoning && p.reasoning.modes && p.reasoning.modes.some(m => m.target_llm_profile_name === raw))
-                );
-
-                if (matched) {
-                    name = matched.name;
-                    kindBadge = getKindBadge(matched.kind);
-                } else if (raw.includes("Qwen3.8") || raw.includes("qwen") || raw.includes("Qwen")) {
-                    name = "Qwen 3.8 Opus";
-                    if (raw.includes("Medium")) name += " (Medium)";
-                    else if (raw.includes("Low")) name += " (Low)";
-                    else if (raw.includes("High")) name += " (High)";
-                    else if (raw.includes("Direct")) name += " (Direct)";
-                    kindBadge = { text: "1 МОДЕЛЬ", class: "badge-1-models" };
-                } else if (raw.includes("Ornith")) {
-                    name = "Ornith 1.5 Coder";
-                    kindBadge = { text: "1 МОДЕЛЬ", class: "badge-1-models" };
-                } else if (raw.includes("Next")) {
-                    name = "Qwen3-Next";
-                    kindBadge = { text: "1 МОДЕЛЬ", class: "badge-1-models" };
-                }
-
-                return { raw, name, kindBadge };
-            }
-
-            const modelInfo = getConversationModelInfo();
-            const displayName = modelInfo ? modelInfo.name : currentWp.name;
-            const kindBadge = modelInfo ? modelInfo.kindBadge : badgeInfo;
-
-            // Check if already rendered
-            const isAlreadyRendered = rootContainer.querySelector("#oh-wp-conv-toggle");
-            if (isAlreadyRendered) {
-                if (modelInfo) {
-                    const titleEl = rootContainer.querySelector(".oh-wp-conv-collapsed-title strong");
-                    if (titleEl && titleEl.textContent !== modelInfo.name) {
-                        titleEl.textContent = modelInfo.name;
-                    }
-                    const badgeEl = rootContainer.querySelector(".oh-wp-badge");
-                    if (badgeEl && modelInfo.kindBadge) {
-                        badgeEl.className = "oh-wp-badge " + modelInfo.kindBadge.class;
-                        badgeEl.textContent = modelInfo.kindBadge.text;
-                    }
-                }
-                return;
-            }
-
-            const badgeHtml = kindBadge ? `<span class="oh-wp-badge ${kindBadge.class}" style="padding: 2px 8px; font-size: 10px; margin-left: 4px;">${kindBadge.text}</span>` : "";
-
-            rootContainer.innerHTML = [
-                '<div class="oh-wp-conv-container" id="oh-wp-conv-container">',
-                '    <div class="oh-wp-conv-collapsed" id="oh-wp-conv-toggle" role="button" tabindex="0" aria-expanded="false" title="Нажмите, чтобы развернуть информацию о профиле диалога">',
-                '        <div class="oh-wp-conv-collapsed-left">',
-                '            <span class="oh-wp-locked-icon">🔒</span>',
-                '            <span class="oh-wp-conv-collapsed-title">Диалог зафиксирован: <strong>' + displayName + '</strong></span>',
-                '            ' + badgeHtml,
-                '        </div>',
-                '        <div class="oh-wp-conv-collapsed-right">',
-                '            <span class="oh-wp-toggle-arrow">▾</span>',
-                '        </div>',
-                '    </div>',
-                '    <div class="oh-wp-conv-drawer" id="oh-wp-conv-drawer" style="display: none;">',
-                '        <div class="oh-wp-conv-drawer-inner">',
-                '            <div class="oh-wp-conv-drawer-desc">',
-                '                Этот диалог привязан к данной модели. Изменение профиля на главной странице применяется к новым диалогам.',
-                '            </div>',
-                '            <a href="/" class="oh-wp-new-chat-btn" title="Создать новый диалог с другим профилем">',
-                '                <span>+ Новый диалог</span>',
-                '            </a>',
-                '        </div>',
-                '    </div>',
-                '</div>'
-            ].join('\n');
-
-            const toggleBtn = rootContainer.querySelector("#oh-wp-conv-toggle");
-            const drawer = rootContainer.querySelector("#oh-wp-conv-drawer");
-            if (toggleBtn && drawer) {
-                toggleBtn.addEventListener("click", () => {
-                    const isExpanded = drawer.style.display !== "none";
-                    drawer.style.display = isExpanded ? "none" : "block";
-                    toggleBtn.classList.toggle("expanded", !isExpanded);
-                    toggleBtn.setAttribute("aria-expanded", isExpanded ? "false" : "true");
-                });
-            }
-
-            // Continuous sync for conversation model in case modelBtn mounts slightly later
-            const convSyncInterval = setInterval(() => {
-                if (!isConversationPage()) {
-                    clearInterval(convSyncInterval);
-                    return;
-                }
-                const info = getConversationModelInfo();
-                if (info) {
-                    const titleEl = rootContainer.querySelector(".oh-wp-conv-collapsed-title strong");
-                    if (titleEl && titleEl.textContent !== info.name) {
-                        titleEl.textContent = info.name;
-                    }
-                    const badgeEl = rootContainer.querySelector(".oh-wp-badge");
-                    if (badgeEl && info.kindBadge) {
-                        badgeEl.className = "oh-wp-badge " + info.kindBadge.class;
-                        badgeEl.textContent = info.kindBadge.text;
-                    }
-                }
-            }, 500);
-
-            return;
-        }
-
-        // 2. Main root / new chat page
+        // Profile options
         let profileOptionsHtml = "";
         for (const p of availableProfiles) {
             const b = getKindBadge(p.kind);
@@ -323,7 +228,7 @@
                 '        <span>Режим рассуждения (Thinking):</span>',
                 '    </label>',
                 '    <div class="oh-wp-select-wrapper">',
-                '        <select id="oh-wp-select-reasoning" class="oh-wp-select" aria-label="Выберите режим рассуждения">',
+                '        <select id="oh-wp-select-reasoning" class="oh-wp-select" aria-label="Выберите режим рассуждения" ' + disabledAttr + '>',
                 '            ' + reasoningOptionsHtml,
                 '        </select>',
                 '        <svg class="oh-wp-select-arrow" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>',
@@ -331,7 +236,7 @@
                 '</div>'
             ].join('\n');
         } else {
-            // Requirement 4: Ornith / non-reasoning models: NO reasoning selector, fixed mode display
+            // Non-reasoning models: NO reasoning selector, fixed mode display
             reasoningFieldHtml = [
                 '<div class="oh-wp-field">',
                 '    <label class="oh-wp-label">',
@@ -354,7 +259,7 @@
         }
 
         rootContainer.innerHTML = [
-            '<div class="oh-wp-card" role="region" aria-label="Выбор рабочего профиля и режима рассуждения">',
+            '<div class="oh-wp-card' + cardRunningClass + '" id="oh-wp-card" role="region" aria-label="Выбор рабочего профиля и режима рассуждения">',
             '    <div class="oh-wp-header">',
             '        <div class="oh-wp-title-group">',
             '            <span class="oh-wp-icon">⚡</span>',
@@ -362,7 +267,7 @@
             '        </div>',
             '        <div class="oh-wp-header-badges">',
             '            <span class="oh-wp-badge ' + badgeInfo.class + '" id="oh-wp-badge">' + badgeInfo.text + '</span>',
-            '            <span class="oh-wp-sync-indicator" id="oh-wp-sync">✓ Активно</span>',
+            '            ' + syncStatusHtml,
             '        </div>',
             '    </div>',
             '    <div class="oh-wp-controls-grid">',
@@ -371,7 +276,7 @@
             '                <span>Команда агентов:</span>',
             '            </label>',
             '            <div class="oh-wp-select-wrapper">',
-            '                <select id="oh-wp-select-profile" class="oh-wp-select" aria-label="Выберите команду агентов">',
+            '                <select id="oh-wp-select-profile" class="oh-wp-select" aria-label="Выберите команду агентов" ' + disabledAttr + '>',
             '                    ' + profileOptionsHtml,
             '                </select>',
             '                <svg class="oh-wp-select-arrow" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>',
@@ -388,9 +293,9 @@
             '</div>'
         ].join('\n');
 
-        // Attach change events
+        // Attach change events if not running
         const profileSelect = document.getElementById("oh-wp-select-profile");
-        if (profileSelect) {
+        if (profileSelect && !running) {
             profileSelect.addEventListener("change", (e) => {
                 const newWpId = e.target.value;
                 const newWp = availableProfiles.find(p => p.id === newWpId);
@@ -403,27 +308,28 @@
         }
 
         const reasoningSelect = document.getElementById("oh-wp-select-reasoning");
-        if (reasoningSelect && isReasoningSupported) {
+        if (reasoningSelect && isReasoningSupported && !running) {
             reasoningSelect.addEventListener("change", (e) => {
                 const newRmId = e.target.value;
                 switchProfile(currentWp.id, newRmId);
             });
         }
 
-        if (!isConversationPage() && activeState && activeState.resolved_llm_profile_name) {
+        // Keep composer profile in sync when idle
+        if (!running && activeState && activeState.resolved_llm_profile_name) {
             syncComposerLlmProfile(activeState.resolved_llm_profile_name);
         }
     }
 
-    // Sync bottom composer picker on root page to match active working profile
+    // Sync bottom composer picker to match active working profile
     function syncComposerLlmProfile(targetProfileName) {
-        if (isConversationPage() || !targetProfileName) return;
+        if (!targetProfileName || isTaskRunning()) return;
 
         const btn = document.querySelector('[data-testid="chat-input-llm-profile"]');
-        if (!btn) return;
+        if (!btn || btn.hasAttribute("disabled") || btn.getAttribute("aria-disabled") === "true") return;
 
         const currentText = (btn.getAttribute('title') || btn.innerText || "").trim();
-        if (currentText === targetProfileName) return;
+        if (currentText === targetProfileName || currentText.includes(targetProfileName)) return;
 
         let popover = document.querySelector('[data-testid="chat-input-llm-profile-popover"]');
         if (!popover) {
@@ -441,10 +347,10 @@
         }, 60);
     }
 
-    // Watch for user selecting a profile via the bottom composer picker on root page
+    // Watch for user selecting a profile via the bottom composer picker
     function setupComposerPickerWatcher() {
         document.addEventListener("click", (e) => {
-            if (isConversationPage()) return;
+            if (isTaskRunning()) return;
             const opt = e.target.closest('[data-testid*="chat-input-llm-profile-option-"]');
             if (opt) {
                 const testId = opt.getAttribute("data-testid") || "";
@@ -454,33 +360,38 @@
                         p.default_llm_profile_name === profileName ||
                         (p.reasoning && p.reasoning.modes && p.reasoning.modes.some(m => m.target_llm_profile_name === profileName))
                     );
-                    if (matchedWp && matchedWp.id !== activeState?.active_working_profile_id) {
+                    if (matchedWp) {
                         let rmId = null;
                         if (matchedWp.reasoning && matchedWp.reasoning.modes) {
                             const matchedMode = matchedWp.reasoning.modes.find(m => m.target_llm_profile_name === profileName);
                             rmId = matchedMode ? matchedMode.id : matchedWp.reasoning.default_mode_id;
                         }
-                        switchProfile(matchedWp.id, rmId);
+                        const isProfileDiff = matchedWp.id !== activeState?.active_working_profile_id;
+                        const isModeDiff = rmId && rmId !== activeState?.active_reasoning_mode_id;
+                        if (isProfileDiff || isModeDiff) {
+                            switchProfile(matchedWp.id, rmId);
+                        }
                     }
                 }
             }
         }, true);
     }
 
-    // Set up DOM observer to survive SPA re-renders and page navigation (debounced to avoid over-firing)
+    // Set up DOM observer to survive SPA re-renders, route changes, and task running state changes
     function setupObserver() {
         let debounceTimer = null;
 
         const observer = new MutationObserver(() => {
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-                const hasInput = document.querySelector(".chat-input");
+                const hasInput = document.querySelector(".chat-input, [contenteditable='true'], textarea");
                 const existingPanel = document.getElementById("oh-working-profile-container");
-                const routeChanged = lastRenderedRoute !== isConversationPage();
+                const isConv = isConversationPage();
+                const routeChanged = lastRenderedRoute !== isConv;
+                const running = isTaskRunning();
+                const taskRunningChanged = running !== lastTaskRunningState;
 
-                if (hasInput && (!existingPanel || routeChanged)) {
-                    renderUI();
-                } else if (existingPanel && isConversationPage()) {
+                if (hasInput && (!existingPanel || routeChanged || taskRunningChanged)) {
                     renderUI();
                 }
             }, 150);
@@ -496,6 +407,10 @@
         stopSyncPolling();
         syncIntervalId = setInterval(() => {
             if (document.hidden) return;
+            const running = isTaskRunning();
+            if (running !== lastTaskRunningState) {
+                renderUI();
+            }
             loadWorkingProfiles(true);
         }, 3000);
     }

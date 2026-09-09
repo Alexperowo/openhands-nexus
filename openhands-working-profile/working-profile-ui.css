@@ -275,117 +275,35 @@
     font-weight: 700;
 }
 
-/* In-Flight Conversation Locked Card */
-/* Collapsed In-Flight Conversation Chip & Drawer */
-.oh-wp-conv-container {
-    width: 100%;
-    margin-bottom: 6px;
-    box-sizing: border-box;
+/* Active Task Running State (Turn Lock) */
+.oh-wp-card.is-running {
+    border-color: #52525b;
+    opacity: 0.92;
 }
 
-.oh-wp-conv-collapsed {
-    display: inline-flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    background: rgba(24, 24, 28, 0.75);
-    border: 1px solid #3f3f46;
-    border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 12px;
-    color: #a1a1aa;
-    cursor: pointer;
-    box-sizing: border-box;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-    user-select: none;
+.oh-wp-card.is-running .oh-wp-select {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #18181b;
+    border-color: #3f3f46;
 }
 
-.oh-wp-conv-collapsed:hover,
-.oh-wp-conv-collapsed:focus-visible {
-    background: #1f1f23;
-    border-color: #6366f1;
-    color: #e4e4e7;
-    outline: none;
-}
-
-.oh-wp-conv-collapsed-left {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.oh-wp-conv-collapsed strong {
-    color: #f4f4f5;
-    font-weight: 600;
-}
-
-.oh-wp-locked-icon {
-    font-size: 13px;
-}
-
-.oh-wp-toggle-arrow {
-    font-size: 10px;
-    color: #71717a;
-    transition: transform 0.2s ease;
-}
-
-.oh-wp-conv-collapsed.expanded .oh-wp-toggle-arrow {
-    transform: rotate(180deg);
-}
-
-.oh-wp-conv-drawer {
-    margin-top: 6px;
-    background: #141418;
-    border: 1.5px solid #3f3f46;
-    border-radius: 10px;
-    padding: 10px 14px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-    box-sizing: border-box;
-    animation: oh-wp-fade-in 0.15s ease-out;
-}
-
-@keyframes oh-wp-fade-in {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.oh-wp-conv-drawer-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.oh-wp-conv-drawer-desc {
-    font-size: 12px;
-    color: #a1a1aa;
-    line-height: 1.4;
-    flex: 1;
-    min-width: 200px;
-}
-
-.oh-wp-new-chat-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #27272a;
-    border: 1.5px solid #52525b;
-    border-radius: 8px;
-    padding: 5px 12px;
-    color: #ffffff;
-    font-size: 12px;
+.oh-wp-sync-indicator.running {
+    color: #f59e0b;
     font-weight: 700;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.15s ease, border-color 0.15s ease;
-    white-space: nowrap;
+    animation: oh-wp-pulse-amber 1.8s ease-in-out infinite;
 }
 
-.oh-wp-new-chat-btn:hover {
-    background: #3b82f6;
-    border-color: #60a5fa;
-    color: #ffffff;
+@keyframes oh-wp-pulse-amber {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.98); }
+}
+
+.oh-wp-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #18181b;
+    border-color: #3f3f46;
 }
 
 /* Comfortable, accessible prompt input area (fixes narrow 20px slit) */
