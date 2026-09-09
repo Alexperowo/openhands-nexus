@@ -13,6 +13,46 @@
     let isSubmitting = false;
     let lastRenderedRoute = null;
 
+    // Collapsed / Expanded state with localStorage persistence
+    function getInitialCollapsedState() {
+        try {
+            const saved = localStorage.getItem("oh_wp_collapsed");
+            if (saved === "false") return false;
+        } catch (e) {}
+        return true; // Default to ultra-compact collapsed bar
+    }
+    let isCollapsed = getInitialCollapsedState();
+
+    function setCollapsed(collapsed, save = true) {
+        isCollapsed = collapsed;
+        if (save) {
+            try {
+                localStorage.setItem("oh_wp_collapsed", collapsed ? "true" : "false");
+            } catch (e) {}
+        }
+        const card = document.getElementById("oh-wp-card");
+        if (card) {
+            if (isCollapsed) {
+                card.classList.add("is-collapsed");
+            } else {
+                card.classList.remove("is-collapsed");
+            }
+        }
+        const header = document.getElementById("oh-wp-header");
+        if (header) {
+            header.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+        }
+        const toggleBtn = document.getElementById("oh-wp-toggle-btn");
+        if (toggleBtn) {
+            toggleBtn.setAttribute("aria-label", (isCollapsed ? "Настроить" : "Свернуть") + " панель профиля");
+            const label = toggleBtn.querySelector(".oh-wp-toggle-label");
+            if (label) {
+                label.textContent = isCollapsed ? "Настроить" : "Свернуть";
+            }
+        }
+    }
+    window.setWorkingProfileCollapsed = setCollapsed;
+
     // Helper: translate kind to human-readable Russian badge
     function getKindBadge(kind) {
         if (kind === "three_model_chain") {
@@ -263,40 +303,71 @@
             modeDescHtml = '<div class="oh-wp-desc-mode" id="oh-wp-desc-mode"><span class="oh-wp-highlight">Рассуждение:</span> Прямой синтез кода без скрытых токенов рассуждений (Fixed Direct Mode)</div>';
         }
 
+        const summaryMode = isReasoningSupported && activeModeObj 
+            ? (activeModeObj.label.split(" ")[0] || activeModeObj.label)
+            : "Direct";
+        const summaryFull = currentWp.name + " · " + (isReasoningSupported && activeModeObj ? activeModeObj.label : "Direct");
+        const summaryShort = currentWp.name + " · " + summaryMode;
+
+        const collapsedClass = isCollapsed ? " is-collapsed" : "";
+        const toggleLabel = isCollapsed ? "Настроить" : "Свернуть";
+        const ariaExpanded = isCollapsed ? "false" : "true";
+
         rootContainer.innerHTML = [
-            '<div class="oh-wp-card' + cardRunningClass + '" id="oh-wp-card" role="region" aria-label="Выбор рабочего профиля и режима рассуждения">',
-            '    <div class="oh-wp-header">',
-            '        <div class="oh-wp-title-group">',
+            '<div class="oh-wp-card' + cardRunningClass + collapsedClass + '" id="oh-wp-card" role="region" aria-label="Выбор рабочего профиля и режима рассуждения">',
+            '    <div class="oh-wp-header" id="oh-wp-header" role="button" tabindex="0" aria-expanded="' + ariaExpanded + '" aria-controls="oh-wp-body" title="Нажмите, чтобы свернуть или развернуть настройки профиля">',
+            '        <div class="oh-wp-header-left">',
             '            <span class="oh-wp-icon">⚡</span>',
-            '            <span class="oh-wp-title">Рабочий профиль OpenHands</span>',
-            '        </div>',
-            '        <div class="oh-wp-header-badges">',
+            '            <span class="oh-wp-title">Рабочий профиль</span>',
             '            <span class="oh-wp-badge ' + badgeInfo.class + '" id="oh-wp-badge">' + badgeInfo.text + '</span>',
+            '            <span class="oh-wp-summary-pill" id="oh-wp-summary-pill" title="' + summaryFull + '">' + summaryShort + '</span>',
+            '        </div>',
+            '        <div class="oh-wp-header-right">',
             '            ' + syncStatusHtml,
+            '            <button class="oh-wp-toggle-btn" id="oh-wp-toggle-btn" type="button" aria-label="' + toggleLabel + ' панель профиля" tabindex="-1">',
+            '                <span class="oh-wp-toggle-label">' + toggleLabel + '</span>',
+            '                <svg class="oh-wp-chevron" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>',
+            '            </button>',
             '        </div>',
             '    </div>',
-            '    <div class="oh-wp-controls-grid">',
-            '        <div class="oh-wp-field">',
-            '            <label class="oh-wp-label" for="oh-wp-select-profile">',
-            '                <span>Команда агентов:</span>',
-            '            </label>',
-            '            <div class="oh-wp-select-wrapper">',
-            '                <select id="oh-wp-select-profile" class="oh-wp-select" aria-label="Выберите команду агентов" ' + disabledAttr + '>',
-            '                    ' + profileOptionsHtml,
-            '                </select>',
-            '                <svg class="oh-wp-select-arrow" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>',
+            '    <div class="oh-wp-body" id="oh-wp-body" role="group" aria-label="Настройки профиля и рассуждений">',
+            '        <div class="oh-wp-controls-grid">',
+            '            <div class="oh-wp-field">',
+            '                <label class="oh-wp-label" for="oh-wp-select-profile">',
+            '                    <span>Команда агентов:</span>',
+            '                </label>',
+            '                <div class="oh-wp-select-wrapper">',
+            '                    <select id="oh-wp-select-profile" class="oh-wp-select" aria-label="Выберите команду агентов" ' + disabledAttr + '>',
+            '                        ' + profileOptionsHtml,
+            '                    </select>',
+            '                    <svg class="oh-wp-select-arrow" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>',
+            '                </div>',
             '            </div>',
+            '            ' + reasoningFieldHtml,
             '        </div>',
-            '        ' + reasoningFieldHtml,
-            '    </div>',
-            '    <div class="oh-wp-info-box">',
-            '        <div class="oh-wp-desc-arch">',
-            '            <span class="oh-wp-highlight">Архитектура:</span> ' + (currentWp.description || "Локальный автономный профиль"),
+            '        <div class="oh-wp-info-box">',
+            '            <div class="oh-wp-desc-arch">',
+            '                <span class="oh-wp-highlight">Архитектура:</span> ' + (currentWp.description || "Локальный автономный профиль"),
+            '            </div>',
+            '            ' + modeDescHtml,
             '        </div>',
-            '        ' + modeDescHtml,
             '    </div>',
             '</div>'
         ].join('\n');
+
+        // Attach header collapse toggle events
+        const header = document.getElementById("oh-wp-header");
+        if (header) {
+            header.addEventListener("click", () => {
+                setCollapsed(!isCollapsed, true);
+            });
+            header.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setCollapsed(!isCollapsed, true);
+                }
+            });
+        }
 
         // Attach change events if not running
         const profileSelect = document.getElementById("oh-wp-select-profile");
@@ -452,11 +523,24 @@
 
     startSyncPolling();
 
+    // Auto-collapse panel when composer prompt input receives focus (frees screen for mobile virtual keyboard)
+    function setupFocusAutoCollapse() {
+        document.addEventListener("focusin", (e) => {
+            const target = e.target;
+            if (target && (target.matches(".chat-input, [contenteditable='true'], textarea") || target.closest(".chat-input"))) {
+                if (!isCollapsed) {
+                    setCollapsed(true, false);
+                }
+            }
+        }, true);
+    }
+
     // Startup initialization
     async function init() {
         await loadWorkingProfiles(false);
         setupObserver();
         setupComposerPickerWatcher();
+        setupFocusAutoCollapse();
     }
 
     if (document.readyState === "loading") {
