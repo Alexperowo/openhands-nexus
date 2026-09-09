@@ -29,11 +29,10 @@ Write-Host ""
 # 2. Check Ports
 Write-Host "[2/4] Статус сетевых портов:" -ForegroundColor Yellow
 $ports = @(
-    @{ Port = 8000; Service = "Agent Canvas UI (Ingress)" },
-    @{ Port = 8080; Service = "Local LLM (llama-server)" },
+    @{ Port = 8443; Service = "OpenHands Nexus Gateway (HTTPS)" },
+    @{ Port = 8080; Service = "Local LLM Router (llama-swap)" },
     @{ Port = 18000; Service = "OpenHands Agent Server" },
-    @{ Port = 18001; Service = "OpenHands Automation Backend" },
-    @{ Port = 18002; Service = "Local Voice Bridge (STT/TTS)" }
+    @{ Port = 18002; Service = "Local Voice Bridge & Working Profiles API" }
 )
 
 foreach ($item in $ports) {
@@ -77,14 +76,14 @@ try {
     Write-Host "ОШИБКА: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# Canvas Health
+# Agent Server Health
 try {
-    $c = Invoke-WebRequest -Uri "http://localhost:8000" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
-    Write-Host "  Agent Canvas (8000):     " -NoNewline -ForegroundColor White
+    $c = Invoke-WebRequest -Uri "http://localhost:18000" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+    Write-Host "  Agent Server (18000):    " -NoNewline -ForegroundColor White
     Write-Host "OK " -NoNewline -ForegroundColor Green
     Write-Host "(HTTP статус: $($c.StatusCode))" -ForegroundColor Gray
 } catch {
-    Write-Host "  Agent Canvas (8000):     " -NoNewline -ForegroundColor White
+    Write-Host "  Agent Server (18000):    " -NoNewline -ForegroundColor White
     Write-Host "ОШИБКА: $($_.Exception.Message)" -ForegroundColor Red
 }
 Write-Host ""
@@ -116,10 +115,12 @@ foreach ($lt in $logTargets) {
 
 Write-Host ""
 Write-Host "=====================================================================" -ForegroundColor Cyan
-Write-Host "Действия: [1] Открыть UI  [2] Открыть папку логов  [Enter] Выход" -ForegroundColor White
-$choice = Read-Host "Выберите действие"
-if ($choice -eq "1") {
-    Start-Process "http://localhost:8000"
-} elseif ($choice -eq "2") {
-    Start-Process "explorer.exe" $logDir
+if ([Environment]::UserInteractive -and -not $env:NONINTERACTIVE) {
+    Write-Host "Действия: [1] Открыть UI  [2] Открыть папку логов  [Enter] Выход" -ForegroundColor White
+    $choice = Read-Host "Выберите действие"
+    if ($choice -eq "1") {
+        Start-Process "https://localhost:8443"
+    } elseif ($choice -eq "2") {
+        Start-Process "explorer.exe" $logDir
+    }
 }
