@@ -71,8 +71,13 @@
 
     // Detect if agent is actively running a task
     function isTaskRunning() {
-        const stopBtn = document.querySelector('[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Остановить" i], button[title*="Stop" i]');
-        if (stopBtn && stopBtn.offsetParent !== null) return true;
+        const stopCandidates = document.querySelectorAll('[data-testid="stop-button"], [data-testid="chat-input-stop"], button[aria-label*="Stop" i], button[aria-label*="Остановить" i], button[title*="Stop" i]');
+        for (const btn of stopCandidates) {
+            if (btn.id === "oh-composer-mic-btn" || btn.closest("#oh-voice-pill, .oh-voice-popover, .oh-voice-container, .oh-tts-speak-btn")) {
+                continue;
+            }
+            if (btn.offsetParent !== null) return true;
+        }
 
         const loadingEl = document.querySelector('.loading-spinner, [data-streaming="true"], .typing-cursor, [data-testid="chat-input-loading"]');
         if (loadingEl && loadingEl.offsetParent !== null) return true;
