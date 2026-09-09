@@ -86,13 +86,19 @@ function Test-ServicePort([int]$Port, [int]$TimeoutSec = 3, [int]$Retries = 5) {
     return $false
 }
 
-function Test-HttpEndpoint([string]$Uri, [int]$TimeoutSec = 5) {
-    try {
-        $res = Invoke-WebRequest -Uri $Uri -TimeoutSec $TimeoutSec -UseBasicParsing -ErrorAction Stop
-        return ($res.StatusCode -eq 200)
-    } catch {
-        return $false
+function Test-HttpEndpoint([string]$Uri, [int]$TimeoutSec = 5, [int]$Retries = 5) {
+    for ($attempt = 1; $attempt -le $Retries; $attempt++) {
+        try {
+            $res = Invoke-WebRequest -Uri $Uri -TimeoutSec $TimeoutSec -UseBasicParsing -ErrorAction Stop
+            if ($res.StatusCode -eq 200) {
+                return $true
+            }
+        } catch {}
+        if ($attempt -lt $Retries) {
+            Start-Sleep -Seconds 2
+        }
     }
+    return $false
 }
 
 function Run-SmokeTest([bool]$CheckLocale = $true) {

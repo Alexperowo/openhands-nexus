@@ -48,6 +48,23 @@ Log-Msg "[2/4] Restoring ik_llama\bin from backup..." "STEP"
 Fast-CopyDir $BackupPath $prodBinDir -Mirror
 Log-Msg "      Restored production binaries from: $BackupPath" "SUCCESS"
 
+$infoPath = Join-Path $BackupPath "backup-info.json"
+if (Test-Path $infoPath) {
+    try {
+        $info = Get-Content $infoPath -Raw | ConvertFrom-Json
+        $restoredState = @{
+            production_commit = $info.production_commit
+            production_short_commit = $info.short_commit
+            production_runtime_hash = $info.production_runtime_hash
+            benchmark_baseline = $info.benchmark_baseline
+            last_verified = (Get-Date -Format "o")
+        }
+        $stateFile = Join-Path $Global:UpdateRootDir "state\ik_llama_state.json"
+        $restoredState | ConvertTo-Json | Out-File -FilePath $stateFile -Encoding UTF8
+        Log-Msg "      Restored state file from backup metadata ($($info.short_commit))" "SUCCESS"
+    } catch {}
+}
+
 # 3. Platform Restart (Conditional on -RestartPlatform; default: STOPPED)
 if ($RestartPlatform) {
     Log-Msg "[3/4] Starting OpenHands Local (-RestartPlatform supplied)..." "STEP"

@@ -42,13 +42,13 @@
     "build": "b10875"
   },
   "ik_llama": {
-    "current_version": "1",
-    "commit": "fe215a8ccdce6b844d2a3a3bbde08ae76a6284bf",
-    "short_commit": "fe215a8",
-    "previous_commit": "3c58ae373a0081c884099f435fb16ca720852bf7",
+    "current_version": "12 (b87910f)",
+    "commit": "b87910ff30986c9fc5b5946288b38440fe1409a3",
+    "short_commit": "b87910f",
+    "previous_commit": "fe215a8ccdce6b844d2a3a3bbde08ae76a6284bf",
     "production_path": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
-    "sha256": "81980FF3C20CB7C29240FCACDE37CE254B9D55DF58AED9A0FBC53A0A260F5D63",
+    "sha256": "55F569C8E18AE8E2299F37B1CF7AEF7C627F7506DEDAFC8B1239AAE2E4BD5D37",
     "upstream_source": "https://github.com/ikawrakow/ik_llama.cpp",
-    "last_verified": "2026-09-06T12:05:06.194066+00:00"
+    "last_verified": "2026-09-09T18:35:38.1673465+03:00"
   }
 }

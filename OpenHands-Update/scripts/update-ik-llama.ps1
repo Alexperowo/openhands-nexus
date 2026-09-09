@@ -174,6 +174,8 @@ if (-not $targetRef -and $Force) {
     Log-Msg "      Forced rebuild of current commit: $currentShort" "INFO"
 }
 
+Assert-StationStopped
+
 # 3. Create Pre-Update Production Bin Backup & compute runtime hash
 Log-Msg "[3/8] Backing up production bin runtime..." "STEP"
 $prodServerExe = Join-Path $prodBinDir "llama-server.exe"

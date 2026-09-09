@@ -1,5 +1,5 @@
 ﻿{
-    "target_commit":  "fe215a8ccdce6b844d2a3a3bbde08ae76a6284bf",
+    "target_commit":  "b87910ff30986c9fc5b5946288b38440fe1409a3",
     "staging_binary":  "K:\\Project\\ik_llama\\staging-bin\\llama-server.exe",
     "ornith_gate":  {
                         "GATE_STATUS":  "PASS",
@@ -7,7 +7,7 @@
                         "ORNITH_MTP_INITIALIZED":  "PASS",
                         "SHORT_COMPLETION_PASS":  "PASS"
                     },
-    "timestamp":  "2026-09-06T14:55:48.0222512+03:00",
+    "timestamp":  "2026-09-09T18:31:59.2008480+03:00",
     "qwen_gate":  {
                       "QWEN_MAIN_LOADED":  "PASS",
                       "SHORT_TEXT_COMPLETION_PASS":  "PASS",
