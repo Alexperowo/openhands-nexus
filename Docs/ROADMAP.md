@@ -79,18 +79,18 @@
 - [x] Двусторонняя синхронизация Desktop ↔ Android (Visibility Polling 3s, server persistence)
 - **Статус:** ✅ **Завершён**
 
-### Этап 6 — Team-Full / Agent Runtime (ТЕКУЩИЙ)
-- [ ] Полная сквозная проверка цепочки Team-Full
-- [ ] Командный цикл: Qwen (Архитектор) → Ornith (Кодер) → Next (Ревьюер)
-- [ ] Реальное выполнение агентных задач (создание файлов, правка кода, выполнение команд)
-- [ ] Tool calling в локальном инференсе
-- [ ] Model switching / lifecycle в llama-swap
-- [ ] MTP (Multi-Token Prediction) валидация
-- [ ] Контроль потребления VRAM при переключениях (бюджет 22 GB RTX 2080 Ti)
-- [ ] Обработка ошибок и авто-восстановление
-- **Статус:** 🟡 **В работе**
+### Этап 6 — Team-Full / Agent Runtime
+- [x] Полная сквозная проверка цепочки Team-Full (Qwen3.8 Opus + Ornith 1.5 Coder + Qwen3-Next 80B Thinking)
+- [x] Командный цикл: Qwen (Архитектор / План) → Ornith (Кодер / Тесты) → Next (Ревьюер / Deep Debug)
+- [x] Реальное выполнение агентных задач (создание файлов, правка кода, выполнение команд, pytest)
+- [x] Tool calling в локальном инференсе (switch_llm, terminal, file_editor, task_tracker, finish)
+- [x] Model switching / lifecycle в llama-swap (unloadTimeout 15s, cmdStop force kill, 3s VMM buffer)
+- [x] MTP (Multi-Token Prediction) валидация (Qwen 21 t/s, Ornith 63 t/s, Next draft MTP ~20 t/s)
+- [x] Контроль потребления VRAM при переключениях (бюджет 22 GB RTX 2080 Ti; Qwen 21.9 GB, Ornith 20.4 GB, Next 21.5 GB; сброс до 737 MB)
+- [x] Обработка ошибок и авто-восстановление (Routing policy: 2 failed normal cycles → Next escalation)
+- **Статус:** ✅ **Завершён**
 
-### Этап 7 — Update Hardening
+### Этап 7 — Update Hardening (ТЕКУЩИЙ)
 - [ ] Процедура обновления OpenHands
 - [ ] Процедура обновления Agent Canvas
 - [ ] Обновление llama.cpp / ik_llama
@@ -99,7 +99,7 @@
 - [ ] Идемпотентные патчеры (patch-agent-canvas-working-profile.ps1, patch-agent-canvas-voice.ps1, patch-agent-canvas-pwa.ps1)
 - [ ] Механизм отката (Rollback)
 - [ ] Сохранение Working Profiles / Voice / PWA / Localization после апдейтов
-- **Статус:** ⏳ **Запланирован**
+- **Статус:** 🟡 **В работе**
 
 ### Этап 8 — Portable Release / Recovery
 - [ ] Чистая установка из архива
