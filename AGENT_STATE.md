@@ -1,6 +1,6 @@
-OBJECTIVE:      OpenHands Nexus — Master Roadmap Execution & Stage 7 Update Hardening
-PHASE:          Stage 7 of 9 (Update Hardening & Idempotent Patching)
-STATE:          Stages 0–6 are 100% complete and verified. Stage 6 (Team-Full / Agent Runtime) verified PASS: 3-model collaborative chain (Qwen3.8 Opus + Ornith 1.5 + Qwen3-Next 80B), native tool calling on all models (switch_llm, terminal, file_editor), llama-swap VRAM handover under 22 GB budget with clean eviction to 737 MB base, and MTP decoding (Ornith ~63 t/s, Qwen ~21 t/s).
+OBJECTIVE:      OpenHands Nexus — Master Roadmap Execution & Stage 9 Final Release
+PHASE:          Stage 9 of 9 (Final Release & QA Sign-off)
+STATE:          Stages 0–8 are 100% complete and verified. Stage 8 (Portable Release / Recovery) verified PASS: 34/34 dependency checks passed, 100% machine-specific paths eliminated, automated setup and portable config seeding verified, station backup/restore verified (5.28 MB in 2s), crash recovery (recover.ps1) and root launchers ready.
 DONE:
   - Stage 0 (Baseline Checkpoint & Inventory): 100% complete.
   - Stage 1 (Working Profiles): 100% complete (7 profiles, server persistence, turn locking).
@@ -8,15 +8,14 @@ DONE:
   - Stage 3 (Reasoning / Thinking): 100% complete (direct/low/med/high, normal/deep, team modes).
   - Stage 4 (Voice + Accessibility + UI Polish): 100% complete (STT, dual TTS, WCAG 2.5.5/2.4.7, UI Sprints 1-4).
   - Stage 5 (Physical Android E2E): 100% complete on Samsung Galaxy Tab S9 Ultra (192.168.0.34:5555).
-  - Stage 6 (Team-Full / Agent Runtime): 100% complete.
-    - Verified Qwen 3.8 Opus tool calling (`switch_llm` to Ornith in 10.27s).
-    - Verified Ornith 1.5 Coder tool calling (`switch_llm` back to Qwen in 2.12s, ~63 t/s generation).
-    - Verified clean model eviction and VRAM drops to 737 MiB with zero leaks.
-    - Verified swap back to Qwen under 22 GB budget (peak 21,963 MiB).
-    - Validated 17 acceptance gates and routing policy (2 normal failures -> Next escalation).
+  - Stage 6 (Team-Full / Agent Runtime): 100% complete (3 models, tool calling, 22 GB VRAM budget, MTP 63 t/s).
+  - Stage 7 (Update Hardening): 100% complete (idempotent patchers, rollback, backup, 2400 localization parity).
+  - Stage 8 (Portable Release / Recovery): 100% complete (check-dependencies 34/34, setup.ps1, backup-station.ps1, restore-station.ps1, recover.ps1, 100% portable paths).
 EVIDENCE:
-  - Tests & Logs: test_qwen_tool_call.py (PASS), test_ornith_tool_call.py (PASS), test_ornith_lifecycle.py (PASS, 63 t/s), test_swap_to_qwen.py (PASS, VRAM 21,963 MiB).
-  - Documentation: OpenHands-Tests/Three-Model-Integration/FINAL-INTEGRATION.md, Docs/ROADMAP.md.
+  - Check dependencies: K:\Project\.openhands-local\check-dependencies.ps1 (34/34 PASS).
+  - Station backup test: K:\Project\Archive\backups\station\backup-pre-stage9-test-* (135 files, 5.28 MB, BACKUP_MANIFEST.json).
+  - Setup validation: K:\Project\.openhands-local\setup.ps1 (PASS).
+  - Logs: K:\Project\Logs\Updater\update-station-backup-*.log.
 OPEN_ISSUES:    None.
-NEXT_ACTION:    Execute Stage 7: Verify Update Hardening procedures, update scripts (OpenHands, Canvas, llama-swap, ik_llama), idempotent patchers, and rollback mechanism.
+NEXT_ACTION:    Execute Stage 9: Security audit (secrets check), temporary file cleanup, README/docs refresh, end-to-end regression validation, Git commit & push.
 

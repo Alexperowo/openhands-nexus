@@ -47,12 +47,15 @@ if ($modeCount -eq 0) {
     exit 1
 }
 
-# 2. Station Gate (Hard Gate: NEVER allow update or rollback while production is running)
-function Assert-StationStopped {
+function Assert-StationStopped([switch]$AllowRunningWarn) {
     $ports = @(8000, 8080, 8443, 18000, 18001, 18002)
     $activeConns = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains $_.LocalPort }
     if ($activeConns) {
         $pList = ($activeConns.LocalPort | Select-Object -Unique) -join ", "
+        if ($AllowRunningWarn) {
+            Log-Msg "Station status: RUNNING (Active ports: $pList) [Read-Only Check Mode]" "WARN"
+            return
+        }
         Log-Msg "CRITICAL GATE FAILED: Production station is RUNNING (Active ports: $pList)." "ERROR"
         Log-Msg "Refusing operation to protect live OpenHands session." "ERROR"
         Log-Msg "Please stop the platform first via STOP-OPENHANDS-LOCAL.cmd." "WARN"
@@ -108,7 +111,7 @@ function Get-NpmLatestVersion([string]$pkgName) {
 # ═══════════════════════════════════════════════════════════════════════════
 if ($CheckOnly) {
     Log-Msg "=== OpenHands App Stack Updater (CheckOnly Mode) ===" "STEP"
-    Assert-StationStopped
+    Assert-StationStopped -AllowRunningWarn
 
     Log-Msg "Checking upstream npm & PyPI registries..." "INFO"
     $latestCanvasVer = Get-NpmLatestVersion "@openhands/agent-canvas"
@@ -117,7 +120,7 @@ if ($CheckOnly) {
 
     # Localization and Voice versions
     $locStrings = 0
-    $locDict = "K:\Project\openhands-localization\ru.json"
+    $locDict = Join-Path $Global:ProjectRootDir "openhands-localization\ru.json"
     if (Test-Path $locDict) {
         try {
             $locData = Get-Content $locDict -Raw | ConvertFrom-Json
@@ -167,7 +170,7 @@ if ($CheckOnly) {
 # ═══════════════════════════════════════════════════════════════════════════
 if ($DryRun) {
     Log-Msg "=== OpenHands App Stack Updater (DryRun Simulation Mode) ===" "STEP"
-    Assert-StationStopped
+    Assert-StationStopped -AllowRunningWarn
 
     $latestCanvasVer = Get-NpmLatestVersion "@openhands/agent-canvas"
     $ts = Get-Date -Format "yyyyMMdd-HHmmss"
@@ -177,9 +180,9 @@ if ($DryRun) {
     Log-Msg "[SIMULATION] 3. Would backup current installation to: $archiveBackupRoot\$ts-v$currentCanvasVer\" "INFO"
     Log-Msg "[SIMULATION] 4. Would execute: npm install -g @openhands/agent-canvas@$TargetVersion" "INFO"
     Log-Msg "[SIMULATION] 5. Would inspect candidate defaults.json for updated agentServer & automation pins" "INFO"
-    Log-Msg "[SIMULATION] 6. Would execute localization patcher: K:\Project\openhands-localization\patch-agent-canvas-localization.ps1" "INFO"
+    Log-Msg "[SIMULATION] 6. Would execute localization patcher: $(Join-Path $Global:ProjectRootDir 'openhands-localization\patch-agent-canvas-localization.ps1')" "INFO"
     Log-Msg "[SIMULATION] 7. Would execute localization parity audit (audit-localization.py) - STRICT GATE (0 missing keys)" "INFO"
-    Log-Msg "[SIMULATION] 8. Would execute voice UI patcher: K:\Project\local-voice\patch-agent-canvas-voice.ps1" "INFO"
+    Log-Msg "[SIMULATION] 8. Would execute voice UI patcher: $(Join-Path $Global:ProjectRootDir 'local-voice\patch-agent-canvas-voice.ps1')" "INFO"
     Log-Msg "[SIMULATION] 9. Would verify voice injection anchors exist in build/index.html" "INFO"
     Log-Msg "[SIMULATION] 10. Final state: Station remains STOPPED by default (no automatic platform restart)." "INFO"
     Log-Msg "DryRun completed successfully. ZERO files modified." "SUCCESS"
@@ -327,7 +330,7 @@ if ($Update) {
 
     if ($RestartPlatform) {
         Log-Msg "Restarting platform per request..." "STEP"
-        & "K:\Project\START-OPENHANDS-LOCAL.cmd"
+        & (Join-Path $Global:ProjectRootDir "START-OPENHANDS-LOCAL.cmd")
     } else {
         Log-Msg "Station remains STOPPED per safety default." "INFO"
     }

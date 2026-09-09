@@ -42,9 +42,11 @@ $pkg = Get-Content (Join-Path $targetDir "package.json") -Raw | ConvertFrom-Json
 Log-Msg "      Restored package version: v$($pkg.version)" "SUCCESS"
 
 # 3. Re-apply patches to ensure clean consistent state
-Log-Msg "[3/4] Re-verifying localization and voice integration..." "STEP"
+Log-Msg "[3/4] Re-verifying localization, voice, working-profile, and PWA integration..." "STEP"
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Global:ProjectRootDir "openhands-localization\patch-agent-canvas-localization.ps1")
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Global:ProjectRootDir "local-voice\patch-agent-canvas-voice.ps1")
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Global:ProjectRootDir "openhands-working-profile\patch-agent-canvas-working-profile.ps1")
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Global:ProjectRootDir "openhands-pwa\patch-agent-canvas-pwa.ps1")
 
 # 4. Final State Handling (Station Stopped by default)
 Log-Msg "[4/4] Rollback completed." "SUCCESS"

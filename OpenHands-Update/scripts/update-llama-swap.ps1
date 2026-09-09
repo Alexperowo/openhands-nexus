@@ -14,8 +14,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$ProjectRootDir = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+
 # Canonical Centralized Logs
-$LogDir = "K:\Project\Logs\Updater"
+$LogDir = Join-Path $ProjectRootDir "Logs\Updater"
 if (-not (Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
 }
@@ -46,17 +48,20 @@ if ($modeCount -eq 0) {
 }
 
 # Production paths
-$ProductionBin = "K:\Project\llama-swap\bin\llama-swap.exe"
-$ProductionConfig = "K:\Project\llama-swap\config.yaml"
-$StagingDir = "K:\Project\llama-swap\staging"
-$BackupRoot = "K:\Project\Archive\backups\llama-swap"
+$ProductionBin = Join-Path $ProjectRootDir "llama-swap\bin\llama-swap.exe"
+$ProductionConfig = Join-Path $ProjectRootDir "llama-swap\config.yaml"
+$StagingDir = Join-Path $ProjectRootDir "llama-swap\staging"
+$BackupRoot = Join-Path $ProjectRootDir "Archive\backups\llama-swap"
 
-# 2. Station Gate (Hard Gate: NEVER allow update or rollback while production is running)
-function Assert-StationStopped {
-    $ports = @(8000, 8080, 18000, 18001, 18002)
+function Assert-StationStopped([switch]$AllowRunningWarn) {
+    $ports = @(8000, 8080, 8443, 18000, 18001, 18002)
     $activeConns = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains $_.LocalPort }
     if ($activeConns) {
         $pList = ($activeConns.LocalPort | Select-Object -Unique) -join ", "
+        if ($AllowRunningWarn) {
+            Log-Output "Station status: RUNNING (Active ports: $pList) [Read-Only Check Mode]" "WARN"
+            return
+        }
         Log-Output "CRITICAL GATE FAILED: Production station is RUNNING (Active ports: $pList)." "ERROR"
         Log-Output "Refusing operation to protect live inference state." "ERROR"
         Log-Output "Please stop the platform first via STOP-OPENHANDS-LOCAL.cmd." "WARN"
@@ -145,7 +150,7 @@ function Get-UpstreamRelease([string]$target) {
 # ═══════════════════════════════════════════════════════════════════════════
 if ($CheckOnly) {
     Log-Output "=== llama-swap Updater (CheckOnly Mode) ===" "STEP"
-    Assert-StationStopped
+    Assert-StationStopped -AllowRunningWarn
 
     Log-Output "Current Production Binary:  $ProductionBin" "INFO"
     Log-Output "Current Production Version: $currentVer" "INFO"
@@ -189,7 +194,7 @@ if ($CheckOnly) {
 # ═══════════════════════════════════════════════════════════════════════════
 if ($DryRun) {
     Log-Output "=== llama-swap Updater (DryRun Simulation Mode) ===" "STEP"
-    Assert-StationStopped
+    Assert-StationStopped -AllowRunningWarn
 
     $rel = Get-UpstreamRelease $TargetVersion
     if (-not $rel) {
@@ -217,7 +222,7 @@ if ($Rollback) {
     Log-Output "=== llama-swap Rollback ===" "WARN"
     Assert-StationStopped
 
-    $bakBin = "K:\Project\llama-swap\bin\llama-swap.exe.bak"
+    $bakBin = Join-Path $ProjectRootDir "llama-swap\bin\llama-swap.exe.bak"
     $restored = $false
 
     if (Test-Path $bakBin) {
@@ -320,7 +325,7 @@ if ($Update) {
     $backupFolder = Join-Path $BackupRoot "$ts-v$currentVer"
     New-Item -ItemType Directory -Path $backupFolder -Force | Out-Null
     Copy-Item $ProductionBin (Join-Path $backupFolder "llama-swap.exe") -Force
-    Copy-Item $ProductionBin "K:\Project\llama-swap\bin\llama-swap.exe.bak" -Force
+    Copy-Item $ProductionBin (Join-Path $ProjectRootDir "llama-swap\bin\llama-swap.exe.bak") -Force
     Log-Output "Backup created at: $backupFolder" "SUCCESS"
 
     # Atomic promotion
@@ -330,7 +335,7 @@ if ($Update) {
 
     if ($RestartPlatform) {
         Log-Output "Restarting platform per request..." "STEP"
-        & "K:\Project\START-OPENHANDS-LOCAL.cmd"
+        & (Join-Path $ProjectRootDir "START-OPENHANDS-LOCAL.cmd")
     } else {
         Log-Output "Station remains STOPPED per safety default." "INFO"
     }

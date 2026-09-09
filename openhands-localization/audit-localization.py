@@ -200,7 +200,8 @@ def main():
         "tag_mismatches": tag_mismatches
     }
 
-    out_file = Path(r"K:\Project\OpenHands-Tests\Russian-Localization\locale-audit.json")
+    project_root = Path(__file__).resolve().parent.parent
+    out_file = project_root / "OpenHands-Tests" / "Russian-Localization" / "locale-audit.json"
     out_file.parent.mkdir(parents=True, exist_ok=True)
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)

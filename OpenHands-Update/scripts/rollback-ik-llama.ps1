@@ -14,7 +14,7 @@ Log-Msg "=====================================================================" 
 Log-Msg "               IK_LLAMA BACKEND ROLLBACK" "WARN"
 Log-Msg "=====================================================================" "WARN"
 
-$prodBinDir = "K:\Project\ik_llama\bin"
+$prodBinDir = Join-Path $Global:ProjectRootDir "ik_llama\bin"
 
 if (-not $BackupPath) {
     $BackupPath = Get-LatestBackupPath "ik_llama"
@@ -29,13 +29,13 @@ Log-Msg "Target backup folder: $BackupPath" "STEP"
 
 # 1. Stop platform
 Log-Msg "[1/4] Stopping active processes..." "STEP"
-& "K:\Project\.openhands-local\stop.ps1"
+& (Join-Path $Global:ProjectRootDir ".openhands-local\stop.ps1")
 Start-Sleep -Seconds 2
 
-# Ensure any process specifically running binaries from K:\Project\ik_llama\bin is stopped so files can be replaced
+# Ensure any process specifically running binaries from ik_llama\bin is stopped so files can be replaced
 $lockedProcs = Get-CimInstance Win32_Process | Where-Object {
-    $_.ExecutablePath -like "K:\Project\ik_llama\bin\*" -or
-    $_.CommandLine -like "*K:\Project\ik_llama\bin\llama-server.exe*"
+    $_.ExecutablePath -like "$prodBinDir\*" -or
+    $_.CommandLine -like "*$prodBinDir\llama-server.exe*"
 }
 foreach ($lp in $lockedProcs) {
     Log-Msg "      Stopping active backend process $($lp.Name) (PID: $($lp.ProcessId)) to release binary lock..." "INFO"
@@ -51,7 +51,7 @@ Log-Msg "      Restored production binaries from: $BackupPath" "SUCCESS"
 # 3. Platform Restart (Conditional on -RestartPlatform; default: STOPPED)
 if ($RestartPlatform) {
     Log-Msg "[3/4] Starting OpenHands Local (-RestartPlatform supplied)..." "STEP"
-    & "K:\Project\.openhands-local\start.ps1"
+    & (Join-Path $Global:ProjectRootDir ".openhands-local\start.ps1")
     Start-Sleep -Seconds 3
 
     # 4. Smoke test

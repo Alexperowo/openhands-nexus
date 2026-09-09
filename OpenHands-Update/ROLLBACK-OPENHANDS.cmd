@@ -1,6 +1,6 @@
 @echo off
 setlocal
-cd /d "K:\Project\OpenHands-Update"
+cd /d "%~dp0"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\rollback-openhands.ps1" %*
 if %ERRORLEVEL% NEQ 0 (
     echo.

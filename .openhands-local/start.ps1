@@ -369,7 +369,7 @@ try {
 
 # Discover LAN IP and Hostname for PWA status reporting
 $lanIp = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1).IPAddress
-if (-not $lanIp) { $lanIp = "192.168.0.14" }
+if (-not $lanIp) { $lanIp = "127.0.0.1" }
 $hostname = $env:COMPUTERNAME
 
 if (-not $gatewayRunning) {

@@ -1,7 +1,7 @@
 # stop-swap.ps1 - Safe ownership-aware stopper for llama-swap
 $ErrorActionPreference = "Continue"
 
-$swapDir = "K:\Project\llama-swap"
+$swapDir = $PSScriptRoot
 $sessionFile = Join-Path $swapDir "session.json"
 
 Write-Host "=== STOPPING LLAMA-SWAP ===" -ForegroundColor Yellow

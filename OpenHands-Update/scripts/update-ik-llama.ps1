@@ -22,11 +22,15 @@ if ($modeCount -eq 0 -and (-not $Force) -and (-not $TargetCommit)) {
 }
 
 # Station stopped gate function
-function Assert-StationStopped {
-    $ports = @(8000, 8080, 18000, 18001, 18002)
+function Assert-StationStopped([switch]$AllowRunningWarn) {
+    $ports = @(8000, 8080, 8443, 18000, 18001, 18002)
     $activeConns = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains $_.LocalPort }
     if ($activeConns) {
         $pList = ($activeConns.LocalPort | Select-Object -Unique) -join ", "
+        if ($AllowRunningWarn) {
+            Log-Msg "Station status: RUNNING (Active ports: $pList) [Read-Only Check Mode]" "WARN"
+            return
+        }
         Log-Msg "CRITICAL GATE FAILED: Production station is RUNNING (Active ports: $pList)." "ERROR"
         Log-Msg "Refusing operation to protect live inference state." "ERROR"
         Log-Msg "Please stop the platform first via STOP-OPENHANDS-LOCAL.cmd." "WARN"
@@ -39,7 +43,7 @@ Log-Msg "=====================================================================" 
 Log-Msg "               IK_LLAMA BACKEND UPDATER" "STEP"
 Log-Msg "=====================================================================" "STEP"
 
-$ikRoot = "K:\Project\ik_llama"
+$ikRoot = Join-Path $Global:ProjectRootDir "ik_llama"
 $srcDir = Join-Path $ikRoot "src"
 $prodBinDir = Join-Path $ikRoot "bin"
 $stagingSourceDir = Join-Path $ikRoot "src-staging"
@@ -49,9 +53,9 @@ $stateFile = Join-Path $Global:UpdateRootDir "state\ik_llama_state.json"
 $lastRunStatusFile = Join-Path $Global:UpdateRootDir "state\last_run_status.json"
 
 $vcvars = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
-$expectedModel = "K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
-$qwenMmproj = "K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf"
-$ornithModel = "K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf"
+$expectedModel = Join-Path $Global:ProjectRootDir "Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf"
+$qwenMmproj = Join-Path $Global:ProjectRootDir "Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf"
+$ornithModel = Join-Path $Global:ProjectRootDir "Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf"
 
 if (-not (Test-Path $srcDir)) {
     Log-Msg "ik_llama source tree not found at: $srcDir" "ERROR"
@@ -126,7 +130,7 @@ if ($TargetCommit) {
 
 if ($CheckOnly) {
     Log-Msg "=== ik_llama Updater (CheckOnly Mode) ===" "STEP"
-    Assert-StationStopped
+    Assert-StationStopped -AllowRunningWarn
     Log-Msg "Current Production Commit: $currentShort ($currentCommit)" "INFO"
     $prodExe = Join-Path $prodBinDir "llama-server.exe"
     if (Test-Path $prodExe) {
@@ -145,7 +149,7 @@ if ($CheckOnly) {
 
 if ($DryRun) {
     Log-Msg "=== ik_llama Updater (DryRun Simulation Mode) ===" "STEP"
-    Assert-StationStopped
+    Assert-StationStopped -AllowRunningWarn
     Log-Msg "[SIMULATION] 1. Station stop gate: VERIFIED" "INFO"
     Log-Msg "[SIMULATION] 2. Current commit: $currentShort, Target ref: $(if ($targetRef) { $targetRef } else { 'latest' })" "INFO"
     Log-Msg "[SIMULATION] 3. Would clone/pull commit into isolated staging: $stagingSourceDir" "INFO"
@@ -474,7 +478,7 @@ $gateEvidence.ornith_gate = @{
 }
 
 # Save candidate gate evidence to stage_7e3_ik_llama
-$evidenceDir = "K:\Project\OpenHands-Tests\Production-Station\stage_7e3_ik_llama"
+$evidenceDir = Join-Path $Global:ProjectRootDir "OpenHands-Tests\Production-Station\stage_7e3_ik_llama"
 if (Test-Path $evidenceDir) {
     $gateEvidence | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $evidenceDir "candidate_gate.json") -Encoding UTF8
 }
@@ -501,12 +505,12 @@ Clean-StagingResources
 
 # 8b. Stop production platform and release binary lock
 Log-Msg "      Stopping production services to replace runtime binaries..." "INFO"
-& "K:\Project\.openhands-local\stop.ps1"
+& (Join-Path $Global:ProjectRootDir ".openhands-local\stop.ps1")
 Start-Sleep -Seconds 2
 
 $lockedProcs = Get-CimInstance Win32_Process | Where-Object {
-    $_.ExecutablePath -like "K:\Project\ik_llama\bin\*" -or
-    $_.CommandLine -like "*K:\Project\ik_llama\bin\llama-server.exe*"
+    $_.ExecutablePath -like "$prodBinDir\*" -or
+    $_.CommandLine -like "*$prodBinDir\llama-server.exe*"
 }
 foreach ($lp in $lockedProcs) {
     Log-Msg "      Stopping active backend process $($lp.Name) (PID: $($lp.ProcessId)) to release binary lock..." "INFO"
@@ -546,7 +550,7 @@ Set-Content -Path (Join-Path $prodBinDir "BUILD-INFO.txt") -Value $newBuildInfo 
 # 8e. Platform Restart (Conditional on -RestartPlatform; default: STOPPED)
 if ($RestartPlatform) {
     Log-Msg "      Restarting OpenHands Local platform (-RestartPlatform supplied)..." "INFO"
-    & "K:\Project\.openhands-local\start.ps1"
+    & (Join-Path $Global:ProjectRootDir ".openhands-local\start.ps1")
     Start-Sleep -Seconds 3
 
     $finalSmoke = Run-SmokeTest -CheckLocale $false

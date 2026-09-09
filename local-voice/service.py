@@ -42,23 +42,45 @@ if sys.stderr is not None:
     except Exception:
         pass
 
-# Setup paths for transcribe_cpp
-PYTHONPATH_TRANSCRIBE = os.environ.get(
-    "FUTO_TRANSCRIBE_PATH",
-    r"D:\Project\futo-keyboard-gigaam\third_party\transcribe.cpp\bindings\python\src"
+# Setup portable paths for transcribe_cpp and speech models
+VOICE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(VOICE_DIR, ".."))
+
+candidate_transcribe_paths = [
+    os.environ.get("FUTO_TRANSCRIBE_PATH"),
+    VOICE_DIR,
+    os.path.join(PROJECT_ROOT, "local-voice"),
+    os.path.join(PROJECT_ROOT, "futo-keyboard-gigaam", "third_party", "transcribe.cpp", "bindings", "python", "src"),
+    r"D:\Project\futo-keyboard-gigaam\third_party\transcribe.cpp\bindings\python\src",
+]
+PYTHONPATH_TRANSCRIBE = next(
+    (p for p in candidate_transcribe_paths if p and os.path.isdir(os.path.join(p, "transcribe_cpp"))),
+    VOICE_DIR
 )
-TRANSCRIBE_DLL = os.environ.get(
-    "TRANSCRIBE_LIBRARY",
-    os.path.join(os.path.dirname(__file__), "..", "transcribe-build-shared", "bin", "Release", "transcribe.dll")
-)
-GIGAAM_MODEL_PATH = os.environ.get(
-    "GIGAAM_MODEL_PATH",
-    r"D:\Project\futo-keyboard-gigaam\voiceinput-shared\models\cache\assets\voice-models\gigaam-v3-e2e-rnnt-Q8_0.gguf"
-)
-SUPERTONIC_DIR = os.environ.get(
-    "SUPERTONIC_MODEL_DIR",
-    r"D:\AI\Models\Speech\supertonic"
-)
+
+candidate_dll_paths = [
+    os.environ.get("TRANSCRIBE_LIBRARY"),
+    os.path.join(PROJECT_ROOT, "transcribe-build-shared", "bin", "Release", "transcribe.dll"),
+    os.path.join(VOICE_DIR, "bin", "transcribe.dll"),
+    r"D:\Project\futo-keyboard-gigaam\third_party\transcribe.cpp\build-shared\bin\Release\transcribe.dll",
+]
+TRANSCRIBE_DLL = next((p for p in candidate_dll_paths if p and os.path.isfile(p)), candidate_dll_paths[1])
+
+candidate_gigaam_paths = [
+    os.environ.get("GIGAAM_MODEL_PATH"),
+    os.path.join(PROJECT_ROOT, "Models", "Speech", "gigaam-v3-e2e-rnnt-Q8_0.gguf"),
+    os.path.join(PROJECT_ROOT, "Models", "gigaam-v3-e2e-rnnt-Q8_0.gguf"),
+    r"D:\Project\futo-keyboard-gigaam\voiceinput-shared\models\cache\assets\voice-models\gigaam-v3-e2e-rnnt-Q8_0.gguf",
+]
+GIGAAM_MODEL_PATH = next((p for p in candidate_gigaam_paths if p and os.path.isfile(p)), candidate_gigaam_paths[1])
+
+candidate_supertonic_paths = [
+    os.environ.get("SUPERTONIC_MODEL_DIR"),
+    os.path.join(PROJECT_ROOT, "Models", "Speech", "supertonic"),
+    os.path.join(PROJECT_ROOT, "Models", "supertonic"),
+    r"D:\AI\Models\Speech\supertonic",
+]
+SUPERTONIC_DIR = next((p for p in candidate_supertonic_paths if p and os.path.isdir(p)), candidate_supertonic_paths[1])
 
 os.environ["PYTHONPATH"] = PYTHONPATH_TRANSCRIBE
 os.environ["TRANSCRIBE_LIBRARY"] = TRANSCRIBE_DLL

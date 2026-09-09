@@ -1,7 +1,7 @@
 # start-swap.ps1 - Safe ownership-aware launcher for llama-swap
 $ErrorActionPreference = "Continue"
 
-$swapDir = "K:\Project\llama-swap"
+$swapDir = $PSScriptRoot
 $binExe = Join-Path $swapDir "bin\llama-swap.exe"
 $cfgFile = Join-Path $swapDir "config.yaml"
 $sessionFile = Join-Path $swapDir "session.json"

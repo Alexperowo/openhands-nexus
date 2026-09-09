@@ -56,14 +56,15 @@ param(
 $ErrorActionPreference = "Stop"
 
 # --- Constants & Paths ---
-$MainlineRoot       = "K:\Project\llama-mainline"
-$UpdateRootDir      = "K:\Project\OpenHands-Update"
-$LogDir             = "K:\Project\Logs\Updater"
+$ProjectRootDir     = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$MainlineRoot       = Join-Path $ProjectRootDir "llama-mainline"
+$UpdateRootDir      = Join-Path $ProjectRootDir "OpenHands-Update"
+$LogDir             = Join-Path $ProjectRootDir "Logs\Updater"
 $StateDir           = Join-Path $UpdateRootDir "state"
 $StagingDir         = Join-Path $UpdateRootDir "staging\llama-mainline"
-$ConfigYaml         = "K:\Project\llama-swap\config.yaml"
-$ArchiveBackupDir   = "K:\Project\Archive\backups\llama-mainline"
-$ManifestJson       = "K:\Project\Config\backend-versions.json"
+$ConfigYaml         = Join-Path $ProjectRootDir "llama-swap\config.yaml"
+$ArchiveBackupDir   = Join-Path $ProjectRootDir "Archive\backups\llama-mainline"
+$ManifestJson       = Join-Path $ProjectRootDir "Config\backend-versions.json"
 $PreviousBuildFile  = Join-Path $MainlineRoot "PREVIOUS_BUILD.txt"
 $ProductionPorts    = @(8000, 8080, 18000, 18001, 18002)
 
@@ -316,8 +317,8 @@ function Test-CandidateRuntimeGate {
 
     Write-Log "=== Candidate Runtime Gate: Validating on isolated port $TestPort ===" "STEP"
 
-    $mainModel = "K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
-    $draftModel = "K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf"
+    $mainModel = Join-Path $ProjectRootDir "Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
+    $draftModel = Join-Path $ProjectRootDir "Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf"
 
     if (-not (Test-Path $mainModel)) {
         Write-Log "Candidate runtime gate error: Main model not found at $mainModel" "ERROR"
@@ -415,7 +416,7 @@ function Test-CandidateRuntimeGate {
         $gatePassed = ($serverStarted -and $mainLoaded -and $draftLoaded -and $httpHealthy -and $completionPass)
 
         # Save candidate gate evidence to stage_7e2_mainline
-        $evidenceDir = "K:\Project\OpenHands-Tests\Production-Station\stage_7e2_mainline"
+        $evidenceDir = Join-Path $ProjectRootDir "OpenHands-Tests\Production-Station\stage_7e2_mainline"
         if (Test-Path $evidenceDir) {
             $gateEvidence = @{
                 timestamp = (Get-Date -Format "o")
@@ -518,8 +519,8 @@ function Promote-ConfigSafely {
     Write-Log "  [PASS] Exactly 1 line modified in config." "SUCCESS"
 
     # 3c. Verify Qwen3-Next model paths and launch parameters unchanged
-    $requiredNextModel = "K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
-    $requiredNextDraft = "K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf"
+    $requiredNextModel = Join-Path $ProjectRootDir "Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf"
+    $requiredNextDraft = Join-Path $ProjectRootDir "Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf"
 
     if ($newContent -notmatch [regex]::Escape($requiredNextModel)) {
         Remove-Item -Path $tempConfigFile -Force -ErrorAction SilentlyContinue
@@ -669,7 +670,7 @@ function Run-RollbackAction {
 
     if ($RestartPlatform) {
         Write-Log "Starting OpenHands Local (-RestartPlatform supplied)..." "STEP"
-        & "K:\Project\.openhands-local\start.ps1"
+        & (Join-Path $ProjectRootDir ".openhands-local\start.ps1")
     } else {
         Write-Log "Rollback complete. Station remains STOPPED (default behavior; pass -RestartPlatform to restart)." "SUCCESS"
     }
@@ -778,7 +779,7 @@ function Run-UpdateAction {
 
     if ($RestartPlatform) {
         Write-Log "Starting OpenHands Local (-RestartPlatform supplied)..." "STEP"
-        & "K:\Project\.openhands-local\start.ps1"
+        & (Join-Path $ProjectRootDir ".openhands-local\start.ps1")
     } else {
         Write-Log "Update complete. Station remains STOPPED (default behavior; pass -RestartPlatform to restart)." "SUCCESS"
     }

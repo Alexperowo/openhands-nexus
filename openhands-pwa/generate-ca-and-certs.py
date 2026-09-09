@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import pkcs12
 
-PWA_DIR = Path(r"K:\Project\openhands-pwa")
+PWA_DIR = Path(__file__).resolve().parent
 CERT_DIR = PWA_DIR / "certs"
 CERT_DIR.mkdir(parents=True, exist_ok=True)
 

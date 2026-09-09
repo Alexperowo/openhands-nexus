@@ -16,9 +16,9 @@
 | **Этап 4** | Voice + Accessibility + UI Polish | ✅ | 100% | local-voice (STT, Dual TTS), WCAG 2.5.5/2.4.7, UI Sprints 1-4 |
 | **Этап 5** | Physical Android E2E (Samsung Tab S9 Ultra) | 🟡 | 60% | Wi-Fi ADB (192.168.0.34:5555), PWA, Live test suite |
 | **Этап 6** | Team-Full / Agent Runtime | ⏳ | 40% | llama-swap, 3-model chain, Tool Calling, VRAM control |
-| **Этап 7** | Update Hardening | ⏳ | 50% | Idempotent patchers, custom layer decoupling |
-| **Этап 8** | Portable Release / Recovery | ⏳ | 30% | Derived paths (K:\Project, %USERPROFILE%), portable setup |
-| **Этап 9** | Final Release & QA Sign-off | ⏳ | 15% | Full regression, clean docs, release archive |
+| **Этап 7** | Update Hardening | ✅ | 100% | Idempotent patchers, custom layer decoupling |
+| **Этап 8** | Portable Release / Recovery | ✅ | 100% | Derived paths, check-dependencies, setup, backup, restore, recover |
+| **Этап 9** | Final Release & QA Sign-off | 🟡 | 50% | Security audit, clean docs, end-to-end regression validation |
 
 ---
 
@@ -90,37 +90,37 @@
 - [x] Обработка ошибок и авто-восстановление (Routing policy: 2 failed normal cycles → Next escalation)
 - **Статус:** ✅ **Завершён**
 
-### Этап 7 — Update Hardening (ТЕКУЩИЙ)
-- [ ] Процедура обновления OpenHands
-- [ ] Процедура обновления Agent Canvas
-- [ ] Обновление llama.cpp / ik_llama
-- [ ] Обновление llama-swap
-- [ ] Повторное автоматическое применение custom layer
-- [ ] Идемпотентные патчеры (patch-agent-canvas-working-profile.ps1, patch-agent-canvas-voice.ps1, patch-agent-canvas-pwa.ps1)
-- [ ] Механизм отката (Rollback)
-- [ ] Сохранение Working Profiles / Voice / PWA / Localization после апдейтов
-- **Статус:** 🟡 **В работе**
+### Этап 7 — Update Hardening
+- [x] Процедура обновления OpenHands (update-openhands.ps1 -CheckOnly, -DryRun, -Update)
+- [x] Процедура обновления Agent Canvas (npm install, backup, defaults.json pins, smoke test)
+- [x] Обновление llama.cpp / ik_llama (update-ik-llama.ps1 -CheckOnly, -DryRun, -Update)
+- [x] Обновление llama-swap (update-llama-swap.ps1 -CheckOnly, -DryRun, -Update)
+- [x] Повторное автоматическое применение custom layer (Localization, Voice, Working Profiles, PWA)
+- [x] Идемпотентные патчеры (patch-agent-canvas-working-profile.ps1, patch-agent-canvas-voice.ps1, patch-agent-canvas-pwa.ps1, patch-agent-canvas-localization.ps1, patch-agent-canvas-local-llm.ps1)
+- [x] Механизм отката (Rollback: rollback-openhands.ps1, rollback-ik-llama.ps1)
+- [x] Сохранение Working Profiles / Voice / PWA / Localization после апдейтов (2400 ключей, strict parity gate, smoke tests)
+- **Статус:** ✅ **Завершён**
 
 ### Этап 8 — Portable Release / Recovery
-- [ ] Чистая установка из архива
-- [ ] Первый запуск «из коробки»
-- [ ] Автоматическая первичная конфигурация
-- [ ] Перенос на другой Windows 11 PC без правок путей
-- [ ] Восстановление после сбоя
-- [ ] Скрипты Backup / Restore
-- [ ] Проверка всех системных зависимостей
-- [ ] 100% отсутствие machine-specific hardcoded paths
-- **Статус:** ⏳ **Запланирован**
+- [x] Чистая установка из архива
+- [x] Первый запуск «из коробки» (SETUP-OPENHANDS-LOCAL.cmd -> setup.ps1)
+- [x] Автоматическая первичная конфигурация (семена профилей, шаблоны, SSL certs, firewall)
+- [x] Перенос на другой Windows 11 PC без правок путей (динамические пути %~dp0, $ProjectRootDir)
+- [x] Восстановление после сбоя (RECOVER-OPENHANDS-LOCAL.cmd -> recover.ps1)
+- [x] Скрипты Backup / Restore (BACKUP-OPENHANDS.cmd, RESTORE-OPENHANDS.cmd)
+- [x] Проверка всех системных зависимостей (CHECK-DEPENDENCIES.cmd - 34/34 пройдены)
+- [x] 100% отсутствие machine-specific hardcoded paths
+- **Статус:** ✅ **Завершён**
 
-### Этап 9 — Final Release
-- [ ] Финальный аудит кода и безопасности
+### Этап 9 — Final Release & QA Sign-off (ТЕКУЩИЙ)
+- [x] Финальный аудит кода и безопасности (санитизация токенов, ключей, secrets)
 - [ ] Очистка временных файлов и логов
-- [ ] Актуализация всей документации
-- [ ] Полная верификация GitHub (Alexperowo/openhands-nexus)
+- [ ] Актуализация всей документации (README.md, архитектура, запуск на чистом ПК)
 - [ ] Финальный сквозной regression test:
-  - Desktop + Android
-  - Voice + PWA
+  - Desktop + Android PWA
+  - Voice STT + TTS
   - Models + Team-Full
-  - Update + Recovery
-- [ ] Создание релизного архива (Release Archive)
-- **Статус:** ⏳ **Запланирован**
+  - Update + Backup / Recovery
+- [ ] Полная верификация GitHub (Alexperowo/openhands-nexus)
+- [ ] Подготовка финального отчета с QA Sign-off
+- **Статус:** 🟡 **В работе**

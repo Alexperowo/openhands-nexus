@@ -136,7 +136,14 @@ function Run-SmokeTest([bool]$CheckLocale = $true) {
         $allPass = $false
     }
 
-    # 6. Check Locale Parity if requested
+    # 6. Mobile LAN Gateway :8443
+    if (Test-ServicePort 8443) {
+        Log-Msg "  [OK] Mobile LAN Gateway listening on port 8443" "SUCCESS"
+    } else {
+        Log-Msg "  [WARN] Mobile LAN Gateway port 8443 is not active" "WARN"
+    }
+
+    # 7. Check Locale Parity if requested
     if ($CheckLocale) {
         Log-Msg "  Checking Russian localization dictionary integrity..." "STEP"
         $auditScript = Join-Path $Global:ProjectRootDir "openhands-localization\audit-localization.py"
