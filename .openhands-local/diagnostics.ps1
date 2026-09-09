@@ -1,4 +1,4 @@
-# OpenHands Local Diagnostics Script
+﻿# OpenHands Local Diagnostics Script
 $Host.UI.RawUI.WindowTitle = "OpenHands Local — Диагностика"
 
 Write-Host "=====================================================================" -ForegroundColor Cyan
