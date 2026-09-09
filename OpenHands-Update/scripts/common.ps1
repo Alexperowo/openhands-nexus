@@ -66,21 +66,24 @@ function Fast-CopyDir([string]$Source, [string]$Dest, [switch]$Mirror) {
     }
 }
 
-function Test-ServicePort([int]$Port, [int]$TimeoutSec = 3) {
-    try {
-        $client = New-Object System.Net.Sockets.TcpClient
-        $iar = $client.BeginConnect("127.0.0.1", $Port, $null, $null)
-        $wh = $iar.AsyncWaitHandle
-        if (-not $wh.WaitOne($TimeoutSec * 1000, $false)) {
+function Test-ServicePort([int]$Port, [int]$TimeoutSec = 3, [int]$Retries = 5) {
+    for ($attempt = 1; $attempt -le $Retries; $attempt++) {
+        try {
+            $client = New-Object System.Net.Sockets.TcpClient
+            $iar = $client.BeginConnect("127.0.0.1", $Port, $null, $null)
+            $wh = $iar.AsyncWaitHandle
+            if ($wh.WaitOne($TimeoutSec * 1000, $false)) {
+                $client.EndConnect($iar)
+                $client.Close()
+                return $true
+            }
             $client.Close()
-            return $false
+        } catch {}
+        if ($attempt -lt $Retries) {
+            Start-Sleep -Seconds 2
         }
-        $client.EndConnect($iar)
-        $client.Close()
-        return $true
-    } catch {
-        return $false
     }
+    return $false
 }
 
 function Test-HttpEndpoint([string]$Uri, [int]$TimeoutSec = 5) {

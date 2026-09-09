@@ -551,7 +551,7 @@ Set-Content -Path (Join-Path $prodBinDir "BUILD-INFO.txt") -Value $newBuildInfo 
 if ($RestartPlatform) {
     Log-Msg "      Restarting OpenHands Local platform (-RestartPlatform supplied)..." "INFO"
     & (Join-Path $Global:ProjectRootDir ".openhands-local\start.ps1")
-    Start-Sleep -Seconds 3
+    Start-Sleep -Seconds 12
 
     $finalSmoke = Run-SmokeTest -CheckLocale $false
     if ($finalSmoke) {
