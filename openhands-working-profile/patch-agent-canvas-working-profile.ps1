@@ -20,6 +20,11 @@ if ($Content.Contains($LoaderId)) {
     $Content = $Content -replace '<script id="oh-wp-loader">[\s\S]*?</script>', ''
 }
 
+if (-not $Content.Contains('</body>')) {
+    Write-Error "index.html structure changed: '</body>' tag not found. Manual review required."
+    exit 1
+}
+
 # Inject before </body>
 $NewContent = $Content.Replace('</body>', "$LoaderSnippet</body>")
 [System.IO.File]::WriteAllText($IndexHtml, $NewContent, [System.Text.Encoding]::UTF8)

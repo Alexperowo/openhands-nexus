@@ -21,6 +21,7 @@
     let lastSpokenMessageId = null;
     let availableVoices = [];
     let isPopoverOpen = false;
+    let activeMediaStream = null;
 
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
         (window.innerWidth <= 768 && ("ontouchstart" in window || navigator.maxTouchPoints > 0));
@@ -72,6 +73,9 @@
     }
 
     function stopSpeech(notifyServer = true) {
+        if (isRecording) {
+            stopRecording();
+        }
         if ("speechSynthesis" in window) {
             try { window.speechSynthesis.cancel(); } catch (e) {}
         }
@@ -105,6 +109,7 @@
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true }
             });
+            activeMediaStream = stream;
 
             audioChunks = [];
             mediaRecorder = new MediaRecorder(stream);
@@ -114,7 +119,12 @@
             };
 
             mediaRecorder.onstop = async () => {
-                stream.getTracks().forEach(t => t.stop());
+                if (activeMediaStream) {
+                    try {
+                        activeMediaStream.getTracks().forEach(t => t.stop());
+                    } catch (e) {}
+                    activeMediaStream = null;
+                }
                 if (audioChunks.length === 0) {
                     updatePillStatus("Голос готов", "idle");
                     return;
@@ -158,6 +168,12 @@
             updatePillStatus("Запись...", "recording");
 
         } catch (err) {
+            if (activeMediaStream) {
+                try {
+                    activeMediaStream.getTracks().forEach(t => t.stop());
+                } catch (e) {}
+                activeMediaStream = null;
+            }
             console.error("[VoiceBridge] Mic error:", err);
             triggerHaptic([100, 50, 100]);
             updatePillStatus("Ошибка микрофона", "error");
@@ -167,7 +183,15 @@
 
     function stopRecording() {
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
-            mediaRecorder.stop();
+            try {
+                mediaRecorder.stop();
+            } catch (e) {}
+        }
+        if (activeMediaStream && (!mediaRecorder || mediaRecorder.state === "inactive")) {
+            try {
+                activeMediaStream.getTracks().forEach(t => t.stop());
+            } catch (e) {}
+            activeMediaStream = null;
         }
         isRecording = false;
         triggerHaptic([40, 40]);
@@ -558,28 +582,32 @@
     // Assistant Observer
     // -------------------------------------------------------------
     function observeAssistantMessages() {
+        let debounceTimer = null;
         const observer = new MutationObserver(() => {
-            injectComposerMic();
-            injectSpeakerButtons();
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                injectComposerMic();
+                injectSpeakerButtons();
 
-            // Auto-speak new assistant messages if TTS enabled
-            if (config.ttsMode !== "off") {
-                const messages = document.querySelectorAll("article[data-testid='agent-message']");
-                if (messages.length > 0) {
-                    const lastMsg = messages[messages.length - 1];
-                    const msgId = lastMsg.getAttribute("data-message-id") || lastMsg.textContent.slice(0, 40);
-                    if (msgId !== lastSpokenMessageId) {
-                        const isStreaming = lastMsg.querySelector(".typing-cursor, [data-streaming='true'], .loading-spinner");
-                        if (!isStreaming) {
-                            const clean = cleanTextForSpeech(lastMsg.innerText || lastMsg.textContent);
-                            if (clean && clean.length > 3) {
-                                lastSpokenMessageId = msgId;
-                                playTts(clean);
+                // Auto-speak new assistant messages if TTS enabled
+                if (config.ttsMode !== "off") {
+                    const messages = document.querySelectorAll("article[data-testid='agent-message']");
+                    if (messages.length > 0) {
+                        const lastMsg = messages[messages.length - 1];
+                        const msgId = lastMsg.getAttribute("data-message-id") || lastMsg.textContent.slice(0, 40);
+                        if (msgId !== lastSpokenMessageId) {
+                            const isStreaming = lastMsg.querySelector(".typing-cursor, [data-streaming='true'], .loading-spinner");
+                            if (!isStreaming) {
+                                const clean = cleanTextForSpeech(lastMsg.innerText || lastMsg.textContent);
+                                if (clean && clean.length > 3) {
+                                    lastSpokenMessageId = msgId;
+                                    playTts(clean);
+                                }
                             }
                         }
                     }
                 }
-            }
+            }, 150);
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
@@ -603,6 +631,24 @@
         injectSpeakerButtons();
         observeAssistantMessages();
     }
+
+    // Ensure microphone stream is released on navigation or page close
+    window.addEventListener("beforeunload", () => {
+        if (activeMediaStream) {
+            try {
+                activeMediaStream.getTracks().forEach(t => t.stop());
+            } catch (e) {}
+            activeMediaStream = null;
+        }
+    });
+    window.addEventListener("pagehide", () => {
+        if (activeMediaStream) {
+            try {
+                activeMediaStream.getTracks().forEach(t => t.stop());
+            } catch (e) {}
+            activeMediaStream = null;
+        }
+    });
 
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", setup);

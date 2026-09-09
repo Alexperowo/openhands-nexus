@@ -27,6 +27,11 @@ $Cleaned = $Cleaned -replace '<script src="/voice-bridge\.js" defer></script>', 
 $Cleaned = $Cleaned -replace '<link rel="stylesheet" href="http://127\.0\.0\.1:18002/voice-bridge\.css"><script src="http://127\.0\.0\.1:18002/voice-bridge\.js" defer></script>', ''
 $Cleaned = $Cleaned -replace '<script id="oh-voice-loader">[\s\S]*?</script>', ''
 
+if (-not $Cleaned.Contains('</body>')) {
+    Write-Error "index.html structure changed: '</body>' tag not found. Manual review required."
+    exit 1
+}
+
 # Inject before </body>
 $NewContent = $Cleaned -replace '</body>', "$DynamicVoiceSnippet</body>"
 [System.IO.File]::WriteAllText($IndexHtml, $NewContent, [System.Text.Encoding]::UTF8)

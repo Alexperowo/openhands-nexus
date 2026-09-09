@@ -52,6 +52,11 @@ $cleaned = $content -replace [regex]::Escape($pwaHeadSnippet), ''
 $cleaned = $cleaned -replace [regex]::Escape($swSnippet), ''
 $cleaned = $cleaned -replace '<script id="oh-voice-loader">[\s\S]*?</script>', ''
 
+if (-not $cleaned.Contains('</head>') -or -not $cleaned.Contains('</body>')) {
+    Write-Error "index.html structure changed: '</head>' or '</body>' tag not found. Manual review required."
+    exit 1
+}
+
 # If static voice tags exist from patch-agent-canvas-voice.ps1, upgrade them to the dynamic loader
 $staticVoiceSnippet = '<link rel="stylesheet" href="http://127.0.0.1:18002/voice-bridge.css"><script src="http://127.0.0.1:18002/voice-bridge.js" defer></script>'
 if ($cleaned.Contains($staticVoiceSnippet)) {

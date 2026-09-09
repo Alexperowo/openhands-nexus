@@ -152,9 +152,12 @@
         if (isConv) {
             function getConversationModelInfo() {
                 let raw = "";
-                const modelBtn = document.querySelector('[data-testid="chat-input-llm-profile"]');
+                const modelBtn = document.querySelector('[data-testid="chat-input-llm-profile"]') ||
+                                 document.querySelector('[data-testid*="llm-profile"]') ||
+                                 document.querySelector('button[aria-label*="model" i]') ||
+                                 document.querySelector('.chat-input [role="button"]');
                 if (modelBtn) {
-                    raw = (modelBtn.getAttribute('title') || modelBtn.innerText || "").trim();
+                    raw = (modelBtn.getAttribute('title') || modelBtn.getAttribute('aria-label') || modelBtn.innerText || "").trim();
                 }
 
                 if (!raw) return null;
@@ -438,18 +441,23 @@
         }, true);
     }
 
-    // Set up DOM observer to survive SPA re-renders and page navigation
+    // Set up DOM observer to survive SPA re-renders and page navigation (debounced to avoid over-firing)
     function setupObserver() {
-        const observer = new MutationObserver(() => {
-            const hasInput = document.querySelector(".chat-input");
-            const existingPanel = document.getElementById("oh-working-profile-container");
-            const routeChanged = lastRenderedRoute !== isConversationPage();
+        let debounceTimer = null;
 
-            if (hasInput && (!existingPanel || routeChanged)) {
-                renderUI();
-            } else if (existingPanel && isConversationPage()) {
-                renderUI();
-            }
+        const observer = new MutationObserver(() => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const hasInput = document.querySelector(".chat-input");
+                const existingPanel = document.getElementById("oh-working-profile-container");
+                const routeChanged = lastRenderedRoute !== isConversationPage();
+
+                if (hasInput && (!existingPanel || routeChanged)) {
+                    renderUI();
+                } else if (existingPanel && isConversationPage()) {
+                    renderUI();
+                }
+            }, 150);
         });
 
         observer.observe(document.body, { childList: true, subtree: true });

@@ -1,17 +1,17 @@
-OBJECTIVE:      OpenHands Nexus — Critical Portability & State Consistency Hardening
-PHASE:          QA Follow-Up & Verification Complete (PASS)
-STATE:          All portability and state consistency issues audited, fixed, and verified across repository code, launchers, updaters, and tests.
+OBJECTIVE:      OpenHands Nexus — Integrate Approved Audit Optimizations & Repository Hygiene
+PHASE:          Integration, Hardening & GitHub Cleanup Complete (PASS)
+STATE:          Approved architectural recommendations from Qwen Studio second-pass review integrated; security-critical .gitignore preserved; high-value UI/Voice/Patcher optimizations applied and validated.
 DONE:
-  - Portability (Item 1 & 2): Eradicated all operational C:\Users\User hardcodes from DIAGNOSTICS-OPENHANDS-LOCAL.cmd, .openhands-local scripts, rollback-openhands.ps1, update-all.ps1, audit-localization.py, generate-ru-locale.py, and test runners. Derived %USERPROFILE%\.openhands\working-profiles\ and agent-canvas\api-key.txt dynamically. Made model paths in service.py configurable with verified defaults.
-  - LAN Gateway (Item 3): Implemented resolveAgentCanvasDir() in openhands-pwa/lan-gateway.mjs to dynamically locate @openhands/agent-canvas from environment/runtime without hardcoded username paths.
-  - Startup / Release Completeness (Item 4): Updated .gitignore to track .openhands-local/start.ps1, stop.ps1, and diagnostics.ps1 while strictly ignoring session.json, logs, and pid files.
-  - Working Profile State Consistency (Item 5): Refactored switchWorkingProfile in both working_profile_manager.mjs and working_profiles.py to enforce safe failure behavior: strict validation of profile and reasoning modes (no silent fallback), sync to Agent Server before disk write, and disk write only upon verified sync success.
-  - Documentation Consistency (Item 6): Corrected README.md quickstart command paths and typos (gent-server -> agent-server, gent-canvas -> agent-canvas).
+  - Security Preservation: Protected repository against stripped .gitignore; retained exclusions for tokens, certificates (*.pfx, *.key), and large model weights (*.gguf, Models/).
+  - Audit Documentation: Integrated AUDIT-REPORT.md (architecture score 9.2/10) and Docs/SELF-REVIEW-OPTIMIZATION.md into master.
+  - HI-01 & REG-01 (Working Profile UI): Added 150ms debounce to MutationObserver in working-profile-ui.js to eliminate high CPU usage and DOM churn during streaming tokens; added resilient fallback selectors for LLM profile detection.
+  - HI-02 (Voice Bridge Lifecycle): Solved microphone stream leaks in voice-bridge.js by tracking activeMediaStream, terminating tracks on onstop, catch, stopSpeech, beforeunload, and pagehide; debounced assistant observer (150ms).
+  - REG-02 (Patcher Resilience): Added explicit verification of </head> and </body> tags across patch-agent-canvas-working-profile.ps1, patch-agent-canvas-voice.ps1, and patch-agent-canvas-pwa.ps1.
 EVIDENCE:
-  - Mock Agent Server tests (Node & Python): 100% PASS on invalid mode rejection, server 500 rejection guarding disk state, and 200 OK state persistence.
-  - Syntax verification: node --check, python py_compile, and PowerShell AST parser all return exit code 0.
-  - Startup dependency check: verified all files referenced by startup scripts exist in the repository.
-  - Secret scan: verified 0 credentials, secrets, or tokens introduced.
+  - Syntax verification: node --check (working-profile-ui.js, voice-bridge.js, working_profile_manager.mjs) -> exit code 0.
+  - Python compilation: python -m py_compile (working_profiles.py, service.py) -> exit code 0.
+  - PowerShell validation: AST parser on all 3 modified patchers -> 0 errors (VALID).
+  - Security audit: git diff confirmed 0 tokens, keys, or certs staged.
 OPEN_ISSUES:    None
-NEXT_ACTION:    Commit changes and push to GitHub (origin/master).
+NEXT_ACTION:    Commit to master, push to origin/master, delete remote branch local-agent-control-a3425.
 
