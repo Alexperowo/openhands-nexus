@@ -387,6 +387,8 @@
         if (reasoningSelect && isReasoningSupported && !running) {
             reasoningSelect.addEventListener("change", (e) => {
                 const newRmId = e.target.value;
+                const modeObj = modes.find(m => m.id === newRmId);
+                announceStatus(`Режим мышления: ${modeObj ? modeObj.label : newRmId}`);
                 switchProfile(currentWp.id, newRmId);
             });
         }

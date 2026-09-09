@@ -16,6 +16,35 @@
     --oh-text-primary: #ffffff;
     --oh-text-secondary: #a1a1aa;
     --oh-text-muted: #71717a;
+
+    /* Design System Tokens */
+    --oh-spacing-xs: 4px;
+    --oh-spacing-sm: 8px;
+    --oh-spacing-md: 12px;
+    --oh-spacing-lg: 16px;
+    --oh-radius-sm: 6px;
+    --oh-radius-md: 8px;
+    --oh-radius-lg: 14px;
+    --oh-radius-full: 9999px;
+    --oh-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --oh-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* High-contrast focus outline for accessibility */
+.oh-wp-card:focus-visible,
+.oh-wp-header:focus-visible,
+.oh-wp-toggle-btn:focus-visible,
+.oh-wp-select:focus-visible {
+    outline: 2px solid var(--oh-accent-primary) !important;
+    outline-offset: 2px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 .sr-only {

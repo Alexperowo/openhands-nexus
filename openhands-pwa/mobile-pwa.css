@@ -13,8 +13,16 @@ html, body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
+}
+
+/* Accessible focus outline for keyboard and gamepad navigation */
+:focus-visible {
+  outline: 2px solid #6366f1 !important;
+  outline-offset: 2px !important;
 }
 
 body {

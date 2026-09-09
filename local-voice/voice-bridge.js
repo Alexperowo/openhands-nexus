@@ -82,6 +82,36 @@
         }
     }
 
+    function showVoiceToast(message, type = "info") {
+        try {
+            let toast = document.getElementById("oh-voice-toast");
+            if (!toast) {
+                toast = document.createElement("div");
+                toast.id = "oh-voice-toast";
+                toast.setAttribute("role", "alert");
+                document.body.appendChild(toast);
+            }
+            const icon = type === "error" ? "⚠️" : (type === "success" ? "✓" : "ℹ️");
+            toast.className = `oh-voice-toast ${type}`;
+            toast.innerHTML = `
+                <span class="oh-voice-toast-icon">${icon}</span>
+                <span class="oh-voice-toast-msg">${message}</span>
+                <button type="button" class="oh-voice-toast-close" aria-label="Закрыть">&times;</button>
+            `;
+            const closeBtn = toast.querySelector(".oh-voice-toast-close");
+            if (closeBtn) {
+                closeBtn.onclick = () => toast.classList.remove("visible");
+            }
+            requestAnimationFrame(() => toast.classList.add("visible"));
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.classList.remove("visible");
+            }, 4500);
+        } catch (e) {
+            console.warn("[VoiceBridge] Failed to show toast:", e);
+        }
+    }
+
     function cleanTextForSpeech(text) {
         if (!text) return "";
         let clean = text;
@@ -173,13 +203,17 @@
                             if (config.autoSend) {
                                 setTimeout(triggerSendMessage, 250);
                             }
+                        } else {
+                            showVoiceToast("Речь не распознана. Говорите ближе к микрофону.", "info");
                         }
                     } else {
                         updatePillStatus("Ошибка STT", "error");
+                        showVoiceToast("Ошибка распознавания речи (STT). Попробуйте снова.", "error");
                     }
                 } catch (err) {
                     console.error("[VoiceBridge] STT fetch failed:", err);
                     updatePillStatus("Ошибка связи", "error");
+                    showVoiceToast("Ошибка связи с голосовым мостом. Проверьте соединение.", "error");
                 } finally {
                     updatePillStatus("Голос готов", "idle");
                     setMicButtonState(false);
@@ -201,6 +235,7 @@
             console.error("[VoiceBridge] Mic error:", err);
             triggerHaptic([100, 50, 100]);
             updatePillStatus("Ошибка микрофона", "error");
+            showVoiceToast("Доступ к микрофону заблокирован. Разрешите микрофон в настройках браузера.", "error");
             setMicButtonState(false);
         }
     }
@@ -517,6 +552,12 @@
         pill.innerHTML = `
             <span class="oh-voice-pill-dot"></span>
             <span id="oh-voice-pill-text">Голос готов</span>
+            <span class="oh-voice-waves" aria-hidden="true">
+                <span class="oh-voice-wave-bar"></span>
+                <span class="oh-voice-wave-bar"></span>
+                <span class="oh-voice-wave-bar"></span>
+                <span class="oh-voice-wave-bar"></span>
+            </span>
         `;
 
         // Drag-to-reposition logic for voice pill
