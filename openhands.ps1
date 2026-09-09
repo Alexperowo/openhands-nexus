@@ -9,7 +9,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position=0)]
-    [ValidateSet('start', 'stop', 'restart', 'status', 'check', 'setup', 'diagnose', 'recover', 'backup', 'restore', 'help')]
+    [ValidateSet('start', 'stop', 'restart', 'status', 'check', 'test', 'setup', 'diagnose', 'recover', 'backup', 'restore', 'help')]
     [string]$Command = 'help',
 
     [Parameter(ValueFromRemainingArguments=$true)]
@@ -30,6 +30,7 @@ function Show-Help {
     Write-Host '  openhands restart     - Полный перезапуск сервисов платформы' -ForegroundColor White
     Write-Host '  openhands status      - Проверить активность портов и процессов' -ForegroundColor White
     Write-Host '  openhands check       - Запустить 34 теста зависимостей и целостности' -ForegroundColor White
+    Write-Host '  openhands test        - Запустить автоматизированные тесты (--all, --unit, --integration, --hardware)' -ForegroundColor White
     Write-Host '  openhands diagnose    - Запустить детальную диагностику станции' -ForegroundColor White
     Write-Host '  openhands recover     - Запустить процедуру аварийного восстановления' -ForegroundColor White
     Write-Host '  openhands backup      - Создать резервную копию рабочей станции' -ForegroundColor White
@@ -100,6 +101,9 @@ switch ($Command) {
     }
     'check' {
         & "$Root\.openhands-local\check-dependencies.ps1" @RemainingArgs
+    }
+    'test' {
+        python "$Root\tests\runner.py" @RemainingArgs
     }
     'diagnose' {
         & "$Root\.openhands-local\diagnostics.ps1" @RemainingArgs

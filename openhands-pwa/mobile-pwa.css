@@ -65,12 +65,12 @@ body {
     box-sizing: border-box;
   }
 
-  /* Voice button sizing & position on mobile */
+  /* Voice button sizing & position on mobile (WCAG 2.5.5 / Android Material Target 48px) */
   #oh-voice-mic-btn, #oh-composer-mic-btn {
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
-    min-height: 44px !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
     touch-action: manipulation;
   }
 }
