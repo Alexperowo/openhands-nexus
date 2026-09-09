@@ -32,14 +32,14 @@
     "previous_version": "v252"
   },
   "llama_mainline": {
-    "current_version": "0.4.0-dev (build 10821)",
-    "commit": "971595d66",
-    "production_path": "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
-    "sha256": "ED0C7F94CDDCB0F9CE0F5D30CF18967DA76AB881C0281AF11464033FA859146C",
+    "current_version": "0.4.0-dev (build 10875)",
+    "commit": "14a9d09f7",
+    "production_path": "K:\\Project\\llama-mainline\\b10875\\llama-server.exe",
+    "sha256": "60BB5259BAE1A0E238CFD6E00217063CCA69B890616314DCA5834A2287AA3A17",
     "upstream_source": "https://github.com/ggml-org/llama.cpp",
-    "last_verified": "2026-09-06T11:07:41.262923+00:00",
-    "previous_version": "0.4.0-dev (build 10816)",
-    "build": "b10821"
+    "last_verified": "2026-09-09T15:44:07+00:00",
+    "previous_version": "0.4.0-dev (build 10821)",
+    "build": "b10875"
   },
   "ik_llama": {
     "current_version": "1",

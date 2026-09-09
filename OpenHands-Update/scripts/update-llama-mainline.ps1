@@ -334,7 +334,7 @@ function Test-CandidateRuntimeGate {
     if (Test-Path $candidateLog) { Remove-Item $candidateLog -Force -ErrorAction SilentlyContinue }
     if (Test-Path $candidateErr) { Remove-Item $candidateErr -Force -ErrorAction SilentlyContinue }
 
-    $candidateArgs = "-m `"$mainModel`" -md `"$draftModel`" -c 98304 -ngl 26 -fa on -ctk q8_0 -ctv q8_0 -np 1 -t 6 -dev CUDA0 --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek --reasoning-budget-message `"Conclude reasoning immediately and output the final answer now.`" --jinja --host 127.0.0.1 --port $TestPort --temp 0.6"
+    $candidateArgs = "-m `"$mainModel`" -md `"$draftModel`" -c 4096 -ngl 27 -fa on -ctk q8_0 -ctv q5_0 -np 1 -t 6 -dev CUDA0 --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek --reasoning-budget-message `"Conclude reasoning immediately and output the final answer now.`" --jinja --host 127.0.0.1 --port $TestPort --temp 0.6"
 
     Write-Log "Starting candidate process: $CandidateBinaryPath on port $TestPort" "INFO"
     Write-Log "Candidate log: $candidateLog" "INFO"

@@ -1,9 +1,9 @@
 ﻿{
     "gate_passed":  true,
     "test_port":  18081,
-    "timestamp":  "2026-09-06T14:06:11.4942447+03:00",
-    "candidate_binary":  "K:\\Project\\llama-mainline\\b10821\\llama-server.exe",
-    "target_build":  "b10821",
+    "timestamp":  "2026-09-09T15:44:06.2298468+03:00",
+    "candidate_binary":  "K:\\Project\\llama-mainline\\b10875\\llama-server.exe",
+    "target_build":  "b10875",
     "verdicts":  {
                      "HTTP_HEALTHY":  "PASS",
                      "DRAFT_MODEL_LOADED":  "PASS",

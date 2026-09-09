@@ -34,7 +34,7 @@ models:
     proxy: http://127.0.0.1:${PORT}
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
     unloadTimeout: 15
-    cmd: K:\Project\llama-mainline\b10821\llama-server.exe -m K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
+    cmd: K:\Project\llama-mainline\b10875\llama-server.exe -m K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
       -md K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-MTP-ONLY-Q4_K_M.gguf
       -c 98304 -ngl 27 -fa on -ctk q8_0 -ctv q5_0 -np 1 -t 6 -dev CUDA0
       --spec-type draft-mtp --spec-draft-n-max 1

@@ -70,7 +70,7 @@ try {
 } catch {
     # Fallback to HTML scraping
     try {
-        $rawHtml = [string]::Join("`n", (curl.exe -s -L "https://github.com/mostlygeek/llama-swap/releases"))
+        $rawHtml = [string]::Join("`n", (curl.exe -s -L --max-time 10 "https://github.com/mostlygeek/llama-swap/releases"))
         if ($rawHtml -match '/mostlygeek/llama-swap/releases/tag/(v\d+)') {
             $swapLatest = $Matches[1]
         }
@@ -107,7 +107,7 @@ if (Test-Path $mainlineBin) {
 }
 $mainlineLatest = "unknown"
 try {
-    $rawHtml = [string]::Join("`n", (curl.exe -s "https://github.com/ggml-org/llama.cpp/releases"))
+    $rawHtml = [string]::Join("`n", (curl.exe -s --max-time 10 "https://github.com/ggml-org/llama.cpp/releases"))
     if ($rawHtml -match '/ggml-org/llama\.cpp/releases/tag/(b\d+)') {
         $mainlineLatest = $Matches[1]
     }
@@ -145,7 +145,7 @@ try {
 } catch {
     # Fallback to HTML commit scraping if rate-limited
     try {
-        $rawHtml = [string]::Join("`n", (curl.exe -s "https://github.com/ikawrakow/ik_llama.cpp/commits/master"))
+        $rawHtml = [string]::Join("`n", (curl.exe -s --max-time 10 "https://github.com/ikawrakow/ik_llama.cpp/commits/master"))
         if ($rawHtml -match '/ikawrakow/ik_llama\.cpp/commit/([a-f0-9]{7})') {
             $ikLatest = $Matches[1]
         }
