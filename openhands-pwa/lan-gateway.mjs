@@ -488,7 +488,58 @@ const httpsServer = createHttpsServer(
       }
     }
 
-    // 2. Form login POST endpoint
+    // 1b. Static PWA Assets (Manifest, Service Worker, Mobile CSS, Icons)
+    if (pathname === "/manifest.webmanifest" || pathname === "/site.webmanifest") {
+      const manifestPath = join(__dirname, "manifest.webmanifest");
+      if (existsSync(manifestPath)) {
+        const data = readFileSync(manifestPath);
+        res.writeHead(200, {
+          "Content-Type": "application/manifest+json; charset=utf-8",
+          "Cache-Control": "public, max-age=3600",
+        });
+        res.end(data);
+        return;
+      }
+    }
+
+    if (pathname === "/sw.js") {
+      const swPath = join(__dirname, "sw.js");
+      if (existsSync(swPath)) {
+        const data = readFileSync(swPath);
+        res.writeHead(200, {
+          "Content-Type": "text/javascript; charset=utf-8",
+          "Cache-Control": "no-cache",
+        });
+        res.end(data);
+        return;
+      }
+    }
+
+    if (pathname === "/mobile-pwa.css") {
+      const cssPath = join(__dirname, "mobile-pwa.css");
+      if (existsSync(cssPath)) {
+        const data = readFileSync(cssPath);
+        res.writeHead(200, {
+          "Content-Type": "text/css; charset=utf-8",
+          "Cache-Control": "public, max-age=3600",
+        });
+        res.end(data);
+        return;
+      }
+    }
+
+    if (pathname.startsWith("/icons/")) {
+      const iconFile = join(__dirname, pathname.slice(1));
+      if (existsSync(iconFile)) {
+        const data = readFileSync(iconFile);
+        res.writeHead(200, {
+          "Content-Type": pathname.endsWith(".svg") ? "image/svg+xml" : "image/png",
+          "Cache-Control": "public, max-age=86400",
+        });
+        res.end(data);
+        return;
+      }
+    }
     if (pathname === "/__lan_login" && req.method === "POST") {
       let body = "";
       req.on("data", (chunk) => { body += chunk; });

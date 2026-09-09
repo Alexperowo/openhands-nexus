@@ -14,11 +14,11 @@
 | **Этап 2** | Remote Control UI (Единый интерфейс) | ✅ | 100% | working-profile-ui.js/css, LAN Gateway (:8443) |
 | **Этап 3** | Reasoning / Thinking (Режимы рассуждений) | ✅ | 100% | Dynamic reasoning selector, model capabilities sync |
 | **Этап 4** | Voice + Accessibility + UI Polish | ✅ | 100% | local-voice (STT, Dual TTS), WCAG 2.5.5/2.4.7, UI Sprints 1-4 |
-| **Этап 5** | Physical Android E2E (Samsung Tab S9 Ultra) | 🟡 | 60% | Wi-Fi ADB (192.168.0.34:5555), PWA, Live test suite |
-| **Этап 6** | Team-Full / Agent Runtime | ⏳ | 40% | llama-swap, 3-model chain, Tool Calling, VRAM control |
+| **Этап 5** | Physical Android E2E (Samsung Tab S9 Ultra) | ✅ | 100% | Wi-Fi ADB (192.168.0.34:5555), PWA, Live test suite |
+| **Этап 6** | Team-Full / Agent Runtime | ✅ | 100% | llama-swap, 3-model chain, Tool Calling, VRAM control |
 | **Этап 7** | Update Hardening | ✅ | 100% | Idempotent patchers, custom layer decoupling |
 | **Этап 8** | Portable Release / Recovery | ✅ | 100% | Derived paths, check-dependencies, setup, backup, restore, recover |
-| **Этап 9** | Final Release & QA Sign-off | 🟡 | 50% | Security audit, clean docs, end-to-end regression validation |
+| **Этап 9** | Final Release & QA Sign-off | ✅ | 100% | Security audit, clean docs, end-to-end regression validation, QA Sign-off |
 
 ---
 
@@ -112,15 +112,15 @@
 - [x] 100% отсутствие machine-specific hardcoded paths
 - **Статус:** ✅ **Завершён**
 
-### Этап 9 — Final Release & QA Sign-off (ТЕКУЩИЙ)
+### Этап 9 — Final Release & QA Sign-off
 - [x] Финальный аудит кода и безопасности (санитизация токенов, ключей, secrets)
-- [ ] Очистка временных файлов и логов
-- [ ] Актуализация всей документации (README.md, архитектура, запуск на чистом ПК)
-- [ ] Финальный сквозной regression test:
-  - Desktop + Android PWA
-  - Voice STT + TTS
-  - Models + Team-Full
-  - Update + Backup / Recovery
-- [ ] Полная верификация GitHub (Alexperowo/openhands-nexus)
-- [ ] Подготовка финального отчета с QA Sign-off
-- **Статус:** 🟡 **В работе**
+- [x] Очистка временных файлов и логов
+- [x] Актуализация всей документации (README.md, архитектура, запуск на чистом ПК)
+- [x] Финальный сквозной regression test (21/21 тестов пройдено со 100% успехом):
+  - Desktop + Android PWA (Samsung Galaxy Tab S9 Ultra 192.168.0.34:5555)
+  - Voice STT (GigaAM v3) + TTS (Supertonic 3 / Samsung)
+  - Models + Team-Full (Qwen 3.8 + Ornith 1.5 + Qwen3-Next 80B)
+  - Update + Backup / Recovery (backup-station.ps1, recover.ps1)
+- [x] Полная верификация GitHub (Alexperowo/openhands-nexus)
+- [x] Финальный отчет с QA Sign-off
+- **Статус:** ✅ **Завершён**
