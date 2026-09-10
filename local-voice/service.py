@@ -51,7 +51,6 @@ candidate_transcribe_paths = [
     VOICE_DIR,
     os.path.join(PROJECT_ROOT, "local-voice"),
     os.path.join(PROJECT_ROOT, "futo-keyboard-gigaam", "third_party", "transcribe.cpp", "bindings", "python", "src"),
-    r"D:\Project\futo-keyboard-gigaam\third_party\transcribe.cpp\bindings\python\src",
 ]
 PYTHONPATH_TRANSCRIBE = next(
     (p for p in candidate_transcribe_paths if p and os.path.isdir(os.path.join(p, "transcribe_cpp"))),
@@ -62,7 +61,6 @@ candidate_dll_paths = [
     os.environ.get("TRANSCRIBE_LIBRARY"),
     os.path.join(PROJECT_ROOT, "transcribe-build-shared", "bin", "Release", "transcribe.dll"),
     os.path.join(VOICE_DIR, "bin", "transcribe.dll"),
-    r"D:\Project\futo-keyboard-gigaam\third_party\transcribe.cpp\build-shared\bin\Release\transcribe.dll",
 ]
 TRANSCRIBE_DLL = next((p for p in candidate_dll_paths if p and os.path.isfile(p)), candidate_dll_paths[1])
 
@@ -70,7 +68,6 @@ candidate_gigaam_paths = [
     os.environ.get("GIGAAM_MODEL_PATH"),
     os.path.join(PROJECT_ROOT, "Models", "Speech", "gigaam-v3-e2e-rnnt-Q8_0.gguf"),
     os.path.join(PROJECT_ROOT, "Models", "gigaam-v3-e2e-rnnt-Q8_0.gguf"),
-    r"D:\Project\futo-keyboard-gigaam\voiceinput-shared\models\cache\assets\voice-models\gigaam-v3-e2e-rnnt-Q8_0.gguf",
 ]
 GIGAAM_MODEL_PATH = next((p for p in candidate_gigaam_paths if p and os.path.isfile(p)), candidate_gigaam_paths[1])
 
@@ -78,7 +75,6 @@ candidate_supertonic_paths = [
     os.environ.get("SUPERTONIC_MODEL_DIR"),
     os.path.join(PROJECT_ROOT, "Models", "Speech", "supertonic"),
     os.path.join(PROJECT_ROOT, "Models", "supertonic"),
-    r"D:\AI\Models\Speech\supertonic",
 ]
 SUPERTONIC_DIR = next((p for p in candidate_supertonic_paths if p and os.path.isdir(p)), candidate_supertonic_paths[1])
 
@@ -101,6 +97,14 @@ voice_styles = {}
 stt_lock = threading.Lock()
 tts_lock = threading.Lock()
 cancel_event = threading.Event()
+_httpd_ref = None
+
+
+def _shutdown_server():
+    """Gracefully shut down the HTTP server."""
+    global _httpd_ref
+    if _httpd_ref:
+        _httpd_ref.shutdown()
 
 # Metrics
 METRICS = {
@@ -467,7 +471,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             self._set_cors()
             self.end_headers()
             self.wfile.write(b'{"status": "shutting_down"}')
-            threading.Thread(target=lambda: (time.sleep(0.5), os._exit(0))).start()
+            threading.Thread(target=lambda: (time.sleep(0.5), _shutdown_server()), daemon=True).start()
 
         else:
             self.send_response(404)
@@ -477,9 +481,11 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
 
 
 def run_server(port: int = 18002):
+    global _httpd_ref
     init_models()
     server_address = ("127.0.0.1", port)
     httpd = ThreadingHTTPServer(server_address, VoiceBridgeHandler)
+    _httpd_ref = httpd
     print(f"\n=======================================================", flush=True)
     print(f" Voice Bridge Server RUNNING at http://127.0.0.1:{port}", flush=True)
     print(f" Endpoints: /health, /stt, /tts, /stop, /shutdown", flush=True)

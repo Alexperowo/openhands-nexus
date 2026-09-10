@@ -13,7 +13,7 @@
 
 import { createServer as createHttpsServer } from "node:https";
 import { readFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL, parse as parseUrl } from "node:url";
 import { parse as parseQuery } from "node:querystring";
 import process from "node:process";
@@ -529,7 +529,13 @@ const httpsServer = createHttpsServer(
     }
 
     if (pathname.startsWith("/icons/")) {
-      const iconFile = join(__dirname, pathname.slice(1));
+      const iconFile = resolve(__dirname, pathname.slice(1));
+      // Prevent path traversal: resolved path must stay within __dirname
+      if (!iconFile.startsWith(__dirname + "/") && !iconFile.startsWith(__dirname + "\\")) {
+        res.writeHead(403, { "Content-Type": "text/plain" });
+        res.end("Forbidden");
+        return;
+      }
       if (existsSync(iconFile)) {
         const data = readFileSync(iconFile);
         res.writeHead(200, {

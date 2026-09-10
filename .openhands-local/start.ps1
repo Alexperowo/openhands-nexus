@@ -178,7 +178,9 @@ try {
     powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectRoot "openhands-localization\patch-agent-canvas-localization.ps1") | Out-Null
     powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectRoot "openhands-pwa\patch-agent-canvas-pwa.ps1") | Out-Null
     powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectRoot "openhands-working-profile\patch-agent-canvas-working-profile.ps1") | Out-Null
-} catch {}
+} catch {
+    Log-Message "[WARN] UI patch error: $_" "Yellow"
+}
 
 $voiceRunning = $false
 try {
@@ -384,7 +386,8 @@ if (-not $gatewayRunning) {
         powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $ProjectRoot "openhands-pwa\generate-certs.ps1") | Out-Null
     }
 
-    $nodeExe = "C:\Program Files\nodejs\node.exe"
+    $nodeExe = (Get-Command node -ErrorAction SilentlyContinue).Source
+    if (-not $nodeExe) { $nodeExe = "C:\Program Files\nodejs\node.exe" }
     $gwScript = Join-Path $ProjectRoot "openhands-pwa\lan-gateway.mjs"
     $gwCmd = "cmd.exe /c `"`"$nodeExe`" `"$gwScript`" > `"$pwaLog`" 2>&1`""
 

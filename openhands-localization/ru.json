@@ -1245,7 +1245,7 @@
   "CONVERSATION$NO_BUDGET_LIMIT": "Без ограничения бюджета",
   "CONVERSATION$INPUT": "Входные данные",
   "CONVERSATION$TOTAL": "Всего",
-  "CONVERSATION$CONTEXT_WINDOW": "Оконно контекста",
+  "CONVERSATION$CONTEXT_WINDOW": "Окно контекста",
   "CONVERSATION$USED": "использовано",
   "SETTINGS$RESET_CONFIRMATION": "Вы уверены, что хотите сбросить все настройки?",
   "ERROR$GENERIC_OOPS": "Ой! Произошла ошибка!",

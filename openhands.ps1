@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     OpenHands Nexus — Unified Station CLI Manager
 .DESCRIPTION
@@ -76,7 +76,10 @@ function Get-StationStatus {
     if ($allActive) {
         Write-Host '  Все 5 сервисов активны и готовы к работе.' -ForegroundColor Green
         Write-Host '  Desktop: http://127.0.0.1:8000' -ForegroundColor Cyan
-        Write-Host '  Mobile:  https://192.168.0.14:8443' -ForegroundColor Cyan
+        $lanIp = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.PrefixOrigin -ne 'WellKnown' } | Select-Object -First 1).IPAddress
+        if ($lanIp) {
+            Write-Host "  Mobile:  https://${lanIp}:8443" -ForegroundColor Cyan
+        }
     } else {
         Write-Host '  Один или более сервисов не запущены. Запустите: openhands start' -ForegroundColor Yellow
     }

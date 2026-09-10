@@ -9,9 +9,10 @@ Maintains persistent server-side active state and synchronizes with OpenHands Ag
 import os
 import json
 import shutil
+import tempfile
 import urllib.request
 import urllib.error
-from datetime import datetime
+from datetime import datetime, timezone
 
 USER_HOME = os.environ.get("USERPROFILE") or os.environ.get("HOME") or os.path.expanduser("~")
 OPENHANDS_HOME = os.environ.get("OPENHANDS_HOME") or os.path.join(USER_HOME, ".openhands")
@@ -75,15 +76,25 @@ def get_working_profile_state() -> dict:
         "active_reasoning_mode_id": "standard_team",
         "resolved_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
         "resolved_llm_profile_name": "Qwen3.8-Medium",
-        "updated_at": datetime.utcnow().isoformat() + "Z",
+        "updated_at": datetime.now(timezone.utc).isoformat() + "Z",
         "updated_by": "default_fallback",
     }
 
 
 def save_working_profile_state(state: dict):
-    state["updated_at"] = datetime.utcnow().isoformat() + "Z"
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
-        json.dump(state, f, ensure_ascii=False, indent=2)
+    state["updated_at"] = datetime.now(timezone.utc).isoformat() + "Z"
+    state_dir = os.path.dirname(STATE_FILE)
+    fd, tmp_path = tempfile.mkstemp(dir=state_dir, suffix=".tmp", prefix="wp-state-")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, STATE_FILE)
+    except BaseException:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def sync_to_agent_server(agent_profile_id: str, llm_profile_name: str) -> tuple:
