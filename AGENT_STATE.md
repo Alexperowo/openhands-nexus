@@ -36,6 +36,11 @@ DONE:
     * Made PFX passphrase configurable via `OPENHANDS_PFX_PASSPHRASE` in `openhands-pwa/lan-gateway.mjs`.
     * Added schema validation for profile loading in `Config/working_profile_manager.mjs` and `working_profiles.py`.
     * Added `Invoke-StationScript` safe execution and error propagation in `openhands.ps1` with UTF-8 BOM encoding.
+  - Dual-GPU Hardware Orchestration (RTX 5060 Ti 16GB + RTX 2080 Ti 22GB): 100% complete.
+    * Total VRAM pool: 37.9 GB across 2 GPUs (GPU 0: RTX 5060 Ti 16 GB, GPU 1: RTX 2080 Ti 22 GB).
+    * Single-model routing: `qwen` and `ornith` pinned to `CUDA1` (RTX 2080 Ti 22 GB) with native `sm_75` CUDA acceleration and 0 OOM risk, keeping `CUDA0` free for OS/desktop/voice.
+    * Multi-model routing: `next` (Qwen3-Next 80B) configured with multi-GPU offload `-dev CUDA1,CUDA0 -ts 22,15 -ngl 999`, fitting all layers in 38 GB VRAM.
+    * System checks & test suite updated: `check-dependencies.ps1` (35/35 PASS) and `test_cuda_vram.py` (3/3 PASS).
 EVIDENCE:
   - Master Testing Plan: master_testing_and_verification_plan.md (7 tiers, 5 services, 3 LLM models, disaster recovery).
   - CLI Test Runner: openhands.cmd test --all (25/25 PASS in 2.01s).

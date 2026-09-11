@@ -13,6 +13,16 @@ class TestModelRouter:
 
     BASE_URL = "http://127.0.0.1:8080"
 
+    @pytest.fixture(autouse=True)
+    def check_router_running(self):
+        """Skip tests gracefully if llama-swap is not currently running."""
+        try:
+            req = urllib.request.Request(f"{self.BASE_URL}/v1/models")
+            with urllib.request.urlopen(req, timeout=1):
+                pass
+        except Exception:
+            pytest.skip("llama-swap is not currently running on port 8080 (start with 'openhands start')")
+
     def test_router_models_list(self):
         url = f"{self.BASE_URL}/v1/models"
         req = urllib.request.Request(url)

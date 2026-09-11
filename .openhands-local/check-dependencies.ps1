@@ -129,23 +129,33 @@ Write-Host ""
 # 4. Hardware GPU & CUDA
 Write-Host "[4/8] Аппаратное ускорение (NVIDIA GPU / CUDA):" -ForegroundColor Yellow
 try {
-    $smi = (& nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader 2>$null)
-    if ($smi) {
-        $smi = $smi.Trim()
-        $parts = $smi -split ',\s*'
-        $gpuName = $parts[0]
-        $vram = $parts[1]
-        $driver = $parts[2]
-        Report-Item "NVIDIA GPU" "OK" "$gpuName ($vram, Driver $driver)"
-        if ($vram -match '(\d+)\s*MiB') {
-            $vramMb = [int]$Matches[1]
-            if ($vramMb -ge 20000) {
-                Report-Item "VRAM Budget" "OK" "$vram (достаточно для Team-Full 3-моделей)"
-            } elseif ($vramMb -ge 12000) {
-                Report-Item "VRAM Budget" "WARN" "$vram (рекомендуется >= 20 GB для Team-Full; одиночные профили работают)"
-            } else {
-                Report-Item "VRAM Budget" "WARN" "$vram (меньше 12 GB; возможен offload в RAM)"
+    $smiLines = (& nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader 2>$null)
+    if ($smiLines) {
+        $totalVramMb = 0
+        $gpuIndex = 0
+        foreach ($line in $smiLines) {
+            $trimmed = $line.Trim()
+            if (-not $trimmed) { continue }
+            $parts = $trimmed -split ',\s*'
+            $gpuName = $parts[0]
+            $vram = $parts[1]
+            $driver = $parts[2]
+            Report-Item "NVIDIA GPU #$gpuIndex" "OK" "$gpuName ($vram, Driver $driver)"
+            if ($vram -match '(\d+)\s*MiB') {
+                $totalVramMb += [int]$Matches[1]
             }
+            $gpuIndex++
+        }
+
+        $totalGb = [math]::Round($totalVramMb / 1024, 1)
+        if ($totalVramMb -ge 35000) {
+            Report-Item "VRAM Pool (Total)" "OK" "${totalGb} GB across $gpuIndex GPUs (достаточно для Team-Full 3-моделей + Qwen3-Next 80B Multi-GPU)"
+        } elseif ($totalVramMb -ge 20000) {
+            Report-Item "VRAM Pool (Total)" "OK" "${totalGb} GB (достаточно для Team-Full 3-моделей)"
+        } elseif ($totalVramMb -ge 12000) {
+            Report-Item "VRAM Pool (Total)" "WARN" "${totalGb} GB (рекомендуется >= 20 GB для Team-Full; одиночные профили работают)"
+        } else {
+            Report-Item "VRAM Pool (Total)" "WARN" "${totalGb} GB (меньше 12 GB; возможен offload в RAM)"
         }
     } else {
         Report-Item "NVIDIA GPU" "WARN" "nvidia-smi не обнаружен (CUDA ускорение недоступно)"

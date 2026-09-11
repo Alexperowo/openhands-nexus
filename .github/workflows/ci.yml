@@ -31,7 +31,7 @@ jobs:
 
       - name: Validate Python Syntax (py_compile)
         run: |
-          python -m compileall -q Config local-voice openhands-pwa OpenHands-Tests
+          python -m compileall -q Config local-voice openhands-pwa OpenHands-Tests Tests
 
       - name: Run Ruff Lint
         run: |

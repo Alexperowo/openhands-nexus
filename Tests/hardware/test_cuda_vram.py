@@ -21,24 +21,38 @@ class TestCudaHardware:
             text=True,
             check=True
         )
-        output = res.stdout.strip()
-        parts = [p.strip() for p in output.split(",")]
-        gpu_name = parts[0]
-        total_vram_mb = int(parts[1])
-        driver = parts[2]
+        lines = [line.strip() for line in res.stdout.strip().splitlines() if line.strip()]
+        assert len(lines) >= 1, "No GPUs detected"
 
-        assert "RTX 2080 Ti" in gpu_name or "NVIDIA" in gpu_name, f"Unexpected GPU: {gpu_name}"
-        # 22GB mod is approx 22528 MB
-        assert total_vram_mb >= 20000, f"Expected >= 20 GB VRAM, got {total_vram_mb} MB"
-        assert len(driver) > 0
+        total_system_vram_mb = 0
+        gpu_names = []
+        for line in lines:
+            parts = [p.strip() for p in line.split(",")]
+            gpu_name = parts[0]
+            vram_mb = int(parts[1])
+            driver = parts[2]
+            gpu_names.append(gpu_name)
+            total_system_vram_mb += vram_mb
+            assert "NVIDIA" in gpu_name, f"Unexpected GPU: {gpu_name}"
+            assert len(driver) > 0
+
+        # Dedicated compute GPU has >= 20 GB VRAM (RTX 2080 Ti mod)
+        max_single_gpu_vram = max(int(line.split(",")[1].strip()) for line in lines)
+        assert max_single_gpu_vram >= 20000, f"Expected at least one GPU >= 20 GB VRAM, got max {max_single_gpu_vram} MB"
+
+        # Multi-GPU pool verification
+        if len(lines) >= 2:
+            assert total_system_vram_mb >= 35000, f"Expected total multi-GPU pool >= 35 GB, got {total_system_vram_mb} MB"
 
     def test_vram_budget_not_exceeded(self):
-        """Ensures current VRAM usage does not exceed physical limit."""
+        """Ensures current VRAM usage does not exceed physical limit on any GPU."""
         res = subprocess.run(
             ["nvidia-smi", "--query-gpu=memory.used,memory.total", "--format=csv,noheader,nounits"],
             capture_output=True,
             text=True,
             check=True
         )
-        used_mb, total_mb = [int(p.strip()) for p in res.stdout.strip().split(",")]
-        assert used_mb <= total_mb, f"VRAM used ({used_mb} MB) exceeds total ({total_mb} MB)"
+        lines = [line.strip() for line in res.stdout.strip().splitlines() if line.strip()]
+        for line in lines:
+            used_mb, total_mb = [int(p.strip()) for p in line.split(",")]
+            assert used_mb <= total_mb, f"VRAM used ({used_mb} MB) exceeds total ({total_mb} MB)"
