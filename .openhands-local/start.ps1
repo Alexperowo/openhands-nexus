@@ -1,4 +1,4 @@
-﻿# OpenHands Local Startup Script (Background / Hidden Mode via WMI)
+# OpenHands Local Startup Script (Background / Hidden Mode via WMI)
 $ErrorActionPreference = "Continue"
 
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -159,6 +159,7 @@ try {
 if (-not $swapRunning) {
     Log-Message "[1/3] Starting llama-swap router in background (port 8080, Qwen & Ornith on-demand)..." "Cyan"
     
+    $env:GGML_CUDA_NO_PINNED = "1"
     $swapLog = Join-Path $swapLogDir "llama-swap.log"
     Rotate-LogFile $swapLog
 
