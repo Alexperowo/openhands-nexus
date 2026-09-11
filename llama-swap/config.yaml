@@ -47,6 +47,8 @@ models:
     proxy: http://127.0.0.1:${PORT}
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
     unloadTimeout: 15
+    env:
+    - GGML_CUDA_NO_PINNED=0
     cmd: >-
       K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
