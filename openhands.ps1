@@ -63,8 +63,8 @@ function Get-StationStatus {
 
     $allActive = $true
     foreach ($p in $ports) {
-        $conn = Get-NetTCPConnection -LocalPort $p.Port -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($conn -and $conn.State -eq 'Listen') {
+        $conn = Get-NetTCPConnection -LocalPort $p.Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($conn) {
             Write-Host "  [ACTIVE]   Port $($p.Port): $($p.Name) (PID: $($conn.OwningProcess))" -ForegroundColor Green
         } else {
             Write-Host "  [INACTIVE] Port $($p.Port): $($p.Name)" -ForegroundColor Yellow

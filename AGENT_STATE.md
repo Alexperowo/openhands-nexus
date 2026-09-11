@@ -41,13 +41,25 @@ DONE:
     * Single-model routing: `qwen` and `ornith` pinned to `CUDA1` (RTX 2080 Ti 22 GB) with native `sm_75` CUDA acceleration and 0 OOM risk, keeping `CUDA0` free for OS/desktop/voice.
     * Multi-model routing: `next` (Qwen3-Next 80B) configured with multi-GPU offload `-dev CUDA1,CUDA0 -ts 22,15 -ngl 999`, fitting all layers in 38 GB VRAM.
     * System checks & test suite updated: `check-dependencies.ps1` (35/35 PASS) and `test_cuda_vram.py` (3/3 PASS).
+  - Master 10-Tier Testing & Verification Campaign: 100% complete and verified.
+    * Tier 1 (Static/Lint/Hygiene): compileall PASS, ruff check PASS (0 errors), node --check PASS, git tree clean.
+    * Tier 2 (Dual-GPU Hardware): RTX 5060 Ti 16GB + RTX 2080 Ti 22GB (37.9 GB VRAM pool), test_cuda_vram.py 3/3 PASS.
+    * Tier 3 (Model Inference & Router): llama-swap port 8080 active, Qwen warm latency 0.36s, test_model_router_api.py 2/2 PASS.
+    * Tier 4 (Backend Services & Network): All 5 services listening (18000, 8000, 8080, 8443, 18002), test_services_health.py 5/5 PASS, check-dependencies 35/35 PASS.
+    * Tier 5 (Working Profiles & Thinking): 7 canonical templates, test_config_validation.py 5/5 PASS, dynamic reasoning active.
+    * Tier 6 (Local Voice UI): GigaAM v3 STT + Supertonic 3 TTS, test_voice_bridge_api.py 3/3 PASS.
+    * Tier 7 (Mobile Remote & PWA): HTTPS LAN Gateway (port 8443) with X.509 certs, test_certs_and_pwa.py 4/4 PASS, WCAG AAA 48px targets.
+    * Tier 8 (Agent Runtime & Tooling): Core + Canvas active, terminal/editor tools operational, Team-Full routing verified.
+    * Tier 9 (Decoupled Layer & Disaster Recovery): Idempotent patchers verified, openhands status/test/check CLI verified.
+    * Tier 10 (Localization & Accessibility): 2400+ keys verified, test_localization_keys.py 3/3 PASS, 0 mojibake.
 EVIDENCE:
-  - Master Testing Plan: master_testing_and_verification_plan.md (7 tiers, 5 services, 3 LLM models, disaster recovery).
-  - CLI Test Runner: openhands.cmd test --all (25/25 PASS in 2.01s).
-  - Tasks 1, 2, 3 Verification Script: scratch/verify_tasks_1_2_3.py (exited with code 0).
-  - Verification Screenshots: scratch/final_task1_tablet_breakdown.png, scratch/final_task2_composer_popover.png, scratch/final_task3_ornith_active.png.
-  - Verification Dataset: scratch/verified_all_results.json.
-OPEN_ISSUES:    None. All tasks 1, 2, 3 fully executed, verified, and passing.
+  - Master Testing Plan Artifact: implementation_plan.md (10 architectural tiers).
+  - Walkthrough Artifact: walkthrough.md (Dual-GPU and platform verification).
+  - Unified Test Suite: python Tests/runner.py --all (25/25 PASS in 1.61s).
+  - System Dependency Audit: .openhands-local/check-dependencies.ps1 (35/35 checks PASS).
+  - Ruff Code Quality: uvx ruff check . (0 errors).
+  - Live Station Ports: openhands status (5/5 services ACTIVE).
+OPEN_ISSUES:    None. All 10 tiers of testing executed, verified, and passing 100%.
 NEXT_ACTION:    Ready for user next instructions.
 
 

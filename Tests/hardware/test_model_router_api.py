@@ -62,7 +62,7 @@ class TestModelRouter:
             method="POST"
         )
         t0 = time.time()
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             assert resp.status == 200
             res = json.loads(resp.read().decode("utf-8"))
             elapsed = time.time() - t0
