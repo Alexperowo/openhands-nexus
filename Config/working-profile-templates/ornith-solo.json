@@ -15,10 +15,25 @@
     }
   ],
   "reasoning": {
-    "supported": false,
-    "ui_type": "none",
-    "default_mode_id": "direct",
-    "modes": []
+    "supported": true,
+    "ui_type": "discrete_levels",
+    "default_mode_id": "coding",
+    "modes": [
+      {
+        "id": "coding",
+        "label": "Thinking (С размышлением)",
+        "description": "Глубокий анализ задачи, CoT-верификация логики и синтез кода",
+        "target_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
+        "target_llm_profile_name": "Ornith-Coding"
+      },
+      {
+        "id": "direct",
+        "label": "Direct (Без рассуждения)",
+        "description": "Прямой синтез кода без накладных расходов на блок размышлений",
+        "target_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
+        "target_llm_profile_name": "Ornith-Direct"
+      }
+    ]
   },
   "ui_badge": {
     "text": "1 Модель",

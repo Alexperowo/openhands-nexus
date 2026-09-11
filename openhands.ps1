@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     OpenHands Nexus — Unified Station CLI Manager
 .DESCRIPTION
@@ -86,42 +86,55 @@ function Get-StationStatus {
     Write-Host ''
 }
 
+function Invoke-StationScript([string]$scriptPath, [string[]]$scriptArgs) {
+    try {
+        & $scriptPath @scriptArgs
+        if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
+    } catch {
+        Write-Error "[CLI Error] Ошибка выполнения $scriptPath : $_"
+        exit 1
+    }
+}
+
 switch ($Command) {
     'start' {
-        & "$Root\.openhands-local\start.ps1" @RemainingArgs
+        Invoke-StationScript "$Root\.openhands-local\start.ps1" $RemainingArgs
     }
     'stop' {
-        & "$Root\.openhands-local\stop.ps1" @RemainingArgs
+        Invoke-StationScript "$Root\.openhands-local\stop.ps1" $RemainingArgs
     }
     'restart' {
         Write-Host '[CLI] Перезапуск OpenHands Nexus...' -ForegroundColor Cyan
-        & "$Root\.openhands-local\stop.ps1"
+        Invoke-StationScript "$Root\.openhands-local\stop.ps1" @()
         Start-Sleep -Seconds 3
-        & "$Root\.openhands-local\start.ps1"
+        Invoke-StationScript "$Root\.openhands-local\start.ps1" @()
     }
     'status' {
         Get-StationStatus
     }
     'check' {
-        & "$Root\.openhands-local\check-dependencies.ps1" @RemainingArgs
+        Invoke-StationScript "$Root\.openhands-local\check-dependencies.ps1" $RemainingArgs
     }
     'test' {
         python "$Root\tests\runner.py" @RemainingArgs
+        if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     }
     'diagnose' {
-        & "$Root\.openhands-local\diagnostics.ps1" @RemainingArgs
+        Invoke-StationScript "$Root\.openhands-local\diagnostics.ps1" $RemainingArgs
     }
     'recover' {
-        & "$Root\.openhands-local\recover.ps1" @RemainingArgs
+        Invoke-StationScript "$Root\.openhands-local\recover.ps1" $RemainingArgs
     }
     'setup' {
-        & "$Root\.openhands-local\setup.ps1" @RemainingArgs
+        Invoke-StationScript "$Root\.openhands-local\setup.ps1" $RemainingArgs
     }
     'backup' {
-        & "$Root\OpenHands-Update\scripts\backup-station.ps1" @RemainingArgs
+        Invoke-StationScript "$Root\OpenHands-Update\scripts\backup-station.ps1" $RemainingArgs
     }
     'restore' {
-        & "$Root\OpenHands-Update\scripts\restore-station.ps1" @RemainingArgs
+        Invoke-StationScript "$Root\OpenHands-Update\scripts\restore-station.ps1" $RemainingArgs
     }
     default {
         Show-Help

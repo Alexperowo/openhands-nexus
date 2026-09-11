@@ -62,7 +62,11 @@ export function loadWorkingProfiles() {
     try {
       const fullPath = join(WORKING_PROFILES_DIR, file);
       const data = JSON.parse(readFileSync(fullPath, "utf-8"));
-      profiles.push(data);
+      if (data && typeof data === "object" && typeof data.id === "string" && typeof data.name === "string") {
+        profiles.push(data);
+      } else {
+        console.warn(`[WorkingProfileManager] Skipping invalid profile in ${file}: missing id or name`);
+      }
     } catch (err) {
       console.warn("[WorkingProfileManager] Error reading " + file + ":", err.message);
     }

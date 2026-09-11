@@ -39,9 +39,58 @@ body {
     font-size: 16px !important;
   }
 
-  /* Adequate touch targets for interactive elements (WCAG 2.5.5 / 2.5.8) */
-  button, a, [role="button"], input[type="button"], input[type="submit"] {
+  button:not([data-testid*="context-window"]):not([class*="h-1"]):not([class*="size-"]):not(.oh-wp-toggle-btn):not([data-testid*="chat-input-llm-profile"]),
+  a,
+  [role="button"]:not([data-testid*="context-window"]):not([class*="h-1"]):not([class*="size-"]):not(.oh-wp-header):not(.oh-wp-toggle-btn):not([data-testid*="chat-input-llm-profile"]),
+  input[type="button"], input[type="submit"] {
     min-height: 44px;
+  }
+
+  /* Context Window Meter: prevent oval/stretched distortion on mobile/PWA */
+  [data-testid="context-window-meter"] {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  /* Context Window progress bar: keep crisp 6px line, prevent 44px vertical blowup */
+  [data-testid="context-window-meter-bar-button"] {
+    height: 6px !important;
+    min-height: 6px !important;
+    max-height: 6px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 9999px !important;
+    cursor: pointer !important;
+  }
+
+  /* Context Window compact button */
+  [data-testid="context-window-compact-button"] {
+    min-height: 28px !important;
+    height: 28px !important;
+    padding: 2px 8px !important;
+  }
+
+  /* Context Window popover styling */
+  [data-testid="context-window-meter-popover"] {
+    max-width: calc(100vw - 24px) !important;
+    background: #18181f !important;
+    border: 1px solid #3f3f46 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+    z-index: 9999 !important;
+  }
+
+  /* Hide irrelevant cloud provider balance card on local offline station */
+  [data-testid="provider-balance-card"] {
+    display: none !important;
   }
 
   /* Code blocks & output panes must scroll horizontally without expanding viewport */

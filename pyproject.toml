@@ -10,6 +10,25 @@ license = { text = "MIT" }
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+exclude = [
+    ".git",
+    ".pytest_cache",
+    "AgentCanvas-Test",
+    "Archive",
+    "LLM-tests",
+    "Logs",
+    "OpenHands-Tests",
+    "Tests",
+    "Temp",
+    "scratch",
+    "ksenia-android",
+    "ik_llama",
+    "llama-mainline",
+    "transcribe-build-shared",
+    "local-voice/transcribe_cpp",
+    "local-voice/bin",
+    "openhands-localization/audit-localization.py",
+]
 
 [tool.ruff.lint]
 select = [
@@ -23,8 +42,11 @@ select = [
     "SIM", # flake8-simplify
 ]
 ignore = [
-    "E501",  # line length handled by formatter
-    "B008",  # do not perform function calls in argument defaults
+    "E501",   # line length handled by formatter
+    "B008",   # do not perform function calls in argument defaults
+    "E402",   # module level import not at top of file
+    "SIM105", # try-except-pass vs contextlib.suppress
+    "SIM115", # open without context manager in global logging setup
 ]
 
 [tool.pytest.ini_options]

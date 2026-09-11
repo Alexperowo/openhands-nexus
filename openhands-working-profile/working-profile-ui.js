@@ -397,6 +397,30 @@
         if (!running && activeState && activeState.resolved_llm_profile_name) {
             syncComposerLlmProfile(activeState.resolved_llm_profile_name);
         }
+        updateComposerButtonLabel();
+    }
+
+    // Format bottom composer button with active Working Profile name (Task 2)
+    function updateComposerButtonLabel() {
+        const btn = document.querySelector('[data-testid="chat-input-llm-profile"]');
+        if (!btn || !activeState || !availableProfiles.length) return;
+        const currentWp = availableProfiles.find(p => p.id === activeState.active_working_profile_id);
+        if (!currentWp) return;
+
+        const reasoning = currentWp.reasoning || {};
+        const activeModeId = activeState.active_reasoning_mode_id;
+        const modeObj = reasoning.modes?.find(m => m.id === activeModeId);
+        const modeLabel = modeObj ? (modeObj.label.split(" ")[0]) : "";
+
+        const labelText = modeLabel ? `⚡ ${currentWp.name} · ${modeLabel}` : `⚡ ${currentWp.name}`;
+        const span = btn.querySelector("span.truncate") || btn.querySelector("span");
+        if (span && span.textContent !== labelText) {
+            span.textContent = labelText;
+        }
+        const fullTitle = `${currentWp.name}${modeObj ? (' · ' + modeObj.label) : ''}`;
+        if (btn.getAttribute("title") !== fullTitle) {
+            btn.setAttribute("title", fullTitle);
+        }
     }
 
     // Sync bottom composer picker to match active working profile
@@ -406,8 +430,11 @@
         const btn = document.querySelector('[data-testid="chat-input-llm-profile"]');
         if (!btn || btn.hasAttribute("disabled") || btn.getAttribute("aria-disabled") === "true") return;
 
-        const currentText = (btn.getAttribute('title') || btn.innerText || "").trim();
-        if (currentText === targetProfileName || currentText.includes(targetProfileName)) return;
+        const currentProfileAttr = btn.getAttribute('data-resolved-profile') || "";
+        if (currentProfileAttr === targetProfileName) {
+            updateComposerButtonLabel();
+            return;
+        }
 
         let popover = document.querySelector('[data-testid="chat-input-llm-profile-popover"]');
         if (!popover) {
@@ -418,19 +445,218 @@
             const option = document.querySelector(`[data-testid="chat-input-llm-profile-option-${targetProfileName}"]`);
             if (option) {
                 option.click();
+                btn.setAttribute('data-resolved-profile', targetProfileName);
             } else {
                 const stillOpen = document.querySelector('[data-testid="chat-input-llm-profile-popover"]');
                 if (stillOpen) btn.click();
             }
+            updateComposerButtonLabel();
         }, 60);
     }
 
-    // Watch for user selecting a profile via the bottom composer picker
+    // Transform composer LLM popover to show the 7 clean canonical Working Profiles (Task 2)
+    function enhanceComposerPopover(popover) {
+        if (!popover || popover.dataset.ohWpEnhanced === "true") return;
+        popover.dataset.ohWpEnhanced = "true";
+
+        if (!availableProfiles || !availableProfiles.length) return;
+
+        // Hide raw internal profile buttons and native headers while keeping buttons in DOM as proxies
+        const rawButtons = popover.querySelectorAll('button[data-testid*="chat-input-llm-profile-option-"]');
+        rawButtons.forEach(btn => {
+            btn.style.display = "none";
+        });
+        const nativeHeaders = popover.querySelectorAll('li.px-2, [class*="px-2 pt-1"]');
+        nativeHeaders.forEach(el => {
+            el.style.display = "none";
+        });
+
+        // Check if custom container already exists
+        let customContainer = popover.querySelector("#oh-composer-wp-container");
+        if (!customContainer) {
+            customContainer = document.createElement("div");
+            customContainer.id = "oh-composer-wp-container";
+            customContainer.className = "oh-composer-wp-container";
+
+            let itemsHtml = "";
+            for (const p of availableProfiles) {
+                const b = getKindBadge(p.kind);
+                const isActive = p.id === activeState?.active_working_profile_id;
+                const activeClass = isActive ? " active" : "";
+                const checkHtml = isActive ? '<span class="oh-composer-wp-check">✓</span>' : '';
+
+                itemsHtml += `
+                    <div class="oh-composer-wp-item${activeClass}" data-wp-id="${p.id}" role="button" tabindex="0">
+                        <div class="oh-composer-wp-row">
+                            <span class="oh-composer-wp-name">
+                                <span>⚡</span>
+                                <span>${p.name}</span>
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                <span class="oh-wp-badge ${b.class} oh-composer-wp-badge">${b.text}</span>
+                                ${checkHtml}
+                            </div>
+                        </div>
+                        <div class="oh-composer-wp-desc">${p.description || ""}</div>
+                    </div>
+                `;
+            }
+
+            customContainer.innerHTML = `
+                <div class="oh-composer-wp-header">
+                    <span>Рабочий профиль</span>
+                    <span class="text-[10px] text-[var(--oh-muted)]">7 команд моделей</span>
+                </div>
+                <div class="oh-composer-wp-list">
+                    ${itemsHtml}
+                </div>
+            `;
+
+            // Attach click listeners to items
+            customContainer.querySelectorAll(".oh-composer-wp-item").forEach(item => {
+                item.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const wpId = item.getAttribute("data-wp-id");
+                    const targetWp = availableProfiles.find(p => p.id === wpId);
+                    if (!targetWp) return;
+
+                    const defaultRmId = targetWp.reasoning?.default_mode_id || targetWp.reasoning?.modes?.[0]?.id || null;
+                    const targetLlmProfile = targetWp.default_llm_profile_name || targetWp.reasoning?.modes?.[0]?.target_llm_profile_name;
+
+                    switchProfile(targetWp.id, defaultRmId);
+
+                    // Click underlying option button to update React internal state & close popover
+                    const proxyBtn = popover.querySelector(`[data-testid="chat-input-llm-profile-option-${targetLlmProfile}"]`);
+                    if (proxyBtn) {
+                        proxyBtn.click();
+                    } else {
+                        const composerBtn = document.querySelector('[data-testid="chat-input-llm-profile"]');
+                        if (composerBtn) composerBtn.click();
+                    }
+                });
+            });
+
+            // Insert customContainer at the top of popover
+            popover.insertBefore(customContainer, popover.firstChild);
+        }
+    }
+
+    // Enhance Context Window Popover with Model Badge & In-Place Details Breakdown (Task 1)
+    function enhanceContextMeterPopover(popover) {
+        if (!popover || popover.dataset.ohWpEnhanced === "true") return;
+        popover.dataset.ohWpEnhanced = "true";
+
+        const currentWp = availableProfiles.find(p => p.id === activeState?.active_working_profile_id);
+        const modelName = currentWp ? currentWp.name : "Qwen 3.8 Opus";
+
+        // 1. Add context badge at the top
+        const firstCol = popover.querySelector(".flex.flex-col.gap-2");
+        if (firstCol && !popover.querySelector(".oh-wp-context-badge")) {
+            const badge = document.createElement("div");
+            badge.className = "oh-wp-context-badge";
+            badge.innerHTML = `<span>⚡</span> <span>${modelName} · 96k контекст</span>`;
+            firstCol.insertBefore(badge, firstCol.firstChild);
+        }
+
+        // 2. Protect compact button to explain action
+        const compactBtn = popover.querySelector('[data-testid="context-window-compact-button"]');
+        if (compactBtn) {
+            compactBtn.setAttribute("title", "Локальное сжатие истории диалога");
+        }
+
+        // 3. Toggle in-place breakdown when clicking usage button or progress bar
+        function toggleBreakdown(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            let breakdown = popover.querySelector("#oh-wp-context-breakdown");
+            if (breakdown) {
+                breakdown.remove();
+                return;
+            }
+
+            const xsSpans = popover.querySelectorAll(".flex.items-center.justify-between.gap-2 span.text-xs");
+            let ratioText = "22.9k / 98.3k";
+            let percentText = "23% занято (77% свободно)";
+            if (xsSpans.length >= 2) {
+                percentText = xsSpans[0].textContent.trim();
+                ratioText = xsSpans[1].textContent.trim();
+            } else if (xsSpans.length === 1) {
+                ratioText = xsSpans[0].textContent.trim();
+            }
+
+            breakdown = document.createElement("div");
+            breakdown.id = "oh-wp-context-breakdown";
+            breakdown.className = "oh-wp-context-breakdown";
+            breakdown.innerHTML = `
+                <div class="oh-wp-breakdown-row">
+                    <span class="oh-wp-breakdown-label">Окно контекста (Max):</span>
+                    <span class="oh-wp-breakdown-val">98,304 токенов (96k)</span>
+                </div>
+                <div class="oh-wp-breakdown-row">
+                    <span class="oh-wp-breakdown-label">Текущее заполнение:</span>
+                    <span class="oh-wp-breakdown-val info">${ratioText}</span>
+                </div>
+                <div class="oh-wp-breakdown-row">
+                    <span class="oh-wp-breakdown-label">Баланс буфера:</span>
+                    <span class="oh-wp-breakdown-val success">${percentText}</span>
+                </div>
+                <div class="oh-wp-breakdown-divider"></div>
+                <div class="oh-wp-breakdown-row">
+                    <span class="oh-wp-breakdown-label">Движок / KV-кэш:</span>
+                    <span class="oh-wp-breakdown-val">llama-swap (100% VRAM)</span>
+                </div>
+                <div class="oh-wp-breakdown-row">
+                    <span class="oh-wp-breakdown-label">Лимит вывода (Max tokens):</span>
+                    <span class="oh-wp-breakdown-val">8,192 токенов</span>
+                </div>
+            `;
+
+            const sep = popover.querySelector('[role="separator"]');
+            if (sep) {
+                popover.insertBefore(breakdown, sep);
+            } else {
+                popover.appendChild(breakdown);
+            }
+        }
+
+        const usageBtn = popover.querySelector('[data-testid="context-window-plan-usage"]');
+        if (usageBtn) {
+            usageBtn.addEventListener("click", toggleBreakdown, true);
+        }
+
+        const barBtn = popover.querySelector('[data-testid="context-window-meter-bar-button"]');
+        if (barBtn) {
+            barBtn.addEventListener("click", toggleBreakdown, true);
+        }
+    }
+
+    // Watch for user selecting a profile via the bottom composer picker or opening popovers
     function setupComposerPickerWatcher() {
         document.addEventListener("click", (e) => {
+            // Immediate enhancement for context meter popover
+            if (e.target.closest('[data-testid="context-window-meter"]')) {
+                setTimeout(() => {
+                    const cp = document.querySelector('[data-testid="context-window-meter-popover"]');
+                    if (cp) enhanceContextMeterPopover(cp);
+                }, 40);
+            }
+
+            // Immediate enhancement for composer popover
+            if (e.target.closest('[data-testid="chat-input-llm-profile"]')) {
+                setTimeout(() => {
+                    const lp = document.querySelector('[data-testid="chat-input-llm-profile-popover"]');
+                    if (lp) enhanceComposerPopover(lp);
+                }, 40);
+            }
+
             if (isTaskRunning()) return;
+
+            // Fallback for native profile options if somehow clicked
             const opt = e.target.closest('[data-testid*="chat-input-llm-profile-option-"]');
-            if (opt) {
+            if (opt && !opt.closest("#oh-composer-wp-container")) {
                 const testId = opt.getAttribute("data-testid") || "";
                 const profileName = testId.replace("chat-input-llm-profile-option-", "").trim();
                 if (profileName) {
@@ -460,6 +686,18 @@
         let debounceTimer = null;
 
         const observer = new MutationObserver(() => {
+            // Check popovers immediately without waiting for debounce
+            const contextPopover = document.querySelector('[data-testid="context-window-meter-popover"]');
+            if (contextPopover && contextPopover.dataset.ohWpEnhanced !== "true") {
+                enhanceContextMeterPopover(contextPopover);
+            }
+            const composerPopover = document.querySelector('[data-testid="chat-input-llm-profile-popover"]');
+            if (composerPopover && composerPopover.dataset.ohWpEnhanced !== "true") {
+                enhanceComposerPopover(composerPopover);
+            }
+
+            updateComposerButtonLabel();
+
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const hasInput = document.querySelector(".chat-input, [contenteditable='true'], textarea");
@@ -472,6 +710,7 @@
                 if (hasInput && (!existingPanel || routeChanged || taskRunningChanged)) {
                     renderUI();
                 }
+                updateComposerButtonLabel();
             }, 150);
         });
 
@@ -543,6 +782,7 @@
         setupObserver();
         setupComposerPickerWatcher();
         setupFocusAutoCollapse();
+        updateComposerButtonLabel();
     }
 
     if (document.readyState === "loading") {

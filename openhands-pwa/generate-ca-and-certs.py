@@ -8,18 +8,17 @@ Generates:
 4. LAN Auth Token: lan-auth-token.txt (persistent 32-char hex secret for gateway auth boundary)
 """
 
-import os
-import sys
-import secrets
 import datetime
 import ipaddress
+import os
+import secrets
 from pathlib import Path
 
 from cryptography import x509
-from cryptography.x509.oid import NameOID, ExtendedKeyUsageOID
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import pkcs12
+from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 PWA_DIR = Path(__file__).resolve().parent
 CERT_DIR = PWA_DIR / "certs"
@@ -192,11 +191,11 @@ print(f"ROOT CA SUBJECT:          {ca_cert.subject.rfc4514_string()}")
 print(f"ROOT CA ISSUER:           {ca_cert.issuer.rfc4514_string()}")
 print(f"ROOT CA IS_CA:            {ca_bc.ca} (PathLen: {ca_bc.path_length})")
 print(f"ROOT CA PUBLIC FILE:      {CA_CRT_FILE}")
-print(f"---------------------------------------------------------------------")
+print("---------------------------------------------------------------------")
 print(f"LEAF SUBJECT:             {leaf_cert.subject.rfc4514_string()}")
 print(f"LEAF ISSUER:              {leaf_cert.issuer.rfc4514_string()}")
 print(f"LEAF SELF_SIGNED:         {leaf_cert.subject == leaf_cert.issuer}")
 print(f"LEAF IS_CA:               {leaf_bc.ca}")
 print(f"LEAF SANs:                {[str(san.value) for san in leaf_cert.extensions.get_extension_for_class(x509.SubjectAlternativeName).value]}")
 print(f"LEAF PFX FILE:            {LEAF_PFX_FILE}")
-print(f"=====================================================================\n")
+print("=====================================================================\n")

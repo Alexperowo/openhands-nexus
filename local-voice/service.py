@@ -8,16 +8,17 @@ Integrates:
 Zero cloud dependencies. 100% offline.
 """
 
-import os
-import sys
 import io
-import time
 import json
-import wave
+import os
 import re
-import threading
 import subprocess
-from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+import sys
+import threading
+import time
+import wave
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
 import numpy as np
 
 # Ensure UTF-8 output and safety under pythonw (where stdout/stderr can be None)
@@ -83,9 +84,10 @@ os.environ["TRANSCRIBE_LIBRARY"] = TRANSCRIBE_DLL
 if PYTHONPATH_TRANSCRIBE not in sys.path:
     sys.path.insert(0, PYTHONPATH_TRANSCRIBE)
 
-import transcribe_cpp
 import av
+import transcribe_cpp
 from supertonic import TTS
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "Config"))
 import working_profiles
 
@@ -191,34 +193,34 @@ def synthesize_to_wav_bytes(text: str, voice_style_name: str = "M1") -> tuple[by
     """Synthesize text to WAV bytes. Returns (wav_bytes, duration_s, latency_s)."""
     cancel_event.clear()
     style = voice_styles.get(voice_style_name, voice_styles.get("M1"))
-    
+
     t0 = time.perf_counter()
     with tts_lock:
         if cancel_event.is_set():
             return b"", 0.0, 0.0
         wav, dur = tts_model.synthesize(text, voice_style=style, lang="ru")
-    
+
     latency = time.perf_counter() - t0
     duration = float(dur[0]) if len(dur) > 0 else 0.0
-    
+
     # Convert numpy float32 waveform (shape 1, N) to 16-bit PCM WAV bytes
     waveform = np.clip(wav[0], -1.0, 1.0)
     pcm_int16 = (waveform * 32767).astype(np.int16)
-    
+
     # Safely determine native sample rate (from model attribute or waveform / duration)
     sample_rate = getattr(tts_model, "sample_rate", None)
     if not sample_rate and duration > 0 and len(waveform) > 0:
         sample_rate = int(round(len(waveform) / duration))
     if not sample_rate or sample_rate <= 0:
         sample_rate = 44100
-        
+
     out_io = io.BytesIO()
     with wave.open(out_io, "wb") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)
         wf.setframerate(sample_rate)
         wf.writeframes(pcm_int16.tobytes())
-        
+
     return out_io.getvalue(), duration, latency
 
 
@@ -393,10 +395,9 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b'{"text": ""}')
                     return
 
-                with stt_lock:
-                    with stt_model.session() as session:
-                        result = session.run(pcm)
-                        text = result.text.strip()
+                with stt_lock, stt_model.session() as session:
+                    result = session.run(pcm)
+                    text = result.text.strip()
 
                 latency = round((time.perf_counter() - t0) * 1000.0, 1)
                 METRICS["stt_count"] += 1
@@ -428,7 +429,16 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 data = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
                 raw_text = data.get("text", "")
                 voice = data.get("voice", "M1")
+                if voice not in voice_styles:
+                    voice = "M1"
+
                 clean_text = clean_text_for_speech(raw_text)
+
+                # Safeguard against excessive text payloads (prevent runaway latency / memory)
+                max_tts_chars = 4000
+                if len(clean_text) > max_tts_chars:
+                    print(f"[TTS Warning] Text exceeds {max_tts_chars} chars ({len(clean_text)} chars), truncating gracefully", flush=True)
+                    clean_text = clean_text[:max_tts_chars] + "..."
 
                 if not clean_text:
                     self.send_response(200)
@@ -486,11 +496,11 @@ def run_server(port: int = 18002):
     server_address = ("127.0.0.1", port)
     httpd = ThreadingHTTPServer(server_address, VoiceBridgeHandler)
     _httpd_ref = httpd
-    print(f"\n=======================================================", flush=True)
+    print("\n=======================================================", flush=True)
     print(f" Voice Bridge Server RUNNING at http://127.0.0.1:{port}", flush=True)
-    print(f" Endpoints: /health, /stt, /tts, /stop, /shutdown", flush=True)
+    print(" Endpoints: /health, /stt, /tts, /stop, /shutdown", flush=True)
     print(f" Initial RAM: {get_process_ram_mb()} MB", flush=True)
-    print(f"=======================================================\n", flush=True)
+    print("=======================================================\n", flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

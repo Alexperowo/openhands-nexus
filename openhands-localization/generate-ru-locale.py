@@ -1,8 +1,9 @@
 import json
 import os
+import re
 import sys
 import time
-import re
+
 import requests
 
 sys.stdout.reconfigure(encoding='utf-8')
@@ -14,7 +15,7 @@ LLM_URL = "http://127.0.0.1:8080/v1/chat/completions"
 
 def load_json(path):
     if os.path.exists(path):
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, encoding='utf-8') as f:
             return json.load(f)
     return {}
 
@@ -44,7 +45,7 @@ Input:
             }, timeout=60)
             data = resp.json()
             raw = data['choices'][0]['message']['content'].strip()
-            
+
             cleaned = re.sub(r'<think>.*?</think>', '', raw, flags=re.DOTALL).strip()
             if '```' in cleaned:
                 m = re.search(r'```(?:json)?\s*(\[.*?\])\s*```', cleaned, re.DOTALL)
@@ -53,7 +54,7 @@ Input:
                 else:
                     cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
                     cleaned = re.sub(r'\s*```$', '', cleaned)
-            
+
             if not cleaned.startswith('['):
                 b_start = cleaned.find('[')
                 b_end = cleaned.rfind(']')
@@ -72,7 +73,7 @@ Input:
 def main():
     en = load_json(EN_FILE)
     ru = load_json(RU_FILE)
-    
+
     # 1. On-the-fly text mapping from existing translations
     text_map = {en[k]: ru[k] for k in ru if k in en}
     instant_count = 0
@@ -87,17 +88,17 @@ def main():
     if instant_count > 0:
         save_ru(ru)
         print(f"Instantly resolved {instant_count} keys via text mapping.")
-        
+
     keys = list(en.keys())
     total = len(keys)
     print(f"Total keys in EN: {total}")
     print(f"Already in RU:    {len(ru)}")
-    
+
     missing_items = []
     for idx, k in enumerate(keys):
         if k not in ru or not ru[k]:
             missing_items.append((idx, k, en[k]))
-            
+
     print(f"Remaining to translate: {len(missing_items)}")
     if not missing_items:
         print("All keys are already translated!")
@@ -110,10 +111,10 @@ def main():
         total_batches = (len(missing_items) + BATCH_SIZE - 1) // BATCH_SIZE
         print(f"[{b_num}/{total_batches}] Translating {len(batch)} items...", end="", flush=True)
         t0 = time.time()
-        
+
         translated = translate_batch(batch)
         dt = time.time() - t0
-        
+
         saved = 0
         for i, k, orig_text in batch:
             if i in translated and translated[i]:
@@ -122,7 +123,7 @@ def main():
                 saved += 1
             else:
                 ru[k] = orig_text
-                
+
         save_ru(ru)
         print(f" OK ({dt:.1f}s, {saved}/{len(batch)}). Total: {len(ru)}/{total}")
 

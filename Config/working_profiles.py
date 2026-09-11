@@ -6,12 +6,12 @@ Zero external dependencies (pure Python standard library: os, json, urllib.reque
 Maintains persistent server-side active state and synchronizes with OpenHands Agent Server.
 """
 
-import os
 import json
+import os
 import shutil
 import tempfile
-import urllib.request
 import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 
 USER_HOME = os.environ.get("USERPROFILE") or os.environ.get("HOME") or os.path.expanduser("~")
@@ -26,7 +26,7 @@ AGENT_SERVER_URL = "http://127.0.0.1:18000/api/settings"
 def get_session_api_key() -> str:
     if os.path.exists(API_KEY_FILE):
         try:
-            with open(API_KEY_FILE, "r", encoding="utf-8") as f:
+            with open(API_KEY_FILE, encoding="utf-8") as f:
                 return f.read().strip()
         except Exception:
             pass
@@ -55,8 +55,12 @@ def load_working_profiles() -> list:
         if filename.endswith(".json"):
             filepath = os.path.join(WORKING_PROFILES_DIR, filename)
             try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    profiles.append(json.load(f))
+                with open(filepath, encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict) and isinstance(data.get("id"), str) and isinstance(data.get("name"), str):
+                        profiles.append(data)
+                    else:
+                        print(f"[WorkingProfiles] Skipping invalid profile {filename}: missing id or name")
             except Exception as e:
                 print(f"[WorkingProfiles] Error loading {filename}: {e}")
     return profiles
@@ -65,7 +69,7 @@ def load_working_profiles() -> list:
 def get_working_profile_state() -> dict:
     if os.path.exists(STATE_FILE):
         try:
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
+            with open(STATE_FILE, encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
             print(f"[WorkingProfiles] Error loading state: {e}")

@@ -1,4 +1,4 @@
-# OpenHands Local Startup Script (Background / Hidden Mode via WMI)
+﻿# OpenHands Local Startup Script (Background / Hidden Mode via WMI)
 $ErrorActionPreference = "Continue"
 
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -56,6 +56,32 @@ function Rotate-LogFile([string]$logPath, [int]$maxGenerations = 5) {
 }
 
 Rotate-LogFile $launcherLog
+
+function Wait-ForServiceReady {
+    param(
+        [string]$Url = $null,
+        [int]$Port = 0,
+        [int]$TimeoutSeconds = 30,
+        [scriptblock]$Validator = $null
+    )
+    for ($i = 0; $i -lt $TimeoutSeconds; $i++) {
+        Start-Sleep -Seconds 1
+        try {
+            if ($Url) {
+                $res = Invoke-RestMethod -Uri $Url -TimeoutSec 2 -ErrorAction Stop
+                if ($Validator) {
+                    if (& $Validator $res) { return $true }
+                } elseif ($res) {
+                    return $true
+                }
+            } elseif ($Port -gt 0) {
+                $conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($conn) { return $true }
+            }
+        } catch {}
+    }
+    return $false
+}
 
 Log-Message "=====================================================================" "Cyan"
 Log-Message "               STARTING OPENHANDS LOCAL PLATFORM" "Cyan"
@@ -143,17 +169,7 @@ if (-not $swapRunning) {
     # Use llama-server log dir as cwd so any default llama.log drops into canonical Logs\llama-server\
     $wmiRes = $procClass.Create($swapCmd, $serverLogDir, $startupInstance)
 
-    $ready = $false
-    for ($i = 0; $i -lt 30; $i++) {
-        Start-Sleep -Seconds 1
-        try {
-            $res = Invoke-RestMethod -Uri "http://127.0.0.1:8080/health" -TimeoutSec 2 -ErrorAction Stop
-            if ($res -eq "OK") {
-                $ready = $true
-                break
-            }
-        } catch {}
-    }
+    $ready = Wait-ForServiceReady -Url "http://127.0.0.1:8080/health" -TimeoutSeconds 30 -Validator { param($r) $r -eq "OK" }
 
     if ($ready) {
         $c8080 = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -212,17 +228,7 @@ if (-not $voiceRunning) {
 
     $wmiVoiceRes = $procClass.Create($voiceCmd, $ProjectRoot, $startupInstance)
 
-    $vReady = $false
-    for ($i = 0; $i -lt 30; $i++) {
-        Start-Sleep -Seconds 1
-        try {
-            $res = Invoke-RestMethod -Uri "http://127.0.0.1:18002/health" -TimeoutSec 2 -ErrorAction Stop
-            if ($res -and $res.status -eq "ok") {
-                $vReady = $true
-                break
-            }
-        } catch {}
-    }
+    $vReady = Wait-ForServiceReady -Url "http://127.0.0.1:18002/health" -TimeoutSeconds 30 -Validator { param($r) $r -and $r.status -eq "ok" }
 
     if ($vReady) {
         $c18002 = Get-NetTCPConnection -LocalPort 18002 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -393,15 +399,8 @@ if (-not $gatewayRunning) {
 
     $wmiGwRes = $procClass.Create($gwCmd, (Join-Path $ProjectRoot "openhands-pwa"), $startupInstance)
 
-    $gwReady = $false
-    for ($i = 0; $i -lt 15; $i++) {
-        Start-Sleep -Seconds 1
-        $c8443 = Get-NetTCPConnection -LocalPort 8443 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($c8443) {
-            $gwReady = $true
-            break
-        }
-    }
+    $gwReady = Wait-ForServiceReady -Port 8443 -TimeoutSeconds 15
+    $c8443 = if ($gwReady) { Get-NetTCPConnection -LocalPort 8443 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 } else { $null }
 
     if ($gwReady) {
         $actualGwPid = if ($c8443 -and $c8443.OwningProcess -gt 0) { $c8443.OwningProcess } else { $wmiGwRes.ProcessId }

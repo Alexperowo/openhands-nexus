@@ -651,4 +651,189 @@
     }
 }
 
+/* ==========================================================================
+   Task 1: Enhanced Context Meter Popover & In-Place Breakdown Card
+   ========================================================================== */
+
+.oh-wp-context-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #a5b4fc;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 6px;
+    padding: 3px 8px;
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+}
+
+.oh-wp-context-breakdown {
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: #18181f;
+    border: 1px solid #3f3f46;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    animation: oh-wp-fade-in 0.2s ease-out;
+}
+
+@keyframes oh-wp-fade-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.oh-wp-breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    color: #d4d4d8;
+}
+
+.oh-wp-breakdown-label {
+    color: #a1a1aa;
+    font-size: 11px;
+}
+
+.oh-wp-breakdown-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 11px;
+}
+
+.oh-wp-breakdown-val.success {
+    color: #4ade80;
+}
+
+.oh-wp-breakdown-val.info {
+    color: #93c5fd;
+}
+
+.oh-wp-breakdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 2px 0;
+}
+
+/* ==========================================================================
+   Task 2: Composer LLM Profile Button & Popover Synchronizer
+   ========================================================================== */
+
+[data-testid="chat-input-llm-profile"] {
+    max-width: 280px !important;
+    white-space: nowrap !important;
+    font-weight: 500 !important;
+    color: #e4e4e7 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-testid="chat-input-llm-profile"]:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: #6366f1 !important;
+}
+
+[data-testid="chat-input-llm-profile-popover"] {
+    max-width: calc(100vw - 24px) !important;
+    width: 320px !important;
+    background: #18181f !important;
+    border: 1px solid #3f3f46 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.65) !important;
+    padding: 6px !important;
+    z-index: 9999 !important;
+}
+
+.oh-composer-wp-header {
+    padding: 6px 8px 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #a1a1aa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.oh-composer-wp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.oh-composer-wp-item {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    border: 1px solid transparent;
+    text-align: left;
+    background: transparent;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.oh-composer-wp-item:hover,
+.oh-composer-wp-item:focus-visible {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(99, 102, 241, 0.4);
+    outline: none;
+}
+
+.oh-composer-wp-item.active {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: #6366f1;
+}
+
+.oh-composer-wp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.oh-composer-wp-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.oh-composer-wp-check {
+    color: #6366f1;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.oh-composer-wp-item.active .oh-composer-wp-check {
+    color: #a5b4fc;
+}
+
+.oh-composer-wp-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.oh-composer-wp-desc {
+    font-size: 11px;
+    color: #a1a1aa;
+    margin-top: 2px;
+    line-height: 1.3;
+}
+
+
 
