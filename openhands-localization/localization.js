@@ -68,8 +68,15 @@
     });
 
     function setup() {
+        if (window.__ohLocObserver) {
+            try { window.__ohLocObserver.disconnect(); } catch (e) {}
+        }
         localizeProfileNodes();
         observer.observe(document.body, { childList: true, subtree: true });
+        window.__ohLocObserver = observer;
+        window.addEventListener("beforeunload", () => {
+            try { observer.disconnect(); } catch (e) {}
+        });
     }
 
     if (document.readyState === "loading") {

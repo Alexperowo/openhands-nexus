@@ -87,6 +87,10 @@ function Get-StationStatus {
 }
 
 function Invoke-StationScript([string]$scriptPath, [string[]]$scriptArgs) {
+    if (-not (Test-Path $scriptPath)) {
+        Write-Error "[CLI Error] Скрипт не найден: $scriptPath"
+        exit 1
+    }
     try {
         & $scriptPath @scriptArgs
         if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {

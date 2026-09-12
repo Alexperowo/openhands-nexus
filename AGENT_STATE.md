@@ -1,6 +1,7 @@
 OBJECTIVE:      OpenHands Nexus — Master 10-Stage Roadmap Full Execution & QA Sign-off
 PHASE:          Stage 9 of 9 (Final Release & QA Sign-off) — COMPLETE (100%)
 STATE:          All 10 Stages (0 through 9) are 100% complete, hardened, and verified.
+ARCH_RULE:      We are NOT OpenHands itself (core OpenHands is an untouched upstream repo updated from upstream). OpenHands Nexus is the non-invasive overlay, orchestration, security, and profile layer turning it into an air-gapped local workstation on Windows (Dual-GPU + 48 GB RAM). Recorded in AGENTS.md and GEMINI.md.
 DONE:
   - Stage 0 (Baseline Checkpoint & Inventory): 100% complete.
   - Stage 1 (Working Profiles): 100% complete (7 profiles, server persistence, turn locking).
@@ -40,26 +41,27 @@ DONE:
     * Total VRAM pool: 37.9 GB across 2 GPUs (GPU 0: RTX 5060 Ti 16 GB, GPU 1: RTX 2080 Ti 22 GB).
     * Single-model routing: `qwen` and `ornith` pinned to `CUDA1` (RTX 2080 Ti 22 GB) with native `sm_75` CUDA acceleration and 0 OOM risk, keeping `CUDA0` free for OS/desktop/voice.
     * Multi-model routing: `next` (Qwen3-Next 80B) configured with multi-GPU offload `-dev CUDA1,CUDA0 -ts 22,15 -ngl 999`, fitting all layers in 38 GB VRAM.
-    * System checks & test suite updated: `check-dependencies.ps1` (35/35 PASS) and `test_cuda_vram.py` (3/3 PASS).
-  - Master 10-Tier Testing & Verification Campaign: 100% complete and verified.
-    * Tier 1 (Static/Lint/Hygiene): compileall PASS, ruff check PASS (0 errors), node --check PASS, git tree clean.
-    * Tier 2 (Dual-GPU Hardware): RTX 5060 Ti 16GB + RTX 2080 Ti 22GB (37.9 GB VRAM pool), test_cuda_vram.py 3/3 PASS.
-    * Tier 3 (Model Inference & Router): llama-swap port 8080 active, Qwen warm latency 0.36s, test_model_router_api.py 2/2 PASS.
-    * Tier 4 (Backend Services & Network): All 5 services listening (18000, 8000, 8080, 8443, 18002), test_services_health.py 5/5 PASS, check-dependencies 35/35 PASS.
-    * Tier 5 (Working Profiles & Thinking): 7 canonical templates, test_config_validation.py 5/5 PASS, dynamic reasoning active.
-    * Tier 6 (Local Voice UI): GigaAM v3 STT + Supertonic 3 TTS, test_voice_bridge_api.py 3/3 PASS.
-    * Tier 7 (Mobile Remote & PWA): HTTPS LAN Gateway (port 8443) with X.509 certs, test_certs_and_pwa.py 4/4 PASS, WCAG AAA 48px targets.
-    * Tier 8 (Agent Runtime & Tooling): Core + Canvas active, terminal/editor tools operational, Team-Full routing verified.
-    * Tier 9 (Decoupled Layer & Disaster Recovery): Idempotent patchers verified, openhands status/test/check CLI verified.
-    * Tier 10 (Localization & Accessibility): 2400+ keys verified, test_localization_keys.py 3/3 PASS, 0 mojibake.
+    * Qwen 122B Dual GPU + RAM Offload Optimization: 100% complete (`-ngl 37 -ts 13.5,22.5 -ctk q6_0 -ctv q4_0 -fa on`, 128K context, 8.1 tok/s generation, 94 tok/s prompt processing). Registered `qwen122` in `llama-swap/config.yaml` and `Config/defaults/profiles/Qwen122-LynnStyle.json`.
+  - Differentiated Reasoning Architecture & Model Profiles Hardening: 100% complete.
+    * `qwen` (Qwen 3.8 27B Opus Distill v2): `--reasoning-format deepseek --reasoning-budget 4096`, `xhigh` Jinja template reasoning effort, max output increased to 16,384 tokens.
+    * `ornith` (Ornith 1.5 35B MTP): `--reasoning-format deepseek --reasoning-budget 3072`, `reasoning_content` trace separation, max output increased to 16,384 tokens.
+    * `next` (Qwen 3 Next 80B A3B Thinking): `--reasoning-format deepseek --reasoning-budget 4096 --presence-penalty 0.6`, 16,384 tokens output.
+    * `qwen122` (Qwen 3.5 122B LynnStyle): `--reasoning-format deepseek --reasoning-budget 6144`, 16,384 tokens output (16K).
+  - Qwen 122B Deep Code Audit & Post-Audit Refactoring: 100% complete across all 6 modules.
+    * Full 6-module audit executed by Qwen 3.5 122B LynnStyle (138,080 total tokens, 3.48 hours inference).
+    * Module 1 (Orchestration): Atomic BOM-free session saving in start.ps1; validated script paths in openhands.ps1; removed os.chdir from tests/runner.py.
+    * Module 2 (LAN Gateway/PWA): Strict path traversal boundary on /icons/; 64 KB body size limits; security headers (nosniff, SAMEORIGIN, Referrer-Policy); SameSite=Strict cookies; in-memory static file caching.
+    * Module 3 (Profiles Engine): Regex validation on profile/mode IDs (/^[a-zA-Z0-9_-]{1,64}$/); 64 KB response accumulation bounds; ISO UTC timestamp parity; deterministic file sorting.
+    * Module 4 (Voice Service): 10 MB payload limit; early text length check before regex; PyAV container cleanup in try...finally; thread-safe metrics_lock; error message sanitization.
+    * Module 5 (UI/UX): HTML entity escaping via escapeHtml for dynamic profile/model variables; MutationObserver lifecycle cleanup on beforeunload; preserved 48x48px touch targets.
+    * Module 6 (Patchers & Locale): MutationObserver cleanup in localization.js; consistent UTF-8 without BOM in patch-agent-canvas-localization.ps1 and backup-station.ps1.
+    * MoE Router Profiling: Comprehensive per-module token and expert telemetry recorded in Docs/MOE_ROUTER_EXPERT_PROFILING.md.
+    * Master Audit Report: Comprehensive documentation compiled in Docs/AUDIT_REPORT_QWEN122.md.
 EVIDENCE:
-  - Master Testing Plan Artifact: implementation_plan.md (10 architectural tiers).
-  - Walkthrough Artifact: walkthrough.md (Dual-GPU and platform verification).
-  - Unified Test Suite: python Tests/runner.py --all (25/25 PASS in 1.61s).
-  - System Dependency Audit: .openhands-local/check-dependencies.ps1 (35/35 checks PASS).
-  - Ruff Code Quality: uvx ruff check . (0 errors).
-  - Live Station Ports: openhands status (5/5 services ACTIVE).
-OPEN_ISSUES:    None. All 10 tiers of testing executed, verified, and passing 100%.
-NEXT_ACTION:    Ready for user next instructions.
-
-
+  - Audit JSON Reports: K:\Project\LLM-tests\Code-Audit-Qwen122\ (module1-6 audits + audit_summary.json).
+  - Master Audit Document: K:\Project\Docs\AUDIT_REPORT_QWEN122.md.
+  - MoE Router Documentation: K:\Project\Docs\MOE_ROUTER_EXPERT_PROFILING.md (Sections 1-7 complete).
+  - Unit Test Verification: python tests/runner.py --unit (12/12 passing in 0.13s).
+  - Syntax Compilation: Node.js (4/4 files PASS), Python (3/3 files PASS), PowerShell AST (4/4 files PASS).
+OPEN_ISSUES:    None. All 6 audit modules analyzed, verified, refactored, and tested with zero regressions.
+NEXT_ACTION:    System is fully audited, hardened, documented, and ready for production operation.

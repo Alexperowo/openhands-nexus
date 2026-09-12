@@ -103,7 +103,9 @@ $manifest = @{
     files_count = (Get-ChildItem -Path $targetBackupFolder -Recurse -File).Count
     total_bytes = (Get-ChildItem -Path $targetBackupFolder -Recurse -File | Measure-Object -Property Length -Sum).Sum
 }
-$manifest | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $targetBackupFolder "BACKUP_MANIFEST.json") -Encoding UTF8
+$manifestJson = $manifest | ConvertTo-Json -Depth 4
+$manifestFile = Join-Path $targetBackupFolder "BACKUP_MANIFEST.json"
+[System.IO.File]::WriteAllText($manifestFile, $manifestJson, [System.Text.UTF8Encoding]::new($false))
 
 # Optional Zip
 if ($CreateZip) {

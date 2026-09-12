@@ -54,7 +54,7 @@ def main():
     print(f" Suites: {', '.join(test_dirs)}")
     print("=" * 68 + "\n")
 
-    os.chdir(str(PROJECT_ROOT))
+    pytest_args.extend(["-c", str(PROJECT_ROOT / "pyproject.toml"), "--rootdir", str(PROJECT_ROOT)])
     exit_code = pytest.main(pytest_args)
 
     print("\n" + "=" * 68)

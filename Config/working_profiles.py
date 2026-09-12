@@ -8,11 +8,14 @@ Maintains persistent server-side active state and synchronizes with OpenHands Ag
 
 import json
 import os
+import re
 import shutil
 import tempfile
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+
+ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
 USER_HOME = os.environ.get("USERPROFILE") or os.environ.get("HOME") or os.path.expanduser("~")
 OPENHANDS_HOME = os.environ.get("OPENHANDS_HOME") or os.path.join(USER_HOME, ".openhands")
@@ -80,13 +83,13 @@ def get_working_profile_state() -> dict:
         "active_reasoning_mode_id": "standard_team",
         "resolved_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
         "resolved_llm_profile_name": "Qwen3.8-Medium",
-        "updated_at": datetime.now(timezone.utc).isoformat() + "Z",
+        "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
         "updated_by": "default_fallback",
     }
 
 
 def save_working_profile_state(state: dict):
-    state["updated_at"] = datetime.now(timezone.utc).isoformat() + "Z"
+    state["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     state_dir = os.path.dirname(STATE_FILE)
     fd, tmp_path = tempfile.mkstemp(dir=state_dir, suffix=".tmp", prefix="wp-state-")
     try:
@@ -126,7 +129,7 @@ def sync_to_agent_server(agent_profile_id: str, llm_profile_name: str) -> tuple:
     except urllib.error.HTTPError as e:
         body = ""
         try:
-            body = e.read().decode("utf-8", errors="ignore")
+            body = e.read(65536).decode("utf-8", errors="ignore")
         except Exception:
             pass
         return False, f"HTTP {e.code}: {body or e.reason}"
@@ -142,6 +145,11 @@ def switch_working_profile(working_profile_id: str, reasoning_mode_id: str = Non
     - Synchronizes with Agent Server before touching disk state.
     - Only modifies disk state and reports success when Agent Server accepts.
     """
+    if not working_profile_id or not isinstance(working_profile_id, str) or not ID_PATTERN.match(working_profile_id):
+        raise ValueError(f"Invalid working_profile_id format: '{working_profile_id}'")
+    if reasoning_mode_id and (not isinstance(reasoning_mode_id, str) or not ID_PATTERN.match(reasoning_mode_id)):
+        raise ValueError(f"Invalid reasoning_mode_id format: '{reasoning_mode_id}'")
+
     # a) Validate target profile first
     profiles = load_working_profiles()
     target_wp = next((p for p in profiles if p.get("id") == working_profile_id), None)

@@ -102,7 +102,7 @@ foreach ($sf in $settingsFiles) {
         $clean = $content.Replace('language:`en`', 'language:(typeof localStorage!==`undefined`&&localStorage.getItem(`i18nextLng`))||`ru`')
         $clean = $clean.Replace('language:"en"', 'language:(typeof localStorage!==`undefined`&&localStorage.getItem(`i18nextLng`))||`ru`')
         $clean = $clean.Replace("language:'en'", 'language:(typeof localStorage!==`undefined`&&localStorage.getItem(`i18nextLng`))||`ru`')
-        [System.IO.File]::WriteAllText($sf.FullName, $clean, [System.Text.Encoding]::UTF8)
+        [System.IO.File]::WriteAllText($sf.FullName, $clean, $utf8NoBom)
         Write-Host "      Updated settings default language in $($sf.Name)" -ForegroundColor Green
         $patchedSettingsCount++
     } elseif ($content.Contains('localStorage.getItem(`i18nextLng`)') -or $content.Contains('localStorage.getItem("i18nextLng")')) {
@@ -132,7 +132,7 @@ if (Test-Path $indexHtmlPath) {
     
     # Inject right before </head> so default language is set BEFORE React and i18next bundles initialize
     $newIdx = $cleanIdx.Replace('</head>', "$locSnippet</head>")
-    [System.IO.File]::WriteAllText($indexHtmlPath, $newIdx, [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText($indexHtmlPath, $newIdx, $utf8NoBom)
     Write-Host "      Successfully injected localization layer into index.html (<head>)" -ForegroundColor Green
 }
 

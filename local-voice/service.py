@@ -98,6 +98,7 @@ tts_model = None
 voice_styles = {}
 stt_lock = threading.Lock()
 tts_lock = threading.Lock()
+metrics_lock = threading.Lock()
 cancel_event = threading.Event()
 _httpd_ref = None
 
@@ -126,7 +127,8 @@ def init_models():
     print("[Voice Bridge] Loading FUTO GigaAM v3 STT into memory...", flush=True)
     t0 = time.perf_counter()
     stt_model = transcribe_cpp.Model(GIGAAM_MODEL_PATH)
-    METRICS["stt_load_time_s"] = round(time.perf_counter() - t0, 3)
+    with metrics_lock:
+        METRICS["stt_load_time_s"] = round(time.perf_counter() - t0, 3)
     print(f"[Voice Bridge] GigaAM v3 STT loaded in {METRICS['stt_load_time_s']} s", flush=True)
 
     print("[Voice Bridge] Loading Supertonic 3 TTS into memory...", flush=True)
@@ -134,7 +136,8 @@ def init_models():
     tts_model = TTS(model="supertonic-3", model_dir=SUPERTONIC_DIR, auto_download=False)
     voice_styles["M1"] = tts_model.get_voice_style("M1")
     voice_styles["F1"] = tts_model.get_voice_style("F1")
-    METRICS["tts_load_time_s"] = round(time.perf_counter() - t1, 3)
+    with metrics_lock:
+        METRICS["tts_load_time_s"] = round(time.perf_counter() - t1, 3)
     print(f"[Voice Bridge] Supertonic 3 TTS loaded in {METRICS['tts_load_time_s']} s", flush=True)
 
 
@@ -152,6 +155,7 @@ def get_process_ram_mb():
 
 def decode_audio_to_16k_mono(audio_bytes: bytes) -> np.ndarray:
     """Decode incoming audio buffer (WebM, Opus, WAV, etc.) to 16kHz float32 mono."""
+    container = None
     try:
         input_file = io.BytesIO(audio_bytes)
         container = av.open(input_file)
@@ -167,6 +171,12 @@ def decode_audio_to_16k_mono(audio_bytes: bytes) -> np.ndarray:
     except Exception as err:
         print(f"[Voice Bridge] Audio decode error: {err}", flush=True)
         return np.array([], dtype=np.float32)
+    finally:
+        if container is not None:
+            try:
+                container.close()
+            except Exception:
+                pass
 
 
 def clean_text_for_speech(text: str) -> str:
@@ -313,6 +323,8 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
 
         elif self.path in ("/health", "/status"):
             ram = get_process_ram_mb()
+            with metrics_lock:
+                metrics_copy = dict(METRICS)
             resp = {
                 "status": "ok",
                 "uptime_s": round(time.time() - START_TIME, 1),
@@ -320,7 +332,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 "tts_engine": "supertonic-3 (Supertone ONNX)",
                 "voices": list(voice_styles.keys()),
                 "ram_mb": ram,
-                "metrics": METRICS
+                "metrics": metrics_copy
             }
             body = json.dumps(resp, ensure_ascii=False).encode("utf-8")
             self.send_response(200)
@@ -340,7 +352,16 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             clean_path = clean_path[len("/voice-api"):]
             if not clean_path.startswith("/"):
                 clean_path = "/" + clean_path
+
+        MAX_PAYLOAD_BYTES = 10 * 1024 * 1024  # 10 MB limit (DoS protection)
         content_length = int(self.headers.get("Content-Length", 0))
+        if content_length > MAX_PAYLOAD_BYTES:
+            self.send_response(413)
+            self._set_cors()
+            self.end_headers()
+            self.wfile.write(b'{"error": "Payload Too Large"}')
+            return
+
         body_bytes = self.rfile.read(content_length) if content_length > 0 else b""
 
         if clean_path in ("/api/working-profiles", "/working-profiles"):
@@ -360,7 +381,8 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 self.send_response(400)
                 self._set_cors("application/json; charset=utf-8")
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                err_msg = str(e).splitlines()[0][:200] if str(e) else "Profile switch error"
+                self.wfile.write(json.dumps({"error": err_msg}).encode("utf-8"))
             return
 
 
@@ -400,8 +422,9 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                     text = result.text.strip()
 
                 latency = round((time.perf_counter() - t0) * 1000.0, 1)
-                METRICS["stt_count"] += 1
-                METRICS["last_stt_latency_ms"] = latency
+                with metrics_lock:
+                    METRICS["stt_count"] += 1
+                    METRICS["last_stt_latency_ms"] = latency
                 print(f"[STT] ({audio_dur:.2f}s audio) -> '{text}' ({latency} ms)", flush=True)
 
                 resp = {
@@ -421,7 +444,8 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 self.send_response(500)
                 self._set_cors()
                 self.end_headers()
-                err_resp = json.dumps({"error": str(e)}).encode("utf-8")
+                err_msg = str(e).splitlines()[0][:200] if str(e) else "STT processing error"
+                err_resp = json.dumps({"error": err_msg}).encode("utf-8")
                 self.wfile.write(err_resp)
 
         elif self.path == "/tts":
@@ -431,6 +455,10 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 voice = data.get("voice", "M1")
                 if voice not in voice_styles:
                     voice = "M1"
+
+                # Guard against runaway raw text before regex operations
+                if len(raw_text) > 8000:
+                    raw_text = raw_text[:8000]
 
                 clean_text = clean_text_for_speech(raw_text)
 
@@ -455,9 +483,10 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                     return
 
                 rtf = round(lat / dur, 2) if dur > 0 else 0.0
-                METRICS["tts_count"] += 1
-                METRICS["last_tts_latency_ms"] = round(lat * 1000.0, 1)
-                METRICS["last_tts_rtf"] = rtf
+                with metrics_lock:
+                    METRICS["tts_count"] += 1
+                    METRICS["last_tts_latency_ms"] = round(lat * 1000.0, 1)
+                    METRICS["last_tts_rtf"] = rtf
                 print(f"[TTS] ({len(clean_text)} chars, {dur:.2f}s audio) -> generated in {lat:.3f}s (RTF {rtf})", flush=True)
 
                 self.send_response(200)
@@ -473,7 +502,8 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 self.send_response(500)
                 self._set_cors()
                 self.end_headers()
-                err_resp = json.dumps({"error": str(e)}).encode("utf-8")
+                err_msg = str(e).splitlines()[0][:200] if str(e) else "TTS synthesis error"
+                err_resp = json.dumps({"error": err_msg}).encode("utf-8")
                 self.wfile.write(err_resp)
 
         elif self.path == "/shutdown":

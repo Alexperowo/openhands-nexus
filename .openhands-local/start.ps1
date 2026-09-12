@@ -127,7 +127,9 @@ if (Test-Path $sessionFile) {
 
 function Save-Session {
     $sessionJson = $session | ConvertTo-Json -Depth 5
-    Set-Content -Path $sessionFile -Value $sessionJson -Encoding UTF8
+    $tmpSession = "$sessionFile.tmp.$PID"
+    [System.IO.File]::WriteAllText($tmpSession, $sessionJson, [System.Text.UTF8Encoding]::new($false))
+    Move-Item -Path $tmpSession -Destination $sessionFile -Force
 }
 
 $swapRunning = $false

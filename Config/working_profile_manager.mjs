@@ -23,6 +23,7 @@ const STATE_FILE = join(OPENHANDS_HOME, "working-profile-state.json");
 const API_KEY_FILE = join(OPENHANDS_HOME, "agent-canvas", "api-key.txt");
 const TEMPLATES_DIR = join(__dirname, "working-profile-templates");
 const AGENT_SERVER_PORT = 18000;
+const ID_REGEX = /^[a-zA-Z0-9_-]{1,64}$/;
 
 export function getSessionApiKey() {
   try {
@@ -57,7 +58,7 @@ export function loadWorkingProfiles() {
   if (!existsSync(WORKING_PROFILES_DIR)) {
     return profiles;
   }
-  const files = readdirSync(WORKING_PROFILES_DIR).filter((f) => f.endsWith(".json"));
+  const files = readdirSync(WORKING_PROFILES_DIR).filter((f) => f.endsWith(".json")).sort();
   for (const file of files) {
     try {
       const fullPath = join(WORKING_PROFILES_DIR, file);
@@ -96,7 +97,7 @@ export function getWorkingProfileState() {
 
 export function saveWorkingProfileState(state) {
   state.updated_at = new Date().toISOString();
-  const tmpFile = `${STATE_FILE}.tmp.${Date.now()}`;
+  const tmpFile = `${STATE_FILE}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
   writeFileSync(tmpFile, JSON.stringify(state, null, 2), "utf-8");
   renameSync(tmpFile, STATE_FILE);
 }
@@ -127,10 +128,17 @@ export async function syncToAgentServer(agentProfileId, llmProfileName) {
       },
       (res) => {
         let body = "";
+        let exceeded = false;
         res.on("data", (chunk) => {
           body += chunk;
+          if (body.length > 64 * 1024) {
+            exceeded = true;
+            req.destroy();
+            resolve({ ok: false, status: 413, body: "Response too large" });
+          }
         });
         res.on("end", () => {
+          if (exceeded) return;
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve({ ok: true, status: res.statusCode, body });
           } else {
@@ -157,6 +165,13 @@ export async function syncToAgentServer(agentProfileId, llmProfileName) {
  * - Only modifies disk state and reports success when Agent Server accepts.
  */
 export async function switchWorkingProfile(workingProfileId, reasoningModeId = null, updatedBy = "api") {
+  if (!workingProfileId || typeof workingProfileId !== "string" || !ID_REGEX.test(workingProfileId)) {
+    throw new Error(`Invalid working_profile_id format: '${workingProfileId}'`);
+  }
+  if (reasoningModeId && (typeof reasoningModeId !== "string" || !ID_REGEX.test(reasoningModeId))) {
+    throw new Error(`Invalid reasoning_mode_id format: '${reasoningModeId}'`);
+  }
+
   // a) Validate target profile first
   const profiles = loadWorkingProfiles();
   const targetWp = profiles.find((p) => p.id === workingProfileId);

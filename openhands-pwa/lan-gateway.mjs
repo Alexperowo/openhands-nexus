@@ -454,6 +454,27 @@ function renderLoginPage(errorMsg = "") {
 </html>`;
 }
 
+function applySecurityHeaders(res) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+}
+
+const staticCache = new Map();
+function getStaticAsset(filePath) {
+  if (staticCache.has(filePath)) {
+    return staticCache.get(filePath);
+  }
+  if (existsSync(filePath)) {
+    const data = readFileSync(filePath);
+    staticCache.set(filePath, data);
+    return data;
+  }
+  return null;
+}
+
+const MAX_POST_BODY = 64 * 1024; // 64 KB DoS limit for login & JSON control endpoints
+
 const httpsServer = createHttpsServer(
   {
     pfx: pfxData,
@@ -461,6 +482,7 @@ const httpsServer = createHttpsServer(
     minVersion: "TLSv1.2",
   },
   (req, res) => {
+    applySecurityHeaders(res);
     const parsed = parseUrl(req.url, true);
     const pathname = parsed.pathname || "/";
 
@@ -475,8 +497,8 @@ const httpsServer = createHttpsServer(
     }
 
     if (pathname === "/openhands-ca.crt") {
-      if (existsSync(CA_CRT)) {
-        const certBytes = readFileSync(CA_CRT);
+      const certBytes = getStaticAsset(CA_CRT);
+      if (certBytes) {
         res.writeHead(200, {
           "Content-Type": "application/x-x509-ca-cert",
           "Content-Disposition": 'attachment; filename="openhands-ca.crt"',
@@ -490,9 +512,8 @@ const httpsServer = createHttpsServer(
 
     // 1b. Static PWA Assets (Manifest, Service Worker, Mobile CSS, Icons)
     if (pathname === "/manifest.webmanifest" || pathname === "/site.webmanifest") {
-      const manifestPath = join(__dirname, "manifest.webmanifest");
-      if (existsSync(manifestPath)) {
-        const data = readFileSync(manifestPath);
+      const data = getStaticAsset(join(__dirname, "manifest.webmanifest"));
+      if (data) {
         res.writeHead(200, {
           "Content-Type": "application/manifest+json; charset=utf-8",
           "Cache-Control": "public, max-age=3600",
@@ -503,9 +524,8 @@ const httpsServer = createHttpsServer(
     }
 
     if (pathname === "/sw.js") {
-      const swPath = join(__dirname, "sw.js");
-      if (existsSync(swPath)) {
-        const data = readFileSync(swPath);
+      const data = getStaticAsset(join(__dirname, "sw.js"));
+      if (data) {
         res.writeHead(200, {
           "Content-Type": "text/javascript; charset=utf-8",
           "Cache-Control": "no-cache",
@@ -516,9 +536,8 @@ const httpsServer = createHttpsServer(
     }
 
     if (pathname === "/mobile-pwa.css") {
-      const cssPath = join(__dirname, "mobile-pwa.css");
-      if (existsSync(cssPath)) {
-        const data = readFileSync(cssPath);
+      const data = getStaticAsset(join(__dirname, "mobile-pwa.css"));
+      if (data) {
         res.writeHead(200, {
           "Content-Type": "text/css; charset=utf-8",
           "Cache-Control": "public, max-age=3600",
@@ -529,15 +548,16 @@ const httpsServer = createHttpsServer(
     }
 
     if (pathname.startsWith("/icons/")) {
-      const iconFile = resolve(__dirname, pathname.slice(1));
-      // Prevent path traversal: resolved path must stay within __dirname
-      if (!iconFile.startsWith(__dirname + "/") && !iconFile.startsWith(__dirname + "\\")) {
+      const iconsDir = resolve(__dirname, "icons");
+      const iconFile = resolve(iconsDir, pathname.slice("/icons/".length));
+      // Strict path traversal check: resolved path must stay within iconsDir
+      if (!iconFile.startsWith(iconsDir + "\\") && !iconFile.startsWith(iconsDir + "/")) {
         res.writeHead(403, { "Content-Type": "text/plain" });
         res.end("Forbidden");
         return;
       }
-      if (existsSync(iconFile)) {
-        const data = readFileSync(iconFile);
+      const data = getStaticAsset(iconFile);
+      if (data) {
         res.writeHead(200, {
           "Content-Type": pathname.endsWith(".svg") ? "image/svg+xml" : "image/png",
           "Cache-Control": "public, max-age=86400",
@@ -546,16 +566,27 @@ const httpsServer = createHttpsServer(
         return;
       }
     }
+
     if (pathname === "/__lan_login" && req.method === "POST") {
       let body = "";
-      req.on("data", (chunk) => { body += chunk; });
+      let exceeded = false;
+      req.on("data", (chunk) => {
+        body += chunk;
+        if (body.length > MAX_POST_BODY) {
+          exceeded = true;
+          res.writeHead(413, { "Content-Type": "text/plain" });
+          res.end("Payload Too Large");
+          req.destroy();
+        }
+      });
       req.on("end", () => {
+        if (exceeded) return;
         const form = parseQuery(body);
         const submittedToken = (form.token || form.password || "").trim();
         if (submittedToken === LAN_AUTH_TOKEN) {
-          // Set 1-year persistent secure HttpOnly cookie
+          // Set 1-year persistent secure HttpOnly cookie with SameSite=Strict
           res.writeHead(302, {
-            "Set-Cookie": `openhands_lan_auth=${LAN_AUTH_TOKEN}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=31536000`,
+            "Set-Cookie": `openhands_lan_auth=${LAN_AUTH_TOKEN}; Path=/; HttpOnly; SameSite=Strict; Secure; Max-Age=31536000`,
             "Location": "/",
           });
           res.end();
@@ -576,7 +607,7 @@ const httpsServer = createHttpsServer(
       delete parsed.search;
       const cleanUrl = parsed.pathname + (Object.keys(parsed.query).length ? `?${new URLSearchParams(parsed.query).toString()}` : "") + (parsed.hash || "");
       res.writeHead(302, {
-        "Set-Cookie": `openhands_lan_auth=${LAN_AUTH_TOKEN}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=31536000`,
+        "Set-Cookie": `openhands_lan_auth=${LAN_AUTH_TOKEN}; Path=/; HttpOnly; SameSite=Strict; Secure; Max-Age=31536000`,
         "Location": cleanUrl || "/",
       });
       res.end();
@@ -619,8 +650,18 @@ const httpsServer = createHttpsServer(
         }
       } else if (req.method === "POST") {
         let body = "";
-        req.on("data", (chunk) => { body += chunk; });
+        let exceeded = false;
+        req.on("data", (chunk) => {
+          body += chunk;
+          if (body.length > MAX_POST_BODY) {
+            exceeded = true;
+            res.writeHead(413, { "Content-Type": "text/plain" });
+            res.end("Payload Too Large");
+            req.destroy();
+          }
+        });
         req.on("end", async () => {
+          if (exceeded) return;
           try {
             const data = JSON.parse(body || "{}");
             const result = await switchWorkingProfile(

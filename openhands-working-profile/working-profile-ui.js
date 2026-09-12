@@ -51,7 +51,16 @@
             }
         }
     }
-    window.setWorkingProfileCollapsed = setCollapsed;
+    // Helper: sanitize dynamic text for safe HTML injection
+    function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
 
     // Helper: translate kind to human-readable Russian badge
     function getKindBadge(kind) {
@@ -255,7 +264,7 @@
         for (const p of availableProfiles) {
             const b = getKindBadge(p.kind);
             const isSelected = p.id === currentWp.id ? "selected" : "";
-            profileOptionsHtml += '<option value="' + p.id + '" ' + isSelected + '>' + p.name + ' (' + b.text + ')</option>';
+            profileOptionsHtml += '<option value="' + escapeHtml(p.id) + '" ' + isSelected + '>' + escapeHtml(p.name) + ' (' + escapeHtml(b.text) + ')</option>';
         }
 
         // Reasoning field representation
@@ -264,7 +273,7 @@
             let reasoningOptionsHtml = "";
             for (const m of modes) {
                 const isSelected = m.id === activeModeId ? "selected" : "";
-                reasoningOptionsHtml += '<option value="' + m.id + '" ' + isSelected + '>' + m.label + '</option>';
+                reasoningOptionsHtml += '<option value="' + escapeHtml(m.id) + '" ' + isSelected + '>' + escapeHtml(m.label) + '</option>';
             }
 
             reasoningFieldHtml = [
@@ -298,7 +307,7 @@
         // Mode description text
         let modeDescHtml = "";
         if (isReasoningSupported && activeModeObj && activeModeObj.description) {
-            modeDescHtml = '<div class="oh-wp-desc-mode" id="oh-wp-desc-mode"><span class="oh-wp-highlight">Рассуждение:</span> ' + activeModeObj.description + '</div>';
+            modeDescHtml = '<div class="oh-wp-desc-mode" id="oh-wp-desc-mode"><span class="oh-wp-highlight">Рассуждение:</span> ' + escapeHtml(activeModeObj.description) + '</div>';
         } else if (!isReasoningSupported) {
             modeDescHtml = '<div class="oh-wp-desc-mode" id="oh-wp-desc-mode"><span class="oh-wp-highlight">Рассуждение:</span> Прямой синтез кода без скрытых токенов рассуждений (Fixed Direct Mode)</div>';
         }
@@ -306,8 +315,8 @@
         const summaryMode = isReasoningSupported && activeModeObj 
             ? (activeModeObj.label.split(" ")[0] || activeModeObj.label)
             : "Direct";
-        const summaryFull = currentWp.name + " · " + (isReasoningSupported && activeModeObj ? activeModeObj.label : "Direct");
-        const summaryShort = currentWp.name + " · " + summaryMode;
+        const summaryFull = escapeHtml(currentWp.name + " · " + (isReasoningSupported && activeModeObj ? activeModeObj.label : "Direct"));
+        const summaryShort = escapeHtml(currentWp.name + " · " + summaryMode);
 
         const collapsedClass = isCollapsed ? " is-collapsed" : "";
         const toggleLabel = isCollapsed ? "Настроить" : "Свернуть";
@@ -683,6 +692,10 @@
 
     // Set up DOM observer to survive SPA re-renders, route changes, and task running state changes
     function setupObserver() {
+        if (window.__ohWpObserver) {
+            try { window.__ohWpObserver.disconnect(); } catch (e) {}
+        }
+
         let debounceTimer = null;
 
         const observer = new MutationObserver(() => {
@@ -715,6 +728,10 @@
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
+        window.__ohWpObserver = observer;
+        window.addEventListener("beforeunload", () => {
+            try { observer.disconnect(); } catch (e) {}
+        });
     }
 
     // Periodic sync poll every 3 seconds with Visibility API pause to save mobile battery
