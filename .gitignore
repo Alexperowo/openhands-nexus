@@ -53,6 +53,8 @@ transcribe-build-shared/
 *.pdb
 ik_llama/
 llama-mainline/
+LLM-tests/moe-expert-cache-src/
+LLM-tests/**/bin/
 llama-swap/bin/
 llama-swap/staging/
 llama-swap/session.json

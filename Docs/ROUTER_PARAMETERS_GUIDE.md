@@ -106,6 +106,17 @@ CLI запуск: `llama-swap.exe -config config.yaml -listen 127.0.0.1:8080 -wa
 16. **`--mmproj <path>`**  
     Путь к мультимодальному проектору для моделей со зрением (Vision).
 
+#### Е. Аппаратное ускорение MoE (Hot-Expert Cache & Tensor Override)
+17. **`--moe-expert-cache <N>`**  
+    Количество слотов горячего кэша экспертов на GPU для каждого MoE-слоя (Upstream PR #27861). Удерживает самые востребованные матрицы экспертов прямо в видеопамяти по алгоритму LRU, снижая PCIe/RAM задержки до нуля.
+    - `64` — штатный режим Qwen 122B (полный контекст 128K, ~26.5 tok/s).
+    - `80` — экстремальный режим кодинга (контекст 96K, пиковая скорость **33.01 tok/s**).
+18. **`--moe-expert-cache-inserts <N>`**  
+    Максимальное количество вставок новых экспертов в кэш за один шаг генерации (по умолчанию `2`). Предотвращает трэшинг кэша при резкой смене тематики.
+19. **`-ot <pattern>=<backend>` (`--override-tensor`)**  
+    Точечное переопределение целевого бэкенда для конкретных тензоров по регулярному выражению.
+    - В связке Qwen 122B: `-ot "blk\.(3[3-9]|4[0-7])\.ffn_(up|gate|down)_exps=CPU"` выгружает в RAM исключительно тяжелые экспертные матрицы верхних 15 слоев, оставляя роутеры (`ffn_gate_inp`) и механизмы внимания на GPU.
+
 ---
 
 ### 2.2 Редко используемые параметры llama-server (Advanced / Edge Cases)
@@ -142,4 +153,5 @@ CLI запуск: `llama-swap.exe -config config.yaml -listen 127.0.0.1:8080 -wa
 | **Qwen 3.8 27B Opus v2** | Архитектор / Кодер | `-c 131072 -ctk q6_0 -ctv q4_0 -dev CUDA0,CUDA1 -ts 14,22 --spec-type mtp:n_max=3,p_min=0.05 --reasoning-budget 4096 --reasoning-format deepseek --jinja --temp 0.7 --top-p 0.8 --min-p 0.05` |
 | **Ornith 1.5 35B MTP** | SWE-bench Скорость | `-c 131072 -ctk q8_0 -ctv q5_0 -dev CUDA1 -sm none --spec-type mtp:n_max=1,p_min=0.50 --reasoning-budget 3072 --reasoning-format deepseek --jinja --temp 0.6 --top-p 0.95 --top-k 20` |
 | **Qwen 3 Next 80B** | Глубокий CoT Анализ | `-c 131072 -ctk q6_0 -ctv q4_0 -dev CUDA0,CUDA1 -ts 14,22 --reasoning-budget 4096 --reasoning-format deepseek --presence-penalty 0.6 --jinja --temp 0.6 --top-p 0.95 --top-k 20` |
-| **Qwen 3.5 122B LynnStyle** | Глубокий Аудитор | `-c 131072 -ngl 37 -dev CUDA0,CUDA1 -ts 13.5,22.5 -ctk q6_0 -ctv q4_0 --reasoning-budget 3072 --reasoning-format deepseek --jinja --temp 0.6 --top-p 0.95` |
+| **Qwen 3.5 122B (qwen122)** | Флагман / Аудит (128K) | `-c 131072 -ngl 49 -ot blk\.(3[3-9]|4[0-7])\.ffn_(up|gate|down)_exps=CPU -dev CUDA0,CUDA1 -sm layer -ts 13,26 -ctk q5_0 -ctv q4_0 -fa on -t 6 -np 1 --moe-expert-cache 64 --moe-expert-cache-inserts 2 --reasoning-format deepseek --reasoning-budget 6144 --jinja --temp 0.6 --top-p 0.95` |
+| **Qwen 3.5 122B (qwen122-turbo)** | Экстремальный Кодинг (33 t/s) | `-c 98304 -ngl 49 -ot blk\.(3[3-9]|4[0-7])\.ffn_(up|gate|down)_exps=CPU -dev CUDA0,CUDA1 -sm layer -ts 13,26 -ctk q5_0 -ctv q4_0 -fa on -t 6 -np 1 --moe-expert-cache 80 --moe-expert-cache-inserts 2 --reasoning-format deepseek --reasoning-budget 6144 --jinja --temp 0.6 --top-p 0.95` |

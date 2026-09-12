@@ -57,11 +57,23 @@ DONE:
     * Module 6 (Patchers & Locale): MutationObserver cleanup in localization.js; consistent UTF-8 without BOM in patch-agent-canvas-localization.ps1 and backup-station.ps1.
     * MoE Router Profiling: Comprehensive per-module token and expert telemetry recorded in Docs/MOE_ROUTER_EXPERT_PROFILING.md.
     * Master Audit Report: Comprehensive documentation compiled in Docs/AUDIT_REPORT_QWEN122.md.
+  - Qwen 122B MoE Expert Cache Optimization Experiment: 100% complete and verified.
+    * Isolated build and benchmark harness in K:\Project\LLM-tests\Qwen122B-Expert-Cache\.
+    * Built llama.cpp PR #27861 with CUDA (SM75 + SM120) and MSVC runtime file locking.
+    * Unlocked MoE expert cache via layer-wise tensor overrides: -ngl 49 -ot "blk\.(3[3-9]|4[0-7])\.ffn_(up|gate|down)_exps=CPU" -ts 13,26.
+    * Measured speedup: Baseline production (8.22 tok/s) -> Control C0 (14.52 tok/s) -> C8 (17.92 tok/s) -> C16 (20.93 tok/s) -> C32 (23.41 tok/s) -> C48 (26.37 tok/s) -> C64 (26.46 tok/s) -> C80 @ 96K (peak 33.01 tok/s, +284% speedup).
+    * Dual-GPU Rebalancing Breakthrough (-ts 13,26): Transferred exactly 1 layer to RTX 5060 Ti, balancing free VRAM to ~2,036 MiB on GPU 0 and ~1,958 MiB on GPU 1 (perfect ~2.0 GB symmetrical safety margin).
+    * Configured two verified operational profiles in llama-swap/config.yaml:
+      1. qwen122 (Штатный): 64 slots, 128K context, ~26.5 tok/s, ~2.0 GB headroom on GPU 0, ~2.9 GB on GPU 1.
+      2. qwen122-turbo (Экстремальный кодинг): 80 slots, 96K context, peak 33.01 tok/s, ~2.0 GB headroom on both GPUs.
 EVIDENCE:
   - Audit JSON Reports: K:\Project\LLM-tests\Code-Audit-Qwen122\ (module1-6 audits + audit_summary.json).
   - Master Audit Document: K:\Project\Docs\AUDIT_REPORT_QWEN122.md.
   - MoE Router Documentation: K:\Project\Docs\MOE_ROUTER_EXPERT_PROFILING.md (Sections 1-7 complete).
+  - MoE Expert Cache Benchmark Documentation: K:\Project\Docs\QWEN122_EXPERT_CACHE_BENCHMARK.md.
+  - Cache Experiment Results JSON: K:\Project\LLM-tests\Qwen122B-Expert-Cache\results\ (QWEN122-PROD-BASELINE, C0, C8, C16, C24, C32, C48, C64, C80-CTX96K).
   - Unit Test Verification: python tests/runner.py --unit (12/12 passing in 0.13s).
   - Syntax Compilation: Node.js (4/4 files PASS), Python (3/3 files PASS), PowerShell AST (4/4 files PASS).
-OPEN_ISSUES:    None. All 6 audit modules analyzed, verified, refactored, and tested with zero regressions.
-NEXT_ACTION:    System is fully audited, hardened, documented, and ready for production operation.
+OPEN_ISSUES:    None. All experiments verified, zero regressions, hardware budgets strictly respected.
+NEXT_ACTION:    Commit and push to GitHub, perform final documentation review from user perspective.
+

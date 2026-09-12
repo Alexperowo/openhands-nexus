@@ -1,0 +1,151 @@
+{
+  "experiment_id": "QWEN122-EXP-C64",
+  "endpoint_url": "http://127.0.0.1:5804",
+  "model_name": "qwen122",
+  "timestamp": "2026-09-12 15:13:19",
+  "hardware_before": {
+    "gpu": {
+      "gpu_0": {
+        "used_mib": 13282.0,
+        "free_mib": 2771.0,
+        "total_mib": 16311.0
+      },
+      "gpu_1": {
+        "used_mib": 20274.0,
+        "free_mib": 1957.0,
+        "total_mib": 22528.0
+      }
+    },
+    "ram": {
+      "used_gib": 32.41,
+      "total_gib": 47.92,
+      "percent": 67.6
+    }
+  },
+  "tasks": {
+    "task1_coding": {
+      "name": "Async Token Bucket Rate Limiter",
+      "runs": [
+        {
+          "ttft_sec": 2.95,
+          "total_wall_sec": 23.368,
+          "gen_time_sec": 20.418,
+          "approx_tokens": 597,
+          "decode_tps": 29.24,
+          "reasoning_len": 2211,
+          "content_len": 0,
+          "output_snippet": "Here's a thinking process that leads to the suggested token bucket rate limiter implementation:\n\n1.  **Analyze the Request:**\n    *   **Role:** Expert Systems Software Engineer & Computer Science Arch"
+        },
+        {
+          "ttft_sec": 0.358,
+          "total_wall_sec": 19.515,
+          "gen_time_sec": 19.157,
+          "approx_tokens": 599,
+          "decode_tps": 31.27,
+          "reasoning_len": 2218,
+          "content_len": 0,
+          "output_snippet": "Here's a thinking process that leads to the suggested token bucket rate limiter implementation:\n\n1.  **Analyze the Request:**\n    *   **Role:** Expert Systems Software Engineer & Computer Science Arch"
+        }
+      ],
+      "summary": {
+        "tps_mean": 30.25,
+        "tps_min": 29.24,
+        "tps_max": 31.27,
+        "ttft_mean": 1.65
+      }
+    },
+    "task2_architecture": {
+      "name": "High-Throughput Low-Latency Market Data Pipeline",
+      "runs": [
+        {
+          "ttft_sec": 1.493,
+          "total_wall_sec": 21.205,
+          "gen_time_sec": 19.712,
+          "approx_tokens": 551,
+          "decode_tps": 27.95,
+          "reasoning_len": 2040,
+          "content_len": 0,
+          "output_snippet": "Here's a thinking process that leads to the suggested architecture:\n\n1.  **Deconstruct the Request:**\n    *   **Role:** Expert Systems Software Engineer & Computer Science Architect.\n    *   **Task:**"
+        },
+        {
+          "ttft_sec": 0.385,
+          "total_wall_sec": 20.172,
+          "gen_time_sec": 19.787,
+          "approx_tokens": 563,
+          "decode_tps": 28.45,
+          "reasoning_len": 2085,
+          "content_len": 0,
+          "output_snippet": "Here's a thinking process that leads to the suggested architecture:\n\n1.  **Deconstruct the Request:**\n    *   **Role:** Expert Systems Software Engineer & Computer Science Architect.\n    *   **Task:**"
+        }
+      ],
+      "summary": {
+        "tps_mean": 28.2,
+        "tps_min": 27.95,
+        "tps_max": 28.45,
+        "ttft_mean": 0.94
+      }
+    },
+    "task3_reasoning": {
+      "name": "Raft Consensus Partition & Election Analysis",
+      "runs": [
+        {
+          "ttft_sec": 2.133,
+          "total_wall_sec": 24.313,
+          "gen_time_sec": 22.18,
+          "approx_tokens": 455,
+          "decode_tps": 20.51,
+          "reasoning_len": 1684,
+          "content_len": 0,
+          "output_snippet": "Here's a thinking process that leads to the analysis of the Raft distributed key-value store scenario:\n\n1.  **Deconstruct the Scenario:**\n\n    *   **System:** Distributed Key-Value Store.\n    *   **Co"
+        },
+        {
+          "ttft_sec": 0.587,
+          "total_wall_sec": 22.311,
+          "gen_time_sec": 21.724,
+          "approx_tokens": 464,
+          "decode_tps": 21.36,
+          "reasoning_len": 1719,
+          "content_len": 0,
+          "output_snippet": "Here's a thinking process that leads to the analysis of the Raft distributed system scenario:\n\n1.  **Deconstruct the Scenario:**\n    *   **System:** Distributed Key-Value Store.\n    *   **Consensus Al"
+        }
+      ],
+      "summary": {
+        "tps_mean": 20.94,
+        "tps_min": 20.51,
+        "tps_max": 21.36,
+        "ttft_mean": 1.36
+      }
+    }
+  },
+  "hardware_after": {
+    "gpu": {
+      "gpu_0": {
+        "used_mib": 13396.0,
+        "free_mib": 2657.0,
+        "total_mib": 16311.0
+      },
+      "gpu_1": {
+        "used_mib": 20161.0,
+        "free_mib": 2070.0,
+        "total_mib": 22528.0
+      }
+    },
+    "ram": {
+      "used_gib": 46.0,
+      "total_gib": 47.92,
+      "percent": 96.0
+    }
+  },
+  "cache_config": {
+    "cache_slots": 64,
+    "cache_inserts": 2,
+    "ngl": 49,
+    "ctx": 16384,
+    "split_mode": "layer",
+    "tensor_split": "12,26",
+    "override_arg": "blk\\.(3[3-9]|4[0-7])\\.ffn_(up|gate|down)_exps=CPU"
+  },
+  "cache_log_lines": [
+    "0.19.109.977 I operator (): MoE expert cache enabled: 15 layers x 64 slots, 2 inserts/step, 3702.0 MiB device memory"
+  ]
+}
