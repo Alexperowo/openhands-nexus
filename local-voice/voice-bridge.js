@@ -571,6 +571,13 @@
                 const saved = localStorage.getItem("oh_voice_pill_pos");
                 if (saved) {
                     const pos = JSON.parse(saved);
+                    // Clear stale position if it overlaps with bottom-left sidebar area
+                    if (pos && typeof pos.left === "number" && typeof pos.top === "number") {
+                        if (pos.left < 400 && pos.top > window.innerHeight - 250) {
+                            localStorage.removeItem("oh_voice_pill_pos");
+                            return;
+                        }
+                    }
                     const pillWidth = pill.offsetWidth || 140;
                     const pillHeight = pill.offsetHeight || 36;
                     const maxLeft = window.innerWidth - pillWidth - 10;

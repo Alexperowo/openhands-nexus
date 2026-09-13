@@ -23,6 +23,7 @@ models:
       -np 1
       -dev CUDA0,CUDA1
       -ts 14,22
+      --slot-save-path K:\Project\Cache\slots
       --spec-type mtp:n_max=3,p_min=0.05
       --reasoning-format deepseek
       --reasoning-budget 4096
@@ -54,6 +55,7 @@ models:
       -sm none
       -b 2048
       -ub 512
+      --slot-save-path K:\Project\Cache\slots
       --spec-type mtp:n_max=1,p_min=0.50
       --reasoning-format deepseek
       --reasoning-budget 3072
@@ -87,6 +89,7 @@ models:
       -t 6
       -dev CUDA0,CUDA1
       -ts 14,22
+      --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
       --reasoning-budget 4096
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
@@ -103,6 +106,17 @@ models:
     - openai/qwen122
     - K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
     - openai/K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
+    - openai/gpt-5.6-sol
+    - gpt-5.6-sol
+    - qwen122
+    - openai/qwen-122b
+    - qwen-122b
+    - Qwen122-LynnStyle
+    - openai/Qwen122-LynnStyle
+    - Qwen122-ChatGPT-5.6-SOL
+    - openai/Qwen122-ChatGPT-5.6-SOL
+    - Qwen122-Direct
+    - openai/Qwen122-Direct
     proxy: http://127.0.0.1:${PORT}
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
     unloadTimeout: 15
@@ -122,6 +136,7 @@ models:
       -np 1
       --moe-expert-cache 64
       --moe-expert-cache-inserts 2
+      --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
       --reasoning-budget 6144
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
@@ -135,6 +150,9 @@ models:
   qwen122-turbo:
     aliases:
     - openai/qwen122-turbo
+    - qwen122-turbo
+    - Qwen122-Turbo
+    - openai/Qwen122-Turbo
     proxy: http://127.0.0.1:${PORT}
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
     unloadTimeout: 15
@@ -154,6 +172,7 @@ models:
       -np 1
       --moe-expert-cache 80
       --moe-expert-cache-inserts 2
+      --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
       --reasoning-budget 6144
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."

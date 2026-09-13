@@ -1,0 +1,56 @@
+{
+  "$schema": "urn:openhands:working-profile:v1",
+  "schema_version": 1,
+  "id": "qwen122-solo",
+  "name": "Qwen 122B",
+  "description": "Флагманская модель 122B MoE: системная архитектура, сложный кодинг и аудит",
+  "kind": "flagship_single",
+  "default_agent_profile_id": "a1220000-122b-4a10-8000-000000000122",
+  "default_llm_profile_name": "Qwen122-ChatGPT-5.6-SOL",
+  "models": [
+    {
+      "role": "flagship_engineer",
+      "model_alias": "openai/qwen122",
+      "base_llm_profile": "Qwen122-ChatGPT-5.6-SOL"
+    }
+  ],
+  "reasoning": {
+    "supported": true,
+    "ui_type": "discrete_levels",
+    "default_mode_id": "medium",
+    "modes": [
+      {
+        "id": "direct",
+        "label": "Выкл",
+        "description": "Прямая генерация без thinking tokens",
+        "target_agent_profile_id": "a1220000-122b-4a10-8000-000000000122",
+        "target_llm_profile_name": "Qwen122-Direct"
+      },
+      {
+        "id": "low",
+        "label": "Низкое",
+        "description": "Быстрый турбо-кодинг (окно 96K, 80 слотов кэша)",
+        "target_agent_profile_id": "a1220000-122b-4a10-8000-000000000122",
+        "target_llm_profile_name": "Qwen122-Turbo"
+      },
+      {
+        "id": "medium",
+        "label": "Среднее",
+        "description": "Сбалансированное рассуждение (бюджет 4096)",
+        "target_agent_profile_id": "a1220000-122b-4a10-8000-000000000125",
+        "target_llm_profile_name": "Qwen122-ChatGPT-5.6-SOL"
+      },
+      {
+        "id": "high",
+        "label": "Глубокое",
+        "description": "Глубокий аудит (128K контекст, 64 слота кэша, бюджет 6144)",
+        "target_agent_profile_id": "a1220000-122b-4a10-8000-000000000122",
+        "target_llm_profile_name": "Qwen122-LynnStyle"
+      }
+    ]
+  },
+  "ui_badge": {
+    "text": "122B",
+    "color": "amber"
+  }
+}

@@ -16,6 +16,7 @@ openhands-pwa/certs/*.key
 openhands-pwa/certs/*.pfx
 api-key.txt
 *token*.txt
+.agents/
 
 # 3. Logs, Temp, and Scratch Data
 Logs/

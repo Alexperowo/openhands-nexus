@@ -160,6 +160,30 @@ $results.Add([PSCustomObject]@{
     UpdaterReady  = "READY (update-ik-llama.ps1)"
 })
 
+# Component 3b: moe-expert-cache
+$moeSrcDir = Join-Path $Global:ProjectRootDir "LLM-tests\moe-expert-cache-src"
+$moeCurrent = "unknown"
+if (Test-Path $moeSrcDir) {
+    try {
+        $moeCurrent = (& git -C $moeSrcDir rev-parse --short HEAD).Trim()
+    } catch {}
+}
+$moeLatest = $moeCurrent
+try {
+    $rawHtml = [string]::Join("`n", (curl.exe -s --max-time 10 "https://github.com/csantiago78/llama.cpp/commits/moe-expert-cache"))
+    if ($rawHtml -match '/csantiago78/llama\.cpp/commit/([a-f0-9]{7})') {
+        $moeLatest = $Matches[1]
+    }
+} catch {}
+$moeStatus = if ($moeCurrent -eq $moeLatest) { "UP TO DATE" } else { "UPDATE AVAILABLE" }
+$results.Add([PSCustomObject]@{
+    Component     = "moe-expert-cache"
+    Current       = $moeCurrent
+    Latest        = $moeLatest
+    Status        = $moeStatus
+    UpdaterReady  = "READY (update-expert-cache-backend.ps1)"
+})
+
 # Component 4: @openhands/agent-canvas
 $appData = if ($env:APPDATA) { $env:APPDATA } else { Join-Path $env:USERPROFILE 'AppData\Roaming' }
 $canvasPkg = Join-Path $appData "npm\node_modules\@openhands\agent-canvas\package.json"
@@ -237,6 +261,7 @@ Log-Output "3. To update an individual component, use its dedicated updater scri
 Log-Output "     - llama-swap:          .\update-llama-swap.ps1 -Update -TargetVersion latest" "INFO"
 Log-Output "     - llama-mainline:      .\update-llama-mainline.ps1 -Update -TargetBuild latest" "INFO"
 Log-Output "     - ik_llama:            .\update-ik-llama.ps1" "INFO"
+Log-Output "     - moe-expert-cache:    .\update-expert-cache-backend.ps1" "INFO"
 Log-Output "     - OpenHands App Stack: .\update-openhands.ps1 -Update -TargetVersion latest" "INFO"
 Log-Output "=====================================================================" "STEP"
 

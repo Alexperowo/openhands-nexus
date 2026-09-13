@@ -2,8 +2,8 @@
   "$schema": "urn:openhands:working-profile:v1",
   "schema_version": 1,
   "id": "team-full",
-  "name": "Team-Full: Три Модели",
-  "description": "Автономный оркестратор: Qwen 3.8 (план и роутинг) ➔ Ornith 1.5 (код и тесты) ➔ Qwen3-Next 80B (дебаг)",
+  "name": "Full Team",
+  "description": "Автономное трио: Qwen 27B (роутинг) ➔ Ornith 35B (код и тесты) ➔ Qwen 80B (дебаг)",
   "kind": "three_model_chain",
   "default_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
   "default_llm_profile_name": "Qwen3.8-Medium",
@@ -26,20 +26,20 @@
   ],
   "reasoning": {
     "supported": true,
-    "ui_type": "preset_choice",
-    "default_mode_id": "standard_team",
+    "ui_type": "discrete_levels",
+    "default_mode_id": "medium",
     "modes": [
       {
-        "id": "standard_team",
-        "label": "Стандартная команда",
-        "description": "Сбалансированное рассуждение роутера (Qwen 3.8 Medium) и быстрая разработка",
+        "id": "medium",
+        "label": "Среднее",
+        "description": "Сбалансированное рассуждение роутера (Qwen 27B Medium)",
         "target_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
         "target_llm_profile_name": "Qwen3.8-Medium"
       },
       {
-        "id": "deep_team",
-        "label": "Глубокая команда",
-        "description": "Максимальное рассуждение роутера (Qwen 3.8 High) и глубокий анализ ошибок",
+        "id": "high",
+        "label": "Глубокое",
+        "description": "Максимальное рассуждение роутера (Qwen 27B High) и глубокий анализ ошибок",
         "target_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
         "target_llm_profile_name": "Qwen3.8-High"
       }

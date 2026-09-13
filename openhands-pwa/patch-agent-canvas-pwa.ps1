@@ -45,7 +45,7 @@ $pwaHeadSnippet = '<link rel="manifest" href="/manifest.webmanifest"><meta name=
 $swSnippet = '<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(e){console.warn("SW register failed:",e);});});}</script>'
 
 # Dynamic Voice loader (ensures voice works over both localhost and LAN HTTPS without mixed content)
-$dynamicVoiceSnippet = '<script id="oh-voice-loader">(function(){var isSec=(window.location.protocol==="https:"||window.location.port==="8443");var base=isSec?(window.location.origin+"/voice-api"):"http://127.0.0.1:18002";var l=document.createElement("link");l.rel="stylesheet";l.href=base+"/voice-bridge.css";document.head.appendChild(l);var s=document.createElement("script");s.src=base+"/voice-bridge.js";s.defer=true;document.head.appendChild(s);})();</script>'
+$dynamicVoiceSnippet = '<script id="oh-voice-loader">(function(){var isSec=(window.location.protocol==="https:"||window.location.port==="8443");var base=isSec?(window.location.origin+"/voice-api"):"http://127.0.0.1:18002";var ts=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href=base+"/voice-bridge.css?t="+ts;document.head.appendChild(l);var s=document.createElement("script");s.src=base+"/voice-bridge.js?t="+ts;s.defer=true;document.head.appendChild(s);})();</script>'
 
 # Remove any previous PWA injections for clean idempotency
 $cleaned = $content -replace [regex]::Escape($pwaHeadSnippet), ''

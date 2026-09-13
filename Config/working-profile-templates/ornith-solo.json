@@ -2,7 +2,7 @@
   "$schema": "urn:openhands:working-profile:v1",
   "schema_version": 1,
   "id": "ornith-solo",
-  "name": "Ornith 1.5 Coder (Архитектор)",
+  "name": "Ornith 35B",
   "description": "Специализированная кодинг-модель на архитектуре ICE для чистого синтеза кода и тестов",
   "kind": "single_model",
   "default_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
@@ -17,26 +17,26 @@
   "reasoning": {
     "supported": true,
     "ui_type": "discrete_levels",
-    "default_mode_id": "coding",
+    "default_mode_id": "medium",
     "modes": [
       {
-        "id": "coding",
-        "label": "Thinking (С размышлением)",
-        "description": "Глубокий анализ задачи, CoT-верификация логики и синтез кода",
-        "target_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
-        "target_llm_profile_name": "Ornith-Coding"
-      },
-      {
         "id": "direct",
-        "label": "Direct (Без рассуждения)",
+        "label": "Выкл",
         "description": "Прямой синтез кода без накладных расходов на блок размышлений",
         "target_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
         "target_llm_profile_name": "Ornith-Direct"
+      },
+      {
+        "id": "medium",
+        "label": "Среднее",
+        "description": "Анализ задачи, CoT-верификация логики и синтез кода",
+        "target_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
+        "target_llm_profile_name": "Ornith-Coding"
       }
     ]
   },
   "ui_badge": {
-    "text": "1 Модель",
+    "text": "35B",
     "color": "teal"
   }
 }

@@ -1,57 +1,31 @@
 /**
- * OpenHands Local - Working Profile & Remote Control UI
- * Accessible, High-Contrast Control Layer for Desktop & Mobile
- * Stage 3: Dynamic Reasoning / Thinking UX
+ * OpenHands Nexus - Minimalist Remote Control UI Layer
+ * Claude Code / ChatGPT Codex / Google Antigravity Architecture
+ *
+ * Provides:
+ * 1. 4 Models + 3 Chains canonical selection (7 items strictly).
+ * 2. Orthogonal Reasoning Control (Выкл, Низкое, Среднее, Глубокое).
+ * 3. Live Station Telemetry Pill (speed, prefill %, tokens, active tool).
+ * 4. Universal mount for BOTH Landing Page (/) and Conversation Page (/conversations/*).
+ * 5. Complete immunity to MutationObserver recursion and layout freezing.
+ * 6. Minimum 48px touch targets for Samsung Galaxy Tab S9 Ultra (WCAG 2.5.5 AAA).
  */
 
 (function () {
-    console.log("[WorkingProfileUI] Initializing Stage 3 Working Profile & Reasoning Control Layer...");
+    "use strict";
 
-    const API_URL = "/api/working-profiles";
+    console.log("[NexusRemoteControl] Initializing Minimalist Remote Control Layer...");
+
+    const API_PROFILES_URL = "/api/working-profiles";
     let availableProfiles = [];
     let activeState = null;
     let isSubmitting = false;
-    let lastRenderedRoute = null;
+    let isMutatingDOM = false;
+    let telemetryInterval = null;
+    let lastTelemetryMilestone = -1;
+    let observer = null;
 
-    // Collapsed / Expanded state with localStorage persistence
-    function getInitialCollapsedState() {
-        try {
-            const saved = localStorage.getItem("oh_wp_collapsed");
-            if (saved === "false") return false;
-        } catch (e) {}
-        return true; // Default to ultra-compact collapsed bar
-    }
-    let isCollapsed = getInitialCollapsedState();
-
-    function setCollapsed(collapsed, save = true) {
-        isCollapsed = collapsed;
-        if (save) {
-            try {
-                localStorage.setItem("oh_wp_collapsed", collapsed ? "true" : "false");
-            } catch (e) {}
-        }
-        const card = document.getElementById("oh-wp-card");
-        if (card) {
-            if (isCollapsed) {
-                card.classList.add("is-collapsed");
-            } else {
-                card.classList.remove("is-collapsed");
-            }
-        }
-        const header = document.getElementById("oh-wp-header");
-        if (header) {
-            header.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
-        }
-        const toggleBtn = document.getElementById("oh-wp-toggle-btn");
-        if (toggleBtn) {
-            toggleBtn.setAttribute("aria-label", (isCollapsed ? "Настроить" : "Свернуть") + " панель профиля");
-            const label = toggleBtn.querySelector(".oh-wp-toggle-label");
-            if (label) {
-                label.textContent = isCollapsed ? "Настроить" : "Свернуть";
-            }
-        }
-    }
-    // Helper: sanitize dynamic text for safe HTML injection
+    // Helper: Escape HTML
     function escapeHtml(str) {
         if (!str) return "";
         return String(str)
@@ -62,9 +36,13 @@
             .replace(/'/g, "&#39;");
     }
 
-    // Helper: translate kind to human-readable Russian badge
+    // Helper: Kind badge formatting
     function getKindBadge(kind) {
-        if (kind === "three_model_chain") {
+        if (kind === "flagship_chain" || kind === "two_model_flagship") {
+            return { text: "СВЯЗКА", class: "badge-flagship-chain" };
+        } else if (kind === "flagship_single" || kind === "flagship") {
+            return { text: "ФЛАГМАН", class: "badge-flagship" };
+        } else if (kind === "three_model_chain") {
             return { text: "3 МОДЕЛИ", class: "badge-3-models" };
         } else if (kind === "two_model_chain") {
             return { text: "2 МОДЕЛИ", class: "badge-2-models" };
@@ -73,38 +51,25 @@
         }
     }
 
-    // Load state from server
-    async function loadWorkingProfiles(silent = false) {
+    // Safe execution wrapper preventing MutationObserver loops
+    function withDOMUpdate(fn) {
+        isMutatingDOM = true;
         try {
-            const resp = await fetch(API_URL, {
-                headers: { "Cache-Control": "no-cache" }
+            fn();
+        } finally {
+            // Reset flag after all synchronous DOM events have flushed
+            Promise.resolve().then(() => {
+                isMutatingDOM = false;
             });
-            if (!resp.ok) throw new Error("HTTP " + resp.status);
-            const data = await resp.json();
-
-            const profilesChanged = JSON.stringify(availableProfiles) !== JSON.stringify(data.profiles);
-            const stateChanged = !activeState || 
-                activeState.active_working_profile_id !== data.state.active_working_profile_id ||
-                activeState.active_reasoning_mode_id !== data.state.active_reasoning_mode_id;
-
-            availableProfiles = data.profiles || [];
-            activeState = data.state || null;
-
-            if (profilesChanged || stateChanged || !silent) {
-                renderUI();
-            }
-        } catch (err) {
-            if (!silent) {
-                console.warn("[WorkingProfileUI] Failed to load working profiles:", err.message);
-            }
         }
     }
 
+    // Screen reader announcements (WCAG 4.1.3)
     function announceStatus(message) {
-        let announcer = document.getElementById("oh-wp-status-announcer");
+        let announcer = document.getElementById("oh-nexus-announcer");
         if (!announcer) {
             announcer = document.createElement("div");
-            announcer.id = "oh-wp-status-announcer";
+            announcer.id = "oh-nexus-announcer";
             announcer.setAttribute("aria-live", "polite");
             announcer.setAttribute("aria-atomic", "true");
             announcer.className = "sr-only";
@@ -116,13 +81,13 @@
         }, 1500);
     }
 
-    let lastTaskRunningState = false;
-
-    // Detect if agent is actively running a task
+    // Task running detection
     function isTaskRunning() {
-        const stopCandidates = document.querySelectorAll('[data-testid="stop-button"], [data-testid="chat-input-stop"], button[aria-label*="Stop" i], button[aria-label*="Остановить" i], button[title*="Stop" i]');
+        const stopCandidates = document.querySelectorAll(
+            '[data-testid="stop-button"], [data-testid="chat-input-stop"], button[aria-label*="Stop" i], button[aria-label*="Остановить" i], button[title*="Stop" i]'
+        );
         for (const btn of stopCandidates) {
-            if (btn.id === "oh-composer-mic-btn" || btn.closest("#oh-voice-pill, .oh-voice-popover, .oh-voice-container, .oh-tts-speak-btn")) {
+            if (btn.id === "oh-composer-mic-btn" || btn.closest("#oh-voice-pill, .oh-voice-popover, .oh-voice-container")) {
                 continue;
             }
             if (btn.offsetParent !== null) return true;
@@ -139,25 +104,43 @@
         return false;
     }
 
-    // Switch profile / reasoning mode on server
+    // Load working profiles from backend
+    async function loadWorkingProfiles(silent = false) {
+        try {
+            const resp = await fetch(`${API_PROFILES_URL}?_ts=${Date.now()}`);
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
+            const data = await resp.json();
+
+            const profilesChanged = JSON.stringify(availableProfiles) !== JSON.stringify(data.profiles);
+            const stateChanged = !activeState ||
+                activeState.active_working_profile_id !== data.state.active_working_profile_id ||
+                activeState.active_reasoning_mode_id !== data.state.active_reasoning_mode_id;
+
+            availableProfiles = data.profiles || [];
+            activeState = data.state || null;
+
+            if (profilesChanged || stateChanged || !silent) {
+                withDOMUpdate(() => {
+                    mountOrUpdateNexusBar();
+                });
+            }
+        } catch (err) {
+            if (!silent) {
+                console.warn("[NexusRemoteControl] Failed to load profiles:", err.message);
+            }
+        }
+    }
+
+    // Switch profile / reasoning mode
     async function switchProfile(wpId, rmId) {
         if (isSubmitting || isTaskRunning()) return;
         isSubmitting = true;
 
-        const card = document.getElementById("oh-wp-card") || document.querySelector(".oh-wp-card");
-        if (card) {
-            card.classList.add("is-changing");
-            setTimeout(() => card.classList.remove("is-changing"), 350);
-        }
-
-        const syncEl = document.getElementById("oh-wp-sync");
-        if (syncEl) {
-            syncEl.textContent = "Сохранение...";
-            syncEl.className = "oh-wp-sync-indicator syncing";
-        }
+        const modelBtn = document.getElementById("oh-nexus-model-btn");
+        if (modelBtn) modelBtn.classList.add("is-loading");
 
         try {
-            const resp = await fetch(API_URL, {
+            const resp = await fetch(API_PROFILES_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -174,594 +157,640 @@
             const res = await resp.json();
             activeState = res.state;
 
-            if (syncEl) {
-                syncEl.textContent = "✓ Активно";
-                syncEl.className = "oh-wp-sync-indicator";
-            }
-
             const targetWp = availableProfiles.find(p => p.id === wpId);
-            const targetMode = targetWp?.reasoning?.modes?.find(m => m.id === rmId)?.label || rmId;
-            announceStatus(`Выбран профиль: ${targetWp ? targetWp.name : wpId}, режим: ${targetMode}`);
+            const targetMode = targetWp?.reasoning?.modes?.find(m => m.id === rmId)?.label || rmId || "Direct";
+            announceStatus(`Модель: ${targetWp ? targetWp.name : wpId}, Режим: ${targetMode}`);
 
-            renderUI();
+            withDOMUpdate(() => {
+                mountOrUpdateNexusBar();
+            });
 
+            // Sync with upstream LLM profile button if present in conversation page
             if (activeState && activeState.resolved_llm_profile_name) {
-                syncComposerLlmProfile(activeState.resolved_llm_profile_name);
+                syncNativeComposerProfile(activeState.resolved_llm_profile_name);
             }
         } catch (err) {
-            console.error("[WorkingProfileUI] Error switching profile/reasoning:", err);
-            if (syncEl) {
-                syncEl.textContent = "Ошибка сохранения";
-                syncEl.className = "oh-wp-sync-indicator syncing";
-            }
+            console.error("[NexusRemoteControl] Error switching profile:", err);
         } finally {
             isSubmitting = false;
+            if (modelBtn) modelBtn.classList.remove("is-loading");
         }
     }
 
-    function isConversationPage() {
-        return window.location.pathname.includes("/conversations/");
-    }
-
-    // Find the best mount target in the DOM
-    function findMountTarget() {
-        const chatInput = document.querySelector(".chat-input, [contenteditable='true'], textarea");
-        if (!chatInput) return null;
-
-        // In both root and conversation pages, target the composer card wrapper inside the chat column.
-        // This ensures the container is stacked vertically and never creates an unwanted horizontal column.
-        let card = chatInput.closest("[class*='rounded-[15px]'], [class*='rounded-xl'], form");
-        if (!card) card = chatInput.parentElement;
-        while (card && card.parentElement && card.parentElement.className.includes("relative w-full")) {
-            card = card.parentElement;
-        }
-        return card;
-    }
-
-    // Render or update the UI
-    function renderUI() {
-        if (!availableProfiles.length || !activeState) return;
-
-        const isConv = isConversationPage();
-        const currentWp = availableProfiles.find(p => p.id === activeState.active_working_profile_id) || availableProfiles[0];
-        const badgeInfo = getKindBadge(currentWp.kind);
-
-        const target = findMountTarget();
-        if (!target) return;
-
-        let rootContainer = document.getElementById("oh-working-profile-container");
-
-        // If route changed or container is missing, create/re-mount
-        if (!rootContainer || rootContainer.parentElement !== target.parentElement || lastRenderedRoute !== isConv) {
-            if (rootContainer) rootContainer.remove();
-
-            rootContainer = document.createElement("div");
-            rootContainer.id = "oh-working-profile-container";
-            rootContainer.className = "oh-wp-container";
-
-            // Insert directly before the prompt input card
-            target.parentElement.insertBefore(rootContainer, target);
-            lastRenderedRoute = isConv;
-        }
-
-        const reasoning = currentWp.reasoning || {};
-        const isReasoningSupported = reasoning.supported && reasoning.modes && reasoning.modes.length > 0;
-        const modes = isReasoningSupported ? reasoning.modes : [];
-        const activeModeId = activeState.active_reasoning_mode_id || (modes[0] ? modes[0].id : "");
-        const activeModeObj = modes.find(m => m.id === activeModeId) || modes[0];
-
-        const running = isTaskRunning();
-        lastTaskRunningState = running;
-
-        const disabledAttr = running ? 'disabled="disabled"' : '';
-        const cardRunningClass = running ? ' is-running' : '';
-        const syncStatusHtml = running
-            ? '<span class="oh-wp-sync-indicator running" id="oh-wp-sync" title="Агент выполняет задачу. Переключение моделей заблокировано до завершения шага.">⏳ Выполняется...</span>'
-            : '<span class="oh-wp-sync-indicator" id="oh-wp-sync">✓ Активно</span>';
-
-        // Profile options
-        let profileOptionsHtml = "";
-        for (const p of availableProfiles) {
-            const b = getKindBadge(p.kind);
-            const isSelected = p.id === currentWp.id ? "selected" : "";
-            profileOptionsHtml += '<option value="' + escapeHtml(p.id) + '" ' + isSelected + '>' + escapeHtml(p.name) + ' (' + escapeHtml(b.text) + ')</option>';
-        }
-
-        // Reasoning field representation
-        let reasoningFieldHtml = "";
-        if (isReasoningSupported) {
-            let reasoningOptionsHtml = "";
-            for (const m of modes) {
-                const isSelected = m.id === activeModeId ? "selected" : "";
-                reasoningOptionsHtml += '<option value="' + escapeHtml(m.id) + '" ' + isSelected + '>' + escapeHtml(m.label) + '</option>';
-            }
-
-            reasoningFieldHtml = [
-                '<div class="oh-wp-field">',
-                '    <label class="oh-wp-label" for="oh-wp-select-reasoning">',
-                '        <span>Режим рассуждения (Thinking):</span>',
-                '    </label>',
-                '    <div class="oh-wp-select-wrapper">',
-                '        <select id="oh-wp-select-reasoning" class="oh-wp-select" aria-label="Выберите режим рассуждения" ' + disabledAttr + '>',
-                '            ' + reasoningOptionsHtml,
-                '        </select>',
-                '        <svg class="oh-wp-select-arrow" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>',
-                '    </div>',
-                '</div>'
-            ].join('\n');
-        } else {
-            // Non-reasoning models: NO reasoning selector, fixed mode display
-            reasoningFieldHtml = [
-                '<div class="oh-wp-field">',
-                '    <label class="oh-wp-label">',
-                '        <span>Режим рассуждения (Thinking):</span>',
-                '    </label>',
-                '    <div class="oh-wp-fixed-mode-box" id="oh-wp-fixed-mode">',
-                '        <span class="oh-wp-fixed-icon">⚡</span>',
-                '        <span class="oh-wp-fixed-text">Фиксированный режим (без Thinking)</span>',
-                '    </div>',
-                '</div>'
-            ].join('\n');
-        }
-
-        // Mode description text
-        let modeDescHtml = "";
-        if (isReasoningSupported && activeModeObj && activeModeObj.description) {
-            modeDescHtml = '<div class="oh-wp-desc-mode" id="oh-wp-desc-mode"><span class="oh-wp-highlight">Рассуждение:</span> ' + escapeHtml(activeModeObj.description) + '</div>';
-        } else if (!isReasoningSupported) {
-            modeDescHtml = '<div class="oh-wp-desc-mode" id="oh-wp-desc-mode"><span class="oh-wp-highlight">Рассуждение:</span> Прямой синтез кода без скрытых токенов рассуждений (Fixed Direct Mode)</div>';
-        }
-
-        const summaryMode = isReasoningSupported && activeModeObj 
-            ? (activeModeObj.label.split(" ")[0] || activeModeObj.label)
-            : "Direct";
-        const summaryFull = escapeHtml(currentWp.name + " · " + (isReasoningSupported && activeModeObj ? activeModeObj.label : "Direct"));
-        const summaryShort = escapeHtml(currentWp.name + " · " + summaryMode);
-
-        const collapsedClass = isCollapsed ? " is-collapsed" : "";
-        const toggleLabel = isCollapsed ? "Настроить" : "Свернуть";
-        const ariaExpanded = isCollapsed ? "false" : "true";
-
-        rootContainer.innerHTML = [
-            '<div class="oh-wp-card' + cardRunningClass + collapsedClass + '" id="oh-wp-card" role="region" aria-label="Выбор рабочего профиля и режима рассуждения">',
-            '    <div class="oh-wp-header" id="oh-wp-header" role="button" tabindex="0" aria-expanded="' + ariaExpanded + '" aria-controls="oh-wp-body" title="Нажмите, чтобы свернуть или развернуть настройки профиля">',
-            '        <div class="oh-wp-header-left">',
-            '            <span class="oh-wp-icon">⚡</span>',
-            '            <span class="oh-wp-title">Рабочий профиль</span>',
-            '            <span class="oh-wp-badge ' + badgeInfo.class + '" id="oh-wp-badge">' + badgeInfo.text + '</span>',
-            '            <span class="oh-wp-summary-pill" id="oh-wp-summary-pill" title="' + summaryFull + '">' + summaryShort + '</span>',
-            '        </div>',
-            '        <div class="oh-wp-header-right">',
-            '            ' + syncStatusHtml,
-            '            <button class="oh-wp-toggle-btn" id="oh-wp-toggle-btn" type="button" aria-label="' + toggleLabel + ' панель профиля" tabindex="-1">',
-            '                <span class="oh-wp-toggle-label">' + toggleLabel + '</span>',
-            '                <svg class="oh-wp-chevron" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>',
-            '            </button>',
-            '        </div>',
-            '    </div>',
-            '    <div class="oh-wp-body" id="oh-wp-body" role="group" aria-label="Настройки профиля и рассуждений">',
-            '        <div class="oh-wp-controls-grid">',
-            '            <div class="oh-wp-field">',
-            '                <label class="oh-wp-label" for="oh-wp-select-profile">',
-            '                    <span>Команда агентов:</span>',
-            '                </label>',
-            '                <div class="oh-wp-select-wrapper">',
-            '                    <select id="oh-wp-select-profile" class="oh-wp-select" aria-label="Выберите команду агентов" ' + disabledAttr + '>',
-            '                        ' + profileOptionsHtml,
-            '                    </select>',
-            '                    <svg class="oh-wp-select-arrow" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>',
-            '                </div>',
-            '            </div>',
-            '            ' + reasoningFieldHtml,
-            '        </div>',
-            '        <div class="oh-wp-info-box">',
-            '            <div class="oh-wp-desc-arch">',
-            '                <span class="oh-wp-highlight">Архитектура:</span> ' + (currentWp.description || "Локальный автономный профиль"),
-            '            </div>',
-            '            ' + modeDescHtml,
-            '        </div>',
-            '    </div>',
-            '</div>'
-        ].join('\n');
-
-        // Attach header collapse toggle events
-        const header = document.getElementById("oh-wp-header");
-        if (header) {
-            header.addEventListener("click", () => {
-                setCollapsed(!isCollapsed, true);
-            });
-            header.addEventListener("keydown", (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setCollapsed(!isCollapsed, true);
-                }
-            });
-        }
-
-        // Attach change events if not running
-        const profileSelect = document.getElementById("oh-wp-select-profile");
-        if (profileSelect && !running) {
-            profileSelect.addEventListener("change", (e) => {
-                const newWpId = e.target.value;
-                const newWp = availableProfiles.find(p => p.id === newWpId);
-                let newRmId = null;
-                if (newWp && newWp.reasoning && newWp.reasoning.supported && newWp.reasoning.modes && newWp.reasoning.modes.length) {
-                    newRmId = newWp.reasoning.default_mode_id || newWp.reasoning.modes[0].id;
-                }
-                switchProfile(newWpId, newRmId);
-            });
-        }
-
-        const reasoningSelect = document.getElementById("oh-wp-select-reasoning");
-        if (reasoningSelect && isReasoningSupported && !running) {
-            reasoningSelect.addEventListener("change", (e) => {
-                const newRmId = e.target.value;
-                const modeObj = modes.find(m => m.id === newRmId);
-                announceStatus(`Режим мышления: ${modeObj ? modeObj.label : newRmId}`);
-                switchProfile(currentWp.id, newRmId);
-            });
-        }
-
-        // Keep composer profile in sync when idle
-        if (!running && activeState && activeState.resolved_llm_profile_name) {
-            syncComposerLlmProfile(activeState.resolved_llm_profile_name);
-        }
-        updateComposerButtonLabel();
-    }
-
-    // Format bottom composer button with active Working Profile name (Task 2)
-    function updateComposerButtonLabel() {
-        const btn = document.querySelector('[data-testid="chat-input-llm-profile"]');
-        if (!btn || !activeState || !availableProfiles.length) return;
-        const currentWp = availableProfiles.find(p => p.id === activeState.active_working_profile_id);
-        if (!currentWp) return;
-
-        const reasoning = currentWp.reasoning || {};
-        const activeModeId = activeState.active_reasoning_mode_id;
-        const modeObj = reasoning.modes?.find(m => m.id === activeModeId);
-        const modeLabel = modeObj ? (modeObj.label.split(" ")[0]) : "";
-
-        const labelText = modeLabel ? `⚡ ${currentWp.name} · ${modeLabel}` : `⚡ ${currentWp.name}`;
-        const span = btn.querySelector("span.truncate") || btn.querySelector("span");
-        if (span && span.textContent !== labelText) {
-            span.textContent = labelText;
-        }
-        const fullTitle = `${currentWp.name}${modeObj ? (' · ' + modeObj.label) : ''}`;
-        if (btn.getAttribute("title") !== fullTitle) {
-            btn.setAttribute("title", fullTitle);
-        }
-    }
-
-    // Sync bottom composer picker to match active working profile
-    function syncComposerLlmProfile(targetProfileName) {
+    // Sync upstream OpenHands profile if button exists
+    function syncNativeComposerProfile(targetProfileName) {
         if (!targetProfileName || isTaskRunning()) return;
+        const nativeBtn = document.querySelector('[data-testid="chat-input-llm-profile"]');
+        if (!nativeBtn || nativeBtn.disabled) return;
 
-        const btn = document.querySelector('[data-testid="chat-input-llm-profile"]');
-        if (!btn || btn.hasAttribute("disabled") || btn.getAttribute("aria-disabled") === "true") return;
-
-        const currentProfileAttr = btn.getAttribute('data-resolved-profile') || "";
-        if (currentProfileAttr === targetProfileName) {
-            updateComposerButtonLabel();
-            return;
-        }
+        const currentAttr = nativeBtn.getAttribute("data-resolved-profile") || "";
+        if (currentAttr === targetProfileName) return;
 
         let popover = document.querySelector('[data-testid="chat-input-llm-profile-popover"]');
         if (!popover) {
-            btn.click();
+            nativeBtn.click();
         }
 
         setTimeout(() => {
             const option = document.querySelector(`[data-testid="chat-input-llm-profile-option-${targetProfileName}"]`);
             if (option) {
                 option.click();
-                btn.setAttribute('data-resolved-profile', targetProfileName);
+                nativeBtn.setAttribute("data-resolved-profile", targetProfileName);
             } else {
                 const stillOpen = document.querySelector('[data-testid="chat-input-llm-profile-popover"]');
-                if (stillOpen) btn.click();
+                if (stillOpen) nativeBtn.click();
             }
-            updateComposerButtonLabel();
         }, 60);
     }
 
-    // Transform composer LLM popover to show the 7 clean canonical Working Profiles (Task 2)
-    function enhanceComposerPopover(popover) {
-        if (!popover || popover.dataset.ohWpEnhanced === "true") return;
-        popover.dataset.ohWpEnhanced = "true";
+    // Telemetry logic
+    function getTelemetryUrl() {
+        const isSec = (window.location.protocol === "https:" || window.location.port === "8443");
+        return isSec ? (window.location.origin + "/api/station-telemetry") : "http://127.0.0.1:18002/api/station-telemetry";
+    }
 
-        if (!availableProfiles || !availableProfiles.length) return;
+    function formatTokenCount(num) {
+        if (!num || isNaN(num)) return "0";
+        if (num >= 1000) return (num / 1000).toFixed(1) + "k";
+        return String(num);
+    }
 
-        // Hide raw internal profile buttons and native headers while keeping buttons in DOM as proxies
-        const rawButtons = popover.querySelectorAll('button[data-testid*="chat-input-llm-profile-option-"]');
-        rawButtons.forEach(btn => {
-            btn.style.display = "none";
-        });
-        const nativeHeaders = popover.querySelectorAll('li.px-2, [class*="px-2 pt-1"]');
-        nativeHeaders.forEach(el => {
-            el.style.display = "none";
-        });
+    async function pollTelemetry() {
+        if (document.hidden) return;
+        try {
+            const url = getTelemetryUrl();
+            const sep = url.includes("?") ? "&" : "?";
+            const resp = await fetch(`${url}${sep}_ts=${Date.now()}`);
+            if (!resp.ok) return;
+            const data = await resp.json();
+            withDOMUpdate(() => {
+                updateTelemetryPill(data);
+            });
+        } catch (e) {}
+    }
 
-        // Check if custom container already exists
-        let customContainer = popover.querySelector("#oh-composer-wp-container");
-        if (!customContainer) {
-            customContainer = document.createElement("div");
-            customContainer.id = "oh-composer-wp-container";
-            customContainer.className = "oh-composer-wp-container";
+    function updateTelemetryPill(data) {
+        const pill = document.getElementById("oh-nexus-telemetry-pill");
+        if (!pill) return;
 
-            let itemsHtml = "";
-            for (const p of availableProfiles) {
+        if (!data || data.state === "idle" || !data.is_active) {
+            if (pill.dataset.state !== "idle") {
+                pill.dataset.state = "idle";
+                pill.className = "oh-nexus-telemetry-pill idle";
+                pill.innerHTML = `
+                    <span class="oh-telemetry-dot idle"></span>
+                    <span class="oh-telemetry-text">Готов</span>
+                `;
+                pill.setAttribute("title", `Станция готова к работе · ${activeState?.active_working_profile_id || 'OpenHands'}`);
+                pill.setAttribute("aria-label", "Станция готова к работе");
+                lastTelemetryMilestone = -1;
+            }
+            return;
+        }
+
+        if (data.state === "prefill") {
+            const pct = Math.min(100, Math.max(0, Math.round(data.progress_pct || 0)));
+            const currentTokens = formatTokenCount(data.tokens);
+            const totalTokens = formatTokenCount(data.total_tokens);
+            const speed = data.speed_tok_s ? data.speed_tok_s.toFixed(0) : "0";
+            const eta = data.eta_s ? ` · ост. ~${Math.round(data.eta_s)}с` : "";
+
+            pill.dataset.state = "prefill";
+            pill.className = "oh-nexus-telemetry-pill prefill";
+            pill.innerHTML = `
+                <span class="oh-telemetry-icon">⏳</span>
+                <span class="oh-telemetry-text">Контекст: ${pct}%</span>
+                <div class="oh-telemetry-bar-wrap">
+                    <div class="oh-telemetry-bar-fill" style="width: ${pct}%"></div>
+                </div>
+                <span class="oh-telemetry-meta">${currentTokens}/${totalTokens} · ${speed} т/с${eta}</span>
+            `;
+            const ariaText = `Загрузка контекста: ${pct}%, ${currentTokens} из ${totalTokens} токенов, скорость ${speed} токенов в секунду`;
+            pill.setAttribute("title", ariaText);
+            pill.setAttribute("aria-label", ariaText);
+
+            const milestone = Math.floor(pct / 25) * 25;
+            if (milestone > lastTelemetryMilestone && milestone > 0) {
+                lastTelemetryMilestone = milestone;
+                announceStatus(`Контекст ${milestone}%`);
+            }
+        } else if (data.state === "generating") {
+            const speed = data.speed_tok_s ? data.speed_tok_s.toFixed(1) : "0";
+            pill.dataset.state = "generating";
+            pill.className = "oh-nexus-telemetry-pill generating";
+            pill.innerHTML = `
+                <span class="oh-telemetry-dot active"></span>
+                <span class="oh-telemetry-text">Генерация: ${speed} т/с</span>
+            `;
+            pill.setAttribute("title", `Модель генерирует ответ со скоростью ${speed} токенов/сек`);
+            pill.setAttribute("aria-label", `Генерация ответа: ${speed} токенов в секунду`);
+        } else if (data.state === "tool") {
+            const toolName = escapeHtml(data.active_tool || "инструмент");
+            pill.dataset.state = "tool";
+            pill.className = "oh-nexus-telemetry-pill tool";
+            pill.innerHTML = `
+                <span class="oh-telemetry-icon">⚙️</span>
+                <span class="oh-telemetry-text">Инструмент: ${toolName}</span>
+            `;
+            pill.setAttribute("title", `Выполнение инструмента: ${toolName}`);
+            pill.setAttribute("aria-label", `Выполнение инструмента: ${toolName}`);
+        }
+    }
+
+    function startTelemetry() {
+        stopTelemetry();
+        pollTelemetry();
+        telemetryInterval = setInterval(pollTelemetry, 1500);
+    }
+
+    function stopTelemetry() {
+        if (telemetryInterval) {
+            clearInterval(telemetryInterval);
+            telemetryInterval = null;
+        }
+    }
+
+    // Popover Management
+    function closePopovers() {
+        const p1 = document.getElementById("oh-nexus-model-popover");
+        if (p1) p1.remove();
+        const p2 = document.getElementById("oh-nexus-reasoning-popover");
+        if (p2) p2.remove();
+
+        const b1 = document.getElementById("oh-nexus-model-btn");
+        if (b1) b1.setAttribute("aria-expanded", "false");
+        const b2 = document.getElementById("oh-nexus-reasoning-btn");
+        if (b2) b2.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleModelPopover() {
+        const existing = document.getElementById("oh-nexus-model-popover");
+        if (existing) {
+            closePopovers();
+            return;
+        }
+        closePopovers();
+
+        const btn = document.getElementById("oh-nexus-model-btn");
+        if (!btn || btn.disabled || isTaskRunning()) return;
+
+        const popover = document.createElement("div");
+        popover.id = "oh-nexus-model-popover";
+        popover.className = "oh-nexus-popover";
+        popover.setAttribute("role", "listbox");
+        popover.setAttribute("aria-label", "Выбор модели станции");
+
+        const singleModels = availableProfiles.filter(p => p.kind === "single" || !p.kind.includes("chain"));
+        const chainModels = availableProfiles.filter(p => p.kind.includes("chain"));
+
+        function renderGroup(title, list) {
+            let html = `<div class="oh-nexus-popover-section">
+                <div class="oh-nexus-popover-section-title">${title} (${list.length})</div>`;
+            for (const p of list) {
                 const b = getKindBadge(p.kind);
                 const isActive = p.id === activeState?.active_working_profile_id;
                 const activeClass = isActive ? " active" : "";
-                const checkHtml = isActive ? '<span class="oh-composer-wp-check">✓</span>' : '';
+                const checkHtml = isActive ? '<span class="oh-nexus-check">✓</span>' : '';
 
-                itemsHtml += `
-                    <div class="oh-composer-wp-item${activeClass}" data-wp-id="${p.id}" role="button" tabindex="0">
-                        <div class="oh-composer-wp-row">
-                            <span class="oh-composer-wp-name">
+                html += `
+                    <div class="oh-nexus-popover-item${activeClass}" data-wp-id="${escapeHtml(p.id)}" role="option" aria-selected="${isActive ? 'true' : 'false'}" tabindex="0">
+                        <div class="oh-nexus-popover-row">
+                            <span class="oh-nexus-popover-name">
                                 <span>⚡</span>
-                                <span>${p.name}</span>
+                                <span>${escapeHtml(p.name)}</span>
                             </span>
                             <div class="flex items-center gap-1.5">
-                                <span class="oh-wp-badge ${b.class} oh-composer-wp-badge">${b.text}</span>
+                                <span class="oh-nexus-badge ${b.class}">${b.text}</span>
                                 ${checkHtml}
                             </div>
                         </div>
-                        <div class="oh-composer-wp-desc">${p.description || ""}</div>
+                        <div class="oh-nexus-popover-desc">${escapeHtml(p.description || "")}</div>
                     </div>
                 `;
             }
-
-            customContainer.innerHTML = `
-                <div class="oh-composer-wp-header">
-                    <span>Рабочий профиль</span>
-                    <span class="text-[10px] text-[var(--oh-muted)]">7 команд моделей</span>
-                </div>
-                <div class="oh-composer-wp-list">
-                    ${itemsHtml}
-                </div>
-            `;
-
-            // Attach click listeners to items
-            customContainer.querySelectorAll(".oh-composer-wp-item").forEach(item => {
-                item.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const wpId = item.getAttribute("data-wp-id");
-                    const targetWp = availableProfiles.find(p => p.id === wpId);
-                    if (!targetWp) return;
-
-                    const defaultRmId = targetWp.reasoning?.default_mode_id || targetWp.reasoning?.modes?.[0]?.id || null;
-                    const targetLlmProfile = targetWp.default_llm_profile_name || targetWp.reasoning?.modes?.[0]?.target_llm_profile_name;
-
-                    switchProfile(targetWp.id, defaultRmId);
-
-                    // Click underlying option button to update React internal state & close popover
-                    const proxyBtn = popover.querySelector(`[data-testid="chat-input-llm-profile-option-${targetLlmProfile}"]`);
-                    if (proxyBtn) {
-                        proxyBtn.click();
-                    } else {
-                        const composerBtn = document.querySelector('[data-testid="chat-input-llm-profile"]');
-                        if (composerBtn) composerBtn.click();
-                    }
-                });
-            });
-
-            // Insert customContainer at the top of popover
-            popover.insertBefore(customContainer, popover.firstChild);
-        }
-    }
-
-    // Enhance Context Window Popover with Model Badge & In-Place Details Breakdown (Task 1)
-    function enhanceContextMeterPopover(popover) {
-        if (!popover || popover.dataset.ohWpEnhanced === "true") return;
-        popover.dataset.ohWpEnhanced = "true";
-
-        const currentWp = availableProfiles.find(p => p.id === activeState?.active_working_profile_id);
-        const modelName = currentWp ? currentWp.name : "Qwen 3.8 Opus";
-
-        // 1. Add context badge at the top
-        const firstCol = popover.querySelector(".flex.flex-col.gap-2");
-        if (firstCol && !popover.querySelector(".oh-wp-context-badge")) {
-            const badge = document.createElement("div");
-            badge.className = "oh-wp-context-badge";
-            badge.innerHTML = `<span>⚡</span> <span>${modelName} · 96k контекст</span>`;
-            firstCol.insertBefore(badge, firstCol.firstChild);
+            html += `</div>`;
+            return html;
         }
 
-        // 2. Protect compact button to explain action
-        const compactBtn = popover.querySelector('[data-testid="context-window-compact-button"]');
-        if (compactBtn) {
-            compactBtn.setAttribute("title", "Локальное сжатие истории диалога");
-        }
+        popover.innerHTML = `
+            <div class="oh-nexus-popover-header">
+                <span>Модели и связки станции</span>
+                <span class="text-[11px] text-[var(--oh-text-muted,#71717a)]">4 Модели · 3 Связки</span>
+            </div>
+            <div class="oh-nexus-popover-list">
+                ${renderGroup("МОДЕЛИ", singleModels)}
+                ${renderGroup("СВЯЗКИ АГЕНТОВ", chainModels)}
+            </div>
+        `;
 
-        // 3. Toggle in-place breakdown when clicking usage button or progress bar
-        function toggleBreakdown(e) {
-            if (e) {
+        document.body.appendChild(popover);
+        btn.setAttribute("aria-expanded", "true");
+
+        // Position popover
+        positionPopover(popover, btn, 320);
+
+        popover.querySelectorAll(".oh-nexus-popover-item").forEach(item => {
+            item.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-            }
-            let breakdown = popover.querySelector("#oh-wp-context-breakdown");
-            if (breakdown) {
-                breakdown.remove();
-                return;
-            }
+                const wpId = item.getAttribute("data-wp-id");
+                const targetWp = availableProfiles.find(p => p.id === wpId);
+                if (!targetWp) return;
 
-            const xsSpans = popover.querySelectorAll(".flex.items-center.justify-between.gap-2 span.text-xs");
-            let ratioText = "22.9k / 98.3k";
-            let percentText = "23% занято (77% свободно)";
-            if (xsSpans.length >= 2) {
-                percentText = xsSpans[0].textContent.trim();
-                ratioText = xsSpans[1].textContent.trim();
-            } else if (xsSpans.length === 1) {
-                ratioText = xsSpans[0].textContent.trim();
-            }
+                const defaultRmId = targetWp.reasoning?.default_mode_id || targetWp.reasoning?.modes?.[0]?.id || null;
+                switchProfile(targetWp.id, defaultRmId);
+                closePopovers();
+            });
+        });
 
-            breakdown = document.createElement("div");
-            breakdown.id = "oh-wp-context-breakdown";
-            breakdown.className = "oh-wp-context-breakdown";
-            breakdown.innerHTML = `
-                <div class="oh-wp-breakdown-row">
-                    <span class="oh-wp-breakdown-label">Окно контекста (Max):</span>
-                    <span class="oh-wp-breakdown-val">98,304 токенов (96k)</span>
-                </div>
-                <div class="oh-wp-breakdown-row">
-                    <span class="oh-wp-breakdown-label">Текущее заполнение:</span>
-                    <span class="oh-wp-breakdown-val info">${ratioText}</span>
-                </div>
-                <div class="oh-wp-breakdown-row">
-                    <span class="oh-wp-breakdown-label">Баланс буфера:</span>
-                    <span class="oh-wp-breakdown-val success">${percentText}</span>
-                </div>
-                <div class="oh-wp-breakdown-divider"></div>
-                <div class="oh-wp-breakdown-row">
-                    <span class="oh-wp-breakdown-label">Движок / KV-кэш:</span>
-                    <span class="oh-wp-breakdown-val">llama-swap (100% VRAM)</span>
-                </div>
-                <div class="oh-wp-breakdown-row">
-                    <span class="oh-wp-breakdown-label">Лимит вывода (Max tokens):</span>
-                    <span class="oh-wp-breakdown-val">8,192 токенов</span>
+        setTimeout(() => {
+            document.addEventListener("click", handleOutsideClick, true);
+        }, 50);
+    }
+
+    function toggleReasoningPopover() {
+        const existing = document.getElementById("oh-nexus-reasoning-popover");
+        if (existing) {
+            closePopovers();
+            return;
+        }
+        closePopovers();
+
+        const btn = document.getElementById("oh-nexus-reasoning-btn");
+        if (!btn || btn.disabled || isTaskRunning()) return;
+
+        const currentWp = availableProfiles.find(p => p.id === activeState?.active_working_profile_id);
+        if (!currentWp || !currentWp.reasoning?.supported) return;
+
+        const modes = currentWp.reasoning.modes || [];
+        const activeModeId = activeState?.active_reasoning_mode_id;
+
+        const popover = document.createElement("div");
+        popover.id = "oh-nexus-reasoning-popover";
+        popover.className = "oh-nexus-popover";
+        popover.setAttribute("role", "listbox");
+        popover.setAttribute("aria-label", "Степень рассуждений");
+
+        let itemsHtml = "";
+        for (const m of modes) {
+            const isSelected = m.id === activeModeId;
+            const activeClass = isSelected ? " active" : "";
+            const checkHtml = isSelected ? '<span class="oh-nexus-check">✓</span>' : '';
+            itemsHtml += `
+                <div class="oh-nexus-popover-item${activeClass}" data-mode-id="${escapeHtml(m.id)}" role="option" aria-selected="${isSelected ? 'true' : 'false'}" tabindex="0">
+                    <div class="oh-nexus-popover-row">
+                        <span class="oh-nexus-popover-name">${escapeHtml(m.label)}</span>
+                        ${checkHtml}
+                    </div>
+                    <div class="oh-nexus-popover-desc">${escapeHtml(m.description || "")}</div>
                 </div>
             `;
-
-            const sep = popover.querySelector('[role="separator"]');
-            if (sep) {
-                popover.insertBefore(breakdown, sep);
-            } else {
-                popover.appendChild(breakdown);
-            }
         }
 
-        const usageBtn = popover.querySelector('[data-testid="context-window-plan-usage"]');
-        if (usageBtn) {
-            usageBtn.addEventListener("click", toggleBreakdown, true);
-        }
+        popover.innerHTML = `
+            <div class="oh-nexus-popover-header">
+                <span>Степень рассуждений (Thinking)</span>
+            </div>
+            <div class="oh-nexus-popover-list">
+                ${itemsHtml}
+            </div>
+        `;
 
-        const barBtn = popover.querySelector('[data-testid="context-window-meter-bar-button"]');
-        if (barBtn) {
-            barBtn.addEventListener("click", toggleBreakdown, true);
+        document.body.appendChild(popover);
+        btn.setAttribute("aria-expanded", "true");
+
+        // Position popover
+        positionPopover(popover, btn, 280);
+
+        popover.querySelectorAll(".oh-nexus-popover-item").forEach(opt => {
+            opt.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const modeId = opt.getAttribute("data-mode-id");
+                if (modeId && modeId !== activeState?.active_reasoning_mode_id) {
+                    switchProfile(currentWp.id, modeId);
+                }
+                closePopovers();
+            });
+        });
+
+        setTimeout(() => {
+            document.addEventListener("click", handleOutsideClick, true);
+        }, 50);
+    }
+
+    function positionPopover(popover, anchorBtn, widthPx) {
+        const rect = anchorBtn.getBoundingClientRect();
+        const popoverHeight = popover.offsetHeight || 260;
+        let top = rect.top - popoverHeight - 8;
+        if (top < 10) {
+            top = rect.bottom + 8;
+        }
+        let left = rect.left;
+        if (left + widthPx > window.innerWidth - 10) {
+            left = window.innerWidth - widthPx - 10;
+        }
+        popover.style.top = `${Math.max(10, top)}px`;
+        popover.style.left = `${Math.max(10, left)}px`;
+        popover.style.width = `${widthPx}px`;
+    }
+
+    function handleOutsideClick(e) {
+        const p1 = document.getElementById("oh-nexus-model-popover");
+        const p2 = document.getElementById("oh-nexus-reasoning-popover");
+        const b1 = document.getElementById("oh-nexus-model-btn");
+        const b2 = document.getElementById("oh-nexus-reasoning-btn");
+
+        const clickedInside =
+            (p1 && p1.contains(e.target)) ||
+            (p2 && p2.contains(e.target)) ||
+            (b1 && b1.contains(e.target)) ||
+            (b2 && b2.contains(e.target));
+
+        if (!clickedInside) {
+            closePopovers();
+            document.removeEventListener("click", handleOutsideClick, true);
         }
     }
 
-    // Watch for user selecting a profile via the bottom composer picker or opening popovers
-    function setupComposerPickerWatcher() {
-        document.addEventListener("click", (e) => {
-            // Immediate enhancement for context meter popover
-            if (e.target.closest('[data-testid="context-window-meter"]')) {
-                setTimeout(() => {
-                    const cp = document.querySelector('[data-testid="context-window-meter-popover"]');
-                    if (cp) enhanceContextMeterPopover(cp);
-                }, 40);
-            }
+    // Escape key closes popovers
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            closePopovers();
+        }
+    });
 
-            // Immediate enhancement for composer popover
-            if (e.target.closest('[data-testid="chat-input-llm-profile"]')) {
-                setTimeout(() => {
-                    const lp = document.querySelector('[data-testid="chat-input-llm-profile-popover"]');
-                    if (lp) enhanceComposerPopover(lp);
-                }, 40);
-            }
+    // Mount or update the unified Nexus Composer Bar
+    function mountOrUpdateNexusBar() {
+        if (!availableProfiles.length || !activeState) return;
 
-            if (isTaskRunning()) return;
+        const chatInput = document.querySelector(".chat-input, [contenteditable='true'], textarea");
+        if (!chatInput) return;
 
-            // Fallback for native profile options if somehow clicked
-            const opt = e.target.closest('[data-testid*="chat-input-llm-profile-option-"]');
-            if (opt && !opt.closest("#oh-composer-wp-container")) {
-                const testId = opt.getAttribute("data-testid") || "";
-                const profileName = testId.replace("chat-input-llm-profile-option-", "").trim();
-                if (profileName) {
-                    const matchedWp = availableProfiles.find(p =>
-                        p.default_llm_profile_name === profileName ||
-                        (p.reasoning && p.reasoning.modes && p.reasoning.modes.some(m => m.target_llm_profile_name === profileName))
-                    );
-                    if (matchedWp) {
-                        let rmId = null;
-                        if (matchedWp.reasoning && matchedWp.reasoning.modes) {
-                            const matchedMode = matchedWp.reasoning.modes.find(m => m.target_llm_profile_name === profileName);
-                            rmId = matchedMode ? matchedMode.id : matchedWp.reasoning.default_mode_id;
+        const currentWp = availableProfiles.find(p => p.id === activeState.active_working_profile_id) || availableProfiles[0];
+        const badgeInfo = getKindBadge(currentWp.kind);
+
+        const reasoning = currentWp.reasoning || {};
+        const isReasoningSupported = reasoning.supported && reasoning.modes && reasoning.modes.length > 0;
+        const modes = isReasoningSupported ? reasoning.modes : [];
+        const activeModeId = activeState.active_reasoning_mode_id || (modes[0] ? modes[0].id : "");
+        const activeModeObj = modes.find(m => m.id === activeModeId) || modes[0];
+        const running = isTaskRunning();
+
+        // 1. Locate the best mount container in the composer
+        let composerCard = chatInput.closest("form, [class*='rounded-[15px]'], [class*='rounded-xl'], [class*='border-t']");
+        if (!composerCard) composerCard = chatInput.parentElement;
+
+        let actionsRow = composerCard.querySelector('[data-testid="chat-input-actions"]');
+        if (!actionsRow) {
+            actionsRow = composerCard.querySelector('div.flex.items-center.justify-between, div.flex.w-full.items-center');
+        }
+
+        // 2. Ensure #oh-nexus-bar exists
+        let bar = document.getElementById("oh-nexus-bar");
+        if (!bar) {
+            bar = document.createElement("div");
+            bar.id = "oh-nexus-bar";
+            bar.className = "oh-nexus-bar";
+            bar.innerHTML = `
+                <button id="oh-nexus-model-btn" class="oh-nexus-btn" type="button" aria-haspopup="listbox" aria-expanded="false" title="Нажмите для выбора модели станции">
+                    <span class="oh-nexus-icon">⚡</span>
+                    <span class="oh-nexus-model-name"></span>
+                    <span class="oh-nexus-badge"></span>
+                    <svg class="oh-nexus-chevron" viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+                <button id="oh-nexus-reasoning-btn" class="oh-nexus-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="oh-nexus-icon">🧠</span>
+                    <span class="oh-nexus-reasoning-label"></span>
+                    <svg class="oh-nexus-chevron" viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+                <div id="oh-nexus-telemetry-pill" class="oh-nexus-telemetry-pill idle" role="status" aria-live="polite">
+                    <span class="oh-telemetry-dot idle"></span>
+                    <span class="oh-telemetry-text">Готов</span>
+                </div>
+            `;
+
+            // Attach click handlers
+            const mBtn = bar.querySelector("#oh-nexus-model-btn");
+            mBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleModelPopover();
+            });
+
+            const rBtn = bar.querySelector("#oh-nexus-reasoning-btn");
+            rBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleReasoningPopover();
+            });
+        }
+
+        // Enforce strict inline styles so it can never wrap or distort
+        bar.style.display = "inline-flex";
+        bar.style.alignItems = "center";
+        bar.style.flexWrap = "nowrap";
+        bar.style.whiteSpace = "nowrap";
+        bar.style.gap = "6px";
+        bar.style.flexShrink = "0";
+        bar.style.overflowX = "auto";
+
+        // 3. Mount into DOM: Place inside actionsRow
+        if (actionsRow) {
+            const plusBtn = composerCard.querySelector('[data-testid="chat-plus-button"]');
+            let placed = false;
+
+            if (plusBtn) {
+                // Find top-level child of actionsRow that is an ancestor of plusBtn
+                let leftCol = plusBtn;
+                while (leftCol && leftCol.parentElement && leftCol.parentElement !== actionsRow) {
+                    leftCol = leftCol.parentElement;
+                }
+
+                if (leftCol && leftCol.parentElement === actionsRow) {
+                    // Try to place bar inside the inner flex container next to plus button
+                    const innerFlex = plusBtn.closest('.flex.min-w-0.items-center, .flex.items-center');
+                    if (innerFlex && leftCol.contains(innerFlex)) {
+                        innerFlex.style.display = "flex";
+                        innerFlex.style.alignItems = "center";
+                        innerFlex.style.flexWrap = "nowrap";
+                        innerFlex.style.overflowX = "auto";
+                        innerFlex.style.scrollbarWidth = "none";
+                        innerFlex.style.flexShrink = "1";
+                        innerFlex.style.minWidth = "0";
+
+                        let plusBox = plusBtn;
+                        while (plusBox && plusBox.parentElement && plusBox.parentElement !== innerFlex) {
+                            plusBox = plusBox.parentElement;
                         }
-                        const isProfileDiff = matchedWp.id !== activeState?.active_working_profile_id;
-                        const isModeDiff = rmId && rmId !== activeState?.active_reasoning_mode_id;
-                        if (isProfileDiff || isModeDiff) {
-                            switchProfile(matchedWp.id, rmId);
+
+                        if (plusBox && plusBox.parentElement === innerFlex) {
+                            if (bar.parentElement !== innerFlex || bar.previousElementSibling !== plusBox) {
+                                plusBox.after(bar);
+                            }
+                            placed = true;
                         }
+                    }
+
+                    if (!placed) {
+                        if (bar.parentElement !== actionsRow || bar.previousElementSibling !== leftCol) {
+                            leftCol.after(bar);
+                        }
+                        placed = true;
                     }
                 }
             }
-        }, true);
+
+            if (!placed) {
+                const rightContainer = actionsRow.lastElementChild;
+                if (bar.parentElement !== actionsRow) {
+                    if (rightContainer && rightContainer !== bar) {
+                        actionsRow.insertBefore(bar, rightContainer);
+                    } else {
+                        actionsRow.appendChild(bar);
+                    }
+                }
+            }
+        } else {
+            if (bar.parentElement !== composerCard) {
+                chatInput.after(bar);
+            }
+        }
+
+        // 4. Update Model button state
+        const modelBtn = document.getElementById("oh-nexus-model-btn");
+        if (modelBtn) {
+            const nameEl = modelBtn.querySelector(".oh-nexus-model-name");
+            if (nameEl && nameEl.textContent !== currentWp.name) {
+                nameEl.textContent = currentWp.name;
+            }
+            const badgeEl = modelBtn.querySelector(".oh-nexus-badge");
+            if (badgeEl) {
+                if (badgeEl.textContent !== badgeInfo.text) badgeEl.textContent = badgeInfo.text;
+                badgeEl.className = `oh-nexus-badge ${badgeInfo.class}`;
+            }
+            modelBtn.disabled = running;
+            modelBtn.setAttribute("aria-disabled", running ? "true" : "false");
+            modelBtn.setAttribute("title", `Модель станции: ${currentWp.name} (${badgeInfo.text})`);
+        }
+
+        // 5. Update Reasoning button state
+        const reasoningBtn = document.getElementById("oh-nexus-reasoning-btn");
+        if (reasoningBtn) {
+            const rLabel = reasoningBtn.querySelector(".oh-nexus-reasoning-label");
+            const rIcon = reasoningBtn.querySelector(".oh-nexus-icon");
+            const rChevron = reasoningBtn.querySelector(".oh-nexus-chevron");
+
+            if (isReasoningSupported && activeModeObj) {
+                const shortLabel = activeModeObj.label.split(" ")[0] || activeModeObj.label;
+                const displayText = shortLabel;
+                if (rLabel && rLabel.textContent !== displayText) rLabel.textContent = displayText;
+                if (rIcon && rIcon.textContent !== "🧠") rIcon.textContent = "🧠";
+                if (rChevron) rChevron.style.display = "";
+
+                reasoningBtn.disabled = running;
+                reasoningBtn.classList.remove("disabled");
+                reasoningBtn.setAttribute("aria-disabled", running ? "true" : "false");
+                reasoningBtn.setAttribute("title", `Степень рассуждения: ${activeModeObj.label} (${activeModeObj.description || ""})`);
+                reasoningBtn.setAttribute("aria-label", `Степень рассуждения: ${activeModeObj.label}`);
+            } else {
+                if (rLabel && rLabel.textContent !== "Direct") rLabel.textContent = "Direct";
+                if (rIcon && rIcon.textContent !== "⚡") rIcon.textContent = "⚡";
+                if (rChevron) rChevron.style.display = "none";
+
+                reasoningBtn.disabled = true;
+                reasoningBtn.classList.add("disabled");
+                reasoningBtn.setAttribute("aria-disabled", "true");
+                reasoningBtn.setAttribute("title", "Данная модель работает напрямую без скрытых рассуждений (Direct Mode)");
+                reasoningBtn.setAttribute("aria-label", "Рассуждения не поддерживаются моделью (Direct Mode)");
+            }
+        }
+
+        // Hide redundant native LLM profile button to avoid UI clutter and confusion
+        const nativeLlmBtn = document.querySelector('[data-testid="chat-input-llm-profile"]');
+        if (nativeLlmBtn && nativeLlmBtn.style.display !== "none") {
+            nativeLlmBtn.style.display = "none";
+        }
     }
 
-    // Set up DOM observer to survive SPA re-renders, route changes, and task running state changes
+    // Set up throttled MutationObserver with strict reentrancy protection
     function setupObserver() {
-        if (window.__ohWpObserver) {
-            try { window.__ohWpObserver.disconnect(); } catch (e) {}
+        if (observer) {
+            try { observer.disconnect(); } catch (e) {}
         }
 
         let debounceTimer = null;
 
-        const observer = new MutationObserver(() => {
-            // Check popovers immediately without waiting for debounce
-            const contextPopover = document.querySelector('[data-testid="context-window-meter-popover"]');
-            if (contextPopover && contextPopover.dataset.ohWpEnhanced !== "true") {
-                enhanceContextMeterPopover(contextPopover);
-            }
-            const composerPopover = document.querySelector('[data-testid="chat-input-llm-profile-popover"]');
-            if (composerPopover && composerPopover.dataset.ohWpEnhanced !== "true") {
-                enhanceComposerPopover(composerPopover);
+        observer = new MutationObserver((mutations) => {
+            if (isMutatingDOM) return;
+
+            let shouldUpdate = false;
+            for (const m of mutations) {
+                // Ignore mutations occurring inside our own custom elements
+                const target = m.target;
+                if (target && target.closest && (
+                    target.closest("#oh-nexus-bar") ||
+                    target.closest("#oh-nexus-model-popover") ||
+                    target.closest("#oh-nexus-reasoning-popover") ||
+                    target.closest("#oh-nexus-announcer")
+                )) {
+                    continue;
+                }
+
+                // If nodes were added or removed, or chat input appeared
+                if (m.type === "childList") {
+                    shouldUpdate = true;
+                    break;
+                }
             }
 
-            updateComposerButtonLabel();
+            if (!shouldUpdate) return;
 
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-                const hasInput = document.querySelector(".chat-input, [contenteditable='true'], textarea");
-                const existingPanel = document.getElementById("oh-working-profile-container");
-                const isConv = isConversationPage();
-                const routeChanged = lastRenderedRoute !== isConv;
-                const running = isTaskRunning();
-                const taskRunningChanged = running !== lastTaskRunningState;
-
-                if (hasInput && (!existingPanel || routeChanged || taskRunningChanged)) {
-                    renderUI();
-                }
-                updateComposerButtonLabel();
-            }, 150);
+                withDOMUpdate(() => {
+                    mountOrUpdateNexusBar();
+                });
+            }, 120);
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
-        window.__ohWpObserver = observer;
+
         window.addEventListener("beforeunload", () => {
             try { observer.disconnect(); } catch (e) {}
+            stopTelemetry();
         });
     }
 
-    // Periodic sync poll every 3 seconds with Visibility API pause to save mobile battery
-    let syncIntervalId = null;
+    // Visibility API support (battery saver for tablets & mobile)
+    let syncInterval = null;
 
     function startSyncPolling() {
         stopSyncPolling();
-        syncIntervalId = setInterval(() => {
+        syncInterval = setInterval(() => {
             if (document.hidden) return;
-            const running = isTaskRunning();
-            if (running !== lastTaskRunningState) {
-                renderUI();
-            }
             loadWorkingProfiles(true);
         }, 3000);
     }
 
     function stopSyncPolling() {
-        if (syncIntervalId) {
-            clearInterval(syncIntervalId);
-            syncIntervalId = null;
+        if (syncInterval) {
+            clearInterval(syncInterval);
+            syncInterval = null;
         }
     }
 
-    // Pause polling when tab is hidden or backgrounded, resume immediately on focus/visibility
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
             stopSyncPolling();
+            stopTelemetry();
         } else {
             startSyncPolling();
+            startTelemetry();
             loadWorkingProfiles(true);
         }
     });
@@ -769,37 +798,20 @@
     window.addEventListener("focus", () => {
         if (!document.hidden) {
             startSyncPolling();
+            startTelemetry();
             loadWorkingProfiles(true);
         }
     });
-
-    window.addEventListener("blur", () => {
-        if (document.hidden) {
-            stopSyncPolling();
-        }
-    });
-
-    startSyncPolling();
-
-    // Auto-collapse panel when composer prompt input receives focus (frees screen for mobile virtual keyboard)
-    function setupFocusAutoCollapse() {
-        document.addEventListener("focusin", (e) => {
-            const target = e.target;
-            if (target && (target.matches(".chat-input, [contenteditable='true'], textarea") || target.closest(".chat-input"))) {
-                if (!isCollapsed) {
-                    setCollapsed(true, false);
-                }
-            }
-        }, true);
-    }
 
     // Startup initialization
     async function init() {
         await loadWorkingProfiles(false);
         setupObserver();
-        setupComposerPickerWatcher();
-        setupFocusAutoCollapse();
-        updateComposerButtonLabel();
+        startTelemetry();
+        startSyncPolling();
+        withDOMUpdate(() => {
+            mountOrUpdateNexusBar();
+        });
     }
 
     if (document.readyState === "loading") {

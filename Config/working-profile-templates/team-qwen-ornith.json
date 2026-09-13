@@ -2,8 +2,8 @@
   "$schema": "urn:openhands:working-profile:v1",
   "schema_version": 1,
   "id": "team-qwen-ornith",
-  "name": "Qwen 3.8 + Ornith (Кодинг-тандем)",
-  "description": "Двухмодельный тандем: Qwen 3.8 (план и ревью) ➔ Ornith 1.5 Coder (код и тесты)",
+  "name": "Fast Pair",
+  "description": "Быстрый тандем: Qwen 27B (план и ревью) ➔ Ornith 35B (код и тесты)",
   "kind": "two_model_chain",
   "default_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
   "default_llm_profile_name": "Qwen3.8-Medium",
@@ -26,28 +26,28 @@
     "modes": [
       {
         "id": "direct",
-        "label": "Direct (Без рассуждения)",
+        "label": "Выкл",
         "description": "Прямая генерация без thinking tokens",
         "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen3.8-Direct"
       },
       {
         "id": "low",
-        "label": "Low (Быстрое)",
+        "label": "Низкое",
         "description": "Краткая цепочка рассуждений ведущей модели",
         "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen3.8-Low"
       },
       {
         "id": "medium",
-        "label": "Medium (Сбалансированное)",
+        "label": "Среднее",
         "description": "Сбалансированная глубина рассуждений для планирования",
         "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen3.8-Medium"
       },
       {
         "id": "high",
-        "label": "High (Максимальное)",
+        "label": "Глубокое",
         "description": "Глубокое планирование и тщательное ревью архитектуры",
         "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen3.8-High"
@@ -55,7 +55,7 @@
     ]
   },
   "ui_badge": {
-    "text": "2 Модели",
+    "text": "27B + 35B",
     "color": "blue"
   }
 }

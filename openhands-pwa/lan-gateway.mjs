@@ -683,6 +683,13 @@ const httpsServer = createHttpsServer(
       }
     }
 
+    // 4c. Station Telemetry Endpoint (Real-time speed & prefill progress)
+    if (pathname === "/api/station-telemetry") {
+      req.url = "/api/station-telemetry";
+      proxy.proxyHttp(req, res, VOICE_TARGET);
+      return;
+    }
+
     // 5. Authenticated requests: Proxy to upstream services
     // Route /voice-api/* to Voice Bridge (127.0.0.1:18002)
     if (pathname.startsWith("/voice-api/")) {

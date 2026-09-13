@@ -1,52 +1,23 @@
-/* OpenHands Local - Working Profile & Remote Control UI Styles */
-/* High-Contrast, Accessible Theme for Low-Vision Accessibility */
+/* OpenHands Nexus - Minimalist Remote Control UI Styles */
+/* Design Philosophy: Claude Code / ChatGPT Codex / Google Antigravity */
+/* High Contrast, Sleek Horizontal Pill Bar, WCAG 2.5.5 Level AAA Touch Targets */
 
 :root {
-    --oh-bg-primary: #141418;
-    --oh-bg-card: linear-gradient(180deg, #18181f 0%, #141418 100%);
-    --oh-bg-input: #1f1f23;
-    --oh-bg-info: #18181c;
-    --oh-border-default: #3f3f46;
-    --oh-border-subtle: #27272a;
-    --oh-border-hover: #6366f1;
+    --oh-bg-primary: #121215;
+    --oh-bg-card: #18181f;
+    --oh-bg-hover: rgba(255, 255, 255, 0.08);
+    --oh-bg-active: rgba(99, 102, 241, 0.16);
+    --oh-border-default: rgba(255, 255, 255, 0.14);
+    --oh-border-subtle: rgba(255, 255, 255, 0.08);
+    --oh-border-accent: #6366f1;
+    --oh-text-primary: #ffffff;
+    --oh-text-secondary: #d4d4d8;
+    --oh-text-muted: #a1a1aa;
     --oh-accent-primary: #6366f1;
     --oh-accent-light: #a5b4fc;
-    --oh-status-success: #22c55e;
-    --oh-status-error: #ef4444;
-    --oh-text-primary: #ffffff;
-    --oh-text-secondary: #a1a1aa;
-    --oh-text-muted: #71717a;
-
-    /* Design System Tokens */
-    --oh-spacing-xs: 4px;
-    --oh-spacing-sm: 8px;
-    --oh-spacing-md: 12px;
-    --oh-spacing-lg: 16px;
-    --oh-radius-sm: 6px;
-    --oh-radius-md: 8px;
-    --oh-radius-lg: 14px;
-    --oh-radius-full: 9999px;
-    --oh-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --oh-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* High-contrast focus outline for accessibility */
-.oh-wp-card:focus-visible,
-.oh-wp-header:focus-visible,
-.oh-wp-toggle-btn:focus-visible,
-.oh-wp-select:focus-visible {
-    outline: 2px solid var(--oh-accent-primary) !important;
-    outline-offset: 2px !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
+/* Screen reader only */
 .sr-only {
     position: absolute;
     width: 1px;
@@ -59,717 +30,213 @@
     border: 0;
 }
 
-.oh-wp-container {
-    width: 100%;
-    margin-bottom: 16px;
-    box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+/* 1. Unified Nexus Composer Bar */
+#oh-nexus-bar {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    margin: 0 0 0 4px !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    z-index: 40 !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    flex-shrink: 0 !important;
 }
 
-.oh-wp-card {
-    background: var(--oh-bg-card);
-    border: 1.5px solid var(--oh-border-default);
-    border-radius: 14px;
-    padding: 12px 16px;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, padding 0.2s ease, gap 0.2s ease, margin-bottom 0.2s ease;
+#oh-nexus-bar::-webkit-scrollbar {
+    display: none !important;
 }
 
-.oh-wp-card.is-collapsed {
-    padding: 6px 14px;
-    gap: 0;
-    margin-bottom: 8px;
+/* Universal Button Style */
+.oh-nexus-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--oh-border-default) !important;
+    color: var(--oh-text-primary) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    user-select: none !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
+    box-sizing: border-box !important;
 }
 
-.oh-wp-card.is-changing {
-    animation: oh-wp-pulse-change 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+/* Accessible hit target expansion (WCAG 2.5.5 AAA Level compliance) */
+.oh-nexus-btn::after {
+    content: "" !important;
+    position: absolute !important;
+    top: -8px !important;
+    bottom: -8px !important;
+    left: -2px !important;
+    right: -2px !important;
 }
 
-@keyframes oh-wp-pulse-change {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.012); box-shadow: 0 4px 22px rgba(99, 102, 241, 0.25); }
-    100% { transform: scale(1); }
+.oh-nexus-btn:hover:not(:disabled) {
+    background: var(--oh-bg-hover) !important;
+    border-color: var(--oh-border-accent) !important;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.2) !important;
 }
 
-.oh-wp-card:hover,
-.oh-wp-card:focus-within {
-    border-color: #6366f1;
-    box-shadow: 0 6px 24px rgba(99, 102, 241, 0.2);
+.oh-nexus-btn:focus-visible {
+    outline: 2px solid var(--oh-accent-primary) !important;
+    outline-offset: 2px !important;
 }
 
-/* Header Row */
-.oh-wp-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    gap: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding-bottom: 8px;
-    cursor: pointer;
-    user-select: none;
-    min-height: 38px;
-    border-radius: 8px;
-    transition: border-bottom-color 0.2s ease, padding-bottom 0.2s ease;
+.oh-nexus-btn.is-loading {
+    opacity: 0.7 !important;
+    cursor: wait !important;
 }
 
-.oh-wp-card.is-collapsed .oh-wp-header {
-    border-bottom: 1px solid transparent;
-    padding-bottom: 0;
+.oh-nexus-btn.disabled,
+.oh-nexus-btn:disabled {
+    opacity: 0.55 !important;
+    cursor: default !important;
+    border-color: var(--oh-border-subtle) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
 }
 
-.oh-wp-header:focus-visible {
-    outline: 2px solid #818cf8;
-    outline-offset: 2px;
-}
-
-.oh-wp-header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    flex: 1;
-}
-
-.oh-wp-icon {
-    font-size: 18px;
+.oh-nexus-icon {
+    font-size: 14px;
     line-height: 1;
     flex-shrink: 0;
 }
 
-.oh-wp-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #ffffff;
-    letter-spacing: -0.01em;
-    white-space: nowrap;
+.oh-nexus-chevron {
+    color: var(--oh-text-muted);
+    margin-left: 2px;
     flex-shrink: 0;
+    transition: transform 0.2s ease;
 }
 
-.oh-wp-badge {
+.oh-nexus-btn[aria-expanded="true"] .oh-nexus-chevron {
+    transform: rotate(180deg);
+}
+
+/* Badge Styles */
+.oh-nexus-badge {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
-    border-radius: 9999px;
-    font-size: 11px;
-    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     white-space: nowrap;
-    border: 1.5px solid transparent;
-    flex-shrink: 0;
+    border: 1px solid transparent;
+    line-height: 1.2;
 }
 
-.oh-wp-badge.badge-3-models {
+.oh-nexus-badge.badge-flagship {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: #f59e0b;
+    color: #fde68a;
+}
+
+.oh-nexus-badge.badge-flagship-chain {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.2));
+    border-color: #f59e0b;
+    color: #fef08a;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
+}
+
+.oh-nexus-badge.badge-3-models {
     background: rgba(99, 102, 241, 0.2);
     border-color: #6366f1;
     color: #c7d2fe;
 }
 
-.oh-wp-badge.badge-2-models {
+.oh-nexus-badge.badge-2-models {
     background: rgba(14, 165, 233, 0.2);
     border-color: #0ea5e9;
     color: #bae6fd;
 }
 
-.oh-wp-badge.badge-1-models {
+.oh-nexus-badge.badge-1-models {
     background: rgba(16, 185, 129, 0.2);
     border-color: #10b981;
     color: #a7f3d0;
 }
 
-.oh-wp-summary-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(99, 102, 241, 0.14);
-    border: 1px solid rgba(99, 102, 241, 0.35);
-    color: #e0e7ff;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 2px 9px;
-    border-radius: 6px;
-    max-width: 280px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.4;
-    transition: opacity 0.2s ease;
-}
-
-.oh-wp-card:not(.is-collapsed) .oh-wp-summary-pill {
-    opacity: 0.65;
-}
-
-.oh-wp-header-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.oh-wp-sync-indicator {
-    font-size: 12px;
-    font-weight: 600;
-    color: #22c55e;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: opacity 0.2s ease;
-    white-space: nowrap;
-}
-
-.oh-wp-sync-indicator.syncing {
-    color: #f59e0b;
-}
-
-.oh-wp-toggle-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    color: #e4e4e7;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    min-height: 32px;
-    line-height: 1;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-    user-select: none;
-    white-space: nowrap;
-}
-
-.oh-wp-header:hover .oh-wp-toggle-btn,
-.oh-wp-toggle-btn:hover {
-    background: rgba(99, 102, 241, 0.22);
-    border-color: #6366f1;
-    color: #ffffff;
-}
-
-.oh-wp-toggle-btn:focus-visible {
-    outline: 2px solid #818cf8;
-    outline-offset: 1px;
-}
-
-.oh-wp-chevron {
-    width: 14px;
-    height: 14px;
-    fill: currentColor;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: rotate(0deg);
-}
-
-.oh-wp-card:not(.is-collapsed) .oh-wp-chevron {
-    transform: rotate(180deg);
-}
-
-/* Accordion Body */
-.oh-wp-body {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow: hidden;
-    max-height: 650px;
-    opacity: 1;
-    margin-top: 4px;
-    transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, margin-top 0.2s ease;
-}
-
-.oh-wp-card.is-collapsed .oh-wp-body {
-    max-height: 0 !important;
-    opacity: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    pointer-events: none !important;
-    overflow: hidden !important;
-}
-
-/* Controls Grid */
-.oh-wp-controls-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 12px;
-    align-items: flex-start;
-}
-
-@media (max-width: 768px) {
-    .oh-wp-controls-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-}
-
-.oh-wp-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.oh-wp-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #d4d4d8;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.oh-wp-select-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.oh-wp-select {
-    width: 100%;
-    min-height: 44px;
-    background: #1f1f23;
-    color: #ffffff;
-    border: 1.5px solid #52525b;
-    border-radius: 8px;
-    padding: 8px 36px 8px 12px;
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1.3;
-    appearance: none;
-    -webkit-appearance: none;
-    cursor: pointer;
+/* 2. Popovers (Model & Reasoning) */
+.oh-nexus-popover {
+    position: fixed;
+    z-index: 10000;
+    background: #181820;
+    border: 1.5px solid #3f3f46;
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    padding: 6px;
     box-sizing: border-box;
-    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    animation: oh-nexus-popover-in 0.15s cubic-bezier(0, 0, 0.2, 1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.oh-wp-select:hover {
-    border-color: #818cf8;
-    background: #27272a;
+@keyframes oh-nexus-popover-in {
+    from { opacity: 0; transform: translateY(4px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.oh-wp-select:focus,
-.oh-wp-select:focus-visible {
-    outline: 2.5px solid #818cf8 !important;
-    outline-offset: 2px !important;
-    border-color: #6366f1 !important;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25) !important;
-    background: #27272a;
-}
-
-.oh-wp-select-arrow {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-    width: 14px;
-    height: 14px;
-    fill: #a1a1aa;
-    transition: transform 0.2s ease, fill 0.2s ease;
-}
-
-.oh-wp-select:focus + .oh-wp-select-arrow,
-.oh-wp-select-wrapper:focus-within .oh-wp-select-arrow {
-    fill: #a5b4fc;
-    transform: translateY(-50%) rotate(180deg);
-}
-
-/* Fixed Mode Display (for models without selectable reasoning, like Ornith) */
-.oh-wp-fixed-mode-box {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    background: #18181f;
-    border: 1.5px dashed #4b5563;
-    border-radius: 8px;
-    padding: 8px 12px;
-    box-sizing: border-box;
-}
-
-.oh-wp-fixed-icon {
-    font-size: 16px;
-}
-
-.oh-wp-fixed-text {
-    font-size: 14px;
-    font-weight: 700;
-    color: #93c5fd;
-    letter-spacing: 0.01em;
-}
-
-/* Info and Description Area */
-.oh-wp-info-box {
-    background: rgba(24, 24, 28, 0.65);
-    border: 1px solid rgba(63, 63, 70, 0.4);
-    border-radius: 8px;
-    padding: 8px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.oh-wp-desc-arch {
-    font-size: 13px;
-    font-weight: 500;
-    color: #f4f4f5;
-    line-height: 1.4;
-}
-
-.oh-wp-desc-mode {
-    font-size: 12px;
-    color: #a1a1aa;
-    line-height: 1.35;
-}
-
-.oh-wp-highlight {
-    color: #818cf8;
-    font-weight: 700;
-}
-
-/* Active Task Running State (Turn Lock) */
-.oh-wp-card.is-running {
-    border-color: #52525b;
-    opacity: 0.92;
-}
-
-.oh-wp-card.is-running .oh-wp-select {
-    opacity: 0.6;
-    cursor: not-allowed;
-    background: #18181b;
-    border-color: #3f3f46;
-}
-
-.oh-wp-sync-indicator.running {
-    color: #f59e0b;
-    font-weight: 700;
-    animation: oh-wp-pulse-amber 1.8s ease-in-out infinite;
-}
-
-@keyframes oh-wp-pulse-amber {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(0.98); }
-}
-
-.oh-wp-select:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    background: #18181b;
-    border-color: #3f3f46;
-}
-
-/* Comfortable, accessible prompt input area (fixes narrow 20px slit) */
-.chat-input {
-    min-height: 52px !important;
-    font-size: 16px !important;
-    line-height: 1.4 !important;
-}
-
-/* Responsive width for root page prompt container on desktop & tablets */
-@media (min-width: 1040px) {
-    div.flex.w-full.max-w-\[800px\].flex-col,
-    div[class*="max-w-[800px]"] {
-        max-width: 1040px !important;
-    }
-}
-@media (max-width: 1039px) {
-    div.flex.w-full.max-w-\[800px\].flex-col,
-    div[class*="max-w-[800px]"] {
-        max-width: 100% !important;
-    }
-}
-
-/* Guard root layout against horizontal overflow on all viewports */
-[data-testid="root-layout"] {
-    max-width: 100vw !important;
-    width: 100% !important;
-    overflow-x: hidden !important;
-}
-
-/* Ensure composer model picker is ALWAYS visible inside chat-input-actions without affecting root-layout */
-[data-testid="chat-input-actions"] div:has(> [data-testid="chat-input-llm-profile"]),
-[data-testid="chat-input-actions"] [data-testid="chat-input-llm-profile"] {
-    display: inline-flex !important;
-    visibility: visible !important;
-}
-
-/* Ensure composer action row wraps gracefully when status chips or mic are present */
-.chat-input + div,
-[data-testid="chat-input-actions"] {
-    flex-wrap: wrap !important;
-    row-gap: 6px !important;
-}
-
-@media (max-width: 768px) {
-    /* Mobile root page: eliminate the excessive 28vh top padding so the prompt input is immediately visible */
-    div.flex.w-full.flex-col.items-center.pt-\[max\(4rem\,28vh\)\],
-    div[class*="pt-[max(4rem,28vh)]"] {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
-    }
-
-    /* Compact Working Profile card for mobile screens */
-    .oh-wp-container {
-        margin-bottom: 10px !important;
-    }
-
-    .oh-wp-card {
-        padding: 10px 14px !important;
-        gap: 8px !important;
-        border-radius: 12px !important;
-    }
-
-    .oh-wp-card.is-collapsed {
-        padding: 6px 12px !important;
-        margin-bottom: 6px !important;
-    }
-
-    .oh-wp-header {
-        padding-bottom: 0 !important;
-        gap: 6px !important;
-        min-height: 36px !important;
-    }
-
-    .oh-wp-card:not(.is-collapsed) .oh-wp-header {
-        padding-bottom: 6px !important;
-    }
-
-    .oh-wp-header-left {
-        gap: 6px !important;
-    }
-
-    .oh-wp-header-right {
-        gap: 6px !important;
-    }
-
-    .oh-wp-title {
-        font-size: 14px !important;
-    }
-
-    .oh-wp-summary-pill {
-        max-width: 170px !important;
-        font-size: 11px !important;
-        padding: 2px 7px !important;
-    }
-
-    .oh-wp-toggle-btn {
-        padding: 3px 8px !important;
-        font-size: 11px !important;
-        min-height: 30px !important;
-    }
-
-    .oh-wp-badge {
-        padding: 3px 8px !important;
-        font-size: 10px !important;
-    }
-
-    .oh-wp-sync-indicator {
-        font-size: 11px !important;
-    }
-
-    .oh-wp-controls-grid {
-        gap: 8px !important;
-    }
-
-    .oh-wp-field {
-        gap: 3px !important;
-    }
-
-    .oh-wp-label {
-        font-size: 13px !important;
-    }
-
-    .oh-wp-select {
-        min-height: 40px !important;
-        padding: 6px 32px 6px 10px !important;
-        font-size: 14px !important;
-    }
-
-    .oh-wp-fixed-mode-box {
-        min-height: 40px !important;
-        padding: 6px 12px !important;
-        font-size: 13px !important;
-    }
-
-    .oh-wp-info-box {
-        padding: 8px 12px !important;
-        gap: 4px !important;
-    }
-
-    .oh-wp-desc-arch {
-        font-size: 13px !important;
-        line-height: 1.35 !important;
-    }
-
-    .oh-wp-desc-mode {
-        font-size: 12px !important;
-        line-height: 1.3 !important;
-    }
-}
-
-@media (max-width: 480px) {
-    .oh-wp-title {
-        display: none !important;
-    }
-
-    .oh-wp-summary-pill {
-        max-width: 130px !important;
-    }
-
-    .oh-wp-controls-grid {
-        grid-template-columns: 1fr !important;
-        gap: 8px !important;
-    }
-
-    .oh-wp-select {
-        min-height: 44px !important;
-        font-size: 15px !important;
-    }
-
-    /* Hide secondary mode explanation on very narrow mobile screens to save composer height */
-    .oh-wp-desc-mode {
-        display: none !important;
-    }
-}
-
-@media (orientation: landscape) and (max-height: 540px) {
-    .oh-wp-container {
-        margin-bottom: 6px !important;
-    }
-
-    .oh-wp-card {
-        padding: 8px 12px !important;
-        gap: 6px !important;
-    }
-
-    .oh-wp-info-box {
-        display: none !important;
-    }
-}
-
-/* ==========================================================================
-   Task 1: Enhanced Context Meter Popover & In-Place Breakdown Card
-   ========================================================================== */
-
-.oh-wp-context-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #a5b4fc;
-    background: rgba(99, 102, 241, 0.12);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    border-radius: 6px;
-    padding: 3px 8px;
-    margin-bottom: 4px;
-    letter-spacing: 0.02em;
-}
-
-.oh-wp-context-breakdown {
-    margin-top: 6px;
-    padding: 8px 10px;
-    background: #18181f;
-    border: 1px solid #3f3f46;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 12px;
-    animation: oh-wp-fade-in 0.2s ease-out;
-}
-
-@keyframes oh-wp-fade-in {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.oh-wp-breakdown-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    color: #d4d4d8;
-}
-
-.oh-wp-breakdown-label {
-    color: #a1a1aa;
-    font-size: 11px;
-}
-
-.oh-wp-breakdown-val {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-weight: 600;
-    color: #ffffff;
-    font-size: 11px;
-}
-
-.oh-wp-breakdown-val.success {
-    color: #4ade80;
-}
-
-.oh-wp-breakdown-val.info {
-    color: #93c5fd;
-}
-
-.oh-wp-breakdown-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    margin: 2px 0;
-}
-
-/* ==========================================================================
-   Task 2: Composer LLM Profile Button & Popover Synchronizer
-   ========================================================================== */
-
-[data-testid="chat-input-llm-profile"] {
-    max-width: 280px !important;
-    white-space: nowrap !important;
-    font-weight: 500 !important;
-    color: #e4e4e7 !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-}
-
-[data-testid="chat-input-llm-profile"]:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border-color: #6366f1 !important;
-}
-
-[data-testid="chat-input-llm-profile-popover"] {
-    max-width: calc(100vw - 24px) !important;
-    width: 320px !important;
-    background: #18181f !important;
-    border: 1px solid #3f3f46 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.65) !important;
-    padding: 6px !important;
-    z-index: 9999 !important;
-}
-
-.oh-composer-wp-header {
-    padding: 6px 8px 4px 8px;
+.oh-nexus-popover-header {
+    padding: 8px 10px 6px 10px;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #a1a1aa;
+    color: var(--oh-text-muted);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.oh-composer-wp-list {
+.oh-nexus-popover-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 6px;
+}
+
+.oh-nexus-popover-section:last-child {
+    margin-bottom: 0;
+}
+
+.oh-nexus-popover-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #71717a;
+    padding: 6px 10px 3px 10px;
+    user-select: none;
+}
+
+.oh-nexus-popover-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
 
-.oh-composer-wp-item {
+.oh-nexus-popover-item {
     display: flex;
     flex-direction: column;
     padding: 8px 10px;
@@ -781,59 +248,180 @@
     background: transparent;
     width: 100%;
     box-sizing: border-box;
+    user-select: none;
 }
 
-.oh-composer-wp-item:hover,
-.oh-composer-wp-item:focus-visible {
-    background: rgba(255, 255, 255, 0.08);
+.oh-nexus-popover-item:hover,
+.oh-nexus-popover-item:focus-visible {
+    background: var(--oh-bg-hover);
     border-color: rgba(99, 102, 241, 0.4);
     outline: none;
 }
 
-.oh-composer-wp-item.active {
-    background: rgba(99, 102, 241, 0.18);
-    border-color: #6366f1;
+.oh-nexus-popover-item.active {
+    background: var(--oh-bg-active);
+    border-color: var(--oh-accent-primary);
 }
 
-.oh-composer-wp-row {
+.oh-nexus-popover-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
+    gap: 8px;
 }
 
-.oh-composer-wp-name {
+.oh-nexus-popover-name {
     font-size: 13px;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--oh-text-primary);
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.oh-composer-wp-check {
-    color: #6366f1;
+.oh-nexus-check {
+    color: #818cf8;
     font-size: 14px;
     font-weight: bold;
 }
 
-.oh-composer-wp-item.active .oh-composer-wp-check {
-    color: #a5b4fc;
-}
-
-.oh-composer-wp-badge {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 1px 6px;
-    border-radius: 4px;
-}
-
-.oh-composer-wp-desc {
+.oh-nexus-popover-desc {
     font-size: 11px;
-    color: #a1a1aa;
+    color: var(--oh-text-muted);
     margin-top: 2px;
-    line-height: 1.3;
+    line-height: 1.35;
 }
 
+/* 3. Telemetry Pill */
+.oh-nexus-telemetry-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 9px !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid var(--oh-border-subtle) !important;
+    color: var(--oh-text-muted) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    user-select: none !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    transition: all 0.2s ease !important;
+    box-sizing: border-box !important;
+}
 
+/* Accessible hit target expansion for telemetry pill */
+.oh-nexus-telemetry-pill::after {
+    content: "" !important;
+    position: absolute !important;
+    top: -8px !important;
+    bottom: -8px !important;
+    left: -2px !important;
+    right: -2px !important;
+}
 
+.oh-nexus-telemetry-pill.prefill {
+    background: rgba(99, 102, 241, 0.12) !important;
+    border-color: rgba(99, 102, 241, 0.4) !important;
+    color: #c7d2fe !important;
+}
+
+.oh-nexus-telemetry-pill.generating {
+    background: rgba(34, 197, 94, 0.12) !important;
+    border-color: rgba(34, 197, 94, 0.4) !important;
+    color: #86efac !important;
+}
+
+.oh-nexus-telemetry-pill.tool {
+    background: rgba(245, 158, 11, 0.12) !important;
+    border-color: rgba(245, 158, 11, 0.4) !important;
+    color: #fde68a !important;
+}
+
+.oh-telemetry-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.oh-telemetry-dot.idle {
+    background: #4ade80;
+    box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+}
+
+.oh-telemetry-dot.active {
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+    animation: oh-telemetry-pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes oh-telemetry-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.oh-telemetry-bar-wrap {
+    width: 44px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.oh-telemetry-bar-fill {
+    height: 100%;
+    background: #818cf8;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.oh-telemetry-meta {
+    font-size: 11px;
+    color: #94a3b8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* 4. Hide legacy bulky container */
+#oh-working-profile-container {
+    display: none !important;
+}
+
+/* 5. Samsung Galaxy Tab S9 Ultra & Tablet Adaptability (Compact bar, 48px hit areas) */
+@media (max-width: 1024px) {
+    #oh-nexus-bar {
+        min-height: 32px !important;
+        height: 32px !important;
+        gap: 5px !important;
+        flex-wrap: nowrap !important;
+        white-space: nowrap !important;
+        overflow-x: auto !important;
+    }
+
+    .oh-nexus-btn {
+        min-height: 32px !important;
+        height: 32px !important;
+        font-size: 12px !important;
+        padding: 0 9px !important;
+        border-radius: 8px !important;
+    }
+
+    .oh-nexus-telemetry-pill {
+        min-height: 32px !important;
+        height: 32px !important;
+        font-size: 11px !important;
+        padding: 0 8px !important;
+        border-radius: 8px !important;
+    }
+
+    /* Popover items retain full finger tap targets */
+    .oh-nexus-popover-item {
+        min-height: 44px !important;
+        padding: 10px 12px !important;
+    }
+}

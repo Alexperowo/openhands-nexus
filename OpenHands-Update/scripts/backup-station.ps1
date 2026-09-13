@@ -1,4 +1,4 @@
-﻿# OpenHands Local — Station Backup Generator
+# OpenHands Local — Station Backup Generator
 [CmdletBinding()]
 param(
     [string]$BackupName = "",
@@ -70,6 +70,9 @@ New-Item -ItemType Directory -Path $dstUserState -Force | Out-Null
 if (Test-Path $srcUserOpenHands) {
     if (Test-Path (Join-Path $srcUserOpenHands "profiles")) {
         Fast-CopyDir (Join-Path $srcUserOpenHands "profiles") (Join-Path $dstUserState "profiles")
+    }
+    if (Test-Path (Join-Path $srcUserOpenHands "agent-profiles")) {
+        Fast-CopyDir (Join-Path $srcUserOpenHands "agent-profiles") (Join-Path $dstUserState "agent-profiles")
     }
     if (Test-Path (Join-Path $srcUserOpenHands "working-profiles")) {
         Fast-CopyDir (Join-Path $srcUserOpenHands "working-profiles") (Join-Path $dstUserState "working-profiles")

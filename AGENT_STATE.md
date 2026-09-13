@@ -66,6 +66,69 @@ DONE:
     * Configured two verified operational profiles in llama-swap/config.yaml:
       1. qwen122 (Штатный): 64 slots, 128K context, ~26.5 tok/s, ~2.0 GB headroom on GPU 0, ~2.9 GB on GPU 1.
       2. qwen122-turbo (Экстремальный кодинг): 80 slots, 96K context, peak 33.01 tok/s, ~2.0 GB headroom on both GPUs.
+  - 100% End-to-End Full-Station Autonomous Testing & QA Verification: 100% COMPLETE & VERIFIED.
+    * Stage 1 (Infrastructure & Health Audit): All 5 microservices (Ports 8000, 8080, 8443, 18000, 18002) verified active and responding in sub-second latency.
+    * Stage 2 (Dynamic Model Rotation & MoE Optimization): Swapped between Ornith (54.1 tok/s) and Qwen 122B Turbo (80 MoE slots, 96K context, 33 tok/s) with zero-leak VRAM cleanup and symmetrical ~2.0 GB headroom on RTX 5060 Ti + RTX 2080 Ti.
+    * Stage 3 (Physical Tablet Verification on Samsung Galaxy Tab S9 Ultra): Verified PWA over HTTPS (port 8443) on Android 16 (2960x1848). Touch targets measured >= 48px (1815x100px profile card, 976x115px buttons, 120x120px mic). Physically tapped and switched profile to `Team-Full: Три Модели` with instant bidirectional synchronization across UI headers and composer.
+    * Stage 4 (Voice & Accessibility Pipeline): Supertonic 3 TTS synthesized Russian speech in 2.1s (RTF 0.21, 5x faster than real-time); GigaAM v3 STT transcribed audio in 356-862ms with 100% accuracy; Closed-loop TTS->STT acoustic verification passed with 0 word errors.
+    * Stage 5 (Dual Computer Use Integration in OpenHands): Configured and verified 37 MCP tools in OpenHands (`windows-mcp` with 11 tools on 4K desktop + `android-mcp` with 26 tools controlling Samsung Galaxy Tab S9 Ultra).
+    * Stage 6 (Autonomous SWE Task Execution): OpenHands agent ran autonomously on local dual-GPU cluster in conversation `b164135e-7813-402a-bb58-27cc57a6352e`. Created `monitor.py` (13.6 KB), created `test_monitor.py` (15.2 KB), ran unit tests (26/26 passed in 0.07s), generated `report.html` (6.3 KB) verifying all 4 local services online and dual-GPU stats, completed with `FinishAction`, and synthesized Russian audio announcement via local Voice Bridge.
+  - Working Profiles & Qwen 122B ChatGPT 5.6 SOL Restoration & Synchronization: 100% complete and verified.
+    * Synchronized all 3 profile layers: LLM Profiles (21 profiles), Agent Profiles (11 profiles), Working Profiles (8 templates).
+    * Created `qwen122-solo.json` (Qwen 122B ChatGPT 5.6 SOL Flagship) with 4 reasoning modes: Flagship (128K), Turbo (33 t/s), GPT-5.6 SOL (Thinking), and Direct.
+    * Added full aliases in `llama-swap/config.yaml` (`openai/gpt-5.6-sol`, `Qwen122-ChatGPT-5.6-SOL`, `Qwen122-LynnStyle`, `Qwen122-Turbo`, etc.).
+    * Updated Working Profile UI (`working-profile-ui.js` / `.css`) with high-contrast amber `ФЛАГМАН` badge and dynamic mode count.
+    * Hardened lifecycle scripts (`setup.ps1`, `backup-station.ps1`, `restore-station.ps1`) to ensure full synchronization of LLM, Agent, and Working profiles.
+    * Live verified on Desktop 4K (Google Chrome) and Android 16 Tablet (Samsung Galaxy Tab S9 Ultra PWA).
+  - Flagship Multi-Model Team (Team-Flagship: Qwen 122B + Ornith 35B) & MoE Expert Cache Updater: 100% complete and verified.
+    * Created `Config/defaults/agent-profiles/Team-Flagship.json` and synchronized to `~/.openhands/agent-profiles/Team-Flagship.json` (Contract: Flagship 122B Architect/Reviewer + Ornith 1.5 Coder/Tester with `enable_switch_llm_tool: true`).
+    * Created `Config/working-profile-templates/team-flagship.json` and synchronized to `~/.openhands/working-profiles/team-flagship.json` (Kind: `flagship_chain`, 4 reasoning modes: SOL thinking, Flagship 128K, Turbo 96K, Direct).
+    * Enhanced `working-profile-ui.js` and `working-profile-ui.css` with dedicated `СВЯЗКА (ФЛАГМАН)` badge (`badge-flagship-chain`).
+    * Created hardened standalone updater script: `OpenHands-Update/scripts/update-expert-cache-backend.ps1` with `-CheckOnly`, `-DryRun`, `-Update`, `-Rollback`, and hard station-stopped gate.
+    * Integrated `moe-expert-cache` into central dashboard `OpenHands-Update/scripts/update-all.ps1`.
+  - Minimalist Remote Control Architecture (Claude Code / Codex / Antigravity Style): 100% complete and verified.
+    * Stripped 21 messy profiles down to strictly 4 Models (`Qwen 122B`, `Ornith 35B`, `Qwen 27B`, `Qwen 80B`) and 3 Chains (`Flagship + Coder`, `Full Team`, `Fast Pair`).
+    * Implemented Orthogonal Reasoning Control (`#oh-composer-reasoning-btn`) in composer bottom bar next to model selector with discrete levels (`Выкл`, `Низкое`, `Среднее`, `Глубокое`).
+    * Non-reasoning models automatically show `⚡ Direct (Фиксир.)` with informative title and disabled dropdown.
+    * Completely hidden the bulky top card (`#oh-working-profile-container { display: none !important; }`). All interaction is unified in composer row.
+    * Preserved WCAG AAA contrast, accessible keyboard navigation, and >= 48px touch targets for Samsung Galaxy Tab S9 Ultra.
+  - Live Status & Speed Telemetry in Composer & PWA: 100% complete and verified.
+    * Added `/api/station-telemetry` endpoint in `local-voice/service.py` (port 18002) parsing real-time llama-swap log metrics.
+    * Proxied `/api/station-telemetry` via `lan-gateway.mjs` (port 8443) for remote PWA clients.
+    * Added `#oh-composer-telemetry-pill` displaying prefill progress bar, %, token counter, speed in tok/s, ETA, generating tok/s, and active tool.
+    * Integrated TalkBack ARIA live polite screen reader announcements on state transitions and 25% prefill milestones for visually impaired developer accessibility.
+  - Quad-Dump Static Prefix Cache Architecture & Role Partitioning: 100% complete and verified.
+    * Created `K:\Project\Cache\slots` on NVMe SSD.
+    * Added `--slot-save-path K:\Project\Cache\slots` to all models in `llama-swap/config.yaml` (`qwen`, `ornith`, `next`, `qwen122`, `qwen122-turbo`).
+    * Created automated management script `OpenHands-Update/scripts/generate-prefix-dumps.ps1` for the 4 canonical dumps:
+      1. `architect_prefix.bin` (Qwen 122B Lead Architect - system prompt + read/plan/switch tools).
+      2. `executor_prefix.bin` (Ornith 35B Coder - code editing, terminal, test execution).
+      3. `auditor_prefix.bin` (Qwen 80B / 27B Auditor - code review, testing, verification).
+      4. `solo_full_prefix.bin` (Qwen 122B Solo Autonomous - full tool suite).
+  - Rigorous Multi-Platform QA Verification & UI Polish (Desktop Chrome + Samsung Galaxy Tab S9 Ultra PWA): 100% COMPLETE & VERIFIED.
+    * Developer Lens (Root Cause & Fixes):
+      1. Voice Pill Collision Resolved: Fixed `.oh-voice-pill` hardcoded position from `bottom: 20px; left: 20px` (blocking sidebar links/version/settings) to `top: 14px; right: 220px`. Added `restorePillPosition()` auto-clearing of stale coordinates in `voice-bridge.js`.
+      2. Multi-Row Wrapping Eliminated: Replaced expanding `@media (max-width: 1024px)` 48px button height with compact `32px` inline-flex layout (`flex-wrap: nowrap !important; white-space: nowrap !important; min-height: 32px !important; height: 32px !important; overflow-x: auto !important; scrollbar-width: none !important;`).
+      3. WCAG 2.5.5 Level AAA Compliance Preserved: Hit targets expanded to 48px via invisible pseudo-elements (`.oh-nexus-btn::after`, `.oh-nexus-telemetry-pill::after` with `top: -8px; bottom: -8px; left: -2px; right: -2px`), keeping visual height at 32px while physical touch targets remain >= 48px for finger accuracy.
+      4. Label Conciseness: Trimmed verbose strings (`🧠 Мышление: Среднее` -> `🧠 Среднее`, `СВЯЗКА (ФЛАГМАН)` -> `СВЯЗКА`).
+      5. Cache & CORS Hardening: Added `Cache-Control: no-cache, no-store, must-revalidate` and CORS headers in `service.py` (`_set_cors` and static asset responses). Added `?t=` timestamp cache-busting in patchers.
+    * QA Engineer Lens (Multi-Scenario Test Battery):
+      1. Physical Tablet (Samsung Galaxy Tab S9 Ultra, 2960x1848, Android 16 PWA):
+         - Landing Page: Single row confirmed (`+`, `⚡ Qwen 122B [ФЛАГМАН]`, `🧠 Среднее`, `● Готов`).
+         - Virtual Keyboard Open: Preserved single horizontal row without wrapping (steps/7884).
+         - Model Popover: Opened cleanly with all 7 options categorized into `МОДЕЛИ (4)` and `СВЯЗКИ АГЕНТОВ (3)` (steps/7808).
+         - Reasoning Popover: Opened directly above button with 4 discrete levels (steps/7816).
+         - Interactive Switching: Selected `Глубокое` -> button updated to `🧠 Глубокое` immediately (steps/7822); selected `Full Team` -> updated to `⚡ Full Team [3 МОДЕЛИ]` (steps/7830); returned to `⚡ Qwen 122B` (steps/7838); selected `Ornith 35B` (steps/7846). Zero layout breaks.
+      2. Windows Desktop (1920x1080 and 3840x2160 native Chrome):
+         - Landing Page: Single row confirmed, zero sidebar overlap (steps/7902, scratch/desktop_landing.png).
+         - Conversation View: Single row confirmed at y=646 (scratch/desktop_conversation.png).
+         - Model Popover: Verified 7 options and high contrast (scratch/desktop_model_popover.png).
+         - Reasoning Popover: Verified 4 discrete levels (scratch/desktop_reasoning_popover.png).
+      3. Automated Playwright DOM Inspector (`scratch/inspect_dom.py`):
+         - Landing: modelBtn (203px), reasoningBtn (115px), telemetryPill (60px) all at y=396, height 32px.
+         - Tablet Viewport: all controls at y=351.18, height 32px.
+         - Conversation: all controls at y=646, height 32px, parent width 736px.
+         - Console & Network: Zero errors, zero uncaught page exceptions.
 EVIDENCE:
   - Audit JSON Reports: K:\Project\LLM-tests\Code-Audit-Qwen122\ (module1-6 audits + audit_summary.json).
   - Master Audit Document: K:\Project\Docs\AUDIT_REPORT_QWEN122.md.
@@ -73,10 +136,27 @@ EVIDENCE:
   - Hardware Adaptation Guide (Single/Dual GPU, RAM): K:\Project\Docs\HARDWARE_ADAPTATION_GUIDE.md.
   - MoE Router Documentation: K:\Project\Docs\MOE_ROUTER_EXPERT_PROFILING.md (Sections 1-7 complete).
   - MoE Expert Cache Benchmark Documentation: K:\Project\Docs\QWEN122_EXPERT_CACHE_BENCHMARK.md.
-  - Cache Experiment Results JSON: K:\Project\LLM-tests\Qwen122B-Expert-Cache\results\ (QWEN122-PROD-BASELINE, C0, C8, C16, C24, C32, C48, C64, C80-CTX96K).
-  - Unit Test Verification: python tests/runner.py --unit (12/12 passing in 0.10s).
-  - Syntax Compilation: Node.js (4/4 files PASS), Python (3/3 files PASS), PowerShell AST (4/4 files PASS).
-OPEN_ISSUES:    None. All documentation, accessibility and adaptation guides complete and verified.
-NEXT_ACTION:    Commit and push to GitHub.
-
-
+  - Physical Tablet Screenshots:
+    * steps/7788/media_0.png (Clean conversation view on tablet PWA, single row composer, docked voice pill)
+    * steps/7808/media_0.png (Model popover on tablet: 4 models + 3 chains)
+    * steps/7816/media_0.png (Reasoning popover on tablet: 4 discrete levels)
+    * steps/7822/media_0.png (Reasoning switched to Глубокое on tablet)
+    * steps/7830/media_0.png (Model switched to Full Team on tablet)
+    * steps/7838/media_0.png (Returned to Qwen 122B Flagship on tablet)
+    * steps/7846/media_0.png (Switched to Ornith 35B on tablet)
+    * steps/7884/media_0.png (Landing page on tablet with virtual keyboard open - single row verified)
+    * steps/7892/media_0.png (Full Landing page on tablet - single row verified)
+  - Desktop Screenshots:
+    * steps/7902/media_0.png (Desktop 4K live Chrome landing view with AIDA64 hardware panel)
+    * scratch/desktop_landing.png (Full HD 1920x1080 clean landing view)
+    * scratch/desktop_conversation.png (Full HD 1920x1080 conversation view, single row composer)
+    * scratch/desktop_model_popover.png (Full HD 1920x1080 model selector open)
+    * scratch/desktop_reasoning_popover.png (Full HD 1920x1080 reasoning selector open)
+  - Automated DOM Verification: scratch/inspect_dom.py & scratch/test_popover.py (tasks task-7964, exit 0).
+  - Full Automated Test Suite: python tests/runner.py --all (25/25 passing in 2.03s).
+  - Live Station Services Status: All 5 ports active (8000, 8080, 8443, 18000, 18002).
+  - Working Profile API Verification: http://127.0.0.1:8000/api/working-profiles (returns strictly 7 canonical profiles).
+  - Telemetry API Verification: http://127.0.0.1:18002/api/station-telemetry & https://127.0.0.1:8443/api/station-telemetry (HTTP 200).
+OPEN_ISSUES:
+  - None. All visual defects, collisions, touch targets, and caching issues resolved and multi-platform QA verified.
+NEXT_ACTION:    Push verified changes to GitHub origin/master and report with multi-platform QA evidence.

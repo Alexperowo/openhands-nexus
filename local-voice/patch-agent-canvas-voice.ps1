@@ -19,7 +19,7 @@ if (-not (Test-Path $IndexOrig)) {
 
 # 2. Check if injection exists, if not or if old snippet exists, clean and re-inject
 $Content = [System.IO.File]::ReadAllText($IndexHtml, [System.Text.Encoding]::UTF8)
-$DynamicVoiceSnippet = '<script id="oh-voice-loader">(function(){var isSec=(window.location.protocol==="https:"||window.location.port==="8443");var base=isSec?(window.location.origin+"/voice-api"):"http://127.0.0.1:18002";var l=document.createElement("link");l.rel="stylesheet";l.href=base+"/voice-bridge.css";document.head.appendChild(l);var s=document.createElement("script");s.src=base+"/voice-bridge.js";s.defer=true;document.head.appendChild(s);})();</script>'
+$DynamicVoiceSnippet = '<script id="oh-voice-loader">(function(){var isSec=(window.location.protocol==="https:"||window.location.port==="8443");var base=isSec?(window.location.origin+"/voice-api"):"http://127.0.0.1:18002";var ts=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href=base+"/voice-bridge.css?t="+ts;document.head.appendChild(l);var s=document.createElement("script");s.src=base+"/voice-bridge.js?t="+ts;s.defer=true;document.head.appendChild(s);})();</script>'
 
 # Remove any previous relative, static, or outdated script tags
 $Cleaned = $Content -replace '<link rel="stylesheet" href="/voice-bridge\.css">', ''

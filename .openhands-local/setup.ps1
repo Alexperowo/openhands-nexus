@@ -1,4 +1,4 @@
-﻿# OpenHands Local — Initial Setup & Portability Alignment Script
+# OpenHands Local — Initial Setup & Portability Alignment Script
 [CmdletBinding()]
 param(
     [switch]$VerifyOnly,
@@ -50,34 +50,34 @@ if (-not (Test-Path $openhandsHome)) {
     Write-Host "      [OK] Создан каталог: $openhandsHome" -ForegroundColor Green
 }
 
-# 2a. Profiles directory
+# 2a. Profiles directory (LLM Profiles)
 $profilesDir = Join-Path $openhandsHome "profiles"
 if (-not (Test-Path $profilesDir)) { New-Item -ItemType Directory -Path $profilesDir -Force | Out-Null }
-$existingProfiles = @(Get-ChildItem $profilesDir -Filter "*.json" -ErrorAction SilentlyContinue)
-if ($existingProfiles.Count -eq 0) {
-    $defaultsProfilesDir = Join-Path $ProjectRoot "Config\defaults\profiles"
-    if (Test-Path $defaultsProfilesDir) {
-        Copy-Item -Path (Join-Path $defaultsProfilesDir "*.json") -Destination $profilesDir -Force
-        $cnt = (Get-ChildItem $profilesDir -Filter "*.json").Count
-        Write-Host "      [OK] Развернуты профили OpenHands из Config/defaults/profiles ($cnt шт.)" -ForegroundColor Green
-    }
-} else {
-    Write-Host "      [OK] Профили OpenHands уже присутствуют ($($existingProfiles.Count) шт.)" -ForegroundColor Gray
+$defaultsProfilesDir = Join-Path $ProjectRoot "Config\defaults\profiles"
+if (Test-Path $defaultsProfilesDir) {
+    Copy-Item -Path (Join-Path $defaultsProfilesDir "*.json") -Destination $profilesDir -Force
+    $cnt = (Get-ChildItem $profilesDir -Filter "*.json").Count
+    Write-Host "      [OK] Синхронизированы LLM-профили OpenHands ($cnt шт.)" -ForegroundColor Green
 }
 
-# 2b. Working Profiles directory
+# 2b. Agent Profiles directory
+$agentProfilesDir = Join-Path $openhandsHome "agent-profiles"
+if (-not (Test-Path $agentProfilesDir)) { New-Item -ItemType Directory -Path $agentProfilesDir -Force | Out-Null }
+$defaultsAgentProfilesDir = Join-Path $ProjectRoot "Config\defaults\agent-profiles"
+if (Test-Path $defaultsAgentProfilesDir) {
+    Copy-Item -Path (Join-Path $defaultsAgentProfilesDir "*.json") -Destination $agentProfilesDir -Force
+    $cnt = (Get-ChildItem $agentProfilesDir -Filter "*.json").Count
+    Write-Host "      [OK] Синхронизированы Agent-профили OpenHands ($cnt шт.)" -ForegroundColor Green
+}
+
+# 2c. Working Profiles directory
 $wpDir = Join-Path $openhandsHome "working-profiles"
 if (-not (Test-Path $wpDir)) { New-Item -ItemType Directory -Path $wpDir -Force | Out-Null }
-$existingWp = @(Get-ChildItem $wpDir -Filter "*.json" -ErrorAction SilentlyContinue)
-if ($existingWp.Count -eq 0) {
-    $wpTemplatesDir = Join-Path $ProjectRoot "Config\working-profile-templates"
-    if (Test-Path $wpTemplatesDir) {
-        Copy-Item -Path (Join-Path $wpTemplatesDir "*.json") -Destination $wpDir -Force
-        $cnt = (Get-ChildItem $wpDir -Filter "*.json").Count
-        Write-Host "      [OK] Развернуты шаблоны Working Profiles ($cnt шт.)" -ForegroundColor Green
-    }
-} else {
-    Write-Host "      [OK] Шаблоны Working Profiles уже присутствуют ($($existingWp.Count) шт.)" -ForegroundColor Gray
+$wpTemplatesDir = Join-Path $ProjectRoot "Config\working-profile-templates"
+if (Test-Path $wpTemplatesDir) {
+    Copy-Item -Path (Join-Path $wpTemplatesDir "*.json") -Destination $wpDir -Force
+    $cnt = (Get-ChildItem $wpDir -Filter "*.json").Count
+    Write-Host "      [OK] Синхронизированы шаблоны Working Profiles ($cnt шт.)" -ForegroundColor Green
 }
 
 # 2c. Working profile active state

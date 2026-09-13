@@ -234,6 +234,81 @@ def synthesize_to_wav_bytes(text: str, voice_style_name: str = "M1") -> tuple[by
     return out_io.getvalue(), duration, latency
 
 
+def get_station_telemetry() -> dict:
+    log_path = os.path.join(os.path.dirname(__file__), "..", "Logs", "llama-swap", "llama-swap.log")
+    if not os.path.exists(log_path):
+        log_path = os.path.join(os.path.dirname(__file__), "..", "llama-swap.log")
+
+    active_profile = "Qwen 122B"
+    try:
+        st = working_profiles.get_working_profile_state()
+        if st and st.get("active_working_profile_id"):
+            profs = working_profiles.load_working_profiles()
+            for p in profs:
+                if p.get("id") == st.get("active_working_profile_id"):
+                    active_profile = p.get("name", active_profile)
+                    break
+    except Exception:
+        pass
+
+    telemetry = {
+        "status": "ok",
+        "model": active_profile,
+        "state": "idle",
+        "progress_pct": 0,
+        "tokens": 0,
+        "total_tokens": 0,
+        "speed_tok_s": 0.0,
+        "active_tool": None,
+        "is_active": False,
+        "timestamp": time.time()
+    }
+
+    if not os.path.exists(log_path):
+        return telemetry
+
+    try:
+        mtime = os.path.getmtime(log_path)
+        is_fresh = (time.time() - mtime) < 120
+        telemetry["is_active"] = is_fresh
+
+        with open(log_path, "rb") as f:
+            f.seek(max(0, os.path.getsize(log_path) - 32768))
+            lines = f.read().decode("utf-8", errors="ignore").splitlines()
+
+        for line in reversed(lines):
+            if "stop processing" in line or "release: id" in line:
+                telemetry["state"] = "idle"
+                return telemetry
+            m_prefill = re.search(r'prompt processing,\s*n_tokens\s*=\s*(\d+),\s*progress\s*=\s*([\d.]+).*?([\d.]+)\s*tokens per second', line)
+            if m_prefill:
+                cur_tokens = int(m_prefill.group(1))
+                prog = float(m_prefill.group(2))
+                speed = float(m_prefill.group(3))
+                total = int(round(cur_tokens / prog)) if prog > 0 else cur_tokens
+                telemetry["state"] = "prefill"
+                telemetry["progress_pct"] = round(prog * 100, 1)
+                telemetry["tokens"] = cur_tokens
+                telemetry["total_tokens"] = total
+                telemetry["speed_tok_s"] = speed
+                return telemetry
+            m_gen = re.search(r'n_gen\s*=\s*(\d+),\s*tg\s*=\s*([\d.]+)\s*t/s,\s*tg_3s\s*=\s*([\d.]+)\s*t/s', line)
+            if m_gen:
+                n_gen = int(m_gen.group(1))
+                speed = float(m_gen.group(3))
+                telemetry["state"] = "generating"
+                telemetry["tokens"] = n_gen
+                telemetry["speed_tok_s"] = speed
+                return telemetry
+            if "launch_slot_" in line:
+                telemetry["state"] = "loading"
+                return telemetry
+    except Exception as e:
+        telemetry["error"] = str(e)
+
+    return telemetry
+
+
 class VoiceBridgeHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         # Concise logging
@@ -242,7 +317,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
     def _set_cors(self, content_type="application/json"):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Range, Authorization, X-Session-API-Key")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Range, Authorization, X-Session-API-Key, Cache-Control")
         self.send_header("Content-Type", content_type)
 
     def do_OPTIONS(self):
@@ -264,6 +339,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self._set_cors("application/javascript; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.end_headers()
             self.wfile.write(body)
             return
@@ -275,6 +351,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self._set_cors("text/css; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.end_headers()
             self.wfile.write(body)
             return
@@ -286,7 +363,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self._set_cors("application/javascript; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-cache, must-revalidate")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.end_headers()
             self.wfile.write(body)
             return
@@ -298,7 +375,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self._set_cors("text/css; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-cache, must-revalidate")
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.end_headers()
             self.wfile.write(body)
             return
@@ -308,6 +385,23 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 profiles = working_profiles.load_working_profiles()
                 state = working_profiles.get_working_profile_state()
                 body = json.dumps({"profiles": profiles, "state": state}, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self._set_cors("application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_response(500)
+                self._set_cors("application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        elif clean_path in ("/api/station-telemetry", "/telemetry"):
+            try:
+                data = get_station_telemetry()
+                body = json.dumps(data, ensure_ascii=False).encode("utf-8")
                 self.send_response(200)
                 self._set_cors("application/json; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))

@@ -125,8 +125,8 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
 /* 3. Floating Voice Status & Settings Pill (Non-blocking draggable) */
 .oh-voice-pill {
     position: fixed;
-    bottom: 20px;
-    left: 20px;
+    top: 14px;
+    right: 220px;
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -134,12 +134,12 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
     background: #0f172a;
     border: 1.5px solid #334155;
     border-radius: 20px;
-    padding: 6px 14px;
+    padding: 5px 12px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #e2e8f0;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     cursor: grab;
     touch-action: none;
     user-select: none;

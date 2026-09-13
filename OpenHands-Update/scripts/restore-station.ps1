@@ -1,4 +1,4 @@
-﻿# OpenHands Local — Station Restore Script
+# OpenHands Local — Station Restore Script
 [CmdletBinding()]
 param(
     [string]$BackupPath = "",
@@ -87,6 +87,11 @@ if (Test-Path $srcUserState) {
     $srcProfiles = Join-Path $srcUserState "profiles"
     if (Test-Path $srcProfiles) {
         Fast-CopyDir $srcProfiles (Join-Path $dstUserOpenHands "profiles")
+    }
+
+    $srcAgentProfiles = Join-Path $srcUserState "agent-profiles"
+    if (Test-Path $srcAgentProfiles) {
+        Fast-CopyDir $srcAgentProfiles (Join-Path $dstUserOpenHands "agent-profiles")
     }
     
     $srcWp = Join-Path $srcUserState "working-profiles"
