@@ -1,4 +1,4 @@
-# OpenHands Nexus - Quad-Dump Static Prefix Cache Generator & Manager
+﻿# OpenHands Nexus - Quad-Dump Static Prefix Cache Generator & Manager
 # Creates and warms the 4 canonical NVMe slot dumps:
 # 1. architect_prefix.bin (Qwen 122B - Lead Architect / Planner)
 # 2. executor_prefix.bin (Ornith 35B - Fast Coder / Implementer)
@@ -125,11 +125,33 @@ function Generate-Dump([string]$dumpKey) {
 
     Write-Host "    Отправка префикса в модель $($info.model)..." -ForegroundColor Gray
     try {
-        $resp = Invoke-RestMethod -Uri "$RouterUrl/v1/chat/completions" -Method Post -Body $reqBody -ContentType "application/json; charset=utf-8" -TimeoutSec 60
+        $resp = Invoke-RestMethod -Uri "$RouterUrl/v1/chat/completions" -Method Post -Body $reqBody -ContentType "application/json; charset=utf-8" -TimeoutSec 300
         Write-Host "    [OK] Префикс обработан моделью: $($resp.choices[0].message.content.Trim())" -ForegroundColor Green
-        Write-Host "    [OK] Статический префикс успешно сохранен в кэш." -ForegroundColor Green
+        
+        # Find active llama-server process port
+        $llamaPort = $null
+        $proc = Get-Process llama-server -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($proc) {
+            $conn = Get-NetTCPConnection -State Listen -OwningProcess $proc.Id -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($conn) {
+                $llamaPort = $conn.LocalPort
+            }
+        }
+
+        if (-not $llamaPort) {
+            Write-Host "    [WARN] Не удалось определить порт активного llama-server." -ForegroundColor Yellow
+            return
+        }
+
+        # Save slot to NVMe cache
+        $saveUrl = "http://127.0.0.1:$llamaPort/slots/0?action=save"
+        Write-Host "    Сохранение слота в NVMe кэш через порт $($llamaPort): $($info.filename)..." -ForegroundColor Gray
+        $saveBody = @{ filename = $info.filename } | ConvertTo-Json
+        $saveResp = Invoke-RestMethod -Uri $saveUrl -Method Post -Body $saveBody -ContentType "application/json; charset=utf-8" -TimeoutSec 30
+        $sizeMB = [math]::Round($saveResp.n_written / 1MB, 2)
+        Write-Host "    [OK] Статический префикс сохранен: $($info.filename) ($($saveResp.n_saved) токенов, $sizeMB MB, $($saveResp.timings.save_ms) ms)." -ForegroundColor Green
     } catch {
-        Write-Host "    [WARN] Ошибка при генерации префикса: $_" -ForegroundColor Yellow
+        Write-Host "    [WARN] Ошибка при генерации/сохранении префикса: $_" -ForegroundColor Yellow
     }
 }
 

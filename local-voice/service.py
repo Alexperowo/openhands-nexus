@@ -8,6 +8,7 @@ Integrates:
 Zero cloud dependencies. 100% offline.
 """
 
+import glob
 import io
 import json
 import os
@@ -264,6 +265,30 @@ def get_station_telemetry() -> dict:
         "timestamp": time.time()
     }
 
+    # 1. Check if OpenHands is actively executing a tool
+    try:
+        conv_root = os.path.expanduser(r"~/.openhands/agent-canvas/dev_conversations")
+        if os.path.exists(conv_root):
+            conv_dirs = [os.path.join(conv_root, d) for d in os.listdir(conv_root) if os.path.isdir(os.path.join(conv_root, d))]
+            if conv_dirs:
+                latest_conv = max(conv_dirs, key=os.path.getmtime)
+                events_dir = os.path.join(latest_conv, "events")
+                if os.path.exists(events_dir):
+                    event_files = sorted(glob.glob(os.path.join(events_dir, "event-*.json")))
+                    if event_files:
+                        last_f = event_files[-1]
+                        if (time.time() - os.path.getmtime(last_f)) < 30:
+                            with open(last_f, encoding="utf-8-sig") as ef:
+                                ev_data = json.load(ef)
+                            if ev_data.get("kind") == "ActionEvent":
+                                t_name = ev_data.get("tool_name") or ev_data.get("action", {}).get("kind") or "инструмент"
+                                telemetry["state"] = "tool"
+                                telemetry["active_tool"] = t_name
+                                telemetry["is_active"] = True
+                                return telemetry
+    except Exception:
+        pass
+
     if not os.path.exists(log_path):
         return telemetry
 
@@ -277,14 +302,41 @@ def get_station_telemetry() -> dict:
             lines = f.read().decode("utf-8", errors="ignore").splitlines()
 
         for line in reversed(lines):
-            if "stop processing" in line or "release: id" in line:
+            line_lower = line.lower()
+            if "stop processing" in line_lower or "release: id" in line_lower or "all slots are idle" in line_lower:
                 telemetry["state"] = "idle"
                 return telemetry
-            m_prefill = re.search(r'prompt processing,\s*n_tokens\s*=\s*(\d+),\s*progress\s*=\s*([\d.]+).*?([\d.]+)\s*tokens per second', line)
+
+            # Prefill progress in percentage or token ratio
+            m_prog = re.search(r'prompt eval progress:\s*([\d.]+)%|processing prompt\s*\((\d+)\s*/\s*(\d+)\s*tokens\)', line, re.IGNORECASE)
+            if m_prog:
+                telemetry["state"] = "prefill"
+                if m_prog.group(1):
+                    telemetry["progress_pct"] = float(m_prog.group(1))
+                elif m_prog.group(2) and m_prog.group(3):
+                    cur_t = int(m_prog.group(2))
+                    tot_t = int(m_prog.group(3))
+                    telemetry["tokens"] = cur_t
+                    telemetry["total_tokens"] = tot_t
+                    telemetry["progress_pct"] = round((cur_t / max(1, tot_t)) * 100, 1)
+                return telemetry
+
+            m_prefill = re.search(r'^prompt eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line, re.IGNORECASE)
             if m_prefill:
-                cur_tokens = int(m_prefill.group(1))
-                prog = float(m_prefill.group(2))
+                cur_tokens = int(m_prefill.group(2))
                 speed = float(m_prefill.group(3))
+                telemetry["state"] = "prefill"
+                telemetry["progress_pct"] = 100.0
+                telemetry["tokens"] = cur_tokens
+                telemetry["total_tokens"] = cur_tokens
+                telemetry["speed_tok_s"] = speed
+                return telemetry
+
+            m_prefill_legacy = re.search(r'prompt processing,\s*n_tokens\s*=\s*(\d+),\s*progress\s*=\s*([\d.]+).*?([\d.]+)\s*tokens per second', line)
+            if m_prefill_legacy:
+                cur_tokens = int(m_prefill_legacy.group(1))
+                prog = float(m_prefill_legacy.group(2))
+                speed = float(m_prefill_legacy.group(3))
                 total = int(round(cur_tokens / prog)) if prog > 0 else cur_tokens
                 telemetry["state"] = "prefill"
                 telemetry["progress_pct"] = round(prog * 100, 1)
@@ -292,15 +344,30 @@ def get_station_telemetry() -> dict:
                 telemetry["total_tokens"] = total
                 telemetry["speed_tok_s"] = speed
                 return telemetry
-            m_gen = re.search(r'n_gen\s*=\s*(\d+),\s*tg\s*=\s*([\d.]+)\s*t/s,\s*tg_3s\s*=\s*([\d.]+)\s*t/s', line)
+
+            if "reasoning" in line_lower or "thinking" in line_lower or "<think>" in line_lower:
+                telemetry["state"] = "thinking"
+                return telemetry
+
+            m_gen = re.search(r'^\s*eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line, re.IGNORECASE)
             if m_gen:
-                n_gen = int(m_gen.group(1))
+                n_gen = int(m_gen.group(2))
                 speed = float(m_gen.group(3))
                 telemetry["state"] = "generating"
                 telemetry["tokens"] = n_gen
                 telemetry["speed_tok_s"] = speed
                 return telemetry
-            if "launch_slot_" in line:
+
+            m_gen_legacy = re.search(r'n_gen\s*=\s*(\d+),\s*tg\s*=\s*([\d.]+)\s*t/s,\s*tg_3s\s*=\s*([\d.]+)\s*t/s', line)
+            if m_gen_legacy:
+                n_gen = int(m_gen_legacy.group(1))
+                speed = float(m_gen_legacy.group(3))
+                telemetry["state"] = "generating"
+                telemetry["tokens"] = n_gen
+                telemetry["speed_tok_s"] = speed
+                return telemetry
+
+            if "launch_slot_" in line_lower or "loading model" in line_lower:
                 telemetry["state"] = "loading"
                 return telemetry
     except Exception as e:

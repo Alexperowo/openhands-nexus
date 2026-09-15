@@ -36,18 +36,18 @@
             .replace(/'/g, "&#39;");
     }
 
-    // Helper: Kind badge formatting
+    // Helper: Kind badge formatting (COMPACT DIGITS as requested)
     function getKindBadge(kind) {
         if (kind === "flagship_chain" || kind === "two_model_flagship") {
             return { text: "СВЯЗКА", class: "badge-flagship-chain" };
         } else if (kind === "flagship_single" || kind === "flagship") {
             return { text: "ФЛАГМАН", class: "badge-flagship" };
         } else if (kind === "three_model_chain") {
-            return { text: "3 МОДЕЛИ", class: "badge-3-models" };
+            return { text: "3", class: "badge-3-models" };
         } else if (kind === "two_model_chain") {
-            return { text: "2 МОДЕЛИ", class: "badge-2-models" };
+            return { text: "2", class: "badge-2-models" };
         } else {
-            return { text: "1 МОДЕЛЬ", class: "badge-1-models" };
+            return { text: "1", class: "badge-1-models" };
         }
     }
 
@@ -248,7 +248,16 @@
             return;
         }
 
-        if (data.state === "prefill") {
+        if (data.state === "loading") {
+            pill.dataset.state = "loading";
+            pill.className = "oh-nexus-telemetry-pill loading";
+            pill.innerHTML = `
+                <span class="oh-telemetry-icon" style="pointer-events: none;">🔄</span>
+                <span class="oh-telemetry-text" style="pointer-events: none;">Загрузка...</span>
+            `;
+            pill.setAttribute("title", "Загрузка весов модели в VRAM");
+            pill.setAttribute("aria-label", "Загрузка модели в память");
+        } else if (data.state === "prefill") {
             const pct = Math.min(100, Math.max(0, Math.round(data.progress_pct || 0)));
             const currentTokens = formatTokenCount(data.tokens);
             const totalTokens = formatTokenCount(data.total_tokens);
@@ -258,12 +267,12 @@
             pill.dataset.state = "prefill";
             pill.className = "oh-nexus-telemetry-pill prefill";
             pill.innerHTML = `
-                <span class="oh-telemetry-icon">⏳</span>
-                <span class="oh-telemetry-text">Контекст: ${pct}%</span>
-                <div class="oh-telemetry-bar-wrap">
+                <span class="oh-telemetry-icon" style="pointer-events: none;">⏳</span>
+                <span class="oh-telemetry-text" style="pointer-events: none;">Контекст: ${pct}%</span>
+                <div class="oh-telemetry-bar-wrap" style="pointer-events: none;">
                     <div class="oh-telemetry-bar-fill" style="width: ${pct}%"></div>
                 </div>
-                <span class="oh-telemetry-meta">${currentTokens}/${totalTokens} · ${speed} т/с${eta}</span>
+                <span class="oh-telemetry-meta" style="pointer-events: none;">${currentTokens}/${totalTokens} · ${speed} т/с${eta}</span>
             `;
             const ariaText = `Загрузка контекста: ${pct}%, ${currentTokens} из ${totalTokens} токенов, скорость ${speed} токенов в секунду`;
             pill.setAttribute("title", ariaText);
@@ -274,6 +283,15 @@
                 lastTelemetryMilestone = milestone;
                 announceStatus(`Контекст ${milestone}%`);
             }
+        } else if (data.state === "thinking") {
+            pill.dataset.state = "thinking";
+            pill.className = "oh-nexus-telemetry-pill thinking";
+            pill.innerHTML = `
+                <span class="oh-telemetry-icon" style="pointer-events: none;">🧠</span>
+                <span class="oh-telemetry-text" style="pointer-events: none;">Размышление...</span>
+            `;
+            pill.setAttribute("title", "Модель формирует цепочку рассуждений (reasoning)");
+            pill.setAttribute("aria-label", "Размышление модели");
         } else if (data.state === "generating") {
             const speed = data.speed_tok_s ? data.speed_tok_s.toFixed(1) : "0";
             pill.dataset.state = "generating";
@@ -340,7 +358,7 @@
         popover.setAttribute("role", "listbox");
         popover.setAttribute("aria-label", "Выбор модели станции");
 
-        const singleModels = availableProfiles.filter(p => p.kind === "single" || !p.kind.includes("chain"));
+        const singleModels = availableProfiles.filter(p => p.kind === "single_model" || !p.kind.includes("chain"));
         const chainModels = availableProfiles.filter(p => p.kind.includes("chain"));
 
         function renderGroup(title, list) {
@@ -599,20 +617,27 @@
         bar.style.flexShrink = "0";
         bar.style.overflowX = "auto";
 
-        // 3. Mount into DOM: Place inside actionsRow
+        // 3. ЗАЩИТА КНОПКИ ОТПРАВКИ: Находим кнопку отправки и жестко фиксируем её видимость
+        const sendBtn = composerCard.querySelector('[data-testid="chat-input-send"], button[type="submit"], .chat-input-send, button[aria-label*="Send" i], button[aria-label*="Отправить" i]');
+        if (sendBtn) {
+            sendBtn.style.flexShrink = "0";
+            sendBtn.style.zIndex = "50";
+            sendBtn.style.marginLeft = "auto"; // Прижимаем вправо
+            sendBtn.style.position = "relative";
+        }
+
+        // 4. Mount into DOM: Place inside actionsRow
         if (actionsRow) {
             const plusBtn = composerCard.querySelector('[data-testid="chat-plus-button"]');
             let placed = false;
 
             if (plusBtn) {
-                // Find top-level child of actionsRow that is an ancestor of plusBtn
                 let leftCol = plusBtn;
                 while (leftCol && leftCol.parentElement && leftCol.parentElement !== actionsRow) {
                     leftCol = leftCol.parentElement;
                 }
 
                 if (leftCol && leftCol.parentElement === actionsRow) {
-                    // Try to place bar inside the inner flex container next to plus button
                     const innerFlex = plusBtn.closest('.flex.min-w-0.items-center, .flex.items-center');
                     if (innerFlex && leftCol.contains(innerFlex)) {
                         innerFlex.style.display = "flex";

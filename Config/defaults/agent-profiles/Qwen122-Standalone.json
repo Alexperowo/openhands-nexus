@@ -1,14 +1,17 @@
 {
   "schema_version": 2,
-  "id": "a1220000-122b-4a10-8000-000000000122",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "name": "Qwen122-Standalone",
   "revision": 0,
-  "mcp_server_refs": null,
+  "mcp_server_refs": [
+    "windows-mcp",
+    "android-mcp"
+  ],
   "agent_kind": "openhands",
-  "llm_profile_ref": "Qwen122-LynnStyle",
+  "llm_profile_ref": "Qwen122-ChatGPT-5.6-SOL",
   "agent": "CodeActAgent",
   "tools": null,
-  "system_message_suffix": "Mode: Standalone Flagship Autonomous Agent (Qwen 3.5 122B A10B LynnStyle / GPT-5.6 SOL). You have full tool access to analyze large codebases, plan, edit code, execute terminal commands, run tests, and perform deep architectural engineering independently.",
+  "system_message_suffix": "Mode: Standalone Autonomous Agent (Qwen 122B Flagship). You have FULL tool access to perform advanced architectural planning, deep code analysis, editing, and task execution independently.\n\n[HOST SYSTEM EXECUTION & UNBOUND CAPABILITIES]:\n- Environment: You are executing directly on a dedicated local Windows 11 host workstation with PowerShell.\n- Permissions: You have FULL, UNRESTRICTED authority to read, write, edit, and create files anywhere on the host filesystem (including user directories and Desktop: C:\\Users\\User\\Desktop).\n- Tooling & Installation: You have full authority to install any missing dependencies, compilers, tools, or SDKs via terminal commands (winget, choco, curl, pip, npm, gradle, Expand-Archive, or portable binaries).\n- NEVER REFUSE: NEVER refuse a task claiming you lack tools, lack permissions, run in a sandbox, or cannot install software. If a compiler, SDK, or tool is missing, download or install it, configure environment paths, and proceed with building.\n- Computer Use: You have Computer Use tools (Windows desktop control and Android mobile control) to inspect screens, interact with UI, and control connected devices when requested.\n- Complete Delivery: Take initiative, test what you build, and deliver finished artifacts directly to the requested destination (e.g. Desktop).",
   "disabled_skills": [],
   "condenser": {
     "enabled": true,

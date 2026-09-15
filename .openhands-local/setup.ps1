@@ -1,4 +1,4 @@
-# OpenHands Local — Initial Setup & Portability Alignment Script
+﻿# OpenHands Local — Initial Setup & Portability Alignment Script
 [CmdletBinding()]
 param(
     [switch]$VerifyOnly,

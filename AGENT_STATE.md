@@ -138,25 +138,37 @@ EVIDENCE:
   - MoE Expert Cache Benchmark Documentation: K:\Project\Docs\QWEN122_EXPERT_CACHE_BENCHMARK.md.
   - Physical Tablet Screenshots:
     * steps/7788/media_0.png (Clean conversation view on tablet PWA, single row composer, docked voice pill)
-    * steps/7808/media_0.png (Model popover on tablet: 4 models + 3 chains)
-    * steps/7816/media_0.png (Reasoning popover on tablet: 4 discrete levels)
-    * steps/7822/media_0.png (Reasoning switched to Глубокое on tablet)
-    * steps/7830/media_0.png (Model switched to Full Team on tablet)
-    * steps/7838/media_0.png (Returned to Qwen 122B Flagship on tablet)
-    * steps/7846/media_0.png (Switched to Ornith 35B on tablet)
-    * steps/7884/media_0.png (Landing page on tablet with virtual keyboard open - single row verified)
-    * steps/7892/media_0.png (Full Landing page on tablet - single row verified)
-  - Desktop Screenshots:
-    * steps/7902/media_0.png (Desktop 4K live Chrome landing view with AIDA64 hardware panel)
-    * scratch/desktop_landing.png (Full HD 1920x1080 clean landing view)
-    * scratch/desktop_conversation.png (Full HD 1920x1080 conversation view, single row composer)
-    * scratch/desktop_model_popover.png (Full HD 1920x1080 model selector open)
-    * scratch/desktop_reasoning_popover.png (Full HD 1920x1080 reasoning selector open)
-  - Automated DOM Verification: scratch/inspect_dom.py & scratch/test_popover.py (tasks task-7964, exit 0).
-  - Full Automated Test Suite: python tests/runner.py --all (25/25 passing in 2.03s).
-  - Live Station Services Status: All 5 ports active (8000, 8080, 8443, 18000, 18002).
-  - Working Profile API Verification: http://127.0.0.1:8000/api/working-profiles (returns strictly 7 canonical profiles).
-  - Telemetry API Verification: http://127.0.0.1:18002/api/station-telemetry & https://127.0.0.1:8443/api/station-telemetry (HTTP 200).
+    * s  - Unbound Host Capabilities & Permissions Hardening: 100% complete.
+    * Injected `[HOST SYSTEM EXECUTION & UNBOUND CAPABILITIES]` into all 12 agent profiles (`Config/defaults/agent-profiles/*.json` and `~/.openhands/agent-profiles/*.json`).
+    * Bound `windows-mcp` (11 tools) and `android-mcp` (26 tools) across all profiles.
+    * Unlocked full tool pool (`tools: null`) for standalone profiles and added `USER DIRECTIVE OVERRIDE` for team profiles.
+  - Multi-Phase Real-Time Telemetry Engine: 100% complete.
+    * Lifecycle: `idle` -> `loading` -> `prefill` (% + tok/s + eta) -> `thinking` -> `tool` (active tool name) -> `generating` (tok/s) -> `idle`.
+    * Backend (`local-voice/service.py`): Real-time event inspection of `~/.openhands/agent-canvas/dev_conversations/*/events/` detecting active `ActionEvent` tools within 30s. Extended regex for prefill percentages, thinking tags, and inference timings.
+    * Frontend (`working-profile-ui.js` & `.css`): Complete state handling and styling for `.loading` (cyan) and `.thinking` (purple).
+  - Quad-Dump Static Prefix Cache Generation & Port Auto-Discovery: 100% complete.
+    * Fixed `generate-prefix-dumps.ps1` with dynamic port discovery for active `llama-server.exe` and JSON POST body (`/slots/0?action=save`).
+    * Generated and verified all 4 NVMe slot dumps in `K:\Project\Cache\slots`:
+      1. `architect_prefix.bin`: 149.52 MB (Qwen 122B Lead Architect)
+      2. `executor_prefix.bin`: 63.33 MB (Ornith 35B Code Executor)
+      3. `auditor_prefix.bin`: 75.80 MB (Qwen3-Next 80B Security Auditor)
+      4. `solo_full_prefix.bin`: 149.45 MB (Qwen 122B Solo Autonomous)
+      Total NVMe prefix cache: ~438.1 MB.
+  - Mobile LAN PWA Portrait Orientation Hardening (Samsung Galaxy Tab S9 Ultra): 100% complete.
+    * Send Button (`button[data-testid="chat-input-send"]`): Anchored with `flex-shrink: 0 !important; z-index: 50 !important; margin-left: auto !important; position: relative !important;`. Never pushed out or wrapped.
+    * Horizontal bar (`#oh-nexus-bar`): `overflow-x: auto` with hidden scrollbars, preventing multiline row wrapping.
+    * Compact Digit Badges: `1`, `2`, `3`, `СВЯЗКА`, `ФЛАГМАН`.
+    * Empirically verified via `android_take_screenshot` in portrait mode (1848x2960): single row composer confirmed.
+EVIDENCE:
+  - NVMe Slot Dumps: `K:\Project\Cache\slots\` (all 4 .bin files confirmed on disk).
+  - Physical Tablet Portrait Screenshots (Samsung Galaxy Tab S9 Ultra, Android 16):
+    * Clean composer in portrait orientation (single line, send button visible at right)
+    * Model Popover open (4 models + 3 chains, compact badges)
+    * Reasoning Popover open (Среднее 2048, Глубокое 4096)
+  - Desktop Verification: `scratch/verify_desktop.py` (DOM aligned at y=446.39px, height 32px, single line).
+  - Automated Test Suite: `python tests/runner.py --all` (25/25 tests passing in 1.96s).
+  - Linter: `uvx ruff check . --ignore E501,B008` (All checks passed, 0 errors).
+  - JS Syntax: `node --check openhands-working-profile/working-profile-ui.js` (clean).
 OPEN_ISSUES:
-  - None. All visual defects, collisions, touch targets, and caching issues resolved and multi-platform QA verified.
-NEXT_ACTION:    Push verified changes to GitHub origin/master and report with multi-platform QA evidence.
+  - None. All requirements satisfied, multi-platform verified, zero errors.
+NEXT_ACTION:    Ready for user confirmation and release.

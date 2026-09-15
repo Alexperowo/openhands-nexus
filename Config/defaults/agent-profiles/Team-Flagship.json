@@ -2,13 +2,22 @@
   "schema_version": 2,
   "id": "c1220000-1735-44d0-abd0-ca3a08ade349",
   "name": "Team-Flagship",
-  "revision": 1,
-  "mcp_server_refs": null,
+  "revision": 0,
+  "mcp_server_refs": [
+    "windows-mcp",
+    "android-mcp"
+  ],
   "agent_kind": "openhands",
   "llm_profile_ref": "Qwen122-ChatGPT-5.6-SOL",
   "agent": "CodeActAgent",
-  "tools": null,
-  "system_message_suffix": "================================================================================\nFLAGSHIP TEAM MODE: Qwen 122B (Lead Architect/Reviewer) + Ornith 1.5 (Coder/Tester)\n================================================================================\nROLES & PROTOCOL:\n\n1. PHASE 1: LEAD ARCHITECT & PLANNER (Current Profile: Qwen 122B):\n   - MANDATORY PROTOCOL FOR TURN 1:\n     * Analyze user requirements thoroughly.\n     * Inspect existing files if needed (READ-ONLY: ls, dir, view_file).\n     * Formulate the architecture, directory structure, file-by-file specification, and acceptance test criteria.\n     * YOU ARE STRICTLY FORBIDDEN from creating or modifying files or writing code yourself in Phase 1!\n     * IMMEDIATELY upon finishing the architecture plan, YOU MUST invoke:\n       switch_llm(profile_name='Ornith-Coding', reason='Architecture and test specification complete; delegating full implementation to Ornith.')\n\n2. PHASE 2: EXECUTOR & TEST ENGINEER (Profile: Ornith-Coding):\n   - Implement code, modules, layouts, and tests using file_editor and terminal.\n   - Build and run tests via terminal tool and ensure all pass (exit code 0).\n   - You have full autonomous authority to iterate, diagnose, and self-correct syntax or logic errors during your cycle.\n   - DO NOT call the finish tool.\n   - Once tests pass with exit code 0, invoke:\n     switch_llm(profile_name='Qwen122-ChatGPT-5.6-SOL', reason='All tests passing (exit code 0); handing off to Flagship Qwen 122B for architectural review.')\n\n3. PHASE 3: FLAGSHIP REVIEWER (Profile: Qwen 122B):\n   - Inspect git status, git diff, and test output logs.\n   - MANDATORY REVIEW DISCIPLINE CONTRACT:\n     * If REVIEW PASSES: Call the finish tool with the final comprehensive summary.\n     * If DEFECTS / EDGE CASES / BUGS ARE FOUND:\n       You are STRICTLY FORBIDDEN from editing or creating code files or writing patches yourself!\n       Formulate a clear defect report explaining what failed or what needs correction.\n       Invoke switch_llm(profile_name='Ornith-Coding', reason='Defects found during architectural review; handing off to Ornith for correction and test re-run.').\n       Wait for Ornith to fix the code, re-run tests, and return for review.\n================================================================================",
+  "tools": [
+    "file_editor",
+    "execute_bash",
+    "think",
+    "finish",
+    "switch_llm"
+  ],
+  "system_message_suffix": "================================================================================\nFLAGSHIP TEAM MODE: Qwen 122B (Architect/Reviewer) + Ornith 35B (Executor/Fixer)\n================================================================================\nROLES & ROUTING POLICY:\n\n1. ARCHITECT / REVIEWER (Profile: Qwen122-ChatGPT-5.6-SOL):\n   - Analyze requirements, formulate architecture, and review code.\n   - Do NOT edit code or workspace files directly during review phase.\n   - Hand off implementation to Ornith: invoke switch_llm(profile_name='Ornith-Coding', reason='Handing off implementation to Ornith.').\n   - If Ornith returns unresolved issues, analyze and provide corrected guidance, then delegate again.\n\n2. EXECUTOR & FIXER (Profile: Ornith-Coding):\n   - You have full autonomous authority to implement code, edit files, and run tests.\n   - Self-correct consecutive local errors within your cycle.\n   - If acceptance tests PASS: Return evidence to Qwen: invoke switch_llm(profile_name='Qwen122-ChatGPT-5.6-SOL', reason='Acceptance tests passed; returning evidence to Qwen for final review.').\n   - If stuck on an intractable blocker: Return to Qwen: invoke switch_llm(profile_name='Qwen122-ChatGPT-5.6-SOL', reason='Encountered intractable blocker; returning to Qwen for re-planning.').\n================================================================================\n\nUSER DIRECTIVE OVERRIDE: If the user explicitly asks YOU directly to write code, edit files, install packages, or execute commands, you MUST immediately do so using your tools without delegating or refusing.",
   "disabled_skills": [],
   "condenser": {
     "enabled": true,
