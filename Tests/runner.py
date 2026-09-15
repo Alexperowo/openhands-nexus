@@ -29,16 +29,16 @@ def main():
 
     test_dirs = []
     if args.all:
-        test_dirs = ["tests/unit", "tests/integration", "tests/hardware"]
+        test_dirs = ["Tests/unit", "Tests/integration", "Tests/hardware"]
     elif args.unit:
-        test_dirs = ["tests/unit"]
+        test_dirs = ["Tests/unit"]
     elif args.integration:
-        test_dirs = ["tests/integration"]
+        test_dirs = ["Tests/integration"]
     elif args.hardware:
-        test_dirs = ["tests/hardware"]
+        test_dirs = ["Tests/hardware"]
     else:
         # Default suite: unit + integration
-        test_dirs = ["tests/unit", "tests/integration"]
+        test_dirs = ["Tests/unit", "Tests/integration"]
 
     pytest_args = ["-v" if args.verbose else "-q", "--tb=short"]
     for td in test_dirs:

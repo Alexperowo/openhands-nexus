@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "e3de816d-0a24-483f-811d-b8d9a2b8ab30",
-  "name": "default",
+  "name": "Базовый инженер OpenHands",
   "revision": 6,
   "mcp_server_refs": [
     "windows-mcp",

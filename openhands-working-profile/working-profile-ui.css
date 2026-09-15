@@ -34,34 +34,28 @@
 #oh-nexus-bar {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 5px !important;
     flex-wrap: nowrap !important;
     white-space: nowrap !important;
     min-height: 32px !important;
     height: 32px !important;
-    margin: 0 0 0 4px !important;
+    margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
     z-index: 40 !important;
-    max-width: 100% !important;
-    overflow-x: auto !important;
-    scrollbar-width: none !important;
     flex-shrink: 0 !important;
-}
-
-#oh-nexus-bar::-webkit-scrollbar {
-    display: none !important;
+    overflow: visible !important;
 }
 
 /* Universal Button Style */
 .oh-nexus-btn {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 5px !important;
+    gap: 4px !important;
     height: 32px !important;
     min-height: 32px !important;
-    padding: 0 10px !important;
+    padding: 0 8px !important;
     border-radius: 8px !important;
     background: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid var(--oh-border-default) !important;
@@ -185,9 +179,29 @@
     padding: 6px;
     box-sizing: border-box;
     max-height: calc(100vh - 40px);
-    overflow-y: auto;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
     animation: oh-nexus-popover-in 0.15s cubic-bezier(0, 0, 0.2, 1);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.oh-nexus-popover::-webkit-scrollbar {
+    width: 6px;
+}
+.oh-nexus-popover::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+}
+.oh-nexus-popover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+.oh-nexus-popover::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 
 @keyframes oh-nexus-popover-in {
@@ -196,6 +210,10 @@
 }
 
 .oh-nexus-popover-header {
+    position: sticky;
+    top: -6px;
+    z-index: 2;
+    background: #181820;
     padding: 8px 10px 6px 10px;
     font-size: 11px;
     font-weight: 700;
@@ -203,6 +221,7 @@
     letter-spacing: 0.05em;
     color: var(--oh-text-muted);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: -6px;
     margin-bottom: 4px;
     display: flex;
     justify-content: space-between;
@@ -296,11 +315,11 @@
 .oh-nexus-telemetry-pill {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 5px !important;
     height: 32px !important;
     min-height: 32px !important;
-    min-width: max-content !important; /* ПРЕДОТВРАЩАЕТ СЖАТИЕ В НОЛЬ */
-    padding: 0 10px !important;
+    min-width: auto !important;
+    padding: 0 8px !important;
     border-radius: 8px !important;
     background: rgba(255, 255, 255, 0.06) !important;
     border: 1px solid var(--oh-border-default) !important;
@@ -323,6 +342,12 @@
     bottom: -8px !important;
     left: -2px !important;
     right: -2px !important;
+}
+
+.oh-nexus-telemetry-pill.idle {
+    background: rgba(34, 197, 94, 0.12) !important;
+    border-color: rgba(34, 197, 94, 0.45) !important;
+    color: #86efac !important;
 }
 
 .oh-nexus-telemetry-pill.loading {
@@ -356,20 +381,44 @@
 }
 
 .oh-telemetry-dot {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
 .oh-telemetry-dot.idle {
-    background: #4ade80;
-    box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+    background: #22c55e;
+    box-shadow: 0 0 5px rgba(34, 197, 94, 0.6);
 }
 
 .oh-telemetry-dot.active {
     background: #22c55e;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+    box-shadow: 0 0 7px rgba(34, 197, 94, 0.8);
+    animation: oh-telemetry-pulse 1.2s infinite ease-in-out;
+}
+
+.oh-telemetry-dot.loading {
+    background: #0ea5e9;
+    box-shadow: 0 0 7px rgba(14, 165, 233, 0.8);
+    animation: oh-telemetry-pulse 1s infinite ease-in-out;
+}
+
+.oh-telemetry-dot.prefill {
+    background: #818cf8;
+    box-shadow: 0 0 7px rgba(129, 140, 248, 0.8);
+    animation: oh-telemetry-pulse 1.2s infinite ease-in-out;
+}
+
+.oh-telemetry-dot.thinking {
+    background: #c084fc;
+    box-shadow: 0 0 7px rgba(192, 132, 252, 0.8);
+    animation: oh-telemetry-pulse 1.4s infinite ease-in-out;
+}
+
+.oh-telemetry-dot.tool {
+    background: #fbbf24;
+    box-shadow: 0 0 7px rgba(251, 191, 36, 0.8);
     animation: oh-telemetry-pulse 1.2s infinite ease-in-out;
 }
 
@@ -441,6 +490,22 @@
 }
 
 /* 6. КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ LAYOUT ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */
+/* Скрываем текстовые метки «Выполняется», «Остановлено», «Приостановлено», чтобы они не сдвигали кнопки */
+div.flex.items-center.gap-1:has(button[data-testid="stop-button"], button[data-testid="play-button"]) > span,
+.flex.items-center:has(> div > button[data-testid="stop-button"], > div > button[data-testid="play-button"]) > span,
+span:has(~ div > button[data-testid="stop-button"]),
+span:has(~ div > button[data-testid="play-button"]) {
+    display: none !important;
+}
+
+div.flex.items-center.gap-1:has(button[data-testid="stop-button"], button[data-testid="play-button"]) {
+    gap: 0 !important;
+    min-width: 28px !important;
+    width: 28px !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
 /* Гарантируем, что кнопка отправки никогда не исчезает и не выталкивается за экран */
 button[data-testid="chat-input-send"], 
 button[type="submit"].chat-input-send,
@@ -452,22 +517,149 @@ button[aria-label*="Отправить" i] {
     position: relative !important;
 }
 
-/* Делаем саму панель телеметрии и кнопок прокручиваемой, если она не помещается, 
-   но НЕ позволяем ей выталкивать соседние элементы */
-#oh-nexus-bar {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    overflow-x: auto !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-    margin-right: 4px !important;
+/* Гарантируем, что кнопка добавления (+) и панель станции сохраняют форму и не выталкиваются */
+button[data-testid="chat-plus-button"] {
+    flex-shrink: 0 !important;
+    min-width: 24px !important;
 }
 
-#oh-nexus-bar::-webkit-scrollbar {
-    display: none !important;
+[data-testid="chat-input-actions"] > div:first-child,
+div.flex.items-center.justify-between > div:first-child {
+    flex-shrink: 0 !important;
+}
+
+#oh-nexus-bar {
+    flex-shrink: 0 !important;
+    min-width: 0 !important;
+    overflow: visible !important;
 }
 
 /* Отключаем случайные клики по внутренним элементам телеметрии, чтобы они не перехватывали события */
 .oh-nexus-telemetry-pill > * {
     pointer-events: none !important;
+}
+
+/* 7. Context Window Meter Popover & Compact Button Enhancements */
+[data-testid="context-window-meter-popover"] {
+    min-width: 290px !important;
+    background: #18181f !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+button[data-testid="context-window-compact-button"] {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    min-height: 28px !important;
+    padding: 3px 10px !important;
+    border-radius: 6px !important;
+    background: rgba(99, 102, 241, 0.15) !important;
+    border: 1px solid rgba(99, 102, 241, 0.4) !important;
+    color: #e0e7ff !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    position: relative !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Touch hit target expansion (WCAG 2.5.5 AAA Level compliance) */
+button[data-testid="context-window-compact-button"]::after {
+    content: "" !important;
+    position: absolute !important;
+    top: -8px !important;
+    bottom: -8px !important;
+    left: -6px !important;
+    right: -6px !important;
+}
+
+button[data-testid="context-window-compact-button"]:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.3) !important;
+    border-color: #818cf8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.35) !important;
+}
+
+button[data-testid="context-window-compact-button"]:active:not(:disabled) {
+    background: rgba(99, 102, 241, 0.5) !important;
+    transform: scale(0.97) !important;
+}
+
+button[data-testid="context-window-compact-button"]:disabled {
+    opacity: 0.45 !important;
+    cursor: not-allowed !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #a1a1aa !important;
+    box-shadow: none !important;
+}
+
+button[data-testid="context-window-compact-button"] svg {
+    width: 13px !important;
+    height: 13px !important;
+    stroke: #a5b4fc !important;
+    flex-shrink: 0 !important;
+}
+
+button[data-testid="context-window-compact-button"]:hover:not(:disabled) svg {
+    stroke: #ffffff !important;
+}
+
+/* Agent Profile Submenu in '+' Menu - Width & Readability */
+[data-testid="agent-profile-submenu"] {
+    min-width: 380px !important;
+    max-width: 480px !important;
+    background: #18181f !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+    border-radius: 12px !important;
+    padding: 6px !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    z-index: 100 !important;
+}
+
+[data-testid*="chat-input-agent-profile-option-"] {
+    min-height: 44px !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+    transition: background 0.15s ease, border-color 0.15s ease !important;
+    cursor: pointer !important;
+    gap: 8px !important;
+}
+
+[data-testid*="chat-input-agent-profile-option-"]:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-testid*="chat-input-agent-profile-option-"] span.truncate {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    line-height: 1.35 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #f4f4f5 !important;
+}
+
+@media (max-width: 1024px) {
+    div[class*="group/agent-profile"] > div:last-child {
+        left: auto !important;
+        right: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 4px !important;
+        margin-left: 0 !important;
+        margin-right: 1px !important;
+    }
+    [data-testid="agent-profile-submenu"] {
+        min-width: 290px !important;
+        max-width: calc(100vw - 32px) !important;
+    }
+    [data-testid*="chat-input-agent-profile-option-"] {
+        min-height: 48px !important;
+        padding: 10px 14px !important;
+    }
 }

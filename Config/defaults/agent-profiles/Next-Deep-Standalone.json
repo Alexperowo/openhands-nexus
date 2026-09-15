@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "e8f7a9b2-3c4d-4e5f-8a9b-0c1d2e3f4a5b",
-  "name": "Next-Deep-Standalone",
+  "name": "Соло: Глубокий Next 80B (Все роли)",
   "revision": 0,
   "mcp_server_refs": [
     "windows-mcp",

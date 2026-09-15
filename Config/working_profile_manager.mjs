@@ -124,7 +124,7 @@ export async function syncToAgentServer(agentProfileId, llmProfileName) {
           "Content-Length": Buffer.byteLength(payload),
           "x-session-api-key": apiKey,
         },
-        timeout: 5000,
+        timeout: 12000,
       },
       (res) => {
         let body = "";

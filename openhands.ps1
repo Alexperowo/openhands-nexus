@@ -76,7 +76,10 @@ function Get-StationStatus {
     if ($allActive) {
         Write-Host '  Все 5 сервисов активны и готовы к работе.' -ForegroundColor Green
         Write-Host '  Desktop: http://127.0.0.1:8000' -ForegroundColor Cyan
-        $lanIp = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.PrefixOrigin -ne 'WellKnown' } | Select-Object -First 1).IPAddress
+        $lanIp = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+                  Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' -and $_.InterfaceAlias -notmatch 'vEthernet|WSL|Docker' } |
+                  Sort-Object InterfaceMetric |
+                  Select-Object -First 1).IPAddress
         if ($lanIp) {
             Write-Host "  Mobile:  https://${lanIp}:8443" -ForegroundColor Cyan
         }
@@ -122,7 +125,7 @@ switch ($Command) {
         Invoke-StationScript "$Root\.openhands-local\check-dependencies.ps1" $RemainingArgs
     }
     'test' {
-        python "$Root\tests\runner.py" @RemainingArgs
+        python "$Root\Tests\runner.py" @RemainingArgs
         if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     }
     'diagnose' {

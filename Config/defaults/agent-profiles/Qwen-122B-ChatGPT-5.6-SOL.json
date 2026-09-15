@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
-  "id": "c1220000-1735-44d0-abd0-ca3a08ade349",
-  "name": "Qwen-122B-ChatGPT-5.6-SOL",
+  "id": "a1220000-122b-4a10-8000-000000000122",
+  "name": "Соло: Флагман Qwen 122B (Все роли)",
   "revision": 0,
   "mcp_server_refs": [
     "windows-mcp",

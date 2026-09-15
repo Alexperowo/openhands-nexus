@@ -203,6 +203,34 @@
         }, 60);
     }
 
+    // Agent Profile to Working Profile mapping for bidirectional synchronization
+    const PROFILE_TO_WP = {
+        "Team-Flagship": { wpId: "team-flagship", rmId: "medium" },
+        "Team-Full": { wpId: "team-full", rmId: "medium" },
+        "Team-Qwen-Ornith": { wpId: "team-qwen-ornith", rmId: "medium" },
+        "Team-Qwen-Next": { wpId: "team-qwen-ornith", rmId: "medium" },
+        "Team-Next-Ornith": { wpId: "team-flagship", rmId: "medium" },
+        "Qwen-122B-ChatGPT-5.6-SOL": { wpId: "qwen122-solo", rmId: "high" },
+        "Qwen122-Standalone": { wpId: "qwen122-solo", rmId: "direct" },
+        "Ornith-Standalone": { wpId: "ornith-solo", rmId: "medium" },
+        "Qwen-Standalone": { wpId: "qwen38-solo", rmId: "medium" },
+        "Next-Normal-Standalone": { wpId: "next-solo", rmId: "medium" },
+        "Next-Deep-Standalone": { wpId: "next-solo", rmId: "high" }
+    };
+
+    // Auto-sync Working Profile when user selects native agent profile in '+' menu
+    document.addEventListener("click", (e) => {
+        const optionBtn = e.target && e.target.closest && e.target.closest('[data-testid*="chat-input-agent-profile-option-"]');
+        if (!optionBtn) return;
+        const testId = optionBtn.getAttribute("data-testid") || "";
+        const profileName = testId.replace("chat-input-agent-profile-option-", "").trim();
+        if (PROFILE_TO_WP[profileName]) {
+            const target = PROFILE_TO_WP[profileName];
+            console.log(`[NexusRemoteControl] Native agent profile selected: "${profileName}" -> Auto-syncing working profile: "${target.wpId}" (mode: ${target.rmId})`);
+            switchProfile(target.wpId, target.rmId);
+        }
+    }, true);
+
     // Telemetry logic
     function getTelemetryUrl() {
         const isSec = (window.location.protocol === "https:" || window.location.port === "8443");
@@ -230,6 +258,7 @@
     }
 
     function updateTelemetryPill(data) {
+        cleanNativeExecutionButton();
         const pill = document.getElementById("oh-nexus-telemetry-pill");
         if (!pill) return;
 
@@ -252,8 +281,8 @@
             pill.dataset.state = "loading";
             pill.className = "oh-nexus-telemetry-pill loading";
             pill.innerHTML = `
-                <span class="oh-telemetry-icon" style="pointer-events: none;">🔄</span>
-                <span class="oh-telemetry-text" style="pointer-events: none;">Загрузка...</span>
+                <span class="oh-telemetry-dot loading"></span>
+                <span class="oh-telemetry-text">Загрузка...</span>
             `;
             pill.setAttribute("title", "Загрузка весов модели в VRAM");
             pill.setAttribute("aria-label", "Загрузка модели в память");
@@ -262,19 +291,21 @@
             const currentTokens = formatTokenCount(data.tokens);
             const totalTokens = formatTokenCount(data.total_tokens);
             const speed = data.speed_tok_s ? data.speed_tok_s.toFixed(0) : "0";
-            const eta = data.eta_s ? ` · ост. ~${Math.round(data.eta_s)}с` : "";
+            const metaParts = [`${speed} т/с`];
+            if (data.eta_str) {
+                metaParts.push(`~${data.eta_str}`);
+            }
+            const metaDisplay = metaParts.join(" · ");
 
             pill.dataset.state = "prefill";
             pill.className = "oh-nexus-telemetry-pill prefill";
             pill.innerHTML = `
-                <span class="oh-telemetry-icon" style="pointer-events: none;">⏳</span>
-                <span class="oh-telemetry-text" style="pointer-events: none;">Контекст: ${pct}%</span>
-                <div class="oh-telemetry-bar-wrap" style="pointer-events: none;">
-                    <div class="oh-telemetry-bar-fill" style="width: ${pct}%"></div>
-                </div>
-                <span class="oh-telemetry-meta" style="pointer-events: none;">${currentTokens}/${totalTokens} · ${speed} т/с${eta}</span>
+                <span class="oh-telemetry-dot prefill"></span>
+                <span class="oh-telemetry-text">${pct}%</span>
+                <span class="oh-telemetry-meta">${metaDisplay}</span>
             `;
-            const ariaText = `Загрузка контекста: ${pct}%, ${currentTokens} из ${totalTokens} токенов, скорость ${speed} токенов в секунду`;
+            const etaAria = data.eta_str ? `, осталось ~${data.eta_str}` : '';
+            const ariaText = `Загрузка контекста: ${pct}%, ${currentTokens} из ${totalTokens} токенов, скорость ${speed} т/с${etaAria}`;
             pill.setAttribute("title", ariaText);
             pill.setAttribute("aria-label", ariaText);
 
@@ -287,8 +318,8 @@
             pill.dataset.state = "thinking";
             pill.className = "oh-nexus-telemetry-pill thinking";
             pill.innerHTML = `
-                <span class="oh-telemetry-icon" style="pointer-events: none;">🧠</span>
-                <span class="oh-telemetry-text" style="pointer-events: none;">Размышление...</span>
+                <span class="oh-telemetry-dot thinking"></span>
+                <span class="oh-telemetry-text">Мыслит...</span>
             `;
             pill.setAttribute("title", "Модель формирует цепочку рассуждений (reasoning)");
             pill.setAttribute("aria-label", "Размышление модели");
@@ -298,7 +329,7 @@
             pill.className = "oh-nexus-telemetry-pill generating";
             pill.innerHTML = `
                 <span class="oh-telemetry-dot active"></span>
-                <span class="oh-telemetry-text">Генерация: ${speed} т/с</span>
+                <span class="oh-telemetry-text">${speed} т/с</span>
             `;
             pill.setAttribute("title", `Модель генерирует ответ со скоростью ${speed} токенов/сек`);
             pill.setAttribute("aria-label", `Генерация ответа: ${speed} токенов в секунду`);
@@ -307,18 +338,29 @@
             pill.dataset.state = "tool";
             pill.className = "oh-nexus-telemetry-pill tool";
             pill.innerHTML = `
-                <span class="oh-telemetry-icon">⚙️</span>
-                <span class="oh-telemetry-text">Инструмент: ${toolName}</span>
+                <span class="oh-telemetry-dot tool"></span>
+                <span class="oh-telemetry-text">${toolName}</span>
             `;
             pill.setAttribute("title", `Выполнение инструмента: ${toolName}`);
             pill.setAttribute("aria-label", `Выполнение инструмента: ${toolName}`);
         }
     }
 
+    let visibilityHandlerAttached = false;
+
     function startTelemetry() {
         stopTelemetry();
         pollTelemetry();
         telemetryInterval = setInterval(pollTelemetry, 1500);
+
+        if (!visibilityHandlerAttached) {
+            visibilityHandlerAttached = true;
+            document.addEventListener("visibilitychange", () => {
+                if (!document.hidden) {
+                    pollTelemetry();
+                }
+            });
+        }
     }
 
     function stopTelemetry() {
@@ -374,7 +416,6 @@
                     <div class="oh-nexus-popover-item${activeClass}" data-wp-id="${escapeHtml(p.id)}" role="option" aria-selected="${isActive ? 'true' : 'false'}" tabindex="0">
                         <div class="oh-nexus-popover-row">
                             <span class="oh-nexus-popover-name">
-                                <span>⚡</span>
                                 <span>${escapeHtml(p.name)}</span>
                             </span>
                             <div class="flex items-center gap-1.5">
@@ -499,18 +540,37 @@
 
     function positionPopover(popover, anchorBtn, widthPx) {
         const rect = anchorBtn.getBoundingClientRect();
-        const popoverHeight = popover.offsetHeight || 260;
-        let top = rect.top - popoverHeight - 8;
-        if (top < 10) {
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const vw = window.innerWidth || document.documentElement.clientWidth;
+
+        const spaceAbove = Math.max(0, rect.top - 16);
+        const spaceBelow = Math.max(0, vh - rect.bottom - 16);
+
+        // Desired content height (scroll height of popover content)
+        const scrollH = popover.scrollHeight || 480;
+
+        let top = 0;
+        let maxHeight = 0;
+
+        // If placed below, check if spaceBelow has enough room or more room than above
+        if (spaceBelow >= 360 || spaceBelow >= spaceAbove) {
             top = rect.bottom + 8;
+            maxHeight = spaceBelow - 8;
+        } else {
+            maxHeight = spaceAbove - 8;
+            const actualH = Math.min(scrollH, maxHeight);
+            top = rect.top - actualH - 8;
         }
+
         let left = rect.left;
-        if (left + widthPx > window.innerWidth - 10) {
-            left = window.innerWidth - widthPx - 10;
+        if (left + widthPx > vw - 10) {
+            left = vw - widthPx - 10;
         }
-        popover.style.top = `${Math.max(10, top)}px`;
-        popover.style.left = `${Math.max(10, left)}px`;
+
+        popover.style.top = `${Math.max(10, Math.round(top))}px`;
+        popover.style.left = `${Math.max(10, Math.round(left))}px`;
         popover.style.width = `${widthPx}px`;
+        popover.style.maxHeight = `${Math.max(160, Math.round(maxHeight))}px`;
     }
 
     function handleOutsideClick(e) {
@@ -572,15 +632,13 @@
             bar.className = "oh-nexus-bar";
             bar.innerHTML = `
                 <button id="oh-nexus-model-btn" class="oh-nexus-btn" type="button" aria-haspopup="listbox" aria-expanded="false" title="Нажмите для выбора модели станции">
-                    <span class="oh-nexus-icon">⚡</span>
                     <span class="oh-nexus-model-name"></span>
-                    <span class="oh-nexus-badge"></span>
+                    <span class="oh-nexus-badge" style="display: none;"></span>
                     <svg class="oh-nexus-chevron" viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
                     </svg>
                 </button>
                 <button id="oh-nexus-reasoning-btn" class="oh-nexus-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
-                    <span class="oh-nexus-icon">🧠</span>
                     <span class="oh-nexus-reasoning-label"></span>
                     <svg class="oh-nexus-chevron" viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
@@ -613,20 +671,12 @@
         bar.style.alignItems = "center";
         bar.style.flexWrap = "nowrap";
         bar.style.whiteSpace = "nowrap";
-        bar.style.gap = "6px";
+        bar.style.gap = "5px";
         bar.style.flexShrink = "0";
-        bar.style.overflowX = "auto";
+        bar.style.margin = "0";
+        bar.style.overflow = "visible";
 
-        // 3. ЗАЩИТА КНОПКИ ОТПРАВКИ: Находим кнопку отправки и жестко фиксируем её видимость
-        const sendBtn = composerCard.querySelector('[data-testid="chat-input-send"], button[type="submit"], .chat-input-send, button[aria-label*="Send" i], button[aria-label*="Отправить" i]');
-        if (sendBtn) {
-            sendBtn.style.flexShrink = "0";
-            sendBtn.style.zIndex = "50";
-            sendBtn.style.marginLeft = "auto"; // Прижимаем вправо
-            sendBtn.style.position = "relative";
-        }
-
-        // 4. Mount into DOM: Place inside actionsRow
+        // 3. Mount into DOM: Place next to plus button inside left container
         if (actionsRow) {
             const plusBtn = composerCard.querySelector('[data-testid="chat-plus-button"]');
             let placed = false;
@@ -638,20 +688,28 @@
                 }
 
                 if (leftCol && leftCol.parentElement === actionsRow) {
-                    const innerFlex = plusBtn.closest('.flex.min-w-0.items-center, .flex.items-center');
-                    if (innerFlex && leftCol.contains(innerFlex)) {
+                    leftCol.style.flexShrink = "0";
+                    leftCol.style.minWidth = "0";
+                    leftCol.style.display = "flex";
+                    leftCol.style.alignItems = "center";
+                    leftCol.style.gap = "6px";
+
+                    const plusParent = plusBtn.parentElement;
+                    const plusBox = plusParent ? plusParent.parentElement : null;
+                    const innerFlex = plusBox ? plusBox.parentElement : null;
+
+                    if (plusParent) plusParent.style.flexShrink = "0";
+                    plusBtn.style.flexShrink = "0";
+                    plusBtn.style.margin = "0";
+
+                    if (innerFlex && innerFlex.contains(plusBox)) {
                         innerFlex.style.display = "flex";
                         innerFlex.style.alignItems = "center";
                         innerFlex.style.flexWrap = "nowrap";
-                        innerFlex.style.overflowX = "auto";
-                        innerFlex.style.scrollbarWidth = "none";
-                        innerFlex.style.flexShrink = "1";
+                        innerFlex.style.flexShrink = "0";
                         innerFlex.style.minWidth = "0";
-
-                        let plusBox = plusBtn;
-                        while (plusBox && plusBox.parentElement && plusBox.parentElement !== innerFlex) {
-                            plusBox = plusBox.parentElement;
-                        }
+                        innerFlex.style.overflow = "visible";
+                        innerFlex.style.gap = "5px";
 
                         if (plusBox && plusBox.parentElement === innerFlex) {
                             if (bar.parentElement !== innerFlex || bar.previousElementSibling !== plusBox) {
@@ -662,8 +720,8 @@
                     }
 
                     if (!placed) {
-                        if (bar.parentElement !== actionsRow || bar.previousElementSibling !== leftCol) {
-                            leftCol.after(bar);
+                        if (bar.parentElement !== leftCol) {
+                            leftCol.appendChild(bar);
                         }
                         placed = true;
                     }
@@ -695,26 +753,29 @@
             }
             const badgeEl = modelBtn.querySelector(".oh-nexus-badge");
             if (badgeEl) {
-                if (badgeEl.textContent !== badgeInfo.text) badgeEl.textContent = badgeInfo.text;
-                badgeEl.className = `oh-nexus-badge ${badgeInfo.class}`;
+                const isChain = currentWp.kind && currentWp.kind.includes("chain");
+                if (isChain) {
+                    if (badgeEl.textContent !== badgeInfo.text) badgeEl.textContent = badgeInfo.text;
+                    badgeEl.className = `oh-nexus-badge ${badgeInfo.class}`;
+                    badgeEl.style.display = "";
+                } else {
+                    badgeEl.style.display = "none";
+                }
             }
             modelBtn.disabled = running;
             modelBtn.setAttribute("aria-disabled", running ? "true" : "false");
-            modelBtn.setAttribute("title", `Модель станции: ${currentWp.name} (${badgeInfo.text})`);
+            modelBtn.setAttribute("title", `Модель станции: ${currentWp.name}${currentWp.kind.includes("chain") ? ' (' + badgeInfo.text + ')' : ''}`);
         }
 
         // 5. Update Reasoning button state
         const reasoningBtn = document.getElementById("oh-nexus-reasoning-btn");
         if (reasoningBtn) {
             const rLabel = reasoningBtn.querySelector(".oh-nexus-reasoning-label");
-            const rIcon = reasoningBtn.querySelector(".oh-nexus-icon");
             const rChevron = reasoningBtn.querySelector(".oh-nexus-chevron");
 
             if (isReasoningSupported && activeModeObj) {
                 const shortLabel = activeModeObj.label.split(" ")[0] || activeModeObj.label;
-                const displayText = shortLabel;
-                if (rLabel && rLabel.textContent !== displayText) rLabel.textContent = displayText;
-                if (rIcon && rIcon.textContent !== "🧠") rIcon.textContent = "🧠";
+                if (rLabel && rLabel.textContent !== shortLabel) rLabel.textContent = shortLabel;
                 if (rChevron) rChevron.style.display = "";
 
                 reasoningBtn.disabled = running;
@@ -724,7 +785,6 @@
                 reasoningBtn.setAttribute("aria-label", `Степень рассуждения: ${activeModeObj.label}`);
             } else {
                 if (rLabel && rLabel.textContent !== "Direct") rLabel.textContent = "Direct";
-                if (rIcon && rIcon.textContent !== "⚡") rIcon.textContent = "⚡";
                 if (rChevron) rChevron.style.display = "none";
 
                 reasoningBtn.disabled = true;
@@ -739,6 +799,26 @@
         const nativeLlmBtn = document.querySelector('[data-testid="chat-input-llm-profile"]');
         if (nativeLlmBtn && nativeLlmBtn.style.display !== "none") {
             nativeLlmBtn.style.display = "none";
+        }
+
+        // Clean native execution state controller: hide text label ('Выполняется' / 'Остановлено'), keeping only pause/play icon
+        cleanNativeExecutionButton();
+    }
+
+    function cleanNativeExecutionButton() {
+        const execBtn = document.querySelector('button[data-testid="stop-button"], button[data-testid="play-button"]');
+        if (execBtn) {
+            const container = execBtn.closest('.flex.items-center.gap-1') || (execBtn.parentElement ? execBtn.parentElement.parentElement : null);
+            if (container) {
+                container.style.gap = '0px';
+                container.style.minWidth = '28px';
+                container.style.width = '28px';
+                container.style.flexShrink = '0';
+                const spans = container.querySelectorAll('span');
+                spans.forEach(s => {
+                    if (s.style.display !== 'none') s.style.display = 'none';
+                });
+            }
         }
     }
 

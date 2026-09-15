@@ -155,6 +155,48 @@ function Generate-Dump([string]$dumpKey) {
     }
 }
 
+function Restore-Dump([string]$dumpKey) {
+    $info = $Dumps[$dumpKey]
+    if (-not $info) {
+        Write-Warning "Неизвестный ключ дампа: $dumpKey"
+        return
+    }
+
+    $filePath = Join-Path $CacheDir $info.filename
+    if (-not (Test-Path $filePath)) {
+        Write-Host "    [✕ НЕТ] Файл дампа $($info.filename) не найден в $CacheDir. Сначала выполните генерацию." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "[*] Восстановление дампа: $($info.role_title)..." -ForegroundColor Cyan
+    $restoreUrl = "$RouterUrl/upstream/$($info.model)/slots/0?action=restore"
+    Write-Host "    Восстановление слота из NVMe кэша через роутер: $($info.filename)..." -ForegroundColor Gray
+    try {
+        $restoreBody = @{ filename = $info.filename } | ConvertTo-Json
+        $restoreResp = Invoke-RestMethod -Uri $restoreUrl -Method Post -Body $restoreBody -ContentType "application/json; charset=utf-8" -TimeoutSec 30
+        $sizeMB = [math]::Round($restoreResp.n_read / 1MB, 2)
+        Write-Host "    [OK] Префикс успешно восстановлен: $($info.filename) ($($restoreResp.n_restored) токенов, $sizeMB MB, $($restoreResp.timings.restore_ms) ms)." -ForegroundColor Green
+    } catch {
+        # Fallback to local port discovery if router proxy fails
+        $llamaPort = $null
+        $proc = Get-Process llama-server -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($proc) {
+            $conn = Get-NetTCPConnection -State Listen -OwningProcess $proc.Id -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($conn) { $llamaPort = $conn.LocalPort }
+        }
+        if ($llamaPort) {
+            try {
+                $fallbackUrl = "http://127.0.0.1:$llamaPort/slots/0?action=restore"
+                $restoreResp = Invoke-RestMethod -Uri $fallbackUrl -Method Post -Body $restoreBody -ContentType "application/json; charset=utf-8" -TimeoutSec 30
+                $sizeMB = [math]::Round($restoreResp.n_read / 1MB, 2)
+                Write-Host "    [OK] Префикс успешно восстановлен через порт ${llamaPort}: $($info.filename) ($($restoreResp.n_restored) токенов, $sizeMB MB, $($restoreResp.timings.restore_ms) ms)." -ForegroundColor Green
+                return
+            } catch {}
+        }
+        Write-Host "    [WARN] Ошибка при восстановлении префикса: $_" -ForegroundColor Yellow
+    }
+}
+
 switch ($Action.ToLower()) {
     "status" {
         Show-Status
@@ -169,6 +211,15 @@ switch ($Action.ToLower()) {
         }
         Write-Host ""
         Show-Status
+    }
+    "restore" {
+        if ($Role -eq "all") {
+            foreach ($k in @("architect", "executor", "auditor", "solo")) {
+                Restore-Dump $k
+            }
+        } else {
+            Restore-Dump $Role
+        }
     }
     "clean" {
         Write-Host "[*] Очистка кэша слотов..." -ForegroundColor Yellow

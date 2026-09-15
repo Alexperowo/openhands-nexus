@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "d496bfef-da8c-439b-8e77-e5a92e5c7849",
-  "name": "Next-Normal-Standalone",
+  "name": "Соло: Отладчик Next 80B (Все роли)",
   "revision": 0,
   "mcp_server_refs": [
     "windows-mcp",

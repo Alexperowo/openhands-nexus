@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
-  "name": "Team-Qwen-Ornith",
+  "name": "Связка: Планнер (27B) + Исполнитель (35B)",
   "revision": 0,
   "mcp_server_refs": [
     "windows-mcp",

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "ab16d813-fbd1-4f45-9453-1245993c557f",
-  "name": "Team-Next-Ornith",
+  "name": "Связка: Аналитик (80B) + Исполнитель (35B)",
   "revision": 0,
   "mcp_server_refs": [
     "windows-mcp",

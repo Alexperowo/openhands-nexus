@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.request
 import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -91,6 +92,7 @@ from supertonic import TTS
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "Config"))
 import working_profiles
+import slot_cache_manager
 
 # Global state
 START_TIME = time.time()
@@ -102,11 +104,21 @@ tts_lock = threading.Lock()
 metrics_lock = threading.Lock()
 cancel_event = threading.Event()
 _httpd_ref = None
+_telemetry_cache = None
+_telemetry_cache_time = 0.0
+_telemetry_lock = threading.Lock()
+_prev_telemetry_sample = {}
+_prefill_tracker = {}
+_gen_tracker = {}
 
 
 def _shutdown_server():
     """Gracefully shut down the HTTP server."""
     global _httpd_ref
+    try:
+        slot_cache_manager.stop_slot_restorer_daemon()
+    except Exception:
+        pass
     if _httpd_ref:
         _httpd_ref.shutdown()
 
@@ -236,6 +248,18 @@ def synthesize_to_wav_bytes(text: str, voice_style_name: str = "M1") -> tuple[by
 
 
 def get_station_telemetry() -> dict:
+    global _telemetry_cache, _telemetry_cache_time
+    now = time.time()
+    with _telemetry_lock:
+        if _telemetry_cache is not None and (now - _telemetry_cache_time) < 0.5:
+            return dict(_telemetry_cache)
+        res = _compute_station_telemetry()
+        _telemetry_cache = res
+        _telemetry_cache_time = now
+        return dict(res)
+
+
+def _compute_station_telemetry() -> dict:
     log_path = os.path.join(os.path.dirname(__file__), "..", "Logs", "llama-swap", "llama-swap.log")
     if not os.path.exists(log_path):
         log_path = os.path.join(os.path.dirname(__file__), "..", "llama-swap.log")
@@ -252,6 +276,12 @@ def get_station_telemetry() -> dict:
     except Exception:
         pass
 
+    slot_status = None
+    try:
+        slot_status = slot_cache_manager.get_slot_status()
+    except Exception:
+        pass
+
     telemetry = {
         "status": "ok",
         "model": active_profile,
@@ -260,8 +290,11 @@ def get_station_telemetry() -> dict:
         "tokens": 0,
         "total_tokens": 0,
         "speed_tok_s": 0.0,
+        "eta_seconds": None,
+        "eta_str": None,
         "active_tool": None,
         "is_active": False,
+        "slot_cache": slot_status,
         "timestamp": time.time()
     }
 
@@ -289,6 +322,126 @@ def get_station_telemetry() -> dict:
     except Exception:
         pass
 
+    # 2. Query live slots from running model via llama-swap router (sub-second accuracy)
+    try:
+        running_info = slot_cache_manager.get_running_model_info()
+        model_id = running_info.get("model")
+        proxy = running_info.get("proxy")
+        if model_id and running_info.get("state") == "ready":
+            slots_urls = []
+            if proxy:
+                slots_urls.append(f"{proxy.rstrip('/')}/slots")
+            slots_urls.append(f"http://127.0.0.1:8080/upstream/{model_id}/slots")
+
+            slots_data = None
+            for s_url in slots_urls:
+                try:
+                    s_req = urllib.request.Request(s_url, headers={"Accept": "application/json"})
+                    with urllib.request.urlopen(s_req, timeout=0.8) as s_resp:
+                        slots_data = json.loads(s_resp.read().decode("utf-8"))
+                        if slots_data and isinstance(slots_data, list):
+                            break
+                except Exception:
+                    continue
+
+            if slots_data and isinstance(slots_data, list) and len(slots_data) > 0:
+                s = slots_data[0]
+                is_processing = s.get("is_processing", False)
+                n_prompt = s.get("n_prompt_tokens", 0)
+                n_processed = s.get("n_prompt_tokens_processed", 0)
+                next_token = s.get("next_token", [{}])
+                n_decoded = next_token[0].get("n_decoded", 0) if next_token else 0
+
+                now = time.time()
+                if is_processing:
+                    telemetry["is_active"] = True
+                    if n_processed < n_prompt and n_prompt > 0:
+                        telemetry["state"] = "prefill"
+
+                        # Track prefill chunk lifecycle and compute real-time throughput
+                        if _prefill_tracker.get("model") != model_id or _prefill_tracker.get("prompt_total") != n_prompt:
+                            default_speed = 4.0 if "122" in str(model_id) else (180.0 if "35" in str(model_id) else 30.0)
+                            _prefill_tracker.update({
+                                "model": model_id,
+                                "prompt_total": n_prompt,
+                                "last_tokens": n_processed,
+                                "last_chunk_time": now,
+                                "measured_speed": default_speed,
+                                "estimated_speed": default_speed,
+                            })
+                        elif n_processed > _prefill_tracker.get("last_tokens", 0):
+                            # Chunk step detected: compute exact batch speed
+                            dt = now - _prefill_tracker.get("last_chunk_time", now)
+                            dn = n_processed - _prefill_tracker.get("last_tokens", 0)
+                            if dt > 1.0 and dn > 0:
+                                chunk_speed = round(dn / dt, 1)
+                                _prefill_tracker["measured_speed"] = chunk_speed
+                                _prefill_tracker["estimated_speed"] = chunk_speed
+                            _prefill_tracker["last_tokens"] = n_processed
+                            _prefill_tracker["last_chunk_time"] = now
+
+                        speed = max(0.5, _prefill_tracker.get("estimated_speed", 4.0))
+                        chunk_elapsed = max(0.0, now - _prefill_tracker.get("last_chunk_time", now))
+                        interpolated_eval = min(n_prompt, int(n_processed + (chunk_elapsed * speed)))
+                        pct = round((interpolated_eval / max(1, n_prompt)) * 100, 1)
+                        rem_tokens = max(0, n_prompt - interpolated_eval)
+                        eta_s = int(rem_tokens / speed)
+
+                        if eta_s >= 60:
+                            eta_str = f"{eta_s // 60}м {eta_s % 60}с"
+                        elif eta_s > 0:
+                            eta_str = f"{eta_s}с"
+                        else:
+                            eta_str = "несколько сек"
+
+                        telemetry["tokens"] = interpolated_eval
+                        telemetry["total_tokens"] = n_prompt
+                        telemetry["progress_pct"] = pct
+                        telemetry["speed_tok_s"] = speed
+                        telemetry["eta_seconds"] = eta_s
+                        telemetry["eta_str"] = eta_str
+                        return telemetry
+                    else:
+                        if n_decoded > 0:
+                            telemetry["state"] = "generating"
+                            if _gen_tracker.get("model") != model_id:
+                                _gen_tracker.update({
+                                    "model": model_id,
+                                    "last_tokens": n_decoded,
+                                    "last_time": now,
+                                    "measured_speed": 30.0,
+                                })
+                            elif n_decoded > _gen_tracker.get("last_tokens", 0):
+                                dt = now - _gen_tracker.get("last_time", now)
+                                dn = n_decoded - _gen_tracker.get("last_tokens", 0)
+                                if dt >= 0.4 and dn > 0:
+                                    _gen_tracker["measured_speed"] = round(dn / dt, 1)
+                                    _gen_tracker["last_tokens"] = n_decoded
+                                    _gen_tracker["last_time"] = now
+
+                            gen_speed = _gen_tracker.get("measured_speed", 30.0)
+                            telemetry["tokens"] = n_decoded
+                            telemetry["total_tokens"] = n_prompt + n_decoded
+                            telemetry["progress_pct"] = 100.0
+                            telemetry["speed_tok_s"] = gen_speed
+                            return telemetry
+                        else:
+                            telemetry["state"] = "thinking"
+                            telemetry["tokens"] = 0
+                            telemetry["total_tokens"] = n_prompt
+                            telemetry["progress_pct"] = 100.0
+                            telemetry["speed_tok_s"] = 0.0
+                            return telemetry
+                else:
+                    telemetry["state"] = "idle"
+                    telemetry["is_active"] = False
+                    _prefill_tracker.clear()
+                    _gen_tracker.clear()
+                    return telemetry
+    except Exception:
+        pass
+
+    # 3. Fallback: Parse log tail if slots endpoint is unreachable
     if not os.path.exists(log_path):
         return telemetry
 
@@ -482,6 +635,23 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
+        elif clean_path in ("/api/slot-status", "/slot-status"):
+            try:
+                status_data = slot_cache_manager.get_slot_status()
+                body = json.dumps(status_data, ensure_ascii=False, indent=2).encode("utf-8")
+                self.send_response(200)
+                self._set_cors("application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_response(500)
+                self._set_cors("application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
         elif self.path in ("/health", "/status"):
             ram = get_process_ram_mb()
             with metrics_lock:
@@ -544,6 +714,29 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 err_msg = str(e).splitlines()[0][:200] if str(e) else "Profile switch error"
                 self.wfile.write(json.dumps({"error": err_msg}).encode("utf-8"))
+            return
+
+        elif clean_path in ("/api/restore-prefix-slot", "/restore-prefix-slot"):
+            try:
+                data = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
+                target_model = data.get("model")
+                target_dump = data.get("dump")
+                if target_model and target_dump:
+                    res = slot_cache_manager.restore_slot_dump(target_model, target_dump)
+                else:
+                    res = slot_cache_manager.check_and_auto_restore()
+                body = json.dumps(res, ensure_ascii=False, indent=2).encode("utf-8")
+                self.send_response(200)
+                self._set_cors("application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_response(500)
+                self._set_cors("application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
 
@@ -684,12 +877,16 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
 def run_server(port: int = 18002):
     global _httpd_ref
     init_models()
+    try:
+        slot_cache_manager.start_slot_restorer_daemon(1.0)
+    except Exception as e:
+        print(f"[Voice Bridge] Slot cache restorer warning: {e}", flush=True)
     server_address = ("127.0.0.1", port)
     httpd = ThreadingHTTPServer(server_address, VoiceBridgeHandler)
     _httpd_ref = httpd
     print("\n=======================================================", flush=True)
     print(f" Voice Bridge Server RUNNING at http://127.0.0.1:{port}", flush=True)
-    print(" Endpoints: /health, /stt, /tts, /stop, /shutdown", flush=True)
+    print(" Endpoints: /health, /stt, /tts, /stop, /shutdown, /api/slot-status, /api/restore-prefix-slot", flush=True)
     print(f" Initial RAM: {get_process_ram_mb()} MB", flush=True)
     print("=======================================================\n", flush=True)
     try:

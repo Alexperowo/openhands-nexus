@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "44761011-15fd-4981-971c-6b3ea145efbc",
-  "name": "Qwen-Standalone",
+  "name": "Соло: Быстрый Qwen 27B (Все роли)",
   "revision": 0,
   "mcp_server_refs": [
     "windows-mcp",

@@ -122,7 +122,7 @@ def sync_to_agent_server(agent_profile_id: str, llm_profile_name: str) -> tuple:
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=5) as res:
+        with urllib.request.urlopen(req, timeout=12) as res:
             if 200 <= res.status < 300:
                 return True, ""
             return False, f"HTTP {res.status}"
@@ -219,6 +219,12 @@ def switch_working_profile(working_profile_id: str, reasoning_mode_id: str = Non
     }
 
     save_working_profile_state(new_state)
+
+    try:
+        import slot_cache_manager
+        slot_cache_manager.trigger_restore_async()
+    except Exception:
+        pass
 
     return {
         "ok": True,

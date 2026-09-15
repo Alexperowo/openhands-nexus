@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "name": "Qwen122-Standalone",
+  "name": "Соло: Qwen 122B Турбо (Все роли)",
   "revision": 0,
   "mcp_server_refs": [
     "windows-mcp",
