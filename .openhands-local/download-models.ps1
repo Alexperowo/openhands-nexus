@@ -42,6 +42,16 @@ function Download-ModelFile([string]$Url, [string]$DestPath, [string]$DisplayNam
     # Use curl with resume support (-C -), follow redirects (-L), and progress bar (#)
     $curlCmd = Get-Command curl.exe -ErrorAction SilentlyContinue
     if ($curlCmd) {
+        # Quick HTTP check
+        $headOut = & curl.exe -sI -L --max-time 10 $Url
+        $isOk = $headOut | Where-Object { $_ -match "HTTP/\S+\s+200" }
+        if (-not $isOk) {
+            Write-Host "      [WARN] Удалённый файл недоступен или требует авторизации (HTTP 401/404)." -ForegroundColor Yellow
+            Write-Host "             Если веса хранятся локально, скопируйте файл вручную в:" -ForegroundColor Gray
+            Write-Host "             $DestPath" -ForegroundColor White
+            Write-Host ""
+            return
+        }
         & curl.exe -L -C - --retry 5 --retry-delay 3 --max-time 14400 -# -o $DestPath $Url
     } else {
         # Fallback to BITS or Invoke-WebRequest
@@ -63,8 +73,9 @@ $Catalog = @{
         Name = "FUTO GigaAM v3 e2e-rnnt (STT)"
         Path = Join-Path $ModelsDir "Speech\gigaam-v3-e2e-rnnt-Q8_0.gguf"
         SizeGb = 0.26
-        Url = "https://huggingface.co/futo-org/gigaam-v3-gguf/resolve/main/gigaam-v3-e2e-rnnt-Q8_0.gguf"
+        Url = "https://huggingface.co/cstr/gigaam-v3-GGUF/resolve/main/gigaam-v3-e2e-rnnt-q8_0.gguf"
     }
+
     ornith = @{
         Name = "Ornith 1.5 Coder 35B ICE (MTP)"
         Path = Join-Path $ModelsDir "Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf"
