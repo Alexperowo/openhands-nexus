@@ -199,42 +199,44 @@
 
 ---
 
-## 8. Быстрый старт
+## 8. Быстрый старт (Quickstart)
 
-### 0. Предварительные требования и размещение моделей (Prerequisites & Models)
-* **Системные зависимости:**
-  * Windows 10/11 x64 (PowerShell >= 5.1)
-  * Node.js >= 18 (рекомендуется v20 или v22 LTS)
-  * Python >= 3.10 (3.11 или 3.12 x64)
-  * Драйвер NVIDIA с поддержкой CUDA 12.x
-* **Размещение квантованных весов (`Models/`):**
-  Поместите соответствующие `.gguf` файлы в директорию `Models/` (директория исключена из git из-за большого размера):
-  ```
-  Models/
-  ├── Qwen-122b/  -> Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
-  ├── Ornith/     -> Ornith-1.5-35B-MTP-19G-ICE.gguf
-  ├── Qwen3.8/    -> Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf (+ mmproj-f16.gguf)
-  └── Qwen3-Next/ -> Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
-  ```
-
-### 1. Первичная настройка на новом ПК (First-Time Setup)
+### 1. Автоматическая установка на чистой Windows 11 (One-Click Turnkey Setup)
+Если вы только что склонировали репозиторий на чистый ПК с Windows 11:
 ```cmd
-SETUP-OPENHANDS-LOCAL.cmd
+INSTALL.cmd
 ```
-Автоматически инициализирует пользовательские шаблоны профилей в `%USERPROFILE%\.openhands`, проверяет SSL-сертификаты PWA, настраивает правило Брандмауэра Windows и накладывает необходимые патчи Custom Layer.
+Скрипт полностью в автоматическом режиме:
+- Установит недостающие системные рантаймы через `winget` (Git, Node.js LTS, Python 3.12, Astral uv).
+- Установит библиотеки Python (`cryptography`, `av`, `supertonic`, `soundfile`, `numpy`).
+- Установит глобальный CLI `agent-canvas` (`npm install -g @openhands/agent-canvas`).
+- Развернёт проверенные бинарники инференса (`ik_llama` с Dual-GPU MTP, `llama-swap`, `transcribe.dll`).
+- Инициализирует профили в `%USERPROFILE%\.openhands`, сгенерирует mTLS сертификаты и наложит патчи на Canvas.
 
-### 2. Проверка системных зависимостей
+### 2. Загрузка моделей (Interactive Model Downloader)
+```cmd
+DOWNLOAD-MODELS.cmd
+```
+Интерактивное меню с поддержкой докачки (`curl -C -`) позволяет выбрать желаемый комплект:
+- `[1] Быстрый старт`: скоростной кодер **Ornith 1.5 35B ICE** + русский голос **FUTO GigaAM v3** (~18 ГБ).
+- `[2] Полная Триада`: Архитектор **Qwen 3.8 27B** (с mmproj) + **Ornith 35B** + Голос (~34 ГБ).
+- `[3] Флагман MoE`: Флагманский супер-инженер **Qwen 3.5 122B LynnStyle** + Триада (~78 ГБ).
+- `[4] Только голос`: FUTO GigaAM v3 STT (~260 МБ).
+- `[5] Полный флот`: все локальные модели платформы (~111 ГБ).
+
+### 3. Проверка готовности системы
 ```cmd
 CHECK-DEPENDENCIES.cmd
 ```
-Запускает комплексные тесты системы (Windows 11, Node.js, Python, GigaAM v3, Supertonic 3, CUDA/VRAM, патчи Agent Canvas, SSL-сертификаты и сетевые порты).
+Выполняет 35 автоматических тестов (Windows 11, Node.js, Python, CUDA/VRAM, патчи Canvas, SSL mTLS, сетевые порты).
 
-### 3. Запуск и остановка станции
+### 4. Запуск и остановка станции
 ```cmd
 START-OPENHANDS-LOCAL.cmd     :: Запуск всех сервисов платформы
 STOP-OPENHANDS-LOCAL.cmd      :: Корректная остановка всех сервисов
 RESTART-OPENHANDS-LOCAL.cmd   :: Перезапуск станции
 ```
+
 Скрипт проверяет порты, запускает llama-swap (:8080), голосовой мост (:18002), agent-server (:18000), agent-canvas (:8000) и lan-gateway (:8443).
 
 ### 4. Резервное копирование и восстановление

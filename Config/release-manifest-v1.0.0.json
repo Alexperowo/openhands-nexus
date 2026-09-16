@@ -1,0 +1,13 @@
+{
+    "components":  {
+                       "llama_swap":  "v255",
+                       "local_voice_stt":  "FUTO GigaAM v3 (transcribe.dll)",
+                       "ik_llama":  "06e20d7 (Dual-GPU MTP, sm_75;120)",
+                       "moe_expert_cache":  "bccbacd (Hot-Expert Cache for Qwen 122B)"
+                   },
+    "version":  "v1.0.0",
+    "archive_name":  "openhands-nexus-binaries-v1.0.0.zip",
+    "sha256":  "E6F086A3256BD763698AAD25E0EEFB1563673E325BD4205324F6EFF6F385D1A6",
+    "size_mb":  114.9,
+    "created_at":  "2026-09-16T11:19:05.7569590+03:00"
+}
