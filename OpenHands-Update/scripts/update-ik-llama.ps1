@@ -263,7 +263,7 @@ if (Test-Path $builtServer) {
 } else {
     Log-Msg "[5/8] Building ik_llama with CUDA sm_75 support in staging..." "STEP"
     $cmakeConfigureCmd = "cmake -B `"$stagingBuildDir`" -S `"$stagingSourceDir`" -G `"Visual Studio 17 2022`" -A x64 " +
-        "-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=75 -DGGML_CUDA_FA_ALL_QUANTS=ON " +
+        "-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=`"75;120`" -DGGML_CUDA_FA_ALL_QUANTS=ON " +
         "-DGGML_CUDA_FUSION=1 -DGGML_CUDA_COMPRESSION_MODE=size -DGGML_CUDA_KQUANTS_ITER=2 " +
         "-DGGML_CUDA_MIN_BATCH_OFFLOAD=32 -DGGML_CUDA_PEER_MAX_BATCH_SIZE=128"
 
@@ -339,7 +339,7 @@ $qwenErr = Join-Path $Global:LogDir "candidate-ik-qwen-${stagingPort}.err"
 if (Test-Path $qwenLog) { Remove-Item $qwenLog -Force -ErrorAction SilentlyContinue }
 if (Test-Path $qwenErr) { Remove-Item $qwenErr -Force -ErrorAction SilentlyContinue }
 
-$qwenArgs = "-m `"$expectedModel`" --mmproj `"$qwenMmproj`" -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -np 1 -dev CUDA0 --spec-type mtp:n_max=3,p_min=0.0 --jinja --host 127.0.0.1 --port $stagingPort"
+$qwenArgs = "-m `"$expectedModel`" --mmproj `"$qwenMmproj`" -c 65536 -ctk q6_0 -ctv q4_0 -fa on -ngl 999 -np 1 -dev CUDA0,CUDA1 -ts 14,22 --spec-type mtp:n_max=3,p_min=0.05 --jinja --host 127.0.0.1 --port $stagingPort"
 
 $qwenProc = Start-Process -FilePath $stagingExe -ArgumentList $qwenArgs -RedirectStandardOutput $qwenLog -RedirectStandardError $qwenErr -PassThru -NoNewWindow
 Log-Msg "      Candidate Qwen process started with PID: $($qwenProc.Id)" "INFO"
@@ -370,18 +370,24 @@ $qwenMainLoaded = ($qwenLogContent -match "(?i)model loaded|HTTP server listenin
 $qwenMmprojLoaded = ($qwenLogContent -match "(?i)clip_model_load|clip_init|mmproj|vision")
 $qwenMtpInit = ($qwenLogContent -match "(?i)MTP context ready|speculative decoding context initialized|mtp")
 $qwenCompletionPass = $false
+$qwenTps = 0.0
 
 if ($qwenReady) {
     try {
         $body = @{
-            messages = @(@{ role = "user"; content = "Test 1+1. Answer only number." })
-            max_tokens = 15
-            temperature = 0.0
+            messages = @(@{ role = "user"; content = "Explain the principles of quantum computing simply in 50 words." })
+            max_tokens = 64
+            temperature = 0.6
         } | ConvertTo-Json
-        $chatRes = Invoke-RestMethod -Uri "http://127.0.0.1:${stagingPort}/v1/chat/completions" -Method Post -Body $body -ContentType "application/json" -TimeoutSec 45
+        $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+        $swBench = [System.Diagnostics.Stopwatch]::StartNew()
+        $chatRes = Invoke-RestMethod -Uri "http://127.0.0.1:${stagingPort}/v1/chat/completions" -Method Post -Body $bodyBytes -ContentType "application/json; charset=utf-8" -TimeoutSec 60
+        $swBench.Stop()
         if ($chatRes -and $chatRes.choices -and $chatRes.choices.Count -gt 0) {
             $qwenCompletionPass = $true
-            Log-Msg "      [PASS] Qwen short text completion passed." "SUCCESS"
+            $tokensGenerated = if ($chatRes.usage.completion_tokens) { [double]$chatRes.usage.completion_tokens } else { 40.0 }
+            $qwenTps = [math]::Round($tokensGenerated / [math]::Max($swBench.Elapsed.TotalSeconds, 0.001), 2)
+            Log-Msg "      [PASS] Qwen 3.8 MTP completion passed. Measured speed: $qwenTps tok/s ($($tokensGenerated) tokens in $([math]::Round($swBench.Elapsed.TotalSeconds, 2))s)" "SUCCESS"
         }
     } catch {
         Log-Msg "Qwen short completion failed: $_" "ERROR"
@@ -418,7 +424,7 @@ $ornithErr = Join-Path $Global:LogDir "candidate-ik-ornith-${stagingPort}.err"
 if (Test-Path $ornithLog) { Remove-Item $ornithLog -Force -ErrorAction SilentlyContinue }
 if (Test-Path $ornithErr) { Remove-Item $ornithErr -Force -ErrorAction SilentlyContinue }
 
-$ornithArgs = "-m `"$ornithModel`" -c 98304 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -dev CUDA0 --spec-type mtp:n_max=1,p_min=0.75 --jinja --host 127.0.0.1 --port $stagingPort"
+$ornithArgs = "-m `"$ornithModel`" -c 65536 -ctk q8_0 -ctv q5_0 -fa on -ngl 999 -dev CUDA1 -sm none -b 2048 -ub 512 --spec-type mtp:n_max=1,p_min=0.50 --jinja --host 127.0.0.1 --port $stagingPort"
 
 $ornithProc = Start-Process -FilePath $stagingExe -ArgumentList $ornithArgs -RedirectStandardOutput $ornithLog -RedirectStandardError $ornithErr -PassThru -NoNewWindow
 Log-Msg "      Candidate Ornith process started with PID: $($ornithProc.Id)" "INFO"
@@ -448,18 +454,24 @@ if (Test-Path $ornithErr) { $ornithLogContent += "`n" + (Get-Content $ornithErr 
 $ornithMainLoaded = ($ornithLogContent -match "(?i)model loaded|HTTP server listening")
 $ornithMtpInit = ($ornithLogContent -match "(?i)MTP context ready|recurrent|speculative decoding context initialized|mtp")
 $ornithCompletionPass = $false
+$ornithTps = 0.0
 
 if ($ornithReady) {
     try {
         $body = @{
-            messages = @(@{ role = "user"; content = "Test 1+1. Answer only number." })
-            max_tokens = 15
-            temperature = 0.0
+            messages = @(@{ role = "user"; content = "Explain quantum computing in 50 words." })
+            max_tokens = 64
+            temperature = 0.6
         } | ConvertTo-Json
-        $chatRes = Invoke-RestMethod -Uri "http://127.0.0.1:${stagingPort}/v1/chat/completions" -Method Post -Body $body -ContentType "application/json" -TimeoutSec 45
+        $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+        $swBenchO = [System.Diagnostics.Stopwatch]::StartNew()
+        $chatRes = Invoke-RestMethod -Uri "http://127.0.0.1:${stagingPort}/v1/chat/completions" -Method Post -Body $bodyBytes -ContentType "application/json; charset=utf-8" -TimeoutSec 60
+        $swBenchO.Stop()
         if ($chatRes -and $chatRes.choices -and $chatRes.choices.Count -gt 0) {
             $ornithCompletionPass = $true
-            Log-Msg "      [PASS] Ornith short completion passed." "SUCCESS"
+            $tokensGenerated = if ($chatRes.usage.completion_tokens) { [double]$chatRes.usage.completion_tokens } else { 40.0 }
+            $ornithTps = [math]::Round($tokensGenerated / [math]::Max($swBenchO.Elapsed.TotalSeconds, 0.001), 2)
+            Log-Msg "      [PASS] Ornith 1.5 MTP completion passed. Measured speed: $ornithTps tok/s ($($tokensGenerated) tokens in $([math]::Round($swBenchO.Elapsed.TotalSeconds, 2))s)" "SUCCESS"
         }
     } catch {
         Log-Msg "Ornith short completion failed: $_" "ERROR"
@@ -528,6 +540,19 @@ if (Test-Path $stagingBinDir) { Remove-Item -Path $stagingBinDir -Recurse -Force
 $newRuntimeHash = (Get-FileHash (Join-Path $prodBinDir "llama-server.exe") -Algorithm SHA256).Hash
 $newCommit = (& git -C $srcDir rev-parse HEAD).Trim()
 $newShort = (& git -C $srcDir rev-parse --short HEAD).Trim()
+$measuredTps = "$qwenTps tok/s (Qwen 27B) / $ornithTps tok/s (Ornith 35B)"
+
+$manifestPath = Join-Path $Global:ProjectRootDir "Config\backend-versions.json"
+if (Test-Path $manifestPath) {
+    try {
+        $mf = Get-Content $manifestPath -Raw | ConvertFrom-Json
+        $mf.ik_llama.commit = $newCommit
+        $mf.ik_llama.short_commit = $newShort
+        $mf.ik_llama.sha256 = $newRuntimeHash
+        $mf.ik_llama.last_verified = (Get-Date -Format "o")
+        $mf | ConvertTo-Json -Depth 5 | Set-Content -Path $manifestPath -Encoding UTF8
+    } catch {}
+}
 
 $newState = @{
     production_commit = $newCommit

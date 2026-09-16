@@ -145,15 +145,25 @@ $results.Add([PSCustomObject]@{
 })
 
 # Component 2: ik_llama (Backend 1)
-$ikCurrent = "3c58ae3"
+$ikCurrent = "unknown"
 $ikBin = Join-Path $Global:ProjectRootDir "ik_llama\bin\llama-server.exe"
 if (Test-Path $ikBin) {
     try {
         $raw = & $ikBin --version 2>&1
-        if ($raw -match "\(([a-f0-9]{7})\)") { $ikCurrent = $Matches[1] }
+        $rawStr = [string]::Join(" ", $raw)
+        if ($rawStr -match "\(([a-f0-9]{7})\)") { $ikCurrent = $Matches[1] }
     } catch {}
 }
-$ikLatest = "fe215a8"
+if ($ikCurrent -eq "unknown") {
+    $manifestPath = Join-Path $Global:ProjectRootDir "Config\backend-versions.json"
+    if (Test-Path $manifestPath) {
+        try {
+            $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+            if ($manifest.ik_llama.short_commit) { $ikCurrent = $manifest.ik_llama.short_commit }
+        } catch {}
+    }
+}
+$ikLatest = "06e20d7"
 try {
     $commits = Invoke-RestMethod -Uri "https://api.github.com/repos/ikawrakow/ik_llama.cpp/commits?per_page=1" -Headers $headers -TimeoutSec 5 -ErrorAction Stop
     if ($commits -and $commits.Count -gt 0) { $ikLatest = $commits[0].sha.Substring(0, 7) }
@@ -163,7 +173,7 @@ try {
         if ($rawHtml -match '/ikawrakow/ik_llama\.cpp/commit/([a-f0-9]{7})') { $ikLatest = $Matches[1] }
     } catch {}
 }
-$ikStatus = if ($ikCurrent -eq $ikLatest) { "UP TO DATE" } else { "PINNED (MTP 35.72 t/s build)" }
+$ikStatus = if ($ikCurrent -eq $ikLatest) { "UP TO DATE" } else { "UPDATE AVAILABLE" }
 $results.Add([PSCustomObject]@{
     Component     = "ik_llama (Backend 1)"
     Current       = $ikCurrent
@@ -171,6 +181,7 @@ $results.Add([PSCustomObject]@{
     Status        = $ikStatus
     UpdaterReady  = "READY (update-ik-llama.ps1)"
 })
+
 
 # Component 3: moe-expert-cache (Backend 2)
 $moeSrcDir = Join-Path $Global:ProjectRootDir "LLM-tests\moe-expert-cache-src"

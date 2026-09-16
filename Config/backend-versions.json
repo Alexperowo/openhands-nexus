@@ -1,54 +1,54 @@
-{
-  "timestamp": "2026-09-06T12:05:06.194066+00:00",
-  "description": "Informational version manifest for OpenHands Local platform components (not a runtime dependency)",
-  "agent_canvas": {
-    "current_version": "1.16.0",
-    "production_path": "C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@openhands\\agent-canvas",
-    "upstream_source": "https://github.com/OpenHands/OpenHands (npm: @openhands/agent-canvas)",
-    "last_verified": "2026-09-06T10:14:34.876305+00:00"
-  },
-  "agent_server": {
-    "current_version": "1.44.0",
-    "pinned_in": "C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@openhands\\agent-canvas\\config\\defaults.json",
-    "production_path": "Astral uvx cache (port 18000)",
-    "upstream_source": "https://github.com/OpenHands/software-agent-sdk (PyPI: openhands-agent-server)",
-    "last_verified": "2026-09-06T10:14:34.876305+00:00"
-  },
-  "automation": {
-    "current_version": "1.9.0",
-    "pinned_in": "C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@openhands\\agent-canvas\\config\\defaults.json",
-    "production_path": "Astral uvx cache (port 18001)",
-    "upstream_source": "https://github.com/OpenHands/automation (PyPI: openhands-automation)",
-    "last_verified": "2026-09-06T10:14:34.876305+00:00"
-  },
-  "llama_swap": {
-    "current_version": "v255",
-    "commit": "7761aa1",
-    "build_time": "2026-09-06T05:46:05Z",
-    "production_path": "K:\\Project\\llama-swap\\bin\\llama-swap.exe",
-    "sha256": "41FCCA0870EA3EC6E159C18224E7589B325419C6A5685E7C53482DCD81817B3E",
-    "upstream_source": "https://github.com/mostlygeek/llama-swap",
-    "last_verified": "2026-09-06T10:37:35.729444+00:00",
-    "previous_version": "v252"
-  },
-  "llama_mainline": {
-    "current_version": "build b10991",
-    "commit": "14a9d09f7",
-    "production_path": "K:\\Project\\llama-mainline\\b10991\\llama-server.exe",
-    "sha256": "1CE4E98326FA9D06A3560795930663FBB3CB74487C3803926ACBDC299447171B",
-    "upstream_source": "https://github.com/ggml-org/llama.cpp",
-    "last_verified": "2026-09-16T09:25:00.000000+03:00",
-    "previous_version": "b10875",
-    "build": "b10991"
-  },
-  "ik_llama": {
-    "current_version": "12 (b87910f)",
-    "commit": "b87910ff30986c9fc5b5946288b38440fe1409a3",
-    "short_commit": "b87910f",
-    "previous_commit": "fe215a8ccdce6b844d2a3a3bbde08ae76a6284bf",
-    "production_path": "K:\\Project\\ik_llama\\bin\\llama-server.exe",
-    "sha256": "55F569C8E18AE8E2299F37B1CF7AEF7C627F7506DEDAFC8B1239AAE2E4BD5D37",
-    "upstream_source": "https://github.com/ikawrakow/ik_llama.cpp",
-    "last_verified": "2026-09-09T18:35:38.1673465+03:00"
-  }
+﻿{
+    "timestamp":  "2026-09-06T12:05:06.194066+00:00",
+    "description":  "Informational version manifest for OpenHands Local platform components (not a runtime dependency)",
+    "agent_canvas":  {
+                         "current_version":  "1.16.0",
+                         "production_path":  "C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@openhands\\agent-canvas",
+                         "upstream_source":  "https://github.com/OpenHands/OpenHands (npm: @openhands/agent-canvas)",
+                         "last_verified":  "2026-09-06T10:14:34.876305+00:00"
+                     },
+    "agent_server":  {
+                         "current_version":  "1.44.0",
+                         "pinned_in":  "C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@openhands\\agent-canvas\\config\\defaults.json",
+                         "production_path":  "Astral uvx cache (port 18000)",
+                         "upstream_source":  "https://github.com/OpenHands/software-agent-sdk (PyPI: openhands-agent-server)",
+                         "last_verified":  "2026-09-06T10:14:34.876305+00:00"
+                     },
+    "automation":  {
+                       "current_version":  "1.9.0",
+                       "pinned_in":  "C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@openhands\\agent-canvas\\config\\defaults.json",
+                       "production_path":  "Astral uvx cache (port 18001)",
+                       "upstream_source":  "https://github.com/OpenHands/automation (PyPI: openhands-automation)",
+                       "last_verified":  "2026-09-06T10:14:34.876305+00:00"
+                   },
+    "llama_swap":  {
+                       "current_version":  "v255",
+                       "commit":  "7761aa1",
+                       "build_time":  "2026-09-06T05:46:05Z",
+                       "production_path":  "K:\\Project\\llama-swap\\bin\\llama-swap.exe",
+                       "sha256":  "41FCCA0870EA3EC6E159C18224E7589B325419C6A5685E7C53482DCD81817B3E",
+                       "upstream_source":  "https://github.com/mostlygeek/llama-swap",
+                       "last_verified":  "2026-09-06T10:37:35.729444+00:00",
+                       "previous_version":  "v252"
+                   },
+    "llama_mainline":  {
+                           "current_version":  "build b10991",
+                           "commit":  "14a9d09f7",
+                           "production_path":  "K:\\Project\\llama-mainline\\b10991\\llama-server.exe",
+                           "sha256":  "1CE4E98326FA9D06A3560795930663FBB3CB74487C3803926ACBDC299447171B",
+                           "upstream_source":  "https://github.com/ggml-org/llama.cpp",
+                           "last_verified":  "2026-09-16T09:25:00.000000+03:00",
+                           "previous_version":  "b10875",
+                           "build":  "b10991"
+                       },
+    "ik_llama":  {
+                     "current_version":  "12 (b87910f)",
+                     "commit":  "06e20d7ece47d78bcebaf6efec47bc291b7d3135",
+                     "short_commit":  "06e20d7",
+                     "previous_commit":  "fe215a8ccdce6b844d2a3a3bbde08ae76a6284bf",
+                     "production_path":  "K:\\Project\\ik_llama\\bin\\llama-server.exe",
+                     "sha256":  "8324C91FADD7C13F54CB4130B910C350589BFBBB934130527F0BF9054D2C1A69",
+                     "upstream_source":  "https://github.com/ikawrakow/ik_llama.cpp",
+                     "last_verified":  "2026-09-16T10:42:19.5653094+03:00"
+                 }
 }
