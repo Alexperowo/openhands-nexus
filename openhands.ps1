@@ -9,7 +9,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position=0)]
-    [ValidateSet('start', 'stop', 'restart', 'status', 'check', 'test', 'setup', 'diagnose', 'recover', 'backup', 'restore', 'help')]
+    [ValidateSet('start', 'stop', 'restart', 'status', 'check', 'test', 'setup', 'diagnose', 'recover', 'backup', 'restore', 'update', 'help')]
     [string]$Command = 'help',
 
     [Parameter(ValueFromRemainingArguments=$true)]
@@ -35,6 +35,7 @@ function Show-Help {
     Write-Host '  openhands recover     - Запустить процедуру аварийного восстановления' -ForegroundColor White
     Write-Host '  openhands backup      - Создать резервную копию рабочей станции' -ForegroundColor White
     Write-Host '  openhands restore     - Восстановить станцию из последней копии' -ForegroundColor White
+    Write-Host '  openhands update      - Проверить/обновить компоненты станции (Canvas, Swap, Voice, PWA, LLM)' -ForegroundColor White
     Write-Host '  openhands setup       - Первичная инициализация и установка зависимостей' -ForegroundColor White
     Write-Host '=====================================================================' -ForegroundColor Cyan
     Write-Host ''
@@ -95,7 +96,7 @@ function Invoke-StationScript([string]$scriptPath, [string[]]$scriptArgs) {
         exit 1
     }
     try {
-        & $scriptPath @scriptArgs
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $scriptPath @scriptArgs
         if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
         }
@@ -142,6 +143,21 @@ switch ($Command) {
     }
     'restore' {
         Invoke-StationScript "$Root\OpenHands-Update\scripts\restore-station.ps1" $RemainingArgs
+    }
+    'update' {
+        $updateArgs = @()
+        if ($RemainingArgs.Count -gt 0) {
+            $firstArg = $RemainingArgs[0]
+            if ($firstArg -notlike "-*") {
+                $updateArgs += @("-Component", $firstArg)
+                if ($RemainingArgs.Count -gt 1) {
+                    $updateArgs += $RemainingArgs[1..($RemainingArgs.Count - 1)]
+                }
+            } else {
+                $updateArgs = $RemainingArgs
+            }
+        }
+        Invoke-StationScript "$Root\OpenHands-Update\scripts\update-all.ps1" $updateArgs
     }
     default {
         Show-Help

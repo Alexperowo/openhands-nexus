@@ -144,12 +144,27 @@ function Get-CurrentProductionBuild {
     $content = Get-Content $ConfigYaml -Raw
     $pattern = '(?m)cmd:\s*([^\r\n]*llama-mainline\\([^\\]+)\\llama-server\.exe)'
     $match = [regex]::Match($content, $pattern)
-    if (-not $match.Success) {
-        throw "Failed to extract active llama-mainline path from $ConfigYaml"
+    if ($match.Success) {
+        $binPath = $match.Groups[1].Value.Trim()
+        $buildTag = $match.Groups[2].Value.Trim()
+    } else {
+        # Fallback to backend-versions.json or directory scan if not currently active in config.yaml
+        $buildTag = "unknown"
+        if (Test-Path $ManifestJson) {
+            try {
+                $manifest = Get-Content $ManifestJson -Raw | ConvertFrom-Json
+                if ($manifest.llama_mainline.build) { $buildTag = $manifest.llama_mainline.build }
+            } catch {}
+        }
+        if ($buildTag -eq "unknown" -or -not (Test-Path (Join-Path $MainlineRoot "$buildTag\llama-server.exe"))) {
+            $latestDir = Get-ChildItem -Path $MainlineRoot -Directory -Filter "b*" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+            if ($latestDir) { $buildTag = $latestDir.Name }
+        }
+        $binPath = Join-Path $MainlineRoot "$buildTag\llama-server.exe"
+        if (-not (Test-Path $binPath)) {
+            throw "Failed to find any installed llama-mainline build under $MainlineRoot"
+        }
     }
-
-    $binPath = $match.Groups[1].Value.Trim()
-    $buildTag = $match.Groups[2].Value.Trim()
     $sha256 = "UNKNOWN"
     $versionRaw = "UNKNOWN"
 
