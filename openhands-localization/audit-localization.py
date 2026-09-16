@@ -16,7 +16,7 @@ EXPLICIT_TECHNICAL_KEYS = {
     "COMMAND_MENU$SHORTCUT",              # '⌘K' (Mac keyboard symbol)
     "COMMON$JUPYTER",                     # 'Jupyter' (Brand name)
     "COMMON$PLAN_MD",                     # 'Plan.md' (Specific filename)
-    "CONVERSATION$BUDGET_USAGE_FORMAT",   # '${currentCost} / ${maxBudget} ({usagePercentage}% {used})' (Variable interpolation pattern)
+    "CONVERSATION$BUDGET_USAGE_FORMAT",   # '{{currentCost}} / {{maxBudget}} ({{usagePercentage}}% {{used}})' (Variable interpolation pattern)
     "CONVERSATION$OVERVIEW_DIFF_ADDITIONS", # '+{{count}}' (Numeric diff prefix)
     "CONVERSATION$OVERVIEW_DIFF_DELETIONS", # '-{{count}}' (Numeric diff prefix)
     "CONVERSATION$OVERVIEW_UNAVAILABLE",  # '—' (Dash symbol)

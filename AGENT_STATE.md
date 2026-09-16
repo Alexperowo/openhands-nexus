@@ -265,31 +265,30 @@ EVIDENCE:
       5. Added `visibilitychange` listener in `working-profile-ui.js` for instant wake-up when switching tabs or unlocking mobile PWA.
     * Verification: Live query verified smooth incremental progression every 2 seconds (`48755 -> 48763 -> 48771 tokens`, `4.0 t/s`, ETA countdown). Screenshot `scratch/live_eta_pill.png` and `scratch/desktop_with_eta.png` empirically confirmed live pill display and perfect composer alignment.
   - Dynamic 5th Dump Architecture («Дамп активного диалога»): 100% COMPLETE & ARMED.
-    * Implementation: Implemented `save_slot_dump()` in `Config/slot_cache_manager.py`. In `_watcher_loop()`, added transition detection (`is_processing: True -> False` with `n_prompt > 200`): automatically saves `active_conversation_{model}.bin` when a model completes a turn, enabling instant (1.2s) KV restore on subsequent turns instead of multi-hour prefill.
+  - Stage 10 (Production Platform Update: Agent Canvas v1.18.0 & 100% Localization Parity): 100% COMPLETE & VERIFIED.
+    * Pre-update Backup: Station backed up via `openhands backup` to `Archive/backups/station/station-backup-20260916-075220` (170 files, 5.49 MB) and previous Canvas v1.16.0 backed up to `Archive/backups/OpenHands/20260916-075521-v1.16.0/`.
+    * Clean Upgrade: Upgraded `@openhands/agent-canvas` to v1.18.0 via `OpenHands-Update/scripts/update-openhands.ps1 -Update -Force`.
+    * 100% Russian Localization Parity (2457 EN keys, 2470 RU keys): Translated and integrated all 70 new upstream v1.18.0 keys (Automations, Apps/Extensions, Conversation Filters, Image Previews). Resolved mustache format mismatch (`{{currentCost}} / {{maxBudget}}`). Audit (`audit-localization.py`): 0 missing keys, 0 placeholder mismatches, 0 tag mismatches.
+    * Non-Invasive Overlay Reapplication: Automatically and idempotently reapplied all 5 overlay patchers (`patch-agent-canvas-local-llm.ps1`, `patch-agent-canvas-localization.ps1`, `patch-agent-canvas-voice.ps1`, `patch-agent-canvas-working-profile.ps1`, `patch-agent-canvas-pwa.ps1`).
+    * Full Multi-Platform Verification:
+      - 35/35 dependency tests passed (`openhands check`).
+      - 25/25 automated test suite passed (`Tests/runner.py --all` in 2.20s).
+      - All 5 microservices healthy and active (Ports 18000, 8000, 8080, 8443, 18002).
+      - Desktop Chrome (1920x1080) and Tablet Portrait (1848x2960) browser verification: flawless single-row composer alignment (`+`, `Qwen 122B ˅`, `Глубокое ˅`, `● Готов`, mic, send), popovers render without clipping, Russian localization rendered across canvas landing, settings, and sidebar.
 EVIDENCE:
-  - Audit JSON Reports: K:\Project\LLM-tests\Code-Audit-Qwen122\ (module1-6 audits + audit_summary.json).
-  - Master Audit Document: K:\Project\Docs\AUDIT_REPORT_QWEN122.md.
-  - Accessibility Guide (Group 1 Blind Developer Experience): K:\Project\Docs\ACCESSIBILITY.md.
-  - Hardware Adaptation Guide (Single/Dual GPU, RAM): K:\Project\Docs\HARDWARE_ADAPTATION_GUIDE.md.
-  - MoE Router Documentation: K:\Project\Docs\MOE_ROUTER_EXPERT_PROFILING.md (Sections 1-7 complete).
-  - MoE Expert Cache Benchmark Documentation: K:\Project\Docs\QWEN122_EXPERT_CACHE_BENCHMARK.md.
-  - Screenshots:
-    * `scratch/desktop_clean_stop_btn.png` (Composer with clean 28px pause icon, zero word labels, zero layout shift)
-    * `scratch/desktop_live_telemetry_pill.png` (Live telemetry pill displaying 44% 5 т/с prefill in real time)
-    * `scratch/live_eta_pill.png` (Live telemetry pill displaying 98% 4 т/с · ~4м 42с with progressive countdown)
-    * `scratch/desktop_with_eta.png` (Full desktop view confirming rock-solid layout alignment with ETA pill)
-  - Raw Telemetry: `GET /api/station-telemetry` returning live slot data with ETA in 1.6ms.
-  - Physical Tablet Screenshots:
-    * Android MCP steps/2809 (Open + menu on Samsung Galaxy Tab S9 Ultra)
-    * Android MCP steps/2813 (Open agent profile submenu with all 12 localized Russian titles and single active checkmark)
-    * Android MCP steps/2817 (Post-switch composer row updated to Qwen 122B, Глубокое, ● Готов after physical touch tap)
-  - Desktop Screenshots:
-    * scratch/desktop_agent_profile_submenu.png (Desktop submenu with localized Russian titles)
-    * scratch/desktop_after_click_ornith.png (Desktop live profile switch and bottom bar sync)
-    * scratch/desktop_settings_agents.png (Settings page displaying Russian profile names)
-  - Automated Test Suite: Tests/runner.py --all -> 25/25 PASSED in 1.81s.
+  - Station Backup: `Archive/backups/station/station-backup-20260916-075220`
+  - Canvas v1.16.0 Backup: `Archive/backups/OpenHands/20260916-075521-v1.16.0/`
+  - Localization Audit Report: `OpenHands-Tests/Russian-Localization/locale-audit.json`
+  - Dependency Check: 35/35 PASS (`openhands check`)
+  - Automated Test Battery: 25/25 PASS in 2.20s (`Tests/runner.py --all`)
+  - Browser Verification Screenshots:
+    * `scratch/desktop_v118_landing.png` (Clean v1.18.0 desktop landing page with unified composer)
+    * `scratch/desktop_v118_model_popover.png` (Desktop model popover with 4 models and 3 chains)
+    * `scratch/desktop_v118_settings.png` (Settings page showing Canvas v1.18.0 and localized agent profiles)
+    * `scratch/tablet_v118_landing.png` (Tablet portrait landing page with unclipped single-row composer)
+    * `scratch/tablet_v118_popover.png` (Tablet model popover contained within viewport)
 OPEN_ISSUES:
-  - None. All audit findings, UI fixes, agent profile localizations, slot dump automation, and real-time telemetry tasks are 100% complete, hardened, and empirically verified.
-NEXT_ACTION:    Synchronize all committed overlay enhancements to remote GitHub repository (`Alexperowo/openhands-nexus`).
+  - None. All services online, all tests green, all overlays and localizations 100% verified on v1.18.0.
+NEXT_ACTION:    Commit release to Git and push to GitHub repository (`Alexperowo/openhands-nexus`).
 
 

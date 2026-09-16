@@ -1,4 +1,4 @@
-# OpenHands Local — Station Restore Script
+﻿﻿# OpenHands Local - Station Restore Script
 [CmdletBinding()]
 param(
     [string]$BackupPath = "",
@@ -6,14 +6,14 @@ param(
     [switch]$Force
 )
 
-$Host.UI.RawUI.WindowTitle = "OpenHands Local — Восстановление станции"
+$Host.UI.RawUI.WindowTitle = "OpenHands Local - Восстановление станции"
 $ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot\common.ps1"
 Init-UpdaterLog "station-restore"
 
 Log-Msg "=====================================================================" "WARN"
-Log-Msg "          OPENHANDS NEXUS — ВОССТАНОВЛЕНИЕ СТАНЦИИ" "WARN"
+Log-Msg "          OPENHANDS NEXUS - ВОССТАНОВЛЕНИЕ СТАНЦИИ" "WARN"
 Log-Msg "=====================================================================" "WARN"
 
 $ProjectRoot = $Global:ProjectRootDir

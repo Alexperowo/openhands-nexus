@@ -1,4 +1,4 @@
-# OpenHands Local — Station Backup Generator
+﻿# OpenHands Local - Station Backup Generator
 [CmdletBinding()]
 param(
     [string]$BackupName = "",
@@ -6,14 +6,14 @@ param(
     [switch]$CreateZip
 )
 
-$Host.UI.RawUI.WindowTitle = "OpenHands Local — Резервное копирование станции"
+$Host.UI.RawUI.WindowTitle = "OpenHands Nexus - Station Backup"
 $ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot\common.ps1"
 Init-UpdaterLog "station-backup"
 
 Log-Msg "=====================================================================" "STEP"
-Log-Msg "          OPENHANDS NEXUS — РЕЗЕРВНОЕ КОПИРОВАНИЕ СТАНЦИИ" "STEP"
+Log-Msg "          OPENHANDS NEXUS - РЕЗЕРВНОЕ КОПИРОВАНИЕ СТАНЦИИ" "STEP"
 Log-Msg "=====================================================================" "STEP"
 
 $ProjectRoot = $Global:ProjectRootDir
@@ -120,6 +120,7 @@ if ($CreateZip) {
 
 Log-Msg "=====================================================================" "SUCCESS"
 Log-Msg "Резервная копия успешно создана!" "SUCCESS"
-Log-Msg "Расположение: $targetBackupFolder" "SUCCESS"
-Log-Msg "Файлов: $($manifest.files_count) | Объем: $('{0:N2} MB' -f ($manifest.total_bytes / 1MB))" "SUCCESS"
+$mbFormatted = '{0:N2} MB' -f ($manifest.total_bytes / 1MB)
+Log-Msg "Files: $($manifest.files_count) | Total Size: $mbFormatted" "SUCCESS"
 Log-Msg "=====================================================================" "SUCCESS"
+exit 0

@@ -1,4 +1,4 @@
-# OpenHands Agent Canvas & App Stack Updater Script
+﻿# OpenHands Agent Canvas & App Stack Updater Script
 # Location: K:\Project\OpenHands-Update\scripts\update-openhands.ps1
 
 [CmdletBinding()]
