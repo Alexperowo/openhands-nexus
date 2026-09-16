@@ -91,8 +91,8 @@ import transcribe_cpp
 from supertonic import TTS
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "Config"))
-import working_profiles
 import slot_cache_manager
+import working_profiles
 
 # Global state
 START_TIME = time.time()
