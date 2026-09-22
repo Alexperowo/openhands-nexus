@@ -7,14 +7,13 @@ and memory budget enforcement using native nvml.dll via ctypes.
 Compatible with Windows 10/11 Dual-GPU workstations (RTX 5060 Ti + RTX 2080 Ti).
 """
 
-import sys
-import os
-import time
-import json
-import ctypes
 import argparse
-import urllib.request
+import ctypes
+import json
+import sys
+import time
 import urllib.error
+import urllib.request
 
 
 class MemoryInfo(ctypes.Structure):
@@ -154,7 +153,7 @@ def reclaim_vram(router_url: str = "http://127.0.0.1:8080", timeout_s: float = 1
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=5):
             pass
     except Exception:
         pass
