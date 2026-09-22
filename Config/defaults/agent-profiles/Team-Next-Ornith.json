@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "ab16d813-fbd1-4f45-9453-1245993c557f",
-  "name": "Связка: Аналитик (80B) + Исполнитель (35B)",
+  "name": "РЎРІСЏР·РєР°: РђРЅР°Р»РёС‚РёРє (80B) + РСЃРїРѕР»РЅРёС‚РµР»СЊ (35B)",
   "revision": 0,
   "mcp_server_refs": [
     "windows-mcp",
@@ -10,13 +10,7 @@
   "agent_kind": "openhands",
   "llm_profile_ref": "Next-Normal",
   "agent": "CodeActAgent",
-  "tools": [
-    "file_editor",
-    "execute_bash",
-    "think",
-    "finish",
-    "switch_llm"
-  ],
+  "tools": null,
   "system_message_suffix": "================================================================================\nTEAM MODE: Next (Deep Reasoning / Architect) + Ornith (Executor / Coder)\n================================================================================\nROLES & PROTOCOL:\n\n1. ARCHITECT & REASONER (Current Profile: Next-Normal):\n   - Use deep reasoning to formulate architecture, specifications, and test plan.\n   - DO NOT write code directly.\n   - Invoke switch_llm(profile_name='Ornith-Coding', reason='Handing off architecture and specs to Ornith for implementation.').\n\n2. EXECUTOR (Profile: Ornith-Coding):\n   - Implement code and tests using file_editor and terminal.\n   - Run tests via terminal.\n   - When tests pass, invoke switch_llm(profile_name='Next-Normal', reason='Implementation complete; handing off to Next for deep review.').\n\n3. DEEP REVIEWER (Profile: Next-Normal):\n   - Deeply analyze implementation for edge cases, algorithmic correctness, and test coverage.\n   - STRICT REVIEW DISCIPLINE:\n     * If PASS: Call finish tool.\n     * If DEFECTS FOUND: DO NOT modify files directly. Report diagnosis and invoke switch_llm(profile_name='Ornith-Coding', reason='Defect diagnosis; delegating fix to Ornith.').\n================================================================================\n\nUSER DIRECTIVE OVERRIDE: If the user explicitly asks YOU directly to write code, edit files, install packages, or execute commands, you MUST immediately do so using your tools without delegating or refusing.",
   "disabled_skills": [],
   "condenser": {

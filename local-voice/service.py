@@ -110,6 +110,8 @@ _telemetry_lock = threading.Lock()
 _prev_telemetry_sample = {}
 _prefill_tracker = {}
 _gen_tracker = {}
+_last_known_gen_speed = 0.0
+_last_known_prefill_speed = 0.0
 
 
 def _shutdown_server():
@@ -260,6 +262,7 @@ def get_station_telemetry() -> dict:
 
 
 def _compute_station_telemetry() -> dict:
+    global _last_known_gen_speed, _last_known_prefill_speed, _gen_tracker, _prefill_tracker
     log_path = os.path.join(os.path.dirname(__file__), "..", "Logs", "llama-swap", "llama-swap.log")
     if not os.path.exists(log_path):
         log_path = os.path.join(os.path.dirname(__file__), "..", "llama-swap.log")
@@ -282,6 +285,7 @@ def _compute_station_telemetry() -> dict:
     except Exception:
         pass
 
+    now = time.time()
     telemetry = {
         "status": "ok",
         "model": active_profile,
@@ -290,12 +294,14 @@ def _compute_station_telemetry() -> dict:
         "tokens": 0,
         "total_tokens": 0,
         "speed_tok_s": 0.0,
+        "last_gen_speed": _last_known_gen_speed,
+        "last_prefill_speed": _last_known_prefill_speed,
         "eta_seconds": None,
         "eta_str": None,
         "active_tool": None,
         "is_active": False,
         "slot_cache": slot_status,
-        "timestamp": time.time()
+        "timestamp": now
     }
 
     # 1. Check if OpenHands is actively executing a tool
@@ -310,7 +316,7 @@ def _compute_station_telemetry() -> dict:
                     event_files = sorted(glob.glob(os.path.join(events_dir, "event-*.json")))
                     if event_files:
                         last_f = event_files[-1]
-                        if (time.time() - os.path.getmtime(last_f)) < 30:
+                        if (now - os.path.getmtime(last_f)) < 30:
                             with open(last_f, encoding="utf-8-sig") as ef:
                                 ev_data = json.load(ef)
                             if ev_data.get("kind") == "ActionEvent":
@@ -322,211 +328,188 @@ def _compute_station_telemetry() -> dict:
     except Exception:
         pass
 
-    # 2. Query live slots from running model via llama-swap router (sub-second accuracy)
+    # 2. Check running model info from llama-swap router
+    running_info = {"model": None, "state": "none", "proxy": None}
     try:
         running_info = slot_cache_manager.get_running_model_info()
-        model_id = running_info.get("model")
-        proxy = running_info.get("proxy")
-        if model_id and running_info.get("state") == "ready":
-            slots_urls = []
-            if proxy:
-                slots_urls.append(f"{proxy.rstrip('/')}/slots")
-            slots_urls.append(f"http://127.0.0.1:8080/upstream/{model_id}/slots")
-
-            slots_data = None
-            for s_url in slots_urls:
-                try:
-                    s_req = urllib.request.Request(s_url, headers={"Accept": "application/json"})
-                    with urllib.request.urlopen(s_req, timeout=0.8) as s_resp:
-                        slots_data = json.loads(s_resp.read().decode("utf-8"))
-                        if slots_data and isinstance(slots_data, list):
-                            break
-                except Exception:
-                    continue
-
-            if slots_data and isinstance(slots_data, list) and len(slots_data) > 0:
-                s = slots_data[0]
-                is_processing = s.get("is_processing", False)
-                n_prompt = s.get("n_prompt_tokens", 0)
-                n_processed = s.get("n_prompt_tokens_processed", 0)
-                next_token = s.get("next_token", [{}])
-                n_decoded = next_token[0].get("n_decoded", 0) if next_token else 0
-
-                now = time.time()
-                if is_processing:
-                    telemetry["is_active"] = True
-                    if n_processed < n_prompt and n_prompt > 0:
-                        telemetry["state"] = "prefill"
-
-                        # Track prefill chunk lifecycle and compute real-time throughput
-                        if _prefill_tracker.get("model") != model_id or _prefill_tracker.get("prompt_total") != n_prompt:
-                            default_speed = 4.0 if "122" in str(model_id) else (180.0 if "35" in str(model_id) else 30.0)
-                            _prefill_tracker.update({
-                                "model": model_id,
-                                "prompt_total": n_prompt,
-                                "last_tokens": n_processed,
-                                "last_chunk_time": now,
-                                "measured_speed": default_speed,
-                                "estimated_speed": default_speed,
-                            })
-                        elif n_processed > _prefill_tracker.get("last_tokens", 0):
-                            # Chunk step detected: compute exact batch speed
-                            dt = now - _prefill_tracker.get("last_chunk_time", now)
-                            dn = n_processed - _prefill_tracker.get("last_tokens", 0)
-                            if dt > 1.0 and dn > 0:
-                                chunk_speed = round(dn / dt, 1)
-                                _prefill_tracker["measured_speed"] = chunk_speed
-                                _prefill_tracker["estimated_speed"] = chunk_speed
-                            _prefill_tracker["last_tokens"] = n_processed
-                            _prefill_tracker["last_chunk_time"] = now
-
-                        speed = max(0.5, _prefill_tracker.get("estimated_speed", 4.0))
-                        chunk_elapsed = max(0.0, now - _prefill_tracker.get("last_chunk_time", now))
-                        interpolated_eval = min(n_prompt, int(n_processed + (chunk_elapsed * speed)))
-                        pct = round((interpolated_eval / max(1, n_prompt)) * 100, 1)
-                        rem_tokens = max(0, n_prompt - interpolated_eval)
-                        eta_s = int(rem_tokens / speed)
-
-                        if eta_s >= 60:
-                            eta_str = f"{eta_s // 60}м {eta_s % 60}с"
-                        elif eta_s > 0:
-                            eta_str = f"{eta_s}с"
-                        else:
-                            eta_str = "несколько сек"
-
-                        telemetry["tokens"] = interpolated_eval
-                        telemetry["total_tokens"] = n_prompt
-                        telemetry["progress_pct"] = pct
-                        telemetry["speed_tok_s"] = speed
-                        telemetry["eta_seconds"] = eta_s
-                        telemetry["eta_str"] = eta_str
-                        return telemetry
-                    else:
-                        if n_decoded > 0:
-                            telemetry["state"] = "generating"
-                            if _gen_tracker.get("model") != model_id:
-                                _gen_tracker.update({
-                                    "model": model_id,
-                                    "last_tokens": n_decoded,
-                                    "last_time": now,
-                                    "measured_speed": 30.0,
-                                })
-                            elif n_decoded > _gen_tracker.get("last_tokens", 0):
-                                dt = now - _gen_tracker.get("last_time", now)
-                                dn = n_decoded - _gen_tracker.get("last_tokens", 0)
-                                if dt >= 0.4 and dn > 0:
-                                    _gen_tracker["measured_speed"] = round(dn / dt, 1)
-                                    _gen_tracker["last_tokens"] = n_decoded
-                                    _gen_tracker["last_time"] = now
-
-                            gen_speed = _gen_tracker.get("measured_speed", 30.0)
-                            telemetry["tokens"] = n_decoded
-                            telemetry["total_tokens"] = n_prompt + n_decoded
-                            telemetry["progress_pct"] = 100.0
-                            telemetry["speed_tok_s"] = gen_speed
-                            return telemetry
-                        else:
-                            telemetry["state"] = "thinking"
-                            telemetry["tokens"] = 0
-                            telemetry["total_tokens"] = n_prompt
-                            telemetry["progress_pct"] = 100.0
-                            telemetry["speed_tok_s"] = 0.0
-                            return telemetry
-                else:
-                    telemetry["state"] = "idle"
-                    telemetry["is_active"] = False
-                    _prefill_tracker.clear()
-                    _gen_tracker.clear()
-                    return telemetry
     except Exception:
         pass
 
-    # 3. Fallback: Parse log tail if slots endpoint is unreachable
-    if not os.path.exists(log_path):
+    model_id = running_info.get("model")
+    model_state = running_info.get("state", "none")
+    proxy = running_info.get("proxy")
+
+    if model_state in ("loading", "starting", "initializing", "swapping"):
+        telemetry["state"] = "loading"
+        telemetry["is_active"] = True
         return telemetry
 
-    try:
-        mtime = os.path.getmtime(log_path)
-        is_fresh = (time.time() - mtime) < 120
-        telemetry["is_active"] = is_fresh
+    # 3. Read log tail to track active tasks, checkpoints, and speeds
+    log_task_active = False
+    log_last_task = None
+    log_prefill_tokens = 0
+    log_prefill_done = False
 
-        with open(log_path, "rb") as f:
-            f.seek(max(0, os.path.getsize(log_path) - 32768))
-            lines = f.read().decode("utf-8", errors="ignore").splitlines()
+    if os.path.exists(log_path):
+        try:
+            with open(log_path, "rb") as f:
+                f_size = os.path.getsize(log_path)
+                f.seek(max(0, f_size - 65536))
+                lines = f.read().decode("utf-8", errors="ignore").splitlines()
 
-        for line in reversed(lines):
-            line_lower = line.lower()
-            if "stop processing" in line_lower or "release: id" in line_lower or "all slots are idle" in line_lower:
-                telemetry["state"] = "idle"
-                return telemetry
+            for line in lines:
+                m_launch = re.search(r'slot is processing task.*?id_task=(\d+)', line)
+                if m_launch:
+                    log_last_task = int(m_launch.group(1))
+                    log_task_active = True
+                    log_prefill_done = False
 
-            # Prefill progress in percentage or token ratio
-            m_prog = re.search(r'prompt eval progress:\s*([\d.]+)%|processing prompt\s*\((\d+)\s*/\s*(\d+)\s*tokens\)', line, re.IGNORECASE)
-            if m_prog:
-                telemetry["state"] = "prefill"
-                if m_prog.group(1):
-                    telemetry["progress_pct"] = float(m_prog.group(1))
-                elif m_prog.group(2) and m_prog.group(3):
-                    cur_t = int(m_prog.group(2))
-                    tot_t = int(m_prog.group(3))
-                    telemetry["tokens"] = cur_t
-                    telemetry["total_tokens"] = tot_t
-                    telemetry["progress_pct"] = round((cur_t / max(1, tot_t)) * 100, 1)
-                return telemetry
+                m_chk = re.search(r'slot create_check:.*?task\s*(\d+).*?created context checkpoint\s*\d+\s*of\s*\d+.*?n_tokens\s*=\s*(\d+)', line)
+                if m_chk:
+                    t_id = int(m_chk.group(1))
+                    if log_last_task == t_id:
+                        log_prefill_tokens = int(m_chk.group(2))
 
-            m_prefill = re.search(r'^prompt eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line, re.IGNORECASE)
-            if m_prefill:
-                cur_tokens = int(m_prefill.group(2))
-                speed = float(m_prefill.group(3))
-                telemetry["state"] = "prefill"
-                telemetry["progress_pct"] = 100.0
-                telemetry["tokens"] = cur_tokens
-                telemetry["total_tokens"] = cur_tokens
-                telemetry["speed_tok_s"] = speed
-                return telemetry
+                m_peval = re.search(r'prompt eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
+                if m_peval:
+                    log_prefill_done = True
+                    p_spd = float(m_peval.group(3))
+                    _last_known_prefill_speed = p_spd
+                    telemetry["last_prefill_speed"] = p_spd
 
-            m_prefill_legacy = re.search(r'prompt processing,\s*n_tokens\s*=\s*(\d+),\s*progress\s*=\s*([\d.]+).*?([\d.]+)\s*tokens per second', line)
-            if m_prefill_legacy:
-                cur_tokens = int(m_prefill_legacy.group(1))
-                prog = float(m_prefill_legacy.group(2))
-                speed = float(m_prefill_legacy.group(3))
-                total = int(round(cur_tokens / prog)) if prog > 0 else cur_tokens
-                telemetry["state"] = "prefill"
-                telemetry["progress_pct"] = round(prog * 100, 1)
-                telemetry["tokens"] = cur_tokens
-                telemetry["total_tokens"] = total
-                telemetry["speed_tok_s"] = speed
-                return telemetry
+                m_geval = re.search(r'^\s*eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
+                if m_geval:
+                    g_spd = float(m_geval.group(3))
+                    _last_known_gen_speed = g_spd
+                    telemetry["last_gen_speed"] = g_spd
 
-            if "reasoning" in line_lower or "thinking" in line_lower or "<think>" in line_lower:
-                telemetry["state"] = "thinking"
-                return telemetry
+                if re.search(r'release_slots.*?id_task=(\d+)', line) or 'all slots are idle' in line:
+                    log_task_active = False
+        except Exception:
+            pass
 
-            m_gen = re.search(r'^\s*eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line, re.IGNORECASE)
-            if m_gen:
-                n_gen = int(m_gen.group(2))
-                speed = float(m_gen.group(3))
-                telemetry["state"] = "generating"
-                telemetry["tokens"] = n_gen
-                telemetry["speed_tok_s"] = speed
-                return telemetry
+    # 4. Prefill Fast-Path: If log indicates prompt evaluation is in progress, return instantly without querying slots
+    if log_task_active and not log_prefill_done:
+        telemetry["is_active"] = True
+        telemetry["state"] = "prefill"
 
-            m_gen_legacy = re.search(r'n_gen\s*=\s*(\d+),\s*tg\s*=\s*([\d.]+)\s*t/s,\s*tg_3s\s*=\s*([\d.]+)\s*t/s', line)
-            if m_gen_legacy:
-                n_gen = int(m_gen_legacy.group(1))
-                speed = float(m_gen_legacy.group(3))
-                telemetry["state"] = "generating"
-                telemetry["tokens"] = n_gen
-                telemetry["speed_tok_s"] = speed
-                return telemetry
+        # Track chunk-based prefill throughput
+        if _prefill_tracker.get("task") != log_last_task:
+            def_p_spd = 150.0 if "122" in str(model_id) else (1400.0 if "35" in str(model_id) else 1000.0)
+            _prefill_tracker.update({
+                "task": log_last_task,
+                "last_tokens": log_prefill_tokens,
+                "last_time": now,
+                "speed": _last_known_prefill_speed or def_p_spd,
+                "total_est": max(log_prefill_tokens + 2048, 4096)
+            })
+        else:
+            dt = now - _prefill_tracker.get("last_time", now)
+            dn = log_prefill_tokens - _prefill_tracker.get("last_tokens", 0)
+            if dt >= 0.4 and dn > 0:
+                p_spd = round(dn / dt, 1)
+                _prefill_tracker["speed"] = p_spd
+                _last_known_prefill_speed = p_spd
+                _prefill_tracker["last_tokens"] = log_prefill_tokens
+                _prefill_tracker["last_time"] = now
+                if log_prefill_tokens >= _prefill_tracker.get("total_est", 4096):
+                    _prefill_tracker["total_est"] = log_prefill_tokens + 2048
 
-            if "launch_slot_" in line_lower or "loading model" in line_lower:
-                telemetry["state"] = "loading"
-                return telemetry
-    except Exception as e:
-        telemetry["error"] = str(e)
+        est_total = max(log_prefill_tokens + 1024, _prefill_tracker.get("total_est", 4096))
+        active_p_speed = max(10.0, _prefill_tracker.get("speed", _last_known_prefill_speed or 1000.0))
+        time_since_chk = max(0.0, now - _prefill_tracker.get("last_time", now))
+        interp_tokens = min(est_total, int(log_prefill_tokens + (time_since_chk * active_p_speed)))
+        pct = min(99.0, max(1.0, round((interp_tokens / max(1, est_total)) * 100, 1)))
 
+        rem_tokens = max(0, est_total - interp_tokens)
+        eta_s = int(rem_tokens / active_p_speed)
+        if eta_s >= 60:
+            eta_str = f"{eta_s // 60}м {eta_s % 60}с"
+        elif eta_s > 0:
+            eta_str = f"{eta_s}с"
+        else:
+            eta_str = "несколько сек"
+
+        telemetry["tokens"] = interp_tokens
+        telemetry["total_tokens"] = est_total
+        telemetry["progress_pct"] = pct
+        telemetry["speed_tok_s"] = active_p_speed
+        telemetry["eta_seconds"] = eta_s
+        telemetry["eta_str"] = eta_str
+        return telemetry
+
+    # 5. Query live slot for real-time decoding metrics (only when decoding or idle)
+    slot_obj = None
+    if model_id and model_state == "ready":
+        s_url = f"{proxy.rstrip('/')}/slots" if proxy else f"http://127.0.0.1:8080/upstream/{model_id}/slots"
+        try:
+            s_req = urllib.request.Request(s_url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(s_req, timeout=0.25) as s_resp:
+                data = json.loads(s_resp.read().decode("utf-8"))
+                if isinstance(data, list) and len(data) > 0:
+                    slot_obj = data[0]
+        except Exception:
+            pass
+
+    has_next = False
+    n_decoded = 0
+    s_task = 0
+    s_state = 0
+
+    if slot_obj and isinstance(slot_obj, dict):
+        s_task = int(slot_obj.get("id_task", 0))
+        s_state = int(slot_obj.get("state", 0))
+        next_tok = slot_obj.get("next_token", {})
+        if isinstance(next_tok, list) and len(next_tok) > 0:
+            next_tok = next_tok[0]
+        elif not isinstance(next_tok, dict):
+            next_tok = {}
+
+        has_next = bool(next_tok.get("has_next_token", False))
+        n_decoded = int(next_tok.get("n_decoded", 0))
+
+    # Case A: Live token generation (decoding in progress)
+    if has_next or (s_state == 1 and n_decoded > 0):
+        telemetry["is_active"] = True
+        telemetry["state"] = "generating"
+        telemetry["tokens"] = n_decoded
+
+        if _gen_tracker.get("task") != s_task:
+            def_spd = 33.0 if "122" in str(model_id) else (70.0 if "35" in str(model_id) else 100.0)
+            _gen_tracker.update({
+                "task": s_task,
+                "last_tokens": n_decoded,
+                "last_time": now,
+                "speed": _last_known_gen_speed or def_spd
+            })
+        else:
+            dt = now - _gen_tracker.get("last_time", now)
+            dn = n_decoded - _gen_tracker.get("last_tokens", 0)
+            if dt >= 0.3 and dn > 0:
+                calc_spd = round(dn / dt, 1)
+                _gen_tracker["speed"] = calc_spd
+                _last_known_gen_speed = calc_spd
+                _gen_tracker["last_tokens"] = n_decoded
+                _gen_tracker["last_time"] = now
+
+        current_gen_speed = _gen_tracker.get("speed", _last_known_gen_speed or 30.0)
+        telemetry["speed_tok_s"] = current_gen_speed
+        telemetry["last_gen_speed"] = _last_known_gen_speed
+        return telemetry
+
+    # Case C: Prefill complete, waiting for first token or thinking
+    if log_task_active and log_prefill_done and not has_next:
+        telemetry["is_active"] = True
+        telemetry["state"] = "thinking"
+        telemetry["progress_pct"] = 100.0
+        telemetry["speed_tok_s"] = 0.0
+        return telemetry
+
+    # Case D: Completely idle
+    telemetry["state"] = "idle"
+    telemetry["is_active"] = False
     return telemetry
+
 
 
 class VoiceBridgeHandler(BaseHTTPRequestHandler):
@@ -739,6 +722,17 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
+        elif clean_path in ("/shutdown", "/voice-api/shutdown"):
+            resp = {"status": "shutting_down"}
+            body = json.dumps(resp).encode("utf-8")
+            self.send_response(200)
+            self._set_cors()
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            print("[Voice Bridge] Graceful shutdown requested via HTTP POST", flush=True)
+            threading.Thread(target=_shutdown_server).start()
+            return
 
         if self.path == "/stop":
             cancel_event.set()

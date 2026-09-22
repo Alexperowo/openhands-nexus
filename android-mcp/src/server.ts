@@ -564,21 +564,16 @@ export const createServer = (): McpServer => {
 	tool(
 		"android_type_text",
 		"Type Text",
-		"Type text into the currently focused input field. Tap the field first. ASCII only (adb limitation).",
+		"Type text into the currently focused input field. Tap the field first. Supports Unicode and Russian/Cyrillic characters.",
 		{
 			device: deviceParam,
-			text: z.string().describe("The text to type (ASCII only)"),
+			text: z.string().describe("The text to type (supports Unicode and Cyrillic)"),
 			submit: z.boolean().optional().describe("Press ENTER after typing"),
 			clear: z.boolean().optional().describe("Clear the field before typing (select-all + delete)"),
 		},
 		{},
 		async ({ device, text, submit, clear }) => {
 			const id = adb.resolveDevice(device);
-			if (!adb.isAscii(text)) {
-				throw new ActionableError(
-					"Non-ASCII text is not supported by 'adb shell input text'. Type the ASCII part or use the device keyboard."
-				);
-			}
 
 			if (clear) {
 				try {
@@ -593,7 +588,7 @@ export const createServer = (): McpServer => {
 			}
 
 			if (text !== "") {
-				adb.shell(id, "input", "text", adb.escapeShellText(text));
+				adb.typeText(id, text);
 			}
 			if (submit) {
 				adb.shell(id, "input", "keyevent", "KEYCODE_ENTER");

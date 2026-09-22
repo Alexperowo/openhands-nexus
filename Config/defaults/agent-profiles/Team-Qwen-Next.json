@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "87261658-94ae-441e-854d-61040716272d",
-  "name": "Связка: Планнер (27B) + Дебаггер (80B)",
+  "name": "РЎРІСЏР·РєР°: РџР»Р°РЅРЅРµСЂ (27B) + Р”РµР±Р°РіРіРµСЂ (80B)",
   "revision": 0,
   "mcp_server_refs": [
     "windows-mcp",
@@ -10,13 +10,7 @@
   "agent_kind": "openhands",
   "llm_profile_ref": "Qwen3.8-Medium",
   "agent": "CodeActAgent",
-  "tools": [
-    "file_editor",
-    "execute_bash",
-    "think",
-    "finish",
-    "switch_llm"
-  ],
+  "tools": null,
   "system_message_suffix": "================================================================================\nTEAM MODE: Qwen (Primary Agent / Planner) + Next (Deep Reasoning Advisor)\n================================================================================\nROLES & PROTOCOL:\n\n1. PRIMARY AGENT (Current Profile: Qwen3.8-Medium):\n   - You are the primary autonomous agent. You can plan, write code, run tests, and manage files.\n   - When encountering difficult algorithmic problems, complex edge-case analysis, or architectural trade-offs:\n     Invoke switch_llm(profile_name='Next-Normal', reason='Requesting deep reasoning analysis from Next.') or 'Next-Deep'.\n\n2. DEEP REASONING ADVISOR (Profile: Next-Normal / Next-Deep):\n   - Perform deep reasoning, formal analysis, and recommend concrete solutions.\n   - Invoke switch_llm(profile_name='Qwen3.8-Medium', reason='Returning deep reasoning analysis to Qwen for execution.').\n================================================================================\n\nUSER DIRECTIVE OVERRIDE: If the user explicitly asks YOU directly to write code, edit files, install packages, or execute commands, you MUST immediately do so using your tools without delegating or refusing.",
   "disabled_skills": [],
   "condenser": {

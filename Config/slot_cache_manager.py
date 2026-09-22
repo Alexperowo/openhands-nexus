@@ -63,22 +63,21 @@ def _log(msg: str):
         pass
 
 
-def resolve_dump_for_model(model_id: str, working_profile_id: str = None, prefer_active_dialogue: bool = True) -> str:
+def resolve_dump_for_model(model_id: str, working_profile_id: str = None, prefer_active_dialogue: bool = False) -> str:
     """Resolve the canonical prefix dump filename for a model and active profile."""
     if not model_id:
-        return "architect_prefix.bin"
+        return None
 
     m = model_id.lower()
     prof = (working_profile_id or "").lower()
 
-    # 5th Dump: Prioritize dynamic active dialogue snapshot if fresh and available
+    # Dynamic conversation dumps are disabled by default to prevent prefix mismatch stalls
     if prefer_active_dialogue:
         diag_dump = f"active_conversation_{model_id}.bin"
         diag_path = os.path.join(CACHE_DIR, diag_dump)
         if os.path.isfile(diag_path):
             try:
-                # Use if created/modified within last 48 hours
-                if (time.time() - os.path.getmtime(diag_path)) < 172800:
+                if (time.time() - os.path.getmtime(diag_path)) < 3600:
                     return diag_dump
             except Exception:
                 pass
@@ -92,7 +91,7 @@ def resolve_dump_for_model(model_id: str, working_profile_id: str = None, prefer
             return "solo_full_prefix.bin"
         return "architect_prefix.bin"
     if "qwen" in m:
-        # Qwen 3.8 27B has separate architecture without 122B static dump
+        # Qwen 3.8 27B relies on native in-memory prompt cache
         return None
 
     return None
@@ -276,6 +275,20 @@ def check_and_auto_restore(router_url: str = ROUTER_URL) -> dict:
         }
 
     profile_id = get_active_profile_id()
+    enable_auto_restore = os.environ.get("ENABLE_AUTO_RESTORE_SLOTS", "0") == "1"
+    if not enable_auto_restore:
+        with _state_lock:
+            _last_restored_state["model"] = model
+            _last_restored_state["dump"] = None
+            _last_restored_state["proxy"] = proxy
+            _last_restored_state["status"] = "native_cache_active"
+        return {
+            "status": "native_cache_active",
+            "model": model,
+            "synced": True,
+            "note": "Native in-memory prompt KV cache active"
+        }
+
     desired_dump = resolve_dump_for_model(model, profile_id)
 
     with _state_lock:
@@ -379,35 +392,6 @@ def _watcher_loop(interval_s: float = 1.0):
     while not _watcher_stop_event.is_set():
         try:
             check_and_auto_restore()
-
-            # Dynamic 5th Dump: Auto-snapshot when model completes a turn
-            running_info = get_running_model_info()
-            model = running_info.get("model")
-            proxy = running_info.get("proxy")
-            if model and running_info.get("state") == "ready":
-                slots_url = f"{proxy.rstrip('/')}/slots" if proxy else f"{ROUTER_URL}/upstream/{model}/slots"
-                try:
-                    s_req = urllib.request.Request(slots_url, headers={"Accept": "application/json"})
-                    with urllib.request.urlopen(s_req, timeout=0.8) as s_resp:
-                        slots = json.loads(s_resp.read().decode("utf-8"))
-                        if slots and isinstance(slots, list):
-                            is_proc = slots[0].get("is_processing", False)
-                            n_prompt = slots[0].get("n_prompt_tokens", 0)
-
-                            # Turn completion detected: True -> False with meaningful tokens
-                            if _last_seen_processing and not is_proc and n_prompt > 200:
-                                dump_name = f"active_conversation_{model}.bin"
-                                _log(f"[DynamicSnapshot] Model '{model}' finished turn ({n_prompt} tokens). Auto-saving 5th dump '{dump_name}'...")
-                                save_res = save_slot_dump(model, dump_name)
-                                if save_res.get("ok"):
-                                    with _state_lock:
-                                        _last_restored_state["dump"] = dump_name
-                                        _last_restored_state["tokens"] = save_res.get("n_saved", n_prompt)
-                                        _last_restored_state["status"] = "restored"
-
-                            _last_seen_processing = is_proc
-                except Exception:
-                    pass
         except Exception as e:
             _log(f"Watcher loop error: {e}")
 

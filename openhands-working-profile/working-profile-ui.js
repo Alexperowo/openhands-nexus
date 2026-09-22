@@ -270,8 +270,15 @@
                     <span class="oh-telemetry-dot idle"></span>
                     <span class="oh-telemetry-text">Готов</span>
                 `;
-                pill.setAttribute("title", `Станция готова к работе · ${activeState?.active_working_profile_id || 'OpenHands'}`);
-                pill.setAttribute("aria-label", "Станция готова к работе");
+                let idleTitle = `Станция готова к работе · ${activeState?.active_working_profile_id || 'OpenHands'}`;
+                if (data && data.last_gen_speed > 0) {
+                    idleTitle += ` · Посл. генерация: ${data.last_gen_speed} т/с`;
+                    if (data.last_prefill_speed > 0) {
+                        idleTitle += ` (чтение: ${Math.round(data.last_prefill_speed)} т/с)`;
+                    }
+                }
+                pill.setAttribute("title", idleTitle);
+                pill.setAttribute("aria-label", idleTitle);
                 lastTelemetryMilestone = -1;
             }
             return;

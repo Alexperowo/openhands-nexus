@@ -26,6 +26,53 @@ gdi32 = ctypes.windll.gdi32
 
 WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
 
+KEYEVENTF_UNICODE = 0x0004
+KEYEVENTF_KEYUP = 0x0002
+INPUT_KEYBOARD = 1
+
+
+class KEYBDINPUT(ctypes.Structure):
+    _fields_ = [
+        ("wVk", wintypes.WORD),
+        ("wScan", wintypes.WORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ctypes.c_ulonglong if ctypes.sizeof(ctypes.c_void_p) == 8 else ctypes.c_ulong),
+    ]
+
+
+class INPUT(ctypes.Structure):
+    class _INPUT(ctypes.Union):
+        _fields_ = [("ki", KEYBDINPUT)]
+
+    _anonymous_ = ("_input",)
+    _fields_ = [
+        ("type", wintypes.DWORD),
+        ("_input", _INPUT),
+    ]
+
+
+def _type_unicode_text(text: str) -> None:
+    """Type arbitrary Unicode text (Cyrillic, Latin, emojis, etc.) directly via Win32 SendInput."""
+    inputs = []
+    for char in text:
+        code = ord(char)
+        if code > 0xFFFF:
+            code_units = char.encode("utf-16le")
+            cu1 = int.from_bytes(code_units[0:2], "little")
+            cu2 = int.from_bytes(code_units[2:4], "little")
+            for cu in (cu1, cu2):
+                inputs.append(INPUT(INPUT_KEYBOARD, INPUT._INPUT(ki=KEYBDINPUT(0, cu, KEYEVENTF_UNICODE, 0, 0))))
+                inputs.append(INPUT(INPUT_KEYBOARD, INPUT._INPUT(ki=KEYBDINPUT(0, cu, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0, 0))))
+        else:
+            inputs.append(INPUT(INPUT_KEYBOARD, INPUT._INPUT(ki=KEYBDINPUT(0, code, KEYEVENTF_UNICODE, 0, 0))))
+            inputs.append(INPUT(INPUT_KEYBOARD, INPUT._INPUT(ki=KEYBDINPUT(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0, 0))))
+
+    if inputs:
+        n = len(inputs)
+        arr = (INPUT * n)(*inputs)
+        user32.SendInput(n, arr, ctypes.sizeof(INPUT))
+
 
 def _ensure_desktop():
     """Ensure the calling thread is attached to the interactive desktop."""
@@ -114,9 +161,9 @@ def desktop_mouse_scroll(clicks: int) -> str:
 
 @mcp.tool()
 def desktop_type_text(text: str) -> str:
-    """Type arbitrary text via keyboard."""
+    """Type arbitrary text via keyboard, supporting all Unicode characters (Russian/Cyrillic, English, symbols)."""
     _ensure_desktop()
-    pyautogui.write(text, interval=0.01)
+    _type_unicode_text(text)
     return f"Typed {len(text)} characters"
 
 

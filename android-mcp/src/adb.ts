@@ -208,10 +208,23 @@ export class AdbClient {
 
 		const envDevice = (process.env.ANDROID_MCP_DEVICE || "").trim();
 		if (envDevice !== "") {
+			const online = this.listDevices().filter(d => d.state === "device");
+			if (!online.some(d => d.id === envDevice) && (envDevice.includes(":") || envDevice.includes("."))) {
+				try {
+					this.connectWifi(envDevice);
+				} catch {}
+			}
 			return envDevice;
 		}
 
-		const online = this.listDevices().filter(d => d.state === "device");
+		let online = this.listDevices().filter(d => d.state === "device");
+		if (online.length === 0) {
+			// Auto-reconnect default WiFi tablet target if available
+			try {
+				this.connectWifi("192.168.0.34:5555");
+				online = this.listDevices().filter(d => d.state === "device");
+			} catch {}
+		}
 		if (online.length === 0) {
 			throw new ActionableError(
 				"No Android devices connected. Connect a device via USB (with USB debugging enabled), " +
@@ -271,6 +284,34 @@ export class AdbClient {
 	public isAscii(text: string): boolean {
 		// eslint-disable-next-line no-control-regex
 		return /^[\x00-\x7F]*$/.test(text);
+	}
+
+	/**
+	 * Type text into device: uses fast native input for ASCII,
+	 * or AdbIME broadcast for full Unicode/Cyrillic support.
+	 */
+	public typeText(deviceId: string, text: string): void {
+		if (this.isAscii(text)) {
+			this.shell(deviceId, "input", "text", this.escapeShellText(text));
+			return;
+		}
+
+		// Unicode / Cyrillic typing via base64 broadcast to AdbIME
+		const b64 = Buffer.from(text, "utf-8").toString("base64");
+		const adbIme = "com.android.adbkeyboard/.AdbIME";
+		try {
+			const currentIme = this.shell(deviceId, "settings", "get", "secure", "default_input_method").trim();
+			if (currentIme !== adbIme) {
+				this.shell(deviceId, "ime", "set", adbIme);
+			}
+			this.shell(deviceId, "am", "broadcast", "-a", "ADB_INPUT_B64", "--es", "msg", b64);
+			if (currentIme && currentIme !== adbIme && currentIme !== "null") {
+				this.shell(deviceId, "ime", "set", currentIme);
+			}
+		} catch {
+			// Fallback: direct broadcast without IME switch
+			this.shell(deviceId, "am", "broadcast", "-a", "ADB_INPUT_B64", "--es", "msg", b64);
+		}
 	}
 }
 

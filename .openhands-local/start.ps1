@@ -132,6 +132,13 @@ function Save-Session {
     Move-Item -Path $tmpSession -Destination $sessionFile -Force
 }
 
+# Non-blocking auto-connect to tablet ADB (Samsung Galaxy Tab S9 Ultra)
+Start-Job -ScriptBlock {
+    try {
+        adb connect 192.168.0.34:5555 2>&1 | Out-Null
+    } catch {}
+} | Out-Null
+
 $swapRunning = $false
 
 # 1. Check if llama-swap is already running on port 8080
