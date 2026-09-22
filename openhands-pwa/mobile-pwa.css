@@ -32,8 +32,8 @@ body {
   padding-right: var(--oh-safe-right);
 }
 
-/* Mobile viewport adjustments (< 768px) */
-@media (max-width: 768px) {
+/* Mobile & Touch Viewport Adjustments (including Samsung Galaxy Tab S9 Ultra & Mobile) */
+@media (max-width: 1024px), (pointer: coarse) {
   /* Prevent auto-zoom on form inputs */
   input, textarea, select {
     font-size: 16px !important;
@@ -43,7 +43,7 @@ body {
   a,
   [role="button"]:not([data-testid*="context-window"]):not([class*="h-1"]):not([class*="size-"]):not(.oh-wp-header):not(.oh-wp-toggle-btn):not([data-testid*="chat-input-llm-profile"]),
   input[type="button"], input[type="submit"] {
-    min-height: 44px;
+    min-height: 48px;
   }
 
   /* Context Window Meter: prevent oval/stretched distortion on mobile/PWA */
