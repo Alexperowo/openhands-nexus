@@ -9,7 +9,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position=0)]
-    [ValidateSet('start', 'stop', 'restart', 'status', 'check', 'test', 'setup', 'diagnose', 'recover', 'backup', 'restore', 'update', 'help')]
+    [ValidateSet('start', 'stop', 'restart', 'status', 'watch', 'watchdog', 'vram', 'check', 'test', 'setup', 'diagnose', 'recover', 'backup', 'restore', 'update', 'help')]
     [string]$Command = 'help',
 
     [Parameter(ValueFromRemainingArguments=$true)]
@@ -28,7 +28,9 @@ function Show-Help {
     Write-Host '  openhands start       - Запустить все сервисы (Llama-swap, Voice, Core, Canvas, PWA)' -ForegroundColor White
     Write-Host '  openhands stop        - Остановить все сервисы станции' -ForegroundColor White
     Write-Host '  openhands restart     - Полный перезапуск сервисов платформы' -ForegroundColor White
-    Write-Host '  openhands status      - Проверить активность портов и процессов' -ForegroundColor White
+    Write-Host '  openhands status      - Проверить активность портов, процессов, VRAM и LLM' -ForegroundColor White
+    Write-Host '  openhands watch       - Запустить автономный наблюдатель и самовосстановление [-Background]' -ForegroundColor White
+    Write-Host '  openhands vram        - Проверить распределение памяти GPU (NVML)' -ForegroundColor White
     Write-Host '  openhands check       - Запустить 34 теста зависимостей и целостности' -ForegroundColor White
     Write-Host '  openhands test        - Запустить автоматизированные тесты (--all, --unit, --integration, --hardware)' -ForegroundColor White
     Write-Host '  openhands diagnose    - Запустить детальную диагностику станции' -ForegroundColor White
@@ -74,6 +76,37 @@ function Get-StationStatus {
     }
 
     Write-Host ''
+    # Watchdog status
+    $watchPidFile = Join-Path $Root ".openhands-local\watchdog.pid"
+    $watchRunning = $false
+    $watchPid = $null
+    if (Test-Path $watchPidFile) {
+        $wPid = (Get-Content $watchPidFile -Raw -ErrorAction SilentlyContinue).Trim()
+        if ($wPid -match '^\d+$') {
+            $wp = Get-Process -Id ([int]$wPid) -ErrorAction SilentlyContinue
+            if ($wp) { $watchRunning = $true; $watchPid = $wPid }
+        }
+    }
+    if ($watchRunning) {
+        Write-Host "  [ACTIVE]   Autonomous Watchdog Supervisor (PID: $watchPid)" -ForegroundColor Green
+    } else {
+        Write-Host "  [STANDBY]  Autonomous Watchdog (не активен, запуск: openhands watch -Background)" -ForegroundColor DarkGray
+    }
+
+    # Active LLM Model inspection
+    try {
+        $mRes = Invoke-RestMethod -Uri "http://127.0.0.1:8080/v1/models" -TimeoutSec 2 -ErrorAction Stop
+        if ($mRes -and $mRes.data) {
+            $loaded = ($mRes.data | Where-Object { $_.status.value -eq "loaded" }).id
+            if ($loaded) {
+                Write-Host "  [ACTIVE]   LLM Model: $loaded (загружена в VRAM)" -ForegroundColor Green
+            } else {
+                Write-Host "  [STANDBY]  LLM Model: выгружена (on-demand standby)" -ForegroundColor Cyan
+            }
+        }
+    } catch {}
+
+    Write-Host ''
     if ($allActive) {
         Write-Host '  Все 5 сервисов активны и готовы к работе.' -ForegroundColor Green
         Write-Host '  Desktop: http://127.0.0.1:8000' -ForegroundColor Cyan
@@ -87,6 +120,21 @@ function Get-StationStatus {
     } else {
         Write-Host '  Один или более сервисов не запущены. Запустите: openhands start' -ForegroundColor Yellow
     }
+
+    # VRAM status summary
+    try {
+        $vramJson = python "$Root\Config\vram_manager.py" --json 2>$null
+        if ($vramJson) {
+            $vramData = $vramJson | ConvertFrom-Json -ErrorAction SilentlyContinue
+            if ($vramData -and $vramData.gpus) {
+                Write-Host ''
+                Write-Host '  Распределение VRAM (Dual-GPU Pool):' -ForegroundColor DarkCyan
+                foreach ($g in $vramData.gpus) {
+                    Write-Host "    GPU $($g.index): $($g.name) -> $($g.used_mb) / $($g.total_mb) MiB (Свободно: $($g.free_mb) MiB)" -ForegroundColor DarkGray
+                }
+            }
+        }
+    } catch {}
     Write-Host ''
 }
 
@@ -111,16 +159,27 @@ switch ($Command) {
         Invoke-StationScript "$Root\.openhands-local\start.ps1" $RemainingArgs
     }
     'stop' {
+        Invoke-StationScript "$Root\.openhands-local\watchdog.ps1" @("-Stop")
         Invoke-StationScript "$Root\.openhands-local\stop.ps1" $RemainingArgs
     }
     'restart' {
         Write-Host '[CLI] Перезапуск OpenHands Nexus...' -ForegroundColor Cyan
+        Invoke-StationScript "$Root\.openhands-local\watchdog.ps1" @("-Stop")
         Invoke-StationScript "$Root\.openhands-local\stop.ps1" @()
         Start-Sleep -Seconds 3
         Invoke-StationScript "$Root\.openhands-local\start.ps1" @()
     }
     'status' {
         Get-StationStatus
+    }
+    'watch' {
+        Invoke-StationScript "$Root\.openhands-local\watchdog.ps1" $RemainingArgs
+    }
+    'watchdog' {
+        Invoke-StationScript "$Root\.openhands-local\watchdog.ps1" $RemainingArgs
+    }
+    'vram' {
+        python "$Root\Config\vram_manager.py" @RemainingArgs
     }
     'check' {
         Invoke-StationScript "$Root\.openhands-local\check-dependencies.ps1" $RemainingArgs

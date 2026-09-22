@@ -7,6 +7,14 @@ Write-Host ""
 $pidDir = $PSScriptRoot
 $sessionFile = Join-Path $pidDir "session.json"
 
+# Stop Watchdog if active
+$watchPidFile = Join-Path $pidDir "watchdog.pid"
+if (Test-Path $watchPidFile) {
+    try {
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $pidDir "watchdog.ps1") -Stop | Out-Null
+    } catch {}
+}
+
 function Stop-OwnedProcess([int]$id) {
     try {
         Stop-Process -Id $id -Force -ErrorAction SilentlyContinue

@@ -83,6 +83,46 @@ function Wait-ForServiceReady {
     return $false
 }
 
+function Reclaim-StackPort {
+    param(
+        [int]$Port,
+        [string[]]$ProcessNames = @(),
+        [string]$CmdlineMatch = ""
+    )
+    $conns = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+    foreach ($c in $conns) {
+        if ($c -and $c.OwningProcess -gt 0) {
+            $proc = Get-CimInstance Win32_Process -Filter "ProcessId = $($c.OwningProcess)" -ErrorAction SilentlyContinue
+            if ($proc) {
+                $pname = $proc.Name.ToLower()
+                $cmdline = if ($proc.CommandLine) { $proc.CommandLine } else { "" }
+                $isMatch = $false
+                foreach ($pn in $ProcessNames) {
+                    if ($pname -eq $pn.ToLower()) { $isMatch = $true; break }
+                }
+                if (-not $isMatch -and $CmdlineMatch -and $cmdline -match $CmdlineMatch) {
+                    $isMatch = $true
+                }
+                if ($isMatch) {
+                    Log-Message "[RECLAIM] Port $Port was held by zombie stack process: $($proc.Name) (PID: $($proc.ProcessId)). Clearing..." "Yellow"
+                    $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $($proc.ProcessId)" -ErrorAction SilentlyContinue
+                    foreach ($chi in $children) {
+                        try { Stop-Process -Id $chi.ProcessId -Force -ErrorAction SilentlyContinue } catch {}
+                    }
+                    try { Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue } catch {}
+                    Start-Sleep -Milliseconds 600
+                    return $true
+                } else {
+                    Log-Message "[ERROR] Port $Port is occupied by an unrecognized external service: $($proc.Name) (PID: $($proc.ProcessId))." "Red"
+                    Log-Message "        Aborting launch to prevent conflicts." "Yellow"
+                    return $false
+                }
+            }
+        }
+    }
+    return $true
+}
+
 Log-Message "=====================================================================" "Cyan"
 Log-Message "               STARTING OPENHANDS LOCAL PLATFORM" "Cyan"
 Log-Message "=====================================================================" "Cyan"
@@ -157,10 +197,8 @@ try {
         }
     }
 } catch {
-    $conn = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue
-    if ($conn) {
-        Log-Message "[ERROR] Port 8080 is occupied by an unrecognized service (PID: $($conn.OwningProcess))." "Red"
-        Log-Message "        Aborting launch to prevent conflicts." "Yellow"
+    $reclaimed = Reclaim-StackPort -Port 8080 -ProcessNames @('llama-swap.exe', 'cmd.exe') -CmdlineMatch 'llama-swap'
+    if (-not $reclaimed) {
         exit 1
     }
 }
@@ -223,7 +261,12 @@ try {
             Log-Message "     [OWNERSHIP] voice_owned = true (managed by this session)" "DarkGray"
         }
     }
-} catch {}
+} catch {
+    $reclaimed = Reclaim-StackPort -Port 18002 -ProcessNames @('python.exe', 'pythonw.exe') -CmdlineMatch 'local-voice'
+    if (-not $reclaimed) {
+        exit 1
+    }
+}
 
 if (-not $voiceRunning) {
     Log-Message "[2/3] Starting Local Voice Bridge in background (GigaAM v3 STT + Supertonic 3 TTS)..." "Cyan"
@@ -273,12 +316,12 @@ try {
         Start-Process "http://127.0.0.1:8000"
     }
 } catch {
-    $conn = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
-    if ($conn) {
-        Log-Message "[ERROR] Port 8000 is occupied by an unrecognized service (PID: $($conn.OwningProcess))." "Red"
-        Log-Message "        Aborting launch to prevent conflicts." "Yellow"
-        exit 1
-    }
+    $rec8000 = Reclaim-StackPort -Port 8000 -ProcessNames @('node.exe', 'cmd.exe', 'agent-canvas.exe') -CmdlineMatch 'agent-canvas'
+    if (-not $rec8000) { exit 1 }
+    $rec18000 = Reclaim-StackPort -Port 18000 -ProcessNames @('python.exe', 'pythonw.exe', 'uvicorn.exe') -CmdlineMatch 'openhands'
+    if (-not $rec18000) { exit 1 }
+    $rec18001 = Reclaim-StackPort -Port 18001 -ProcessNames @('python.exe', 'pythonw.exe', 'uvicorn.exe') -CmdlineMatch 'openhands'
+    if (-not $rec18001) { exit 1 }
 }
 
 if (-not $canvasRunning) {
@@ -370,17 +413,25 @@ Log-Message ""
 # 4. Check if Mobile LAN PWA Gateway is already running on port 8443
 $gatewayRunning = $false
 try {
-    $conn = Get-NetTCPConnection -LocalPort 8443 -State Listen -ErrorAction SilentlyContinue
+    $conn = Get-NetTCPConnection -LocalPort 8443 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($conn) {
-        Log-Message "[OK] Mobile LAN PWA Gateway is ALREADY running on port 8443" "Green"
-        Log-Message "     Reusing existing Gateway instance." "Gray"
-        $gatewayRunning = $true
-        if (-not $session.gateway_owned) {
-            $session.gateway_owned = $false
-            $session.gateway_pid = $null
-            Log-Message "     [OWNERSHIP] gateway_owned = false (pre-existing instance, will NOT be stopped by STOP launcher)" "DarkGray"
+        $p = Get-CimInstance Win32_Process -Filter "ProcessId = $($conn.OwningProcess)" -ErrorAction SilentlyContinue
+        $pname = if ($p) { $p.Name.ToLower() } else { "" }
+        $cmdline = if ($p -and $p.CommandLine) { $p.CommandLine } else { "" }
+        if ($pname -eq "node.exe" -or $cmdline -match "lan-gateway") {
+            Log-Message "[OK] Mobile LAN PWA Gateway is ALREADY running on port 8443" "Green"
+            Log-Message "     Reusing existing Gateway instance." "Gray"
+            $gatewayRunning = $true
+            if (-not $session.gateway_owned) {
+                $session.gateway_owned = $false
+                $session.gateway_pid = $null
+                Log-Message "     [OWNERSHIP] gateway_owned = false (pre-existing instance, will NOT be stopped by STOP launcher)" "DarkGray"
+            } else {
+                Log-Message "     [OWNERSHIP] gateway_owned = true (managed by this session)" "DarkGray"
+            }
         } else {
-            Log-Message "     [OWNERSHIP] gateway_owned = true (managed by this session)" "DarkGray"
+            $rec8443 = Reclaim-StackPort -Port 8443 -ProcessNames @('node.exe') -CmdlineMatch 'lan-gateway'
+            if (-not $rec8443) { exit 1 }
         }
     }
 } catch {}

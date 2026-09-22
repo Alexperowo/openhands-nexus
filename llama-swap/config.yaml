@@ -9,7 +9,7 @@ models:
     - K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
     - openai/K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
     proxy: http://127.0.0.1:${PORT}
-    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
       K:\Project\ik_llama\bin\llama-server.exe
@@ -40,7 +40,7 @@ models:
     - K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
     - openai/K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
     proxy: http://127.0.0.1:${PORT}
-    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
       K:\Project\ik_llama\bin\llama-server.exe
@@ -75,7 +75,7 @@ models:
     - K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
     - openai/K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
     proxy: http://127.0.0.1:${PORT}
-    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
       K:\Project\ik_llama\bin\llama-server.exe
@@ -118,7 +118,7 @@ models:
     - Qwen122-Direct
     - openai/Qwen122-Direct
     proxy: http://127.0.0.1:${PORT}
-    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
       K:\Project\LLM-tests\Qwen122B-Expert-Cache\bin\llama-server.exe
@@ -154,7 +154,7 @@ models:
     - Qwen122-Turbo
     - openai/Qwen122-Turbo
     proxy: http://127.0.0.1:${PORT}
-    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; Start-Sleep -Seconds 3"
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
       K:\Project\LLM-tests\Qwen122B-Expert-Cache\bin\llama-server.exe
