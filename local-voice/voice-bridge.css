@@ -157,6 +157,16 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
     opacity: 0.35;
 }
 
+@media (max-width: 1024px), (pointer: coarse) {
+    .oh-voice-pill {
+        top: 10px;
+        right: 90px;
+        padding: 3px 8px;
+        font-size: 11px;
+        max-width: 130px;
+    }
+}
+
 .oh-voice-pill:hover,
 .oh-voice-pill:focus-visible,
 .oh-voice-pill.is-idle-dimmed:hover,

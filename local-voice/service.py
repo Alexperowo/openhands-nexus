@@ -358,17 +358,17 @@ def _compute_station_telemetry() -> dict:
                 lines = f.read().decode("utf-8", errors="ignore").splitlines()
 
             for line in lines:
-                m_launch = re.search(r'slot is processing task.*?id_task=(\d+)', line)
+                m_launch = re.search(r'(?:slot is processing task.*?id_task=(\d+)|launch_slot_:.*?task\s*(\d+))', line)
                 if m_launch:
-                    log_last_task = int(m_launch.group(1))
+                    log_last_task = int(m_launch.group(1) or m_launch.group(2))
                     log_task_active = True
                     log_prefill_done = False
 
-                m_chk = re.search(r'slot create_check:.*?task\s*(\d+).*?created context checkpoint\s*\d+\s*of\s*\d+.*?n_tokens\s*=\s*(\d+)', line)
+                m_chk = re.search(r'(?:slot create_check:.*?task\s*(\d+).*?n_tokens\s*=\s*(\d+)|print_timing:.*?task\s*(\d+).*?prompt processing,\s*n_tokens\s*=\s*(\d+))', line)
                 if m_chk:
-                    t_id = int(m_chk.group(1))
+                    t_id = int(m_chk.group(1) or m_chk.group(3))
                     if log_last_task == t_id:
-                        log_prefill_tokens = int(m_chk.group(2))
+                        log_prefill_tokens = int(m_chk.group(2) or m_chk.group(4))
 
                 m_peval = re.search(r'prompt eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
                 if m_peval:
@@ -496,6 +496,36 @@ def _compute_station_telemetry() -> dict:
         telemetry["speed_tok_s"] = current_gen_speed
         telemetry["last_gen_speed"] = _last_known_gen_speed
         return telemetry
+
+    # Case B: Live slot processing (active prefill or thinking when has_next is not yet true)
+    if slot_obj and bool(slot_obj.get("is_processing")):
+        telemetry["is_active"] = True
+        n_prompt = int(slot_obj.get("n_prompt_tokens", 0))
+        n_proc = int(slot_obj.get("n_prompt_tokens_processed", 0))
+        n_cache = int(slot_obj.get("n_prompt_tokens_cache", 0))
+
+        done_tokens = n_cache + n_proc
+        total_tokens = max(n_prompt, done_tokens, 1)
+
+        if total_tokens > 0 and done_tokens < total_tokens:
+            telemetry["state"] = "prefill"
+            pct = min(99.0, max(1.0, round((done_tokens / total_tokens) * 100, 1)))
+            telemetry["tokens"] = done_tokens
+            telemetry["total_tokens"] = total_tokens
+            telemetry["progress_pct"] = pct
+
+            p_spd = max(5.0, _last_known_prefill_speed or (20.0 if "122" in str(model_id) else 1000.0))
+            telemetry["speed_tok_s"] = p_spd
+            rem = max(0, total_tokens - done_tokens)
+            eta_s = int(rem / p_spd)
+            telemetry["eta_seconds"] = eta_s
+            telemetry["eta_str"] = f"{eta_s // 60}м {eta_s % 60}с" if eta_s >= 60 else f"{eta_s}с"
+            return telemetry
+        else:
+            telemetry["state"] = "thinking"
+            telemetry["progress_pct"] = 100.0
+            telemetry["speed_tok_s"] = 0.0
+            return telemetry
 
     # Case C: Prefill complete, waiting for first token or thinking
     if log_task_active and log_prefill_done and not has_next:
