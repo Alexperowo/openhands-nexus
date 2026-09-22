@@ -53,10 +53,10 @@ Fast-CopyDir (Join-Path $ProjectRoot "openhands-localization") (Join-Path $targe
 Fast-CopyDir (Join-Path $ProjectRoot "openhands-working-profile") (Join-Path $targetBackupFolder "openhands-working-profile")
 Fast-CopyDir (Join-Path $ProjectRoot ".openhands-local") (Join-Path $targetBackupFolder ".openhands-local")
 
-# Root cmd files
+# Root cmd and ps1 files
 $dstRootCmd = Join-Path $targetBackupFolder "root-launchers"
 New-Item -ItemType Directory -Path $dstRootCmd -Force | Out-Null
-Get-ChildItem -Path $ProjectRoot -Filter "*.cmd" | ForEach-Object {
+Get-ChildItem -Path $ProjectRoot -File | Where-Object { $_.Extension -in @(".cmd", ".ps1") } | ForEach-Object {
     Copy-Item $_.FullName $dstRootCmd -Force
 }
 

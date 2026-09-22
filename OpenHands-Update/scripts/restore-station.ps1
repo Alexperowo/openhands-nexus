@@ -74,6 +74,12 @@ foreach ($dir in @("local-voice", "openhands-localization", "openhands-working-p
         Fast-CopyDir $src (Join-Path $ProjectRoot $dir)
     }
 }
+$srcRootCmd = Join-Path $BackupPath "root-launchers"
+if (Test-Path $srcRootCmd) {
+    Get-ChildItem -Path $srcRootCmd -File | ForEach-Object {
+        Copy-Item $_.FullName $ProjectRoot -Force
+    }
+}
 
 # 5. Restore User State to %USERPROFILE%\.openhands
 Log-Msg "[5/5] Восстановление состояния пользователя (%USERPROFILE%\.openhands)..." "STEP"
