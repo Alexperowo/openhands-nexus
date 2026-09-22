@@ -109,6 +109,7 @@ _telemetry_cache_time = 0.0
 _telemetry_lock = threading.Lock()
 _prev_telemetry_sample = {}
 _prefill_tracker = {}
+_slot_prefill_tracker = {}
 _gen_tracker = {}
 _last_known_gen_speed = 0.0
 _last_known_prefill_speed = 0.0
@@ -262,7 +263,7 @@ def get_station_telemetry() -> dict:
 
 
 def _compute_station_telemetry() -> dict:
-    global _last_known_gen_speed, _last_known_prefill_speed, _gen_tracker, _prefill_tracker
+    global _last_known_gen_speed, _last_known_prefill_speed, _gen_tracker, _prefill_tracker, _slot_prefill_tracker
     log_path = os.path.join(os.path.dirname(__file__), "..", "Logs", "llama-swap", "llama-swap.log")
     if not os.path.exists(log_path):
         log_path = os.path.join(os.path.dirname(__file__), "..", "llama-swap.log")
@@ -509,14 +510,27 @@ def _compute_station_telemetry() -> dict:
 
         if total_tokens > 0 and done_tokens < total_tokens:
             telemetry["state"] = "prefill"
-            pct = min(99.0, max(1.0, round((done_tokens / total_tokens) * 100, 1)))
-            telemetry["tokens"] = done_tokens
+            p_spd = max(5.0, _last_known_prefill_speed or (20.0 if "122" in str(model_id) else 1000.0))
+
+            # Smooth time-based interpolation between discrete batch updates
+            s_task = int(slot_obj.get("id_task", 0))
+            if _slot_prefill_tracker.get("task") != s_task or _slot_prefill_tracker.get("base_tokens") != done_tokens:
+                _slot_prefill_tracker.update({
+                    "task": s_task,
+                    "base_tokens": done_tokens,
+                    "base_time": now,
+                    "total_tokens": total_tokens
+                })
+
+            dt_step = max(0.0, now - _slot_prefill_tracker.get("base_time", now))
+            interp_tokens = min(total_tokens - 1, int(done_tokens + (dt_step * p_spd)))
+            pct = min(99.0, max(1.0, round((interp_tokens / total_tokens) * 100, 1)))
+
+            telemetry["tokens"] = interp_tokens
             telemetry["total_tokens"] = total_tokens
             telemetry["progress_pct"] = pct
-
-            p_spd = max(5.0, _last_known_prefill_speed or (20.0 if "122" in str(model_id) else 1000.0))
             telemetry["speed_tok_s"] = p_spd
-            rem = max(0, total_tokens - done_tokens)
+            rem = max(0, total_tokens - interp_tokens)
             eta_s = int(rem / p_spd)
             telemetry["eta_seconds"] = eta_s
             telemetry["eta_str"] = f"{eta_s // 60}м {eta_s % 60}с" if eta_s >= 60 else f"{eta_s}с"

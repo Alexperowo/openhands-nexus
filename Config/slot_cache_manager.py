@@ -275,7 +275,7 @@ def check_and_auto_restore(router_url: str = ROUTER_URL) -> dict:
         }
 
     profile_id = get_active_profile_id()
-    enable_auto_restore = os.environ.get("ENABLE_AUTO_RESTORE_SLOTS", "0") == "1"
+    enable_auto_restore = os.environ.get("ENABLE_AUTO_RESTORE_SLOTS", "1") == "1"
     if not enable_auto_restore:
         with _state_lock:
             _last_restored_state["model"] = model
