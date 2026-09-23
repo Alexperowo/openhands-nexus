@@ -104,6 +104,8 @@ models:
   qwen122:
     aliases:
     - openai/qwen122
+    - K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
+    - openai/K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
     - K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
     - openai/K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
     - openai/gpt-5.6-sol
@@ -122,20 +124,18 @@ models:
     unloadTimeout: 15
     cmd: >-
       K:\Project\LLM-tests\Qwen122B-Expert-Cache\bin\llama-server.exe
-      -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
-      -c 131072
-      -ngl 49
-      -ot blk\.(3[3-9]|4[0-7])\.ffn_(up|gate|down)_exps=CPU
+      -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
+      -c 98304
+      -ngl 999
       -dev CUDA0,CUDA1
-      -sm layer
-      -ts 13,26
+      -ts 15.6,18.4
+      -ot blk\.23\.ffn_(up|gate|down)_exps=CUDA0
       -ctk q5_0
       -ctv q4_0
+      -ub 256
       -fa on
       -t 6
       -np 1
-      --moe-expert-cache 64
-      --moe-expert-cache-inserts 2
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
       --reasoning-budget 6144
@@ -158,23 +158,21 @@ models:
     unloadTimeout: 15
     cmd: >-
       K:\Project\LLM-tests\Qwen122B-Expert-Cache\bin\llama-server.exe
-      -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
-      -c 98304
-      -ngl 49
-      -ot blk\.(3[3-9]|4[0-7])\.ffn_(up|gate|down)_exps=CPU
+      -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
+      -c 90112
+      -ngl 999
       -dev CUDA0,CUDA1
-      -sm layer
-      -ts 13,26
+      -ts 15.6,18.4
+      -ot blk\.23\.ffn_(up|gate|down)_exps=CUDA0
       -ctk q5_0
       -ctv q4_0
+      -ub 256
       -fa on
       -t 6
       -np 1
-      --moe-expert-cache 80
-      --moe-expert-cache-inserts 2
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
-      --reasoning-budget 6144
+      --reasoning-budget 4096
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
       -to 7200
       --jinja
@@ -182,5 +180,6 @@ models:
       --port ${PORT}
       --temp 0.6
       --top-p 0.95
+
 
 

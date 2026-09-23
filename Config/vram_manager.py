@@ -197,16 +197,113 @@ def print_status(as_json: bool = False):
     print("=====================================================================\n")
 
 
+def clean_rogue_processes(verbose: bool = True) -> list:
+    """
+    Scans for and terminates rogue processes consuming GPU VRAM
+    (such as background ComfyUI instances, SD WebUIs, orphaned llama-server/cli,
+    or orphaned test runners).
+    Never touches critical system processes or OpenHands core services.
+    """
+    import os
+    import subprocess
+    rogue_keywords = [
+        "ComfyUI",
+        "disable-dynamic-vram",
+        "run_cache_experiment",
+        "runner_core",
+        "run_head_to_head",
+        "main.py --port 8188",
+        "sd-webui",
+        "stable-diffusion-webui",
+        "Fooocus",
+    ]
+    killed = []
+
+    # Check if llama-swap is currently active and get its PID if so
+    swap_pid = None
+    try:
+        req = urllib.request.Request("http://127.0.0.1:8080/health", method="GET")
+        with urllib.request.urlopen(req, timeout=1.0) as resp:
+            if resp.status == 200:
+                pass  # swap is healthy
+    except Exception:
+        pass
+
+    ps_cmd = (
+        'Get-CimInstance Win32_Process | '
+        'Select-Object ProcessId, ParentProcessId, Name, CommandLine | '
+        'ConvertTo-Json -Compress'
+    )
+    try:
+        res = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            raw_data = json.loads(res.stdout.strip())
+            procs = raw_data if isinstance(raw_data, list) else [raw_data]
+
+            # Find swap PID if running
+            for p in procs:
+                pname = (p.get("Name") or "").lower()
+                cmd = (p.get("CommandLine") or "").lower()
+                if "llama-swap" in pname or "llama-swap" in cmd:
+                    swap_pid = p.get("ProcessId")
+                    break
+
+            for p in procs:
+                pid = p.get("ProcessId")
+                parent_pid = p.get("ParentProcessId")
+                name = p.get("Name", "")
+                cmdline = p.get("CommandLine") or ""
+                pname_lower = name.lower()
+                if pid == os.getpid():
+                    continue
+
+                is_rogue = any(kw.lower() in cmdline.lower() for kw in rogue_keywords)
+
+                # Check for orphaned llama-server / llama-cli
+                if not is_rogue and pname_lower in ("llama-server.exe", "llama-cli.exe"):
+                    if swap_pid is None or parent_pid != swap_pid:
+                        is_rogue = True
+
+                if is_rogue:
+                    try:
+                        subprocess.run(
+                            ["powershell", "-NoProfile", "-Command", f"Stop-Process -Id {pid} -Force -ErrorAction SilentlyContinue"],
+                            timeout=5,
+                        )
+                        killed.append({"pid": pid, "name": name, "cmd": cmdline[:60]})
+                        if verbose:
+                            print(f"[VRAM Manager] Reclaimed VRAM: Terminated rogue process {name} (PID: {pid})")
+                    except Exception:
+                        pass
+    except Exception as e:
+        if verbose:
+            print(f"[VRAM Manager] Warning during rogue scan: {e}")
+
+    if verbose and not killed:
+        print("[VRAM Manager] Clean: No rogue GPU processes detected.")
+
+    return killed
+
+
 def main():
     parser = argparse.ArgumentParser(description="OpenHands Nexus VRAM Manager & Barrier")
     parser.add_argument("--status", action="store_true", help="Display current VRAM usage")
     parser.add_argument("--json", action="store_true", help="Output VRAM usage in JSON format")
+    parser.add_argument("--clean-rogue", action="store_true", help="Evict rogue GPU consumers like ComfyUI")
     parser.add_argument("--wait-free", type=int, default=None, help="Wait until free VRAM per GPU >= X MB")
     parser.add_argument("--timeout", type=float, default=15.0, help="Timeout in seconds for waiting")
     parser.add_argument("--reclaim", action="store_true", help="Trigger router model unload and wait for cleanup")
     parser.add_argument("--router-url", type=str, default="http://127.0.0.1:8080", help="llama-swap router URL")
 
     args = parser.parse_args()
+
+    if args.clean_rogue:
+        clean_rogue_processes(verbose=not args.json)
 
     if args.wait_free is not None:
         ok = wait_for_vram_cleanup(args.wait_free, timeout_s=args.timeout)
@@ -222,7 +319,7 @@ def main():
             print(json.dumps(res))
         else:
             print("[VRAM Manager] Model unload triggered and VRAM reclaimed.")
-    else:
+    elif not args.clean_rogue:
         print_status(as_json=args.json)
 
 

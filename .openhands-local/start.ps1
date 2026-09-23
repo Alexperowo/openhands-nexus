@@ -179,6 +179,27 @@ Start-Job -ScriptBlock {
     } catch {}
 } | Out-Null
 
+# 0. Pre-flight VRAM Hygiene & Hardware Check
+Log-Message "[0/4] Pre-flight VRAM Hygiene & Hardware Check..." "Cyan"
+try {
+    $vramScript = Join-Path $ProjectRoot "Config\vram_manager.py"
+    $cleanOutput = python $vramScript --clean-rogue 2>&1
+    if ($cleanOutput) {
+        foreach ($line in ($cleanOutput -split "`r?`n")) {
+            if ($line.Trim()) { Log-Message "     $line" "DarkYellow" }
+        }
+    }
+    $vramStatus = python $vramScript --wait-free 12000 --timeout 5 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Log-Message "[OK] Dual-GPU VRAM pool verified clean (>= 12 GB free per GPU)" "Green"
+    } else {
+        Log-Message "[WARN] VRAM pool below recommended headroom. Proceeding with caution." "Yellow"
+    }
+} catch {
+    Log-Message "[WARN] VRAM hygiene check warning: $_" "Yellow"
+}
+Log-Message ""
+
 $swapRunning = $false
 
 # 1. Check if llama-swap is already running on port 8080

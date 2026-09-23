@@ -34,21 +34,21 @@
       {
         "id": "low",
         "label": "Низкое",
-        "description": "Ускоренная генерация архитектора (окно 96K, 80 слотов кэша)",
+        "description": "Ускоренная генерация архитектора (контекст 88K, сброс 3 слоёв MoE в RAM)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-Turbo"
       },
       {
         "id": "medium",
         "label": "Среднее",
-        "description": "Сбалансированное рассуждение (бюджет 4096)",
+        "description": "Сбалансированное рассуждение (контекст 96K, 208E, бюджет 6144)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-ChatGPT-5.6-SOL"
       },
       {
         "id": "high",
         "label": "Глубокое",
-        "description": "Глубокий анализ архитектора (128K контекст, бюджет 6144)",
+        "description": "Глубокий анализ архитектора (контекст 96K, сброс 2 слоёв MoE в RAM, бюджет 6144)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-LynnStyle"
       }
