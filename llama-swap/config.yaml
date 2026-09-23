@@ -123,13 +123,12 @@ models:
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
-      K:\Project\LLM-tests\Qwen122B-Expert-Cache\bin\llama-server.exe
+      K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
-      -c 98304
+      -c 32768
       -ngl 999
       -dev CUDA0,CUDA1
-      -ts 15.6,18.4
-      -ot blk\.23\.ffn_(up|gate|down)_exps=CUDA0
+      -ts 14.3,20.2
       -ctk q5_0
       -ctv q4_0
       -ub 256
@@ -157,13 +156,12 @@ models:
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
-      K:\Project\LLM-tests\Qwen122B-Expert-Cache\bin\llama-server.exe
+      K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
-      -c 90112
+      -c 32768
       -ngl 999
       -dev CUDA0,CUDA1
-      -ts 15.6,18.4
-      -ot blk\.23\.ffn_(up|gate|down)_exps=CUDA0
+      -ts 14.3,20.2
       -ctk q5_0
       -ctv q4_0
       -ub 256
@@ -181,5 +179,34 @@ models:
       --temp 0.6
       --top-p 0.95
 
-
-
+  qwen122-baseline:
+    aliases:
+    - openai/qwen122-baseline
+    - qwen122-baseline
+    proxy: http://127.0.0.1:${PORT}
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
+    unloadTimeout: 15
+    cmd: >-
+      K:\Project\ik_llama\bin\llama-server.exe
+      -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
+      -c 16384
+      -ngl 999
+      -ot blk\.(3[6-9]|4[0-7])\.ffn_(up|gate|down)_exps=CPU
+      -dev CUDA0,CUDA1
+      -ts 13,26
+      -ctk q5_0
+      -ctv q4_0
+      -ub 256
+      -fa on
+      -t 6
+      -np 1
+      --slot-save-path K:\Project\Cache\slots
+      --reasoning-format deepseek
+      --reasoning-budget 6144
+      --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
+      -to 7200
+      --jinja
+      --host 127.0.0.1
+      --port ${PORT}
+      --temp 0.6
+      --top-p 0.95
