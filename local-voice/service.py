@@ -345,7 +345,20 @@ def _compute_station_telemetry() -> dict:
         telemetry["is_active"] = True
         return telemetry
 
-    # 3. Read log tail to track active tasks, checkpoints, and speeds
+    # 3. Query live llama-server slot for ground-truth hardware state
+    slot_obj = None
+    if model_id and model_state == "ready":
+        s_url = f"{proxy.rstrip('/')}/slots" if proxy else f"http://127.0.0.1:8080/upstream/{model_id}/slots"
+        try:
+            s_req = urllib.request.Request(s_url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(s_req, timeout=0.35) as s_resp:
+                data = json.loads(s_resp.read().decode("utf-8"))
+                if isinstance(data, list) and len(data) > 0:
+                    slot_obj = data[0]
+        except Exception:
+            pass
+
+    # Read log tail to extract speeds (only from recently updated log files)
     log_task_active = False
     log_last_task = None
     log_prefill_tokens = 0
@@ -353,104 +366,54 @@ def _compute_station_telemetry() -> dict:
 
     if os.path.exists(log_path):
         try:
-            with open(log_path, "rb") as f:
-                f_size = os.path.getsize(log_path)
-                f.seek(max(0, f_size - 65536))
-                lines = f.read().decode("utf-8", errors="ignore").splitlines()
+            # Only consider log tail if log file was modified in the last 60 seconds
+            if (now - os.path.getmtime(log_path)) < 60:
+                with open(log_path, "rb") as f:
+                    f_size = os.path.getsize(log_path)
+                    f.seek(max(0, f_size - 65536))
+                    lines = f.read().decode("utf-8", errors="ignore").splitlines()
 
-            for line in lines:
-                m_launch = re.search(r'(?:slot is processing task.*?id_task=(\d+)|launch_slot_:.*?task\s*(\d+))', line)
-                if m_launch:
-                    log_last_task = int(m_launch.group(1) or m_launch.group(2))
-                    log_task_active = True
-                    log_prefill_done = False
+                for line in lines:
+                    m_launch = re.search(r'(?:slot is processing task.*?id_task=(\d+)|launch_slot_:.*?task\s*(\d+))', line)
+                    if m_launch:
+                        log_last_task = int(m_launch.group(1) or m_launch.group(2))
+                        log_task_active = True
+                        log_prefill_done = False
 
-                m_chk = re.search(r'(?:slot create_check:.*?task\s*(\d+).*?n_tokens\s*=\s*(\d+)|print_timing:.*?task\s*(\d+).*?prompt processing,\s*n_tokens\s*=\s*(\d+))', line)
-                if m_chk:
-                    t_id = int(m_chk.group(1) or m_chk.group(3))
-                    if log_last_task == t_id:
-                        log_prefill_tokens = int(m_chk.group(2) or m_chk.group(4))
+                    m_chk = re.search(r'(?:slot create_check:.*?task\s*(\d+).*?n_tokens\s*=\s*(\d+)|print_timing:.*?task\s*(\d+).*?prompt processing,\s*n_tokens\s*=\s*(\d+))', line)
+                    if m_chk:
+                        t_id = int(m_chk.group(1) or m_chk.group(3))
+                        if log_last_task == t_id:
+                            log_prefill_tokens = int(m_chk.group(2) or m_chk.group(4))
 
-                m_peval = re.search(r'prompt eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
-                if m_peval:
-                    log_prefill_done = True
-                    p_spd = float(m_peval.group(3))
-                    _last_known_prefill_speed = p_spd
-                    telemetry["last_prefill_speed"] = p_spd
+                    m_peval = re.search(r'prompt eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
+                    if m_peval:
+                        log_prefill_done = True
+                        p_spd = float(m_peval.group(3))
+                        _last_known_prefill_speed = p_spd
+                        telemetry["last_prefill_speed"] = p_spd
 
-                m_geval = re.search(r'^\s*eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
-                if m_geval:
-                    g_spd = float(m_geval.group(3))
-                    _last_known_gen_speed = g_spd
-                    telemetry["last_gen_speed"] = g_spd
+                    m_geval = re.search(r'^\s*eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
+                    if m_geval:
+                        g_spd = float(m_geval.group(3))
+                        _last_known_gen_speed = g_spd
+                        telemetry["last_gen_speed"] = g_spd
 
-                if re.search(r'release_slots.*?id_task=(\d+)', line) or 'all slots are idle' in line:
-                    log_task_active = False
+                    if re.search(r'release_slots.*?id_task=(\d+)', line) or 'all slots are idle' in line:
+                        log_task_active = False
         except Exception:
             pass
 
-    # 4. Prefill Fast-Path: If log indicates prompt evaluation is in progress, return instantly without querying slots
-    if log_task_active and not log_prefill_done:
-        telemetry["is_active"] = True
-        telemetry["state"] = "prefill"
+    # Ground Truth: If slot is present and says IDLE, model is definitely idle!
+    if slot_obj and isinstance(slot_obj, dict):
+        s_task_id = int(slot_obj.get("id_task", -1))
+        s_state_code = int(slot_obj.get("state", 0))
+        s_is_processing = bool(slot_obj.get("is_processing", False))
 
-        # Track chunk-based prefill throughput
-        if _prefill_tracker.get("task") != log_last_task:
-            def_p_spd = 150.0 if "122" in str(model_id) else (1400.0 if "35" in str(model_id) else 1000.0)
-            _prefill_tracker.update({
-                "task": log_last_task,
-                "last_tokens": log_prefill_tokens,
-                "last_time": now,
-                "speed": _last_known_prefill_speed or def_p_spd,
-                "total_est": max(log_prefill_tokens + 2048, 4096)
-            })
-        else:
-            dt = now - _prefill_tracker.get("last_time", now)
-            dn = log_prefill_tokens - _prefill_tracker.get("last_tokens", 0)
-            if dt >= 0.4 and dn > 0:
-                p_spd = round(dn / dt, 1)
-                _prefill_tracker["speed"] = p_spd
-                _last_known_prefill_speed = p_spd
-                _prefill_tracker["last_tokens"] = log_prefill_tokens
-                _prefill_tracker["last_time"] = now
-                if log_prefill_tokens >= _prefill_tracker.get("total_est", 4096):
-                    _prefill_tracker["total_est"] = log_prefill_tokens + 2048
-
-        est_total = max(log_prefill_tokens + 1024, _prefill_tracker.get("total_est", 4096))
-        active_p_speed = max(10.0, _prefill_tracker.get("speed", _last_known_prefill_speed or 1000.0))
-        time_since_chk = max(0.0, now - _prefill_tracker.get("last_time", now))
-        interp_tokens = min(est_total, int(log_prefill_tokens + (time_since_chk * active_p_speed)))
-        pct = min(99.0, max(1.0, round((interp_tokens / max(1, est_total)) * 100, 1)))
-
-        rem_tokens = max(0, est_total - interp_tokens)
-        eta_s = int(rem_tokens / active_p_speed)
-        if eta_s >= 60:
-            eta_str = f"{eta_s // 60}м {eta_s % 60}с"
-        elif eta_s > 0:
-            eta_str = f"{eta_s}с"
-        else:
-            eta_str = "несколько сек"
-
-        telemetry["tokens"] = interp_tokens
-        telemetry["total_tokens"] = est_total
-        telemetry["progress_pct"] = pct
-        telemetry["speed_tok_s"] = active_p_speed
-        telemetry["eta_seconds"] = eta_s
-        telemetry["eta_str"] = eta_str
-        return telemetry
-
-    # 5. Query live slot for real-time decoding metrics (only when decoding or idle)
-    slot_obj = None
-    if model_id and model_state == "ready":
-        s_url = f"{proxy.rstrip('/')}/slots" if proxy else f"http://127.0.0.1:8080/upstream/{model_id}/slots"
-        try:
-            s_req = urllib.request.Request(s_url, headers={"Accept": "application/json"})
-            with urllib.request.urlopen(s_req, timeout=0.25) as s_resp:
-                data = json.loads(s_resp.read().decode("utf-8"))
-                if isinstance(data, list) and len(data) > 0:
-                    slot_obj = data[0]
-        except Exception:
-            pass
+        if s_task_id == -1 or (s_state_code == 0 and not s_is_processing):
+            telemetry["state"] = "idle"
+            telemetry["is_active"] = False
+            return telemetry
 
     has_next = False
     n_decoded = 0
