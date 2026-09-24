@@ -319,8 +319,22 @@ try {
             if ($failCounts["canvas"] -ge $FailureThreshold) {
                 Log-Watchdog "[SELF-HEAL] Restarting Agent Canvas and Core..." "Red"
                 Kill-PortProcess -Port 8000
+                Kill-PortProcess -Port 3001
                 Kill-PortProcess -Port 18000
                 Kill-PortProcess -Port 18001
+
+                # Clean up any lingering zombie node/cmd processes
+                $lingering = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+                    ($_.CommandLine -like "*agent-canvas*" -or $_.CommandLine -like "*static-server.mjs*") -and
+                    ($_.Name -in @('node.exe', 'cmd.exe', 'agent-canvas.exe'))
+                }
+                foreach ($proc in $lingering) {
+                    try {
+                        $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $($proc.ProcessId)" -ErrorAction SilentlyContinue
+                        foreach ($chi in $children) { try { Stop-Process -Id $chi.ProcessId -Force -ErrorAction SilentlyContinue } catch {} }
+                        Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+                    } catch {}
+                }
 
                 $canvasLog = Join-Path $openhandsLogDir "agent-canvas.log"
                 $canvasCmd = "cmd.exe /c `"set \""INGRESS_HOST=127.0.0.1\"" && set \""PATH=C:\Program Files\nodejs;%APPDATA%\npm;%LOCALAPPDATA%\Microsoft\WinGet\Packages\Google.PlatformTools_Microsoft.Winget.Source_8wekyb3d8bbwe\platform-tools;%USERPROFILE%\.cargo\bin;%PATH%\"" && agent-canvas.cmd >> `"$canvasLog`" 2>&1`""

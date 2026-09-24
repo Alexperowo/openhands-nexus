@@ -123,6 +123,23 @@ function Reclaim-StackPort {
     return $true
 }
 
+function Cleanup-OrphanCanvasProcesses {
+    $lingering = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+        ($_.CommandLine -like "*agent-canvas*" -or $_.CommandLine -like "*static-server.mjs*") -and
+        ($_.Name -in @('node.exe', 'cmd.exe', 'agent-canvas.exe'))
+    }
+    foreach ($proc in $lingering) {
+        Log-Message "[RECLAIM] Cleaning up orphaned Canvas process: $($proc.Name) (PID: $($proc.ProcessId))..." "Yellow"
+        try {
+            $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $($proc.ProcessId)" -ErrorAction SilentlyContinue
+            foreach ($chi in $children) {
+                try { Stop-Process -Id $chi.ProcessId -Force -ErrorAction SilentlyContinue } catch {}
+            }
+            Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+        } catch {}
+    }
+}
+
 Log-Message "=====================================================================" "Cyan"
 Log-Message "               STARTING OPENHANDS LOCAL PLATFORM" "Cyan"
 Log-Message "=====================================================================" "Cyan"
@@ -339,10 +356,13 @@ try {
 } catch {
     $rec8000 = Reclaim-StackPort -Port 8000 -ProcessNames @('node.exe', 'cmd.exe', 'agent-canvas.exe') -CmdlineMatch 'agent-canvas'
     if (-not $rec8000) { exit 1 }
+    $rec3001 = Reclaim-StackPort -Port 3001 -ProcessNames @('node.exe') -CmdlineMatch 'static-server'
+    if (-not $rec3001) { exit 1 }
     $rec18000 = Reclaim-StackPort -Port 18000 -ProcessNames @('python.exe', 'pythonw.exe', 'uvicorn.exe') -CmdlineMatch 'openhands'
     if (-not $rec18000) { exit 1 }
     $rec18001 = Reclaim-StackPort -Port 18001 -ProcessNames @('python.exe', 'pythonw.exe', 'uvicorn.exe') -CmdlineMatch 'openhands'
     if (-not $rec18001) { exit 1 }
+    Cleanup-OrphanCanvasProcesses
 }
 
 if (-not $canvasRunning) {
@@ -494,6 +514,23 @@ if (-not $gatewayRunning) {
     } else {
         Log-Message "[WARN] Mobile LAN PWA Gateway did not respond on 8443 within 15s. Check $pwaLog" "Yellow"
     }
+}
+
+# 5. Ensure autonomous watchdog supervisor is active in background
+$watchPidFile = Join-Path $pidDir "watchdog.pid"
+$watchRunning = $false
+if (Test-Path $watchPidFile) {
+    $wPid = (Get-Content $watchPidFile -Raw -ErrorAction SilentlyContinue).Trim()
+    if ($wPid -match '^\d+$') {
+        $wp = Get-Process -Id ([int]$wPid) -ErrorAction SilentlyContinue
+        if ($wp) { $watchRunning = $true }
+    }
+}
+if (-not $watchRunning) {
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $pidDir "watchdog.ps1") -Background | Out-Null
+    Log-Message "[OK] Autonomous Watchdog Supervisor started in background" "Green"
+} else {
+    Log-Message "[OK] Autonomous Watchdog Supervisor is ALREADY active" "Green"
 }
 
 # Save session.json

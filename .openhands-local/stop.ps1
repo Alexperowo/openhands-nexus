@@ -189,7 +189,7 @@ Remove-Item (Join-Path $pidDir "llama-server.pid") -Force -ErrorAction SilentlyC
 Remove-Item (Join-Path $pidDir "agent-canvas.pid") -Force -ErrorAction SilentlyContinue
 
 # 4b. Cleanup any orphan processes belonging to this project on known ports
-$knownPorts = @(8000, 8080, 8443, 18000, 18001, 18002)
+$knownPorts = @(3001, 8000, 8080, 8443, 18000, 18001, 18002)
 foreach ($pt in $knownPorts) {
     $conns = @(Get-NetTCPConnection -LocalPort $pt -State Listen -ErrorAction SilentlyContinue)
     foreach ($c in $conns) {
@@ -198,7 +198,7 @@ foreach ($pt in $knownPorts) {
             if ($proc) {
                 $cmdline = $proc.CommandLine
                 $pname = $proc.Name.ToLower()
-                if ($cmdline -match "llama-swap|local-voice|lan-gateway|agent-canvas|agent-server|openhands" -or $pname -eq "llama-swap.exe") {
+                if ($cmdline -match "llama-swap|local-voice|lan-gateway|agent-canvas|agent-server|openhands|static-server" -or $pname -eq "llama-swap.exe") {
                     Write-Host "[STOP] Terminating orphan project process on port ${pt}: $($proc.Name) (PID: $($proc.ProcessId))" -ForegroundColor Yellow
                     $ch = Get-CimInstance Win32_Process -Filter "ParentProcessId = $($proc.ProcessId)" -ErrorAction SilentlyContinue
                     foreach ($chi in $ch) { Stop-OwnedProcess -id $chi.ProcessId }
@@ -209,11 +209,23 @@ foreach ($pt in $knownPorts) {
     }
 }
 
+# 4c. Cleanup any orphaned node/cmd running agent-canvas even if not listening on port
+$orphanProcs = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+    ($_.CommandLine -like "*agent-canvas*" -or $_.CommandLine -like "*static-server.mjs*") -and
+    ($_.Name -in @('node.exe', 'cmd.exe', 'agent-canvas.exe'))
+}
+foreach ($op in $orphanProcs) {
+    Write-Host "[STOP] Terminating orphan canvas process: $($op.Name) (PID: $($op.ProcessId))" -ForegroundColor Yellow
+    $ch = Get-CimInstance Win32_Process -Filter "ParentProcessId = $($op.ProcessId)" -ErrorAction SilentlyContinue
+    foreach ($chi in $ch) { Stop-OwnedProcess -id $chi.ProcessId }
+    Stop-OwnedProcess -id $op.ProcessId
+}
+
 Start-Sleep -Seconds 1
 Write-Host ""
 
 # 5. Read-only port status check (NEVER kills anything)
-$checkPorts = @(8000, 8080, 8443, 18000, 18001, 18002)
+$checkPorts = @(3001, 8000, 8080, 8443, 18000, 18001, 18002)
 $activePorts = @()
 foreach ($p in $checkPorts) {
     if (Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue) {
@@ -222,7 +234,7 @@ foreach ($p in $checkPorts) {
 }
 
 if ($activePorts.Count -eq 0) {
-    Write-Host "[STATUS] All OpenHands ports (8000, 8080, 8443, 18000, 18001, 18002) are free." -ForegroundColor Green
+    Write-Host "[STATUS] All OpenHands ports (3001, 8000, 8080, 8443, 18000, 18001, 18002) are free." -ForegroundColor Green
 } else {
     Write-Host ("[STATUS] Active listening ports remaining: " + ($activePorts -join ", ")) -ForegroundColor Cyan
 }
