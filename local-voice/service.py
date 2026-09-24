@@ -360,8 +360,6 @@ def _compute_station_telemetry() -> dict:
 
     # Read log tail to extract speeds (only from recently updated log files)
     log_task_active = False
-    log_last_task = None
-    log_prefill_tokens = 0
     log_prefill_done = False
 
     if os.path.exists(log_path):
@@ -376,15 +374,8 @@ def _compute_station_telemetry() -> dict:
                 for line in lines:
                     m_launch = re.search(r'(?:slot is processing task.*?id_task=(\d+)|launch_slot_:.*?task\s*(\d+))', line)
                     if m_launch:
-                        log_last_task = int(m_launch.group(1) or m_launch.group(2))
                         log_task_active = True
                         log_prefill_done = False
-
-                    m_chk = re.search(r'(?:slot create_check:.*?task\s*(\d+).*?n_tokens\s*=\s*(\d+)|print_timing:.*?task\s*(\d+).*?prompt processing,\s*n_tokens\s*=\s*(\d+))', line)
-                    if m_chk:
-                        t_id = int(m_chk.group(1) or m_chk.group(3))
-                        if log_last_task == t_id:
-                            log_prefill_tokens = int(m_chk.group(2) or m_chk.group(4))
 
                     m_peval = re.search(r'prompt eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
                     if m_peval:

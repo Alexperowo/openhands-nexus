@@ -265,9 +265,8 @@ def clean_rogue_processes(verbose: bool = True) -> list:
                 is_rogue = any(kw.lower() in cmdline.lower() for kw in rogue_keywords)
 
                 # Check for orphaned llama-server / llama-cli
-                if not is_rogue and pname_lower in ("llama-server.exe", "llama-cli.exe"):
-                    if swap_pid is None or parent_pid != swap_pid:
-                        is_rogue = True
+                if not is_rogue and pname_lower in ("llama-server.exe", "llama-cli.exe") and (swap_pid is None or parent_pid != swap_pid):
+                    is_rogue = True
 
                 if is_rogue:
                     try:
