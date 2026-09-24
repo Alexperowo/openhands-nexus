@@ -91,7 +91,7 @@ models:
       -ts 14,22
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
-      --reasoning-budget 4096
+      --reasoning-budget 8192
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
       --jinja
       --host 127.0.0.1

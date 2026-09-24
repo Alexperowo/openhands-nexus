@@ -25,13 +25,14 @@
   "log_completions": true,
   "log_completions_folder": "logs\\\\completions",
   "native_tool_calling": true,
-  "reasoning_effort": "medium",
-  "enable_encrypted_reasoning": true,
+  "reasoning_effort": "none",
+  "enable_encrypted_reasoning": false,
   "prompt_cache_retention": "24h",
-  "extended_thinking_budget": 4096,
+  "extended_thinking_budget": 0,
   "usage_id": "default",
   "litellm_extra_body": {
-    "thinking_budget_tokens": 4096
+    "chat_template_kwargs": {"enable_thinking": false},
+    "thinking_budget_tokens": 0
   },
   "is_subscription": false,
   "schema_version": 1

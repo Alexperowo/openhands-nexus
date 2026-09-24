@@ -28,10 +28,10 @@
   "reasoning_effort": "high",
   "enable_encrypted_reasoning": true,
   "prompt_cache_retention": "24h",
-  "extended_thinking_budget": 4096,
+  "extended_thinking_budget": 8192,
   "usage_id": "default",
   "litellm_extra_body": {
-    "thinking_budget_tokens": 4096
+    "thinking_budget_tokens": 8192
   },
   "is_subscription": false,
   "schema_version": 1

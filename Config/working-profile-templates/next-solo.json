@@ -20,16 +20,30 @@
     "default_mode_id": "medium",
     "modes": [
       {
+        "id": "direct",
+        "label": "Выкл",
+        "description": "Прямая генерация без рассуждения",
+        "target_agent_profile_id": "e8f7a9b2-3c4d-4e5f-8a9b-0c1d2e3f4a5b",
+        "target_llm_profile_name": "Next-Direct"
+      },
+      {
+        "id": "low",
+        "label": "Низкое",
+        "description": "Краткая верификация перед ответом (бюджет 2048 токенов)",
+        "target_agent_profile_id": "e8f7a9b2-3c4d-4e5f-8a9b-0c1d2e3f4a5b",
+        "target_llm_profile_name": "Next-Low"
+      },
+      {
         "id": "medium",
         "label": "Среднее",
-        "description": "Сбалансированное рассуждение (бюджет 2048 токенов)",
+        "description": "Аналитическое рассуждение и планирование (бюджет 4096 токенов)",
         "target_agent_profile_id": "e8f7a9b2-3c4d-4e5f-8a9b-0c1d2e3f4a5b",
         "target_llm_profile_name": "Next-Normal"
       },
       {
         "id": "high",
         "label": "Глубокое",
-        "description": "Глубокое аналитическое мышление (бюджет 4096 токенов)",
+        "description": "Глубокий аудит, декомпозиция и архитектура (бюджет 8192 токенов)",
         "target_agent_profile_id": "e8f7a9b2-3c4d-4e5f-8a9b-0c1d2e3f4a5b",
         "target_llm_profile_name": "Next-Deep"
       }
