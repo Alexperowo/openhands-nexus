@@ -1,16 +1,16 @@
 {
-  "$schema": "urn:openhands:working-profile:v1",
+  "": "urn:openhands:working-profile:v1",
   "schema_version": 1,
   "id": "team-flagship",
   "name": "Flagship + Coder",
-  "description": "Тандем: Qwen 122B (архитектура и ревью) ➔ Ornith 35B (кодинг 80 tok/s и тесты)",
-  "kind": "flagship_chain",
+  "description": "Связка флагмана и кодера: Qwen 122B проектирует и проверяет, Ornith 35B пишет код",
+  "kind": "chain_two_node",
   "default_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
   "default_llm_profile_name": "Qwen122-ChatGPT-5.6-SOL",
   "models": [
     {
       "role": "architect_reviewer",
-      "model_alias": "openai/gpt-5.6-sol",
+      "model_alias": "openai/qwen122",
       "base_llm_profile": "Qwen122-ChatGPT-5.6-SOL"
     },
     {
@@ -27,28 +27,28 @@
       {
         "id": "direct",
         "label": "Выкл",
-        "description": "Прямая генерация архитектора без thinking tokens (100% Dual-GPU VRAM)",
+        "description": "Прямая генерация архитектора без блока размышлений",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-Direct"
       },
       {
         "id": "low",
         "label": "Низкое",
-        "description": "Ускоренная генерация архитектора (бюджет 4096 токенов, 100% Dual-GPU VRAM)",
+        "description": "Ускоренная генерация архитектора (бюджет 1024 токена)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-Turbo"
       },
       {
         "id": "medium",
         "label": "Среднее",
-        "description": "Сбалансированное рассуждение архитектора (бюджет 6144 токенов, 208E MoE, 100% Dual-GPU VRAM)",
+        "description": "Сбалансированное рассуждение архитектора (бюджет 3072 токена)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-ChatGPT-5.6-SOL"
       },
       {
         "id": "high",
         "label": "Глубокое",
-        "description": "Глубокий анализ архитектора (бюджет 6144 токенов, 208E MoE, 100% Dual-GPU VRAM)",
+        "description": "Глубокий архитектурный анализ (бюджет 6144 токена)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-LynnStyle"
       }

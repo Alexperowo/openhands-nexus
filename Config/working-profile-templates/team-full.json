@@ -1,27 +1,27 @@
 {
-  "$schema": "urn:openhands:working-profile:v1",
+  "": "urn:openhands:working-profile:v1",
   "schema_version": 1,
   "id": "team-full",
   "name": "Full Team",
-  "description": "Автономное трио: Qwen 27B (роутинг) ➔ Ornith 35B (код и тесты) ➔ Qwen 80B (дебаг)",
-  "kind": "three_model_chain",
+  "description": "Полный цикл: Qwen 27B маршрутизирует, Qwen 122B проектирует, Ornith 35B пишет код",
+  "kind": "chain_multi_node",
   "default_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
   "default_llm_profile_name": "Qwen3.8-Medium",
   "models": [
     {
-      "role": "router_reviewer",
+      "role": "router_planner",
       "model_alias": "openai/qwen",
       "base_llm_profile": "Qwen3.8-Medium"
     },
     {
-      "role": "code_executor",
-      "model_alias": "openai/ornith",
-      "base_llm_profile": "Ornith-Coding"
+      "role": "lead_architect",
+      "model_alias": "openai/qwen122",
+      "base_llm_profile": "Qwen122-ChatGPT-5.6-SOL"
     },
     {
-      "role": "deep_debugger",
-      "model_alias": "openai/next",
-      "base_llm_profile": "Next-Normal"
+      "role": "code_specialist",
+      "model_alias": "openai/ornith",
+      "base_llm_profile": "Ornith-Coding"
     }
   ],
   "reasoning": {
@@ -32,21 +32,21 @@
       {
         "id": "medium",
         "label": "Среднее",
-        "description": "Сбалансированное рассуждение роутера (Qwen 27B Medium)",
+        "description": "Сбалансированное рассуждение роутера (бюджет 2048 токенов)",
         "target_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
         "target_llm_profile_name": "Qwen3.8-Medium"
       },
       {
         "id": "high",
         "label": "Глубокое",
-        "description": "Максимальное рассуждение роутера (Qwen 27B High) и глубокий анализ ошибок",
+        "description": "Глубокий анализ роутера и разбор ошибок (бюджет 4096 токенов)",
         "target_agent_profile_id": "ba66f66f-f9fb-4764-b5b9-22f27bf84b3a",
         "target_llm_profile_name": "Qwen3.8-High"
       }
     ]
   },
   "ui_badge": {
-    "text": "3 Модели",
+    "text": "27B + 122B + 35B",
     "color": "indigo"
   }
 }

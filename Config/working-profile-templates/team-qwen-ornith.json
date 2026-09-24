@@ -1,15 +1,15 @@
 {
-  "$schema": "urn:openhands:working-profile:v1",
+  "": "urn:openhands:working-profile:v1",
   "schema_version": 1,
   "id": "team-qwen-ornith",
   "name": "Fast Pair",
-  "description": "Быстрый тандем: Qwen 27B (план и ревью) ➔ Ornith 35B (код и тесты)",
-  "kind": "two_model_chain",
+  "description": "Быстрая связка: Qwen 27B планирует и направляет, Ornith 35B пишет код и тесты",
+  "kind": "chain_two_node",
   "default_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
   "default_llm_profile_name": "Qwen3.8-Medium",
   "models": [
     {
-      "role": "architect_reviewer",
+      "role": "planner_router",
       "model_alias": "openai/qwen",
       "base_llm_profile": "Qwen3.8-Medium"
     },
@@ -27,28 +27,28 @@
       {
         "id": "direct",
         "label": "Выкл",
-        "description": "Прямая генерация без thinking tokens",
+        "description": "Прямая генерация без блока размышлений",
         "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen3.8-Direct"
       },
       {
         "id": "low",
         "label": "Низкое",
-        "description": "Краткая цепочка рассуждений ведущей модели",
+        "description": "Краткая цепочка рассуждений ведущей модели (бюджет 1024 токена)",
         "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen3.8-Low"
       },
       {
         "id": "medium",
         "label": "Среднее",
-        "description": "Сбалансированная глубина рассуждений для планирования",
+        "description": "Сбалансированное планирование (бюджет 2048 токенов)",
         "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen3.8-Medium"
       },
       {
         "id": "high",
         "label": "Глубокое",
-        "description": "Глубокое планирование и тщательное ревью архитектуры",
+        "description": "Глубокое планирование и архитектурное ревью (бюджет 4096 токенов)",
         "target_agent_profile_id": "f2159fa5-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen3.8-High"
       }
@@ -56,6 +56,6 @@
   },
   "ui_badge": {
     "text": "27B + 35B",
-    "color": "blue"
+    "color": "teal"
   }
 }

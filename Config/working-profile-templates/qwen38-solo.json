@@ -1,15 +1,15 @@
 {
-  "$schema": "urn:openhands:working-profile:v1",
+  "": "urn:openhands:working-profile:v1",
   "schema_version": 1,
   "id": "qwen38-solo",
   "name": "Qwen 27B",
-  "description": "Сбалансированная модель 27B: мультимодальность, зрение, автономный кодинг и тесты",
-  "kind": "single_model",
+  "description": "Универсальная быстрая модель для повседневных инженерных задач",
+  "kind": "general_single",
   "default_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
   "default_llm_profile_name": "Qwen3.8-Medium",
   "models": [
     {
-      "role": "solo_agent",
+      "role": "general_engineer",
       "model_alias": "openai/qwen",
       "base_llm_profile": "Qwen3.8-Medium"
     }
@@ -22,28 +22,28 @@
       {
         "id": "direct",
         "label": "Выкл",
-        "description": "Прямая генерация без thinking tokens",
+        "description": "Прямая генерация кода без блока размышлений",
         "target_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
         "target_llm_profile_name": "Qwen3.8-Direct"
       },
       {
         "id": "low",
         "label": "Низкое",
-        "description": "Краткие быстрые размышления",
+        "description": "Краткие быстрые размышления (бюджет 1024 токена)",
         "target_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
         "target_llm_profile_name": "Qwen3.8-Low"
       },
       {
         "id": "medium",
         "label": "Среднее",
-        "description": "Сбалансированное рассуждение",
+        "description": "Сбалансированное рассуждение (бюджет 2048 токенов)",
         "target_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
         "target_llm_profile_name": "Qwen3.8-Medium"
       },
       {
         "id": "high",
         "label": "Глубокое",
-        "description": "Максимальная глубина анализа перед генерацией",
+        "description": "Глубокий анализ архитектуры (бюджет 4096 токенов)",
         "target_agent_profile_id": "44761011-15fd-4981-971c-6b3ea145efbc",
         "target_llm_profile_name": "Qwen3.8-High"
       }
@@ -51,6 +51,6 @@
   },
   "ui_badge": {
     "text": "27B",
-    "color": "blue"
+    "color": "cyan"
   }
 }

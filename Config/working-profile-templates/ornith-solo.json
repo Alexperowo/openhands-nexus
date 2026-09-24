@@ -1,15 +1,15 @@
 {
-  "$schema": "urn:openhands:working-profile:v1",
+  "": "urn:openhands:working-profile:v1",
   "schema_version": 1,
   "id": "ornith-solo",
   "name": "Ornith 35B",
-  "description": "Специализированная кодинг-модель на архитектуре ICE для чистого синтеза кода и тестов",
-  "kind": "single_model",
+  "description": "Специализированная модель для скоростной генерации кода, рефакторинга и тестов",
+  "kind": "coder_single",
   "default_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
   "default_llm_profile_name": "Ornith-Coding",
   "models": [
     {
-      "role": "solo_coder",
+      "role": "code_specialist",
       "model_alias": "openai/ornith",
       "base_llm_profile": "Ornith-Coding"
     }
@@ -22,14 +22,14 @@
       {
         "id": "direct",
         "label": "Выкл",
-        "description": "Прямой синтез кода без накладных расходов на блок размышлений",
+        "description": "Прямой синтез кода без блока размышлений",
         "target_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
         "target_llm_profile_name": "Ornith-Direct"
       },
       {
         "id": "medium",
         "label": "Среднее",
-        "description": "Анализ задачи, CoT-верификация логики и синтез кода",
+        "description": "Анализ задачи, CoT-верификация логики и кодинг (бюджет 3072 токена)",
         "target_agent_profile_id": "90fdc7d6-418b-4b06-bd0c-08e04406c510",
         "target_llm_profile_name": "Ornith-Coding"
       }
@@ -37,6 +37,6 @@
   },
   "ui_badge": {
     "text": "35B",
-    "color": "teal"
+    "color": "blue"
   }
 }

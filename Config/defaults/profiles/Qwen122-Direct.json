@@ -33,7 +33,8 @@
   "litellm_extra_body": {
     "chat_template_kwargs": {
       "enable_thinking": false
-    }
+    },
+    "reasoning_budget_tokens": 0
   },
   "is_subscription": false,
   "schema_version": 1

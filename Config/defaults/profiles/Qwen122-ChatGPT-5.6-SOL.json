@@ -13,7 +13,7 @@
   "max_message_chars": 30000,
   "temperature": 0.6,
   "top_p": 0.95,
-  "max_input_tokens": 131072,
+  "max_input_tokens": 98304,
   "max_output_tokens": 16384,
   "api_mode": "auto",
   "capability_overrides": {},
@@ -25,12 +25,13 @@
   "log_completions": false,
   "log_completions_folder": "logs\\\\completions",
   "native_tool_calling": true,
-  "reasoning_effort": "high",
+  "reasoning_effort": "medium",
   "enable_encrypted_reasoning": true,
   "prompt_cache_retention": "24h",
-  "extended_thinking_budget": 6144,
+  "extended_thinking_budget": 3072,
   "usage_id": "default",
   "litellm_extra_body": {
+    "thinking_budget_tokens": 3072,
     "chat_template_kwargs": {
       "enable_thinking": true
     }

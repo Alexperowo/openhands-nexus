@@ -28,9 +28,10 @@
   "reasoning_effort": "medium",
   "enable_encrypted_reasoning": true,
   "prompt_cache_retention": "24h",
-  "extended_thinking_budget": 200000,
+  "extended_thinking_budget": 3072,
   "usage_id": "default",
   "litellm_extra_body": {
+    "thinking_budget_tokens": 3072,
     "chat_template_kwargs": {
       "enable_thinking": true
     }

@@ -1,15 +1,15 @@
 {
-  "$schema": "urn:openhands:working-profile:v1",
+  "": "urn:openhands:working-profile:v1",
   "schema_version": 1,
   "id": "next-solo",
   "name": "Qwen 80B",
-  "description": "Тяжёлая MoE-модель для алгоритмических задач и комплексного анализа",
-  "kind": "single_model",
-  "default_agent_profile_id": "d496bfef-da8c-439b-8e77-e5a92e5c7849",
+  "description": "Qwen3-Next 80B: экспертная декомпозиция, строгая логика и глубокий дебаг",
+  "kind": "flagship_single",
+  "default_agent_profile_id": "e8f7a9b2-3c4d-4e5f-8a9b-0c1d2e3f4a5b",
   "default_llm_profile_name": "Next-Normal",
   "models": [
     {
-      "role": "deep_analyst",
+      "role": "code_architect",
       "model_alias": "openai/next",
       "base_llm_profile": "Next-Normal"
     }
@@ -22,14 +22,14 @@
       {
         "id": "medium",
         "label": "Среднее",
-        "description": "Thinking budget: 2048 токенов",
-        "target_agent_profile_id": "d496bfef-da8c-439b-8e77-e5a92e5c7849",
+        "description": "Сбалансированное рассуждение (бюджет 2048 токенов)",
+        "target_agent_profile_id": "e8f7a9b2-3c4d-4e5f-8a9b-0c1d2e3f4a5b",
         "target_llm_profile_name": "Next-Normal"
       },
       {
         "id": "high",
         "label": "Глубокое",
-        "description": "Thinking budget: 4096 токенов",
+        "description": "Глубокое аналитическое мышление (бюджет 4096 токенов)",
         "target_agent_profile_id": "e8f7a9b2-3c4d-4e5f-8a9b-0c1d2e3f4a5b",
         "target_llm_profile_name": "Next-Deep"
       }
@@ -37,6 +37,6 @@
   },
   "ui_badge": {
     "text": "80B",
-    "color": "purple"
+    "color": "violet"
   }
 }

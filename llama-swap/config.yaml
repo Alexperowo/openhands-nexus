@@ -170,7 +170,7 @@ models:
       -np 1
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
-      --reasoning-budget 4096
+      --reasoning-budget 1024
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
       -to 7200
       --jinja
