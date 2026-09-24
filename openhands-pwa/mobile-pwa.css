@@ -93,6 +93,12 @@ body {
     display: none !important;
   }
 
+  /* Hide collapsed thinking block on mobile — no useful info in compact state,
+     wastes vertical space above the composer. Full trace is still visible on desktop. */
+  [data-testid="collapsible-thinking"] {
+    display: none !important;
+  }
+
   /* Code blocks & output panes must scroll horizontally without expanding viewport */
   pre, code, .overflow-x-auto, [data-code-block] {
     max-width: 100% !important;
