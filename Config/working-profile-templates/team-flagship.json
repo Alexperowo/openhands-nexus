@@ -27,28 +27,28 @@
       {
         "id": "direct",
         "label": "Выкл",
-        "description": "Прямая генерация архитектора без thinking tokens",
+        "description": "Прямая генерация архитектора без thinking tokens (100% Dual-GPU VRAM)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-Direct"
       },
       {
         "id": "low",
         "label": "Низкое",
-        "description": "Ускоренная генерация архитектора (контекст 88K, сброс 3 слоёв MoE в RAM)",
+        "description": "Ускоренная генерация архитектора (бюджет 4096 токенов, 100% Dual-GPU VRAM)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-Turbo"
       },
       {
         "id": "medium",
         "label": "Среднее",
-        "description": "Сбалансированное рассуждение (контекст 96K, 208E, бюджет 6144)",
+        "description": "Сбалансированное рассуждение архитектора (бюджет 6144 токенов, 208E MoE, 100% Dual-GPU VRAM)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-ChatGPT-5.6-SOL"
       },
       {
         "id": "high",
         "label": "Глубокое",
-        "description": "Глубокий анализ архитектора (контекст 96K, сброс 2 слоёв MoE в RAM, бюджет 6144)",
+        "description": "Глубокий анализ архитектора (бюджет 6144 токенов, 208E MoE, 100% Dual-GPU VRAM)",
         "target_agent_profile_id": "c1220000-1735-44d0-abd0-ca3a08ade349",
         "target_llm_profile_name": "Qwen122-LynnStyle"
       }

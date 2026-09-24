@@ -30,7 +30,7 @@
         "id": "high",
         "label": "Глубокое",
         "description": "Thinking budget: 4096 токенов",
-        "target_agent_profile_id": "4c45d9fa-2bbe-4a96-a0c7-63e319464f33",
+        "target_agent_profile_id": "e8f7a9b2-3c4d-4e5f-8a9b-0c1d2e3f4a5b",
         "target_llm_profile_name": "Next-Deep"
       }
     ]
