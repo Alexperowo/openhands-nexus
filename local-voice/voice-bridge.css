@@ -157,15 +157,7 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
     opacity: 0.35;
 }
 
-@media (max-width: 1024px), (pointer: coarse) {
-    .oh-voice-pill {
-        top: 10px;
-        right: 90px;
-        padding: 3px 8px;
-        font-size: 11px;
-        max-width: 130px;
-    }
-}
+
 
 .oh-voice-pill:hover,
 .oh-voice-pill:focus-visible,
@@ -335,19 +327,37 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
     pointer-events: none !important;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
     .oh-voice-pill {
-        bottom: 12px;
-        left: 12px;
-        padding: 4px 10px;
-        font-size: 12px;
+        top: 6px !important;
+        bottom: auto !important;
+        right: 128px !important;
+        left: auto !important;
+        padding: 0 !important;
+        width: 28px !important;
+        min-width: 28px !important;
+        max-width: 28px !important;
+        height: 28px !important;
+        border-radius: 50% !important;
+        justify-content: center !important;
+        gap: 0 !important;
     }
-    
+
+    .oh-voice-pill #oh-voice-pill-text {
+        display: none !important;
+    }
+
+    .oh-voice-pill .oh-voice-waves {
+        display: none !important;
+    }
+
     .oh-voice-popover {
-        bottom: 54px;
-        left: 12px;
-        width: calc(100vw - 24px);
-        max-width: 320px;
+        top: 40px !important;
+        bottom: auto !important;
+        right: 10px !important;
+        left: auto !important;
+        width: calc(100vw - 24px) !important;
+        max-width: 320px !important;
     }
 }
 

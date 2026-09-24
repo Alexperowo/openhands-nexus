@@ -621,6 +621,9 @@
         const activeModeId = activeState.active_reasoning_mode_id || (modes[0] ? modes[0].id : "");
         const activeModeObj = modes.find(m => m.id === activeModeId) || modes[0];
         const running = isTaskRunning();
+        const initialModelName = currentWp ? currentWp.name : "Qwen 122B";
+        const initialReasoningLabel = isReasoningSupported && activeModeObj ? (activeModeObj.label.split(" ")[0] || activeModeObj.label) : "Direct";
+        const isChain = currentWp.kind && currentWp.kind.includes("chain");
 
         // 1. Locate the best mount container in the composer
         let composerCard = chatInput.closest("form, [class*='rounded-[15px]'], [class*='rounded-xl'], [class*='border-t']");
@@ -639,15 +642,15 @@
             bar.className = "oh-nexus-bar";
             bar.innerHTML = `
                 <button id="oh-nexus-model-btn" class="oh-nexus-btn" type="button" aria-haspopup="listbox" aria-expanded="false" title="Нажмите для выбора модели станции">
-                    <span class="oh-nexus-model-name"></span>
-                    <span class="oh-nexus-badge" style="display: none;"></span>
+                    <span class="oh-nexus-model-name">${initialModelName}</span>
+                    <span class="oh-nexus-badge" style="${isChain ? '' : 'display: none;'}">${isChain ? badgeInfo.text : ''}</span>
                     <svg class="oh-nexus-chevron" viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
                     </svg>
                 </button>
                 <button id="oh-nexus-reasoning-btn" class="oh-nexus-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
-                    <span class="oh-nexus-reasoning-label"></span>
-                    <svg class="oh-nexus-chevron" viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+                    <span class="oh-nexus-reasoning-label">${initialReasoningLabel}</span>
+                    <svg class="oh-nexus-chevron" viewBox="0 0 20 20" width="14" height="14" fill="currentColor" style="${isReasoningSupported ? '' : 'display: none;'}">
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
                     </svg>
                 </button>
@@ -687,19 +690,22 @@
         if (actionsRow) {
             const plusBtn = composerCard.querySelector('[data-testid="chat-plus-button"]');
             let placed = false;
+            let leftCol = null;
 
             if (plusBtn) {
-                let leftCol = plusBtn;
+                leftCol = plusBtn;
                 while (leftCol && leftCol.parentElement && leftCol.parentElement !== actionsRow) {
                     leftCol = leftCol.parentElement;
                 }
 
                 if (leftCol && leftCol.parentElement === actionsRow) {
-                    leftCol.style.flexShrink = "0";
+                    leftCol.style.flex = "1 1 auto";
                     leftCol.style.minWidth = "0";
                     leftCol.style.display = "flex";
                     leftCol.style.alignItems = "center";
                     leftCol.style.gap = "6px";
+                    leftCol.style.overflowX = "auto";
+                    leftCol.style.scrollbarWidth = "none";
 
                     const plusParent = plusBtn.parentElement;
                     const plusBox = plusParent ? plusParent.parentElement : null;
@@ -713,9 +719,10 @@
                         innerFlex.style.display = "flex";
                         innerFlex.style.alignItems = "center";
                         innerFlex.style.flexWrap = "nowrap";
-                        innerFlex.style.flexShrink = "0";
+                        innerFlex.style.flex = "1 1 auto";
                         innerFlex.style.minWidth = "0";
-                        innerFlex.style.overflow = "visible";
+                        innerFlex.style.overflowX = "auto";
+                        innerFlex.style.scrollbarWidth = "none";
                         innerFlex.style.gap = "5px";
 
                         if (plusBox && plusBox.parentElement === innerFlex) {
@@ -744,6 +751,19 @@
                         actionsRow.appendChild(bar);
                     }
                 }
+            }
+
+            // Ensure the right side (Submit, Mic, Context, Status) stays anchored and never pushed off-screen
+            const rightContainer = actionsRow.querySelector(".ml-auto") ||
+                                   actionsRow.querySelector("div:has(> button[data-testid='submit-button'])") ||
+                                   actionsRow.lastElementChild;
+            if (rightContainer && rightContainer !== leftCol) {
+                rightContainer.style.flexShrink = "0";
+                rightContainer.style.marginLeft = "auto";
+                rightContainer.style.zIndex = "50";
+                rightContainer.style.position = "relative";
+                rightContainer.style.display = "flex";
+                rightContainer.style.alignItems = "center";
             }
         } else {
             if (bar.parentElement !== composerCard) {
@@ -813,13 +833,15 @@
     }
 
     function cleanNativeExecutionButton() {
-        const execBtn = document.querySelector('button[data-testid="stop-button"], button[data-testid="play-button"]');
-        if (execBtn) {
-            const container = execBtn.closest('.flex.items-center.gap-1') || (execBtn.parentElement ? execBtn.parentElement.parentElement : null);
+        const statusIndicator = document.querySelector(
+            'button[data-testid="stop-button"], button[data-testid="play-button"], [data-testid="circle-error-icon"]'
+        );
+        if (statusIndicator) {
+            const container = statusIndicator.closest('.flex.items-center.gap-1') || (statusIndicator.parentElement ? statusIndicator.parentElement.parentElement : null);
             if (container) {
                 container.style.gap = '0px';
-                container.style.minWidth = '28px';
-                container.style.width = '28px';
+                container.style.minWidth = '24px';
+                container.style.width = '24px';
                 container.style.flexShrink = '0';
                 const spans = container.querySelectorAll('span');
                 spans.forEach(s => {

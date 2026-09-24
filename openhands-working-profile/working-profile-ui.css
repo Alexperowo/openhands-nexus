@@ -490,48 +490,97 @@
 }
 
 /* 6. КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ LAYOUT ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */
-/* Скрываем текстовые метки «Выполняется», «Остановлено», «Приостановлено», чтобы они не сдвигали кнопки */
-div.flex.items-center.gap-1:has(button[data-testid="stop-button"], button[data-testid="play-button"]) > span,
-.flex.items-center:has(> div > button[data-testid="stop-button"], > div > button[data-testid="play-button"]) > span,
+/* Скрываем текстовые метки «Ошибка», «Выполняется», «Остановлено», «Приостановлено», чтобы они не сдвигали кнопки */
+div.flex.items-center.gap-1:has(button[data-testid="stop-button"], button[data-testid="play-button"], [data-testid="circle-error-icon"], svg) > span,
+.flex.items-center:has(> div > button[data-testid="stop-button"], > div > button[data-testid="play-button"], > div > [data-testid="circle-error-icon"]) > span,
 span:has(~ div > button[data-testid="stop-button"]),
-span:has(~ div > button[data-testid="play-button"]) {
+span:has(~ div > button[data-testid="play-button"]),
+span:has(~ div > [data-testid="circle-error-icon"]) {
     display: none !important;
 }
 
-div.flex.items-center.gap-1:has(button[data-testid="stop-button"], button[data-testid="play-button"]) {
+/* Скрываем нативный селектор модели OpenHands, чтобы не дублировать Nexus Bar */
+[data-testid="chat-input-llm-profile"] {
+    display: none !important;
+}
+
+div.flex.items-center.gap-1:has(button[data-testid="stop-button"], button[data-testid="play-button"], [data-testid="circle-error-icon"]) {
     gap: 0 !important;
-    min-width: 28px !important;
-    width: 28px !important;
+    min-width: 24px !important;
+    width: 24px !important;
     justify-content: center !important;
     flex-shrink: 0 !important;
 }
 
-/* Гарантируем, что кнопка отправки никогда не исчезает и не выталкивается за экран */
+/* Гарантируем, что кнопка отправки и правый блок действий никогда не исчезают и не выталкиваются за экран */
+button[data-testid="submit-button"],
 button[data-testid="chat-input-send"], 
-button[type="submit"].chat-input-send,
+button[type="submit"],
 button[aria-label*="Send" i],
 button[aria-label*="Отправить" i] {
     flex-shrink: 0 !important;
     z-index: 50 !important;
-    margin-left: auto !important;
     position: relative !important;
+    min-width: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
-/* Гарантируем, что кнопка добавления (+) и панель станции сохраняют форму и не выталкиваются */
+[data-testid="chat-input-actions"] > div:last-child,
+div.flex.items-center.justify-between > div:last-child,
+div.ml-auto.flex.items-center,
+div:has(> button[data-testid="submit-button"]) {
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+    z-index: 50 !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+/* Гарантируем, что кнопка добавления (+) сохраняет форму */
 button[data-testid="chat-plus-button"] {
     flex-shrink: 0 !important;
     min-width: 24px !important;
 }
 
+/* Гарантируем, что левый блок гибко занимает доступное пространство и может прокручиваться */
 [data-testid="chat-input-actions"] > div:first-child,
-div.flex.items-center.justify-between > div:first-child {
-    flex-shrink: 0 !important;
+div.flex.items-center.justify-between > div:first-child,
+div.flex.min-w-0.items-center {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+[data-testid="chat-input-actions"] > div:first-child::-webkit-scrollbar,
+div.flex.items-center.justify-between > div:first-child::-webkit-scrollbar,
+div.flex.min-w-0.items-center::-webkit-scrollbar {
+    display: none !important;
 }
 
 #oh-nexus-bar {
     flex-shrink: 0 !important;
     min-width: 0 !important;
     overflow: visible !important;
+}
+
+@media (max-width: 768px) {
+    .oh-telemetry-meta {
+        display: none !important;
+    }
+    .oh-nexus-telemetry-pill {
+        padding: 0 6px !important;
+    }
+    .oh-nexus-btn {
+        padding: 0 6px !important;
+    }
 }
 
 /* Отключаем случайные клики по внутренним элементам телеметрии, чтобы они не перехватывали события */
