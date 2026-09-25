@@ -19,6 +19,7 @@ exclude = [
     "Logs",
     "OpenHands-Tests",
     "Tests",
+    "tests",
     "Temp",
     "scratch",
     "ksenia-android",

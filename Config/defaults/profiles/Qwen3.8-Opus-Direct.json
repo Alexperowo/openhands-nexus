@@ -16,7 +16,9 @@
   "max_input_tokens": 98304,
   "max_output_tokens": 16384,
   "api_mode": "auto",
-  "capability_overrides": {},
+  "capability_overrides": {
+    "supports_vision": true
+  },
   "stream": false,
   "drop_params": true,
   "modify_params": true,

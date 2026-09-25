@@ -210,6 +210,30 @@ def clean_text_for_speech(text: str) -> str:
     text = re.sub(r"^[\*\-\+]\s+", "", text, flags=re.MULTILINE)
     # Remove excessive punctuation or symbols
     text = re.sub(r"[~*_|\\]", "", text)
+    # Normalize common file extensions for smooth speech
+    text = re.sub(r"\.([a-zA-Z0-9]{1,5})\b", r" точка \1 ", text)
+    # Common tech term pronunciations for Russian TTS
+    tech_map = {
+        r"\bAPI\b": "Апи",
+        r"\bURL\b": "Ю-эр-эл",
+        r"\bJSON\b": "Джейсон",
+        r"\bYAML\b": "Ямл",
+        r"\bYML\b": "Ямл",
+        r"\bGit\b": "Гит",
+        r"\bDocker\b": "Докер",
+        r"\bPython\b": "Пайтон",
+        r"\bPowerShell\b": "Пауэршелл",
+        r"\bLinux\b": "Линукс",
+        r"\bWindows\b": "Виндовс",
+        r"\bOpenHands\b": "Оупенхэндс",
+        r"\bNexus\b": "Нексус",
+        r"\bVRAM\b": "Ви-рэм",
+        r"\bRAM\b": "Рэм",
+        r"\bGPU\b": "Джи-пи-ю",
+        r"\bCPU\b": "Си-пи-ю",
+    }
+    for pat, rep in tech_map.items():
+        text = re.sub(pat, rep, text, flags=re.IGNORECASE)
     # Collapse multiple whitespace/newlines into single space
     text = re.sub(r"\s+", " ", text).strip()
     return text

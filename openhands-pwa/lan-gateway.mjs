@@ -12,7 +12,7 @@
  */
 
 import { createServer as createHttpsServer } from "node:https";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL, parse as parseUrl } from "node:url";
 import { parse as parseQuery } from "node:querystring";
@@ -462,15 +462,19 @@ function applySecurityHeaders(res) {
 
 const staticCache = new Map();
 function getStaticAsset(filePath) {
-  if (staticCache.has(filePath)) {
-    return staticCache.get(filePath);
-  }
-  if (existsSync(filePath)) {
+  try {
+    if (!existsSync(filePath)) return null;
+    const stat = statSync(filePath);
+    const cached = staticCache.get(filePath);
+    if (cached && cached.mtimeMs === stat.mtimeMs) {
+      return cached.data;
+    }
     const data = readFileSync(filePath);
-    staticCache.set(filePath, data);
+    staticCache.set(filePath, { data, mtimeMs: stat.mtimeMs });
     return data;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 const MAX_POST_BODY = 64 * 1024; // 64 KB DoS limit for login & JSON control endpoints
@@ -540,7 +544,7 @@ const httpsServer = createHttpsServer(
       if (data) {
         res.writeHead(200, {
           "Content-Type": "text/css; charset=utf-8",
-          "Cache-Control": "public, max-age=3600",
+          "Cache-Control": "no-cache, must-revalidate",
         });
         res.end(data);
         return;

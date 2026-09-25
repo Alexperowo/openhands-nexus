@@ -112,6 +112,83 @@
         }
     }
 
+    const TECH_PRONUNCIATION_MAP = {
+        "openhands": "Оупенхэндс",
+        "nexus": "Нексус",
+        "github": "Гитхаб",
+        "git": "Гит",
+        "docker": "Докер",
+        "python": "Пайтон",
+        "powershell": "Пауэршелл",
+        "linux": "Линукс",
+        "windows": "Виндовс",
+        "android": "Андроид",
+        "javascript": "Джаваскрипт",
+        "typescript": "Тайпскрипт",
+        "node": "Ноуд",
+        "npm": "Эн-пи-эм",
+        "pwa": "Пэ-вэ-а",
+        "api": "Апи",
+        "url": "Ю-эр-эл",
+        "json": "Джейсон",
+        "yaml": "Ямл",
+        "yml": "Ямл",
+        "css": "Си-эс-эс",
+        "html": "Эйч-ти-эм-эл",
+        "svg": "Эс-вэ-гэ",
+        "png": "Пэ-эн-гэ",
+        "jpg": "Джи-пэг",
+        "jpeg": "Джи-пэг",
+        "sql": "Эс-кью-эль",
+        "vram": "Ви-рэм",
+        "ram": "Рэм",
+        "gpu": "Джи-пи-ю",
+        "cpu": "Си-пи-ю",
+        "cuda": "Куда",
+        "llm": "Эл-эл-эм",
+        "tts": "Ти-ти-эс",
+        "stt": "Эс-ти-ти",
+        "qwen": "Квен",
+        "ornith": "Орнит",
+        "status": "Статус",
+        "error": "Ошибка",
+        "ok": "Окей"
+    };
+
+    function transliterateForRussianTts(str) {
+        if (!str) return "";
+        const charMap = {
+            "shch": "щ", "yo": "ё", "zh": "ж", "ch": "ч", "sh": "ш", "yu": "ю", "ya": "я",
+            "kh": "х", "ts": "ц", "th": "т", "ph": "ф",
+            "a": "а", "b": "б", "c": "к", "d": "д", "e": "е", "f": "ф", "g": "г",
+            "h": "х", "i": "и", "j": "дж", "k": "к", "l": "л", "m": "м", "n": "н",
+            "o": "о", "p": "п", "q": "к", "r": "р", "s": "с", "t": "т", "u": "у",
+            "v": "в", "w": "в", "x": "кс", "y": "и", "z": "з"
+        };
+        // Normalize common file extensions before word replacement
+        let res = str.replace(/\.([a-zA-Z0-9]+)\b/g, " точка $1");
+
+        // Replace known tech words
+        res = res.replace(/[a-zA-Z]+/g, (match) => {
+            const lower = match.toLowerCase();
+            if (TECH_PRONUNCIATION_MAP[lower]) {
+                const mapped = TECH_PRONUNCIATION_MAP[lower];
+                return match[0] === match[0].toUpperCase()
+                    ? mapped.charAt(0).toUpperCase() + mapped.slice(1)
+                    : mapped.toLowerCase();
+            }
+            // Phonetic transliteration so Samsung / native Russian TTS doesn't drop speech
+            let word = lower;
+            for (const [latin, cyr] of Object.entries(charMap)) {
+                word = word.replaceAll(latin, cyr);
+            }
+            return match[0] === match[0].toUpperCase()
+                ? word.charAt(0).toUpperCase() + word.slice(1)
+                : word;
+        });
+        return res;
+    }
+
     function cleanTextForSpeech(text) {
         if (!text) return "";
         let clean = text;
@@ -360,7 +437,8 @@
             return;
         }
 
-        const utterance = new SpeechSynthesisUtterance(cleanText);
+        const phoneticText = transliterateForRussianTts(cleanText);
+        const utterance = new SpeechSynthesisUtterance(phoneticText);
         utterance.lang = "ru-RU";
         utterance.rate = config.speechRate || 1.0;
 
@@ -588,22 +666,26 @@
                     pill.style.top = `${validTop}px`;
                     pill.style.bottom = "auto";
                     pill.style.right = "auto";
+                    pill.classList.add("is-moved");
                 }
             } catch (e) {}
         }
 
         function onPointerDown(e) {
             if (e.target.closest("#oh-voice-popover")) return;
+            if (e.button !== undefined && e.button !== 0) return;
             isDragging = true;
             hasMoved = false;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            startX = clientX;
-            startY = clientY;
+            startX = e.clientX;
+            startY = e.clientY;
 
             const rect = pill.getBoundingClientRect();
             initialLeft = rect.left;
             initialTop = rect.top;
+
+            if (pill.setPointerCapture && e.pointerId !== undefined) {
+                try { pill.setPointerCapture(e.pointerId); } catch (_) {}
+            }
 
             pill.classList.add("dragging");
             pill.style.transition = "none";
@@ -611,28 +693,25 @@
 
         function onPointerMove(e) {
             if (!isDragging) return;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const deltaX = clientX - startX;
-            const deltaY = clientY - startY;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
 
-            if (Math.hypot(deltaX, deltaY) > 5) {
+            if (!hasMoved && Math.hypot(deltaX, deltaY) > 5) {
                 hasMoved = true;
-                if (e.cancelable && e.type === "touchmove") {
-                    e.preventDefault();
-                }
             }
 
             if (hasMoved) {
-                const pillWidth = pill.offsetWidth || 140;
-                const pillHeight = pill.offsetHeight || 36;
-                const newLeft = Math.max(10, Math.min(initialLeft + deltaX, window.innerWidth - pillWidth - 10));
-                const newTop = Math.max(10, Math.min(initialTop + deltaY, window.innerHeight - pillHeight - 10));
+                if (e.cancelable) e.preventDefault();
+                const pillWidth = pill.offsetWidth || 48;
+                const pillHeight = pill.offsetHeight || 48;
+                const newLeft = Math.max(8, Math.min(initialLeft + deltaX, window.innerWidth - pillWidth - 8));
+                const newTop = Math.max(8, Math.min(initialTop + deltaY, window.innerHeight - pillHeight - 8));
 
                 pill.style.left = `${newLeft}px`;
                 pill.style.top = `${newTop}px`;
                 pill.style.bottom = "auto";
                 pill.style.right = "auto";
+                pill.classList.add("is-moved");
 
                 if (isPopoverOpen) {
                     positionPopoverNearPill();
@@ -640,13 +719,18 @@
             }
         }
 
-        function onPointerUp() {
+        function onPointerUp(e) {
             if (!isDragging) return;
             isDragging = false;
             pill.classList.remove("dragging");
             pill.style.transition = "";
 
+            if (pill.releasePointerCapture && e.pointerId !== undefined) {
+                try { pill.releasePointerCapture(e.pointerId); } catch (_) {}
+            }
+
             if (hasMoved) {
+                pill.classList.add("is-moved");
                 const rect = pill.getBoundingClientRect();
                 try {
                     localStorage.setItem("oh_voice_pill_pos", JSON.stringify({
@@ -657,19 +741,36 @@
             }
         }
 
-        pill.addEventListener("mousedown", onPointerDown);
-        document.addEventListener("mousemove", onPointerMove);
-        document.addEventListener("mouseup", onPointerUp);
+        if (window.PointerEvent) {
+            pill.addEventListener("pointerdown", onPointerDown);
+            pill.addEventListener("pointermove", onPointerMove);
+            pill.addEventListener("pointerup", onPointerUp);
+            pill.addEventListener("pointercancel", onPointerUp);
+        } else {
+            pill.addEventListener("mousedown", onPointerDown);
+            document.addEventListener("mousemove", onPointerMove);
+            document.addEventListener("mouseup", onPointerUp);
 
-        pill.addEventListener("touchstart", onPointerDown, { passive: true });
-        document.addEventListener("touchmove", onPointerMove, { passive: false });
-        document.addEventListener("touchend", onPointerUp);
+            pill.addEventListener("touchstart", (e) => {
+                if (e.touches && e.touches[0]) {
+                    onPointerDown({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, target: e.target });
+                }
+            }, { passive: true });
+            document.addEventListener("touchmove", (e) => {
+                if (e.touches && e.touches[0]) {
+                    onPointerMove({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY, cancelable: e.cancelable, preventDefault: () => e.preventDefault() });
+                }
+            }, { passive: false });
+            document.addEventListener("touchend", onPointerUp);
+        }
 
         setTimeout(restorePillPosition, 50);
 
-        pill.addEventListener("click", () => {
+        pill.addEventListener("click", (e) => {
             if (hasMoved) {
                 hasMoved = false;
+                e.preventDefault();
+                e.stopPropagation();
                 return;
             }
             if (pill.classList.contains("speaking")) {

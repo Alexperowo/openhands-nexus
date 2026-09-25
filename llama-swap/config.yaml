@@ -45,6 +45,7 @@ models:
     cmd: >-
       K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
+      --mmproj K:\Project\Models\Ornith\mmproj-Ornith-1.5-35B-BF16.gguf
       -c 131072
       -ctk q8_0
       -ctv q5_0

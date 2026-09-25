@@ -328,23 +328,31 @@ html, body, .dark.min-h-screen, [class*="h-screen"], #root-outlet {
 }
 
 @media (max-width: 1024px) {
+    .oh-voice-pill:not(.is-moved) {
+        top: 10px;
+        bottom: auto;
+        right: 128px;
+        left: auto;
+    }
+
     .oh-voice-pill {
-        top: 6px !important;
-        bottom: auto !important;
-        right: 128px !important;
-        left: auto !important;
-        padding: 0 !important;
-        width: 28px !important;
-        min-width: 28px !important;
-        max-width: 28px !important;
-        height: 28px !important;
-        border-radius: 50% !important;
-        justify-content: center !important;
-        gap: 0 !important;
+        padding: 0 10px;
+        width: auto;
+        min-width: 48px;
+        min-height: 48px;
+        height: 48px;
+        border-radius: 24px;
+        justify-content: center;
+        gap: 6px;
+        touch-action: none !important;
     }
 
     .oh-voice-pill #oh-voice-pill-text {
-        display: none !important;
+        display: inline-block;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .oh-voice-pill .oh-voice-waves {
