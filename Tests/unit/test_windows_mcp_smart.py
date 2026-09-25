@@ -25,6 +25,8 @@ class TestWindowsMcpSmartTools:
             "desktop_list_elements",
             "desktop_find_text_ocr",
             "desktop_click_element",
+            "desktop_set_element_text",
+            "desktop_invoke_element",
             "desktop_mouse_move",
             "desktop_mouse_click",
             "desktop_mouse_drag",
@@ -34,7 +36,17 @@ class TestWindowsMcpSmartTools:
             "desktop_hotkey",
             "desktop_list_windows",
             "desktop_focus_window",
+            "browser_open",
+            "browser_click",
+            "browser_type",
+            "browser_press_key",
+            "browser_get_content",
+            "browser_wait_for",
+            "browser_evaluate",
+            "browser_take_screenshot",
+            "browser_close",
         ]
+        assert len(tools) == 27, f"Expected 27 tools, found {len(tools)}"
         for tool_name in expected_tools:
             assert tool_name in tools, f"Expected tool '{tool_name}' not registered on FastMCP server"
 
