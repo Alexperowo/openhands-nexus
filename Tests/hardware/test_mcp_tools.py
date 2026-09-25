@@ -22,14 +22,21 @@ class TestWindowsMCP:
             sys.path.insert(0, WINDOWS_MCP_DIR)
 
     def test_windows_mcp_import_and_tools(self):
-        """Verifies server.py imports cleanly and registers all 11 tools."""
+        """Verifies server.py imports cleanly and registers all 27 precision Computer Use tools."""
         import server
         raw_tools = server.mcp._tool_manager._tools if hasattr(server.mcp, "_tool_manager") else []
         tool_names = list(raw_tools.keys()) if isinstance(raw_tools, dict) else [getattr(t, "name", str(t)) for t in raw_tools]
-        assert len(tool_names) == 11, f"Expected 11 windows-mcp tools, found {len(tool_names)}: {tool_names}"
+        assert len(tool_names) == 27, f"Expected 27 windows-mcp tools, found {len(tool_names)}: {tool_names}"
         expected_tools = [
             "desktop_get_screen_info",
             "desktop_take_screenshot",
+            "desktop_take_window_screenshot",
+            "desktop_take_region_screenshot",
+            "desktop_list_elements",
+            "desktop_find_text_ocr",
+            "desktop_click_element",
+            "desktop_set_element_text",
+            "desktop_invoke_element",
             "desktop_mouse_move",
             "desktop_mouse_click",
             "desktop_mouse_drag",
@@ -39,6 +46,15 @@ class TestWindowsMCP:
             "desktop_hotkey",
             "desktop_list_windows",
             "desktop_focus_window",
+            "browser_open",
+            "browser_click",
+            "browser_type",
+            "browser_press_key",
+            "browser_get_content",
+            "browser_wait_for",
+            "browser_evaluate",
+            "browser_take_screenshot",
+            "browser_close",
         ]
         for exp in expected_tools:
             assert exp in tool_names, f"Missing expected tool {exp}"
