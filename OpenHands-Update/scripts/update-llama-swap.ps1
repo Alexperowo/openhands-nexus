@@ -273,8 +273,10 @@ if ($Update) {
     New-Item -ItemType Directory -Path $StagingDir -Force | Out-Null
 
     $zipPath = Join-Path $StagingDir $rel.Asset.name
-    Log-Output "Downloading $($rel.Asset.browser_download_url)..." "STEP"
-    Invoke-WebRequest -Uri $rel.Asset.browser_download_url -OutFile $zipPath -TimeoutSec 120
+    curl.exe -f -L --noproxy "*" -o $zipPath $rel.Asset.browser_download_url
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -eq 0) {
+        throw "Failed to download $($rel.Asset.browser_download_url)"
+    }
 
     Log-Output "Extracting candidate package..." "STEP"
     Expand-Archive -Path $zipPath -DestinationPath $StagingDir -Force

@@ -1,0 +1,56 @@
+{
+  "$schema": "urn:openhands:working-profile:v1",
+  "schema_version": 1,
+  "id": "tinfield-solo",
+  "name": "Tinfield 177B",
+  "description": "Tinfield-1-Mini 177B MoE (DeltaNet+QSA): автономная SWE-инженерия, терминальные операции и глубокий рефакторинг",
+  "kind": "flagship_single",
+  "default_agent_profile_id": "b1770000-177b-4a10-8000-000000000177",
+  "default_llm_profile_name": "Tinfield-Normal",
+  "models": [
+    {
+      "role": "autonomous_swe",
+      "model_alias": "openai/tinfield",
+      "base_llm_profile": "Tinfield-Normal"
+    }
+  ],
+  "reasoning": {
+    "supported": true,
+    "ui_type": "discrete_levels",
+    "default_mode_id": "medium",
+    "modes": [
+      {
+        "id": "direct",
+        "label": "Выкл",
+        "description": "Прямая генерация кода без блока размышлений",
+        "target_agent_profile_id": "b1770000-177b-4a10-8000-000000000177",
+        "target_llm_profile_name": "Tinfield-Direct"
+      },
+      {
+        "id": "low",
+        "label": "Низкое",
+        "description": "Быстрый турбо-кодинг и краткая верификация (бюджет 1024 токена)",
+        "target_agent_profile_id": "b1770000-177b-4a10-8000-000000000177",
+        "target_llm_profile_name": "Tinfield-Turbo"
+      },
+      {
+        "id": "medium",
+        "label": "Среднее",
+        "description": "Сбалансированное рассуждение и планирование (бюджет 4096 токенов)",
+        "target_agent_profile_id": "b1770000-177b-4a10-8000-000000000177",
+        "target_llm_profile_name": "Tinfield-Normal"
+      },
+      {
+        "id": "high",
+        "label": "Глубокое",
+        "description": "Глубокий архитектурный анализ и комплексный репозиторный аудит (бюджет 8192 токенов)",
+        "target_agent_profile_id": "b1770000-177b-4a10-8000-000000000177",
+        "target_llm_profile_name": "Tinfield-Deep"
+      }
+    ]
+  },
+  "ui_badge": {
+    "text": "177B",
+    "color": "emerald"
+  }
+}

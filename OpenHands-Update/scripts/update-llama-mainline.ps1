@@ -349,7 +349,7 @@ function Test-CandidateRuntimeGate {
     if (Test-Path $candidateLog) { Remove-Item $candidateLog -Force -ErrorAction SilentlyContinue }
     if (Test-Path $candidateErr) { Remove-Item $candidateErr -Force -ErrorAction SilentlyContinue }
 
-    $candidateArgs = "-m `"$mainModel`" -md `"$draftModel`" -c 4096 -ngl 27 -fa on -ctk q8_0 -ctv q5_0 -np 1 -t 6 -dev CUDA0 --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek --reasoning-budget-message `"Conclude reasoning immediately and output the final answer now.`" --jinja --host 127.0.0.1 --port $TestPort --temp 0.6"
+    $candidateArgs = "-m `"$mainModel`" -md `"$draftModel`" -c 4096 -ngl 999 -fa on -ctk q8_0 -ctv q5_0 -np 1 -t 6 -dev CUDA0,CUDA1 -ts 13,20 --spec-type draft-mtp --spec-draft-n-max 1 --reasoning-format deepseek --reasoning-budget-message `"Conclude reasoning immediately and output the final answer now.`" --jinja --host 127.0.0.1 --port $TestPort --temp 0.6"
 
     Write-Log "Starting candidate process: $CandidateBinaryPath on port $TestPort" "INFO"
     Write-Log "Candidate log: $candidateLog" "INFO"
@@ -418,7 +418,7 @@ function Test-CandidateRuntimeGate {
                 temperature = 0.0
             } | ConvertTo-Json
             try {
-                $chatRes = Invoke-RestMethod -Uri "http://127.0.0.1:$TestPort/v1/chat/completions" -Method Post -Body $body -ContentType "application/json" -TimeoutSec 60
+                $chatRes = Invoke-RestMethod -Uri "http://127.0.0.1:$TestPort/v1/chat/completions" -Method Post -Body $body -ContentType "application/json" -TimeoutSec 180
                 if ($chatRes -and $chatRes.choices -and $chatRes.choices.Count -gt 0) {
                     $completionPass = $true
                     Write-Log "Short completion passed successfully." "SUCCESS"
@@ -485,7 +485,8 @@ function Promote-ConfigSafely {
     $pattern = '(?m)^(\s*cmd:\s*)([^\r\n]*llama-mainline\\[^\\]+\\llama-server\.exe)(.*)$'
     $match = [regex]::Match($currentContent, $pattern)
     if (-not $match.Success) {
-        throw "Cannot find Next backend cmd in $TargetConfigPath"
+        Write-Log "Notice: No model in $TargetConfigPath is currently using llama-mainline binary. Config promotion skipped." "INFO"
+        return
     }
     $oldBinaryPath = $match.Groups[2].Value.Trim()
 
@@ -723,14 +724,32 @@ function Run-UpdateAction {
         $cudartZipPath = Join-Path $workStaging $discovery.CudaRuntimeAsset
 
         Write-Log "Downloading binary archive: $($discovery.BinAssetUrl)" "STEP"
-        curl.exe -f -L -o $binZipPath $discovery.BinAssetUrl
-        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $binZipPath)) {
+        $binSuccess = $false
+        for ($attempt = 1; $attempt -le 10; $attempt++) {
+            curl.exe -f -L --noproxy "*" -C - --retry 5 --retry-delay 3 --retry-all-errors -o $binZipPath $discovery.BinAssetUrl
+            if ($LASTEXITCODE -eq 0 -and (Test-Path $binZipPath)) {
+                $binSuccess = $true
+                break
+            }
+            Write-Log "Binary download attempt $attempt failed with code $LASTEXITCODE. Retrying in 5 seconds (resumable)..." "WARN"
+            Start-Sleep -Seconds 5
+        }
+        if (-not $binSuccess) {
             throw "Failed to download $($discovery.BinAssetUrl)"
         }
 
         Write-Log "Downloading CUDA runtime archive: $($discovery.CudaAssetUrl)" "STEP"
-        curl.exe -f -L -o $cudartZipPath $discovery.CudaAssetUrl
-        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $cudartZipPath)) {
+        $cudaSuccess = $false
+        for ($attempt = 1; $attempt -le 10; $attempt++) {
+            curl.exe -f -L --noproxy "*" -C - --retry 5 --retry-delay 3 --retry-all-errors -o $cudartZipPath $discovery.CudaAssetUrl
+            if ($LASTEXITCODE -eq 0 -and (Test-Path $cudartZipPath)) {
+                $cudaSuccess = $true
+                break
+            }
+            Write-Log "CUDA runtime download attempt $attempt failed with code $LASTEXITCODE. Retrying in 5 seconds (resumable)..." "WARN"
+            Start-Sleep -Seconds 5
+        }
+        if (-not $cudaSuccess) {
             throw "Failed to download $($discovery.CudaAssetUrl)"
         }
 

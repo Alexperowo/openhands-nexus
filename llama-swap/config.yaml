@@ -211,3 +211,41 @@ models:
       --port ${PORT}
       --temp 0.6
       --top-p 0.95
+
+  tinfield:
+    aliases:
+    - openai/tinfield
+    - tinfield
+    - developer
+    - openai/developer
+    - tinfield-1-mini
+    - openai/tinfield-1-mini
+    - D:\AI\Models\Tinfield-1-Mini\tinfield-1-mini-00001-of-00006.gguf
+    - openai/D:\AI\Models\Tinfield-1-Mini\tinfield-1-mini-00001-of-00006.gguf
+    proxy: http://127.0.0.1:${PORT}
+    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
+    unloadTimeout: 15
+    cmd: >-
+      K:\Project\llama-mainline\b11194\llama-server.exe
+      -m D:\AI\Models\Tinfield-1-Mini\tinfield-1-mini-00001-of-00006.gguf
+      -c 131072
+      -fit off
+      -ngl 999
+      -dev CUDA0,CUDA1
+      -ts 12.2,19.4
+      -ot "blk\.4[4-6]\..*=CPU"
+      -ctk q8_0
+      -ctv q4_0
+      -fa on
+      -t 6
+      -np 1
+      --slot-save-path K:\Project\Cache\slots
+      --reasoning-format deepseek
+      --reasoning-budget 4096
+      --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
+      -to 7200
+      --jinja
+      --host 127.0.0.1
+      --port ${PORT}
+      --temp 0.6
+      --top-p 0.95
