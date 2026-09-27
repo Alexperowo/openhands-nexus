@@ -1,8 +1,14 @@
-# OpenHands Nexus — Architectural Specification & Workspace Rules
+# OpenHands Nexus — Reference Architectural Specification & Workspace Rules
 
-## 1. Core Architecture
-- Autonomous local AI engineering workstation on Windows 11.
-- **Untouched Upstream Engine:** Upstream OpenHands core (v1.46.0) remains 100% clean and unmodified. All capabilities operate as sidecars, proxies, profiles, or reversible overlays.
+## 1. Core Architecture & Subsystems
+- Autonomous local AI engineering workstation on Windows 11 Pro.
+- **Untouched Upstream Engine:** Upstream OpenHands core (v1.46.0) remains 100% clean and unmodified. All capabilities operate as sidecars, proxies, profiles, or external supervisors.
+- **Microservices & Ports:**
+  - `:18000` — OpenHands Core Engine (headless CodeActAgent)
+  - `:8000` — Agent Canvas UI (Node/Vite, profile & reasoning injection)
+  - `:8080` — llama-swap Router (dynamic VRAM switching, slot preservation)
+  - `:8443` — HTTPS LAN Gateway (mTLS, touch PWA, remote operation)
+  - `:18002` — Local Voice Bridge (air-gapped GigaAM STT + Supertonic TTS)
 - **Role Separation:** Station local models (Tinfield 177B, Qwen 27B, Next 80B, Ornith 35B, Qwen 122B) execute user tasks via port 18000. Supervisor and Antigravity build, inspect, and benchmark.
 
 ## 2. Physical Hardware Ceilings (Absolute)
@@ -12,14 +18,7 @@
   - GPU 1: NVIDIA GeForce RTX 2080 Ti (22 GB VRAM)
 - **Host OS:** Windows 11 Pro with PowerShell 7.
 
-## 3. Subsystems & Ports
-- **:18000** — OpenHands Core Engine (headless CodeActAgent)
-- **:8000** — Agent Canvas UI (Node/Vite, profile & reasoning injection)
-- **:8080** — llama-swap Router (dynamic VRAM switching, slot preservation)
-- **:8443** — HTTPS LAN Gateway (mTLS, touch PWA, couch operation)
-- **:18002** — Local Voice Bridge (air-gapped GigaAM STT + Supertonic TTS)
-
-## 4. Verification Standards
-- Every change must pass targeted tests (`Tests/unit`, `Tests/integration`, `Tests/hardware`).
-- Benchmarks must measure physical metrics: RSS/WorkingSet RAM, NVML VRAM, load time, and tokens/sec.
-- Zero stubs, zero mocks where physical devices/services exist.
+## 3. Engineering Rigor & Verification
+- **Sequence:** Investigate $\rightarrow$ Think $\rightarrow$ Act.
+- **Zero Simulation:** Tests must use realistic workloads (token lengths, context windows, physical telemetry). Zero stubs, zero mocks where physical hardware/services exist.
+- **Verification Matrix:** Every change must pass targeted tests (`Tests/unit`, `Tests/integration`, `Tests/hardware`).
