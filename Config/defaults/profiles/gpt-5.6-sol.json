@@ -28,5 +28,7 @@
   "usage_id": "default",
   "litellm_extra_body": {},
   "is_subscription": false,
-  "schema_version": 1
+  "schema_version": 1,
+  "max_input_tokens": 28672,
+  "max_output_tokens": 4096
 }

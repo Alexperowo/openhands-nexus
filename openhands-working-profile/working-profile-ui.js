@@ -42,9 +42,9 @@
             return { text: "СВЯЗКА", class: "badge-flagship-chain" };
         } else if (kind === "flagship_single" || kind === "flagship") {
             return { text: "ФЛАГМАН", class: "badge-flagship" };
-        } else if (kind === "three_model_chain") {
+        } else if (kind === "three_model_chain" || kind === "chain_multi_node") {
             return { text: "3", class: "badge-3-models" };
-        } else if (kind === "two_model_chain") {
+        } else if (kind === "two_model_chain" || kind === "chain_two_node") {
             return { text: "2", class: "badge-2-models" };
         } else {
             return { text: "1", class: "badge-1-models" };
@@ -215,7 +215,8 @@
         "Ornith-Standalone": { wpId: "ornith-solo", rmId: "medium" },
         "Qwen-Standalone": { wpId: "qwen38-solo", rmId: "medium" },
         "Next-Normal-Standalone": { wpId: "next-solo", rmId: "medium" },
-        "Next-Deep-Standalone": { wpId: "next-solo", rmId: "high" }
+        "Next-Deep-Standalone": { wpId: "next-solo", rmId: "high" },
+        "Tinfield-Standalone": { wpId: "tinfield-solo", rmId: "medium" }
     };
 
     // Auto-sync Working Profile when user selects native agent profile in '+' menu
@@ -441,7 +442,7 @@
         popover.innerHTML = `
             <div class="oh-nexus-popover-header">
                 <span>Модели и связки станции</span>
-                <span class="text-[11px] text-[var(--oh-text-muted,#71717a)]">4 Модели · 3 Связки</span>
+                <span class="text-[11px] text-[var(--oh-text-muted,#71717a)]">${singleModels.length} Моделей · ${chainModels.length} Связок</span>
             </div>
             <div class="oh-nexus-popover-list">
                 ${renderGroup("МОДЕЛИ", singleModels)}

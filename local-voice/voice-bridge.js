@@ -33,7 +33,8 @@
         autoSend: localStorage.getItem("oh_voice_auto_send") === "true",
         ttsMode: savedTtsMode || defaultTtsMode,
         voiceStyle: localStorage.getItem("oh_voice_style") || "M1",
-        speechRate: parseFloat(localStorage.getItem("oh_voice_rate") || "1.0")
+        speechRate: parseFloat(localStorage.getItem("oh_voice_rate") || "1.0"),
+        executiveSummary: localStorage.getItem("oh_voice_exec_summary") !== "false"
     };
 
     function saveConfig() {
@@ -41,6 +42,7 @@
         localStorage.setItem("oh_voice_tts_mode", config.ttsMode);
         localStorage.setItem("oh_voice_style", config.voiceStyle);
         localStorage.setItem("oh_voice_rate", config.speechRate);
+        localStorage.setItem("oh_voice_exec_summary", config.executiveSummary);
     }
 
     function triggerHaptic(pattern) {
@@ -189,16 +191,109 @@
         return res;
     }
 
-    function cleanTextForSpeech(text) {
+    function extractExecutiveSummary(text, maxChars = 350) {
+        if (!text) return "";
+
+        // 1. Strip reasoning thoughts if present
+        let clean = text.replace(/<think>[\s\S]*?<\/think>/gi, "");
+
+        // 2. Check for explicit summary block
+        const summaryRegex = /(?:^|\n)(?:#{1,4}\s*(?:Резюме|Итог|Краткий итог|Вывод|Заключение)|(?:\*\*|__)(?:Резюме|Итог|Краткий итог|Вывод|Заключение)(?:\*\*|__):?|(?:Резюме|Итог|Краткий итог):\s*)\s*([\s\S]+)/i;
+        const match = clean.match(summaryRegex);
+        if (match && match[1]) {
+            let candidate = match[1].trim();
+            candidate = candidate.split(/\n#{1,4}\s/)[0].trim();
+            candidate = candidate.replace(/```[\s\S]*?```/g, "");
+            candidate = candidate.replace(/[`*_~]/g, "");
+            candidate = candidate.replace(/^[\*\-\+]\s+/gm, "");
+            candidate = candidate.replace(/\s+/g, " ").trim();
+            if (candidate.length > 10) {
+                if (candidate.length > maxChars) {
+                    let clipped = candidate.slice(0, maxChars);
+                    const lastPunct = Math.max(clipped.lastIndexOf("."), clipped.lastIndexOf("!"), clipped.lastIndexOf("?"));
+                    if (lastPunct > 80) {
+                        candidate = clipped.slice(0, lastPunct + 1);
+                    } else {
+                        candidate = clipped.slice(0, clipped.lastIndexOf(" ")) + "...";
+                    }
+                }
+                return candidate;
+            }
+        }
+
+        // 3. Fallback: Strip code, tables, tracebacks, lists
+        clean = clean.replace(/```[\s\S]*?```/g, "");
+        clean = clean.replace(/\|[^\n]+\|/g, "");
+        clean = clean.replace(/^>.*$/gm, "");
+        clean = clean.replace(/^#{1,6}\s+.*$/gm, "");
+        clean = clean.replace(/^\s*[\*\-\+\d\.]+\s+.*$/gm, "");
+        clean = clean.replace(/[`*_~]/g, "");
+        clean = clean.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+        const paragraphs = clean.split("\n").map(p => p.trim()).filter(p => p.length > 0);
+        if (paragraphs.length === 0) {
+            return "Код и конфигурация успешно обновлены. Задача выполнена.";
+        }
+
+        let sentences = [];
+        for (let i = paragraphs.length - 1; i >= 0; i--) {
+            const p = paragraphs[i];
+            const sList = p.match(/[^.!?]+[.!?]+/g) || [p];
+            for (let j = sList.length - 1; j >= 0; j--) {
+                const s = sList[j].trim();
+                if (s.length > 15 && !s.startsWith("$") && !s.startsWith("PS ") && !s.startsWith("git ") && !s.startsWith("npm ")) {
+                    sentences.unshift(s);
+                    const totalLen = sentences.reduce((acc, x) => acc + x.length, 0);
+                    if (totalLen > 200) break;
+                }
+            }
+            if (sentences.length > 0) break;
+        }
+
+        if (sentences.length === 0) {
+            for (let i = 0; i < paragraphs.length; i++) {
+                const p = paragraphs[i];
+                const sList = p.match(/[^.!?]+[.!?]+/g) || [p];
+                for (let j = 0; j < sList.length; j++) {
+                    const s = sList[j].trim();
+                    if (s.length > 15) {
+                        sentences.push(s);
+                        const totalLen = sentences.reduce((acc, x) => acc + x.length, 0);
+                        if (totalLen > 200) break;
+                    }
+                }
+                if (sentences.length > 0) break;
+            }
+        }
+
+        let result = sentences.join(" ").trim().replace(/\s+/g, " ");
+        if (result.length > maxChars) {
+            let clipped = result.slice(0, maxChars);
+            const lastPunct = Math.max(clipped.lastIndexOf("."), clipped.lastIndexOf("!"), clipped.lastIndexOf("?"));
+            if (lastPunct > 80) {
+                result = clipped.slice(0, lastPunct + 1);
+            } else {
+                result = clipped.slice(0, clipped.lastIndexOf(" ")) + "...";
+            }
+        }
+
+        return result || "Задача выполнена. Система готова к работе.";
+    }
+
+    function cleanTextForSpeech(text, mode = "summary") {
         if (!text) return "";
         let clean = text;
-        clean = clean.replace(/<think>[\s\S]*?<\/think>/gi, "");
-        clean = clean.replace(/```[\s\S]*?```/g, " Код опущен. ");
-        clean = clean.replace(/`([^`]+)`/g, "$1");
-        clean = clean.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-        clean = clean.replace(/^#{1,6}\s*/gm, "");
-        clean = clean.replace(/^[\*\-\+]\s+/gm, "");
-        clean = clean.replace(/[*_~`]/g, "");
+        if (mode === "summary" && config.executiveSummary !== false) {
+            clean = extractExecutiveSummary(clean, 350);
+        } else {
+            clean = clean.replace(/<think>[\s\S]*?<\/think>/gi, "");
+            clean = clean.replace(/```[\s\S]*?```/g, " Код опущен. ");
+            clean = clean.replace(/`([^`]+)`/g, "$1");
+            clean = clean.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+            clean = clean.replace(/^#{1,6}\s*/gm, "");
+            clean = clean.replace(/^[\*\-\+]\s+/gm, "");
+            clean = clean.replace(/[*_~`]/g, "");
+        }
         clean = clean.replace(/\s+/g, " ").trim();
         return clean;
     }
@@ -473,7 +568,11 @@
             const resp = await fetch(`${VOICE_API}/tts`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: cleanText, voice: config.voiceStyle }),
+                body: JSON.stringify({
+                    text: cleanText,
+                    voice: config.voiceStyle,
+                    mode: config.executiveSummary !== false ? "summary" : "full"
+                }),
                 signal: currentTtsAbortController.signal
             });
 
@@ -801,6 +900,10 @@
                 </select>
             </div>
             <label class="oh-voice-checkbox-row">
+                <input type="checkbox" id="oh-voice-popover-summary" ${config.executiveSummary !== false ? "checked" : ""}>
+                <span>Краткий голосовой итог (Резюме)</span>
+            </label>
+            <label class="oh-voice-checkbox-row">
                 <input type="checkbox" id="oh-voice-popover-autosend" ${config.autoSend ? "checked" : ""}>
                 <span>Автоотправка после диктовки</span>
             </label>
@@ -817,6 +920,10 @@
             config.ttsMode = e.target.value;
             saveConfig();
             if (config.ttsMode === "off") stopSpeech(true);
+        });
+        document.getElementById("oh-voice-popover-summary").addEventListener("change", (e) => {
+            config.executiveSummary = e.target.checked;
+            saveConfig();
         });
         document.getElementById("oh-voice-popover-autosend").addEventListener("change", (e) => {
             config.autoSend = e.target.checked;

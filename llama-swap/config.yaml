@@ -124,6 +124,10 @@ models:
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
+      C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe
+      K:\Project\Config\qwen122_adapter.py
+      --listen-port ${PORT}
+      --
       K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
       -c 32768
@@ -138,12 +142,10 @@ models:
       -np 1
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
-      --reasoning-budget 6144
+      --reasoning-budget 1536
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
       -to 7200
       --jinja
-      --host 127.0.0.1
-      --port ${PORT}
       --temp 0.6
       --top-p 0.95
 
@@ -157,6 +159,10 @@ models:
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
+      C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe
+      K:\Project\Config\qwen122_adapter.py
+      --listen-port ${PORT}
+      --
       K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
       -c 32768
@@ -175,8 +181,6 @@ models:
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
       -to 7200
       --jinja
-      --host 127.0.0.1
-      --port ${PORT}
       --temp 0.6
       --top-p 0.95
 
@@ -241,7 +245,7 @@ models:
       -np 1
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
-      --reasoning-budget 4096
+      --reasoning-budget 1024
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
       -to 7200
       --jinja

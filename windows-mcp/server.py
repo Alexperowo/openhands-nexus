@@ -656,33 +656,21 @@ def desktop_list_windows() -> list[dict[str, Any]]:
 
 
 @mcp.tool()
-def desktop_focus_window(title_substring: str) -> str:
-    """Bring a window matching title_substring to foreground."""
+def desktop_focus_window(window_title: str = "", title_substring: str = "") -> str:
+    """Bring a window matching window_title or title_substring to foreground."""
     _ensure_desktop()
-    target_hwnd = None
-    target_title = None
+    query = window_title or title_substring
+    if not query:
+        return "Please specify a window_title or title_substring to focus."
 
-    def callback(hwnd, _lparam):
-        nonlocal target_hwnd, target_title
-        if user32.IsWindowVisible(hwnd):
-            length = user32.GetWindowTextLengthW(hwnd)
-            if length > 0:
-                buf = ctypes.create_unicode_buffer(length + 1)
-                user32.GetWindowTextW(hwnd, buf, length + 1)
-                title = buf.value.strip()
-                if title_substring.lower() in title.lower():
-                    target_hwnd = hwnd
-                    target_title = title
-                    return False
-        return True
-
-    user32.EnumWindows(WNDENUMPROC(callback), 0)
-    if target_hwnd:
-        user32.ShowWindow(target_hwnd, 9)
-        user32.SetForegroundWindow(target_hwnd)
+    target = _find_target_window_win32(query)
+    if target:
+        hwnd, title, cls_name, _ = target
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+        user32.SetForegroundWindow(hwnd)
         time.sleep(0.1)
-        return f"Focused window: '{target_title}' (HWND: {target_hwnd})"
-    return f"Window matching '{title_substring}' not found"
+        return f"Focused window: '{title}' (HWND: {hwnd})"
+    return f"Window matching '{query}' not found"
 
 
 # ---------------------------------------------------------------------------

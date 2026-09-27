@@ -70,3 +70,21 @@ No feature, refactoring, bugfix, or UI modification is ever considered "Ready" o
    - A service running on a port is NOT proof of functional end-to-end correctness.
    - If an edge case or platform scenario has not been verified empirically with raw logs or visual artifacts, it must be explicitly reported as `UNVERIFIED` or `PARTIAL`, NEVER as `Complete`.
    - Never rationalize or explain away contradictory evidence; resolve it.
+
+## 6. Cognitive Hygiene: Ground Truth vs. Historical Artifacts
+**Strictly Enforced Information Filtering:**
+In an actively evolving engineering repository, there will always exist outdated markdown documents, abandoned experiment drafts, past roadmaps, legacy scratch scripts, and historical bug trackers. Blindly reading an old markdown file and reciting its assertions without verifying them against the physical reality of the machine is a severe cognitive failure.
+
+Every agent MUST adhere to this strict hierarchy of truth:
+1. **Physical Machine State is the Absolute Ground Truth:**
+   - Active runtime configurations (`llama-swap/config.yaml`, `~/.openhands/working-profiles/`, `~/.openhands/agent-profiles/`).
+   - Physical models and weights on disk (`D:\AI\Models\`, VRAM allocations).
+   - Running services, active code, and empirically passing test suites.
+   - If an entity (e.g., an abandoned model like Mistral) is NOT configured in `llama-swap/config.yaml`, **IT DOES NOT EXIST**, regardless of any historical notes, drafts, or proposals.
+   - If an issue (e.g., BUG-01) has been resolved in code and verified with benchmarks, **IT IS CLOSED**, regardless of any historical bug list.
+2. **Never Confuse Exploratory Proposals with Decisions:**
+   - Research notebooks, draft plans, and alternative architectures are historical records, NEVER active roadmaps.
+   - Active roadmap items are derived strictly from: *what has physically been built* $\to$ *what physical capability is missing or unverified in the live system right now*.
+3. **Causal Reasoning Over Keyword Search:**
+   - When asked about next steps, roadmap, or architecture, NEVER execute a mindless keyword grep for "ROADMAP" and parrot an old file.
+   - Reason causally from the live context: What physical change was just implemented? What does the machine need right now to verify that change? What is the logical next operational requirement for the user?

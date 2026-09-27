@@ -195,21 +195,111 @@ def decode_audio_to_16k_mono(audio_bytes: bytes) -> np.ndarray:
                 pass
 
 
-def clean_text_for_speech(text: str) -> str:
+def extract_executive_summary(text: str, max_chars: int = 350) -> str:
+    """
+    Extracts a crisp 1-3 sentence Executive Summary tailored for Russian TTS.
+    Prioritizes explicit 'Резюме' / 'Итог' blocks, falling back to clean lead/concluding sentences.
+    """
+    if not text:
+        return ""
+
+    # 1. Strip reasoning thoughts if present
+    clean = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
+
+    # 2. Check for explicit summary block
+    summary_pattern = re.compile(
+        r"(?:^|\n)(?:#{1,4}\s*(?:Резюме|Итог|Краткий итог|Вывод|Заключение)|(?:\*\*|__)(?:Резюме|Итог|Краткий итог|Вывод|Заключение)(?:\*\*|__):?|(?:Резюме|Итог|Краткий итог):\s*)\s*([\s\S]+)",
+        re.IGNORECASE
+    )
+    match = summary_pattern.search(clean)
+    if match:
+        candidate = match.group(1).strip()
+        # Cut off at next heading if any
+        candidate = re.split(r"\n#{1,4}\s", candidate)[0].strip()
+        candidate = re.sub(r"```[\s\S]*?```", "", candidate)
+        candidate = re.sub(r"[`*_~]", "", candidate)
+        candidate = re.sub(r"^[\*\-\+]\s+", "", candidate, flags=re.MULTILINE)
+        candidate = re.sub(r"\s+", " ", candidate).strip()
+        if len(candidate) > 10:
+            if len(candidate) > max_chars:
+                clipped = candidate[:max_chars]
+                last_punct = max(clipped.rfind("."), clipped.rfind("!"), clipped.rfind("?"))
+                if last_punct > 80:
+                    candidate = clipped[:last_punct + 1]
+                else:
+                    candidate = clipped.rsplit(" ", 1)[0] + "..."
+            return candidate
+
+    # 3. Fallback: Strip code, tables, tracebacks, lists
+    clean = re.sub(r"```[\s\S]*?```", "", clean)
+    clean = re.sub(r"\|[^\n]+\|", "", clean)
+    clean = re.sub(r"^>.*$", "", clean, flags=re.MULTILINE)
+    clean = re.sub(r"^#{1,6}\s+.*$", "", clean, flags=re.MULTILINE)
+    clean = re.sub(r"^\s*[\*\-\+\d\.]+\s+.*$", "", clean, flags=re.MULTILINE)
+    clean = re.sub(r"[`*_~]", "", clean)
+    clean = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean)
+
+    paragraphs = [p.strip() for p in clean.split("\n") if p.strip()]
+    if not paragraphs:
+        return "Код и конфигурация успешно обновлены. Задача выполнена."
+
+    sentences = []
+    for p in reversed(paragraphs):
+        s_list = re.split(r"(?<=[.!?])\s+", p)
+        for s in reversed(s_list):
+            s = s.strip()
+            if len(s) > 15 and not s.startswith(("$", "PS ", "git ", "npm ", "python ")):
+                sentences.insert(0, s)
+                if sum(len(x) for x in sentences) > 200:
+                    break
+        if sentences:
+            break
+
+    if not sentences:
+        for p in paragraphs:
+            s_list = re.split(r"(?<=[.!?])\s+", p)
+            for s in s_list:
+                s = s.strip()
+                if len(s) > 15:
+                    sentences.append(s)
+                    if sum(len(x) for x in sentences) > 200:
+                        break
+            if sentences:
+                break
+
+    result = " ".join(sentences).strip()
+    result = re.sub(r"\s+", " ", result)
+
+    if len(result) > max_chars:
+        clipped = result[:max_chars]
+        last_punct = max(clipped.rfind("."), clipped.rfind("!"), clipped.rfind("?"))
+        if last_punct > 80:
+            result = clipped[:last_punct + 1]
+        else:
+            result = clipped.rsplit(" ", 1)[0] + "..."
+
+    return result or "Задача выполнена. Система готова к работе."
+
+
+def clean_text_for_speech(text: str, mode: str = "summary") -> str:
     """Clean LLM output for natural Russian text-to-speech synthesis."""
     if not text:
         return ""
-    # Strip <think> ... </think> or reasoning tags if present
-    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
-    text = re.sub(r"```.*?```", " Код опущен. ", text, flags=re.DOTALL)
-    text = re.sub(r"`([^`]+)`", r"\1", text)
-    # Remove markdown links [text](url) -> text
-    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
-    # Remove markdown headers and bullet markers
-    text = re.sub(r"^#{1,6}\s*", "", text, flags=re.MULTILINE)
-    text = re.sub(r"^[\*\-\+]\s+", "", text, flags=re.MULTILINE)
-    # Remove excessive punctuation or symbols
-    text = re.sub(r"[~*_|\\]", "", text)
+    if mode == "summary":
+        text = extract_executive_summary(text, max_chars=350)
+    else:
+        # Strip <think> ... </think> or reasoning tags if present
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+        text = re.sub(r"```.*?```", " Код опущен. ", text, flags=re.DOTALL)
+        text = re.sub(r"`([^`]+)`", r"\1", text)
+        # Remove markdown links [text](url) -> text
+        text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+        # Remove markdown headers and bullet markers
+        text = re.sub(r"^#{1,6}\s*", "", text, flags=re.MULTILINE)
+        text = re.sub(r"^[\*\-\+]\s+", "", text, flags=re.MULTILINE)
+        # Remove excessive punctuation or symbols
+        text = re.sub(r"[~*_|\\]", "", text)
+
     # Normalize common file extensions for smooth speech
     text = re.sub(r"\.([a-zA-Z0-9]{1,5})\b", r" точка \1 ", text)
     # Common tech term pronunciations for Russian TTS
@@ -231,6 +321,8 @@ def clean_text_for_speech(text: str) -> str:
         r"\bRAM\b": "Рэм",
         r"\bGPU\b": "Джи-пи-ю",
         r"\bCPU\b": "Си-пи-ю",
+        r"\bPWA\b": "Пэ-вэ-а",
+        r"\bUI\b": "Ю-ай",
     }
     for pat, rep in tech_map.items():
         text = re.sub(pat, rep, text, flags=re.IGNORECASE)
@@ -823,6 +915,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 data = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
                 raw_text = data.get("text", "")
                 voice = data.get("voice", "M1")
+                mode = data.get("mode", "summary")
                 if voice not in voice_styles:
                     voice = "M1"
 
@@ -830,10 +923,10 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 if len(raw_text) > 8000:
                     raw_text = raw_text[:8000]
 
-                clean_text = clean_text_for_speech(raw_text)
+                clean_text = clean_text_for_speech(raw_text, mode=mode)
 
                 # Safeguard against excessive text payloads (prevent runaway latency / memory)
-                max_tts_chars = 4000
+                max_tts_chars = 600 if mode == "summary" else 4000
                 if len(clean_text) > max_tts_chars:
                     print(f"[TTS Warning] Text exceeds {max_tts_chars} chars ({len(clean_text)} chars), truncating gracefully", flush=True)
                     clean_text = clean_text[:max_tts_chars] + "..."
