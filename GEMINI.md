@@ -1,90 +1,33 @@
-# OpenHands Nexus — Architectural Concept & Workspace Rules
+# OpenHands Nexus — Architectural Specification & Workspace Rules
 
-## 1. Core Architectural Identity
-- **We are NOT OpenHands itself.** OpenHands is an external upstream open-source project.
-- **Untouched Upstream Engine:** The core OpenHands codebase is treated as an external dependency. It remains completely unmodified in its original repository structure and is updated directly via upstream git pulls.
-- **Our Identity:** Our codebase is **OpenHands Nexus** — the non-invasive, autonomous overlay, integration, and orchestration layer that turns OpenHands into an air-gapped, local AI engineering workstation on Windows.
+## 1. System Identity & Core Philosophy
+- **OpenHands Nexus** is an air-gapped, autonomous local AI engineering workstation on Windows 11.
+- **Untouched Upstream Engine:** Upstream OpenHands core remains 100% clean and unmodified. All station capabilities are implemented strictly as non-invasive overlays, reverse proxies, working profile mappings, or idempotent reversible patchers.
+- **Role Separation (Testbed vs. Engine):** The user and Antigravity build, supervise, and test the station. The station's *local models* (Tinfield 177B, Qwen 27B, Next 80B, Ornith 35B, Qwen 122B) are the autonomous workers that execute engineering, computer use, and mobile tasks.
 
-## 2. Hardware Specification & Environment Constraints
-- **System RAM:** Strictly **48 GB** (47.92 GB visible), NOT 64 GB.
-- **Dual GPU Setup:**
+## 2. Physical Hardware Ceilings (Strict & Absolute)
+- **System RAM:** Strictly **48 GB** (47.92 GB visible) — NOT 64 GB.
+- **Dual-GPU VRAM Pool:** Strictly **37.9 GB** ceiling:
   - GPU 0: NVIDIA GeForce RTX 5060 Ti (16 GB VRAM)
   - GPU 1: NVIDIA GeForce RTX 2080 Ti (22 GB VRAM)
-  - Combined VRAM Pool: ~37.9 GB
-- **Operating System:** Windows 10/11 with PowerShell.
+- **Host OS:** Windows 11 with PowerShell.
 
-## 3. Subsystem Architecture of the Nexus Overlay
-The custom overlay provides distinct subsystems around the untouched OpenHands core:
-1. **Station Orchestration & Process Lifecycle:**
-   - Supervises 5 local microservices:
-     * Port 18000: OpenHands Core Engine
-     * Port 8000: Agent Canvas Web UI
-     * Port 8080: llama-swap LLM Router
-     * Port 8443: HTTPS LAN Gateway (PWA)
-     * Port 18002: Local Neural Voice Bridge (GigaAM / TTS)
-   - Manages process trees via WMI/CIM, session tracking (session.json), port readiness polling, and graceful termination (openhands.ps1, start.ps1, runner.py).
-2. **Local LLM Dynamic Routing (llama-swap + ik_llama):**
-   - Dynamic model swapping with zero-leak VRAM allocation (budget <= 37.9 GB).
-   - Dual-GPU tensor splitting (-dev CUDA0,CUDA1 -ts ...), 128K context window, asymmetric KV caching (q6_0/q4_0), MTP acceleration, and hardware reasoning budgets (--reasoning-budget).
-3. **LAN Gateway & PWA Security Layer (lan-gateway.mjs):**
-   - Mutual TLS termination (local Root CA + Leaf SAN certificate), token-based authentication, WebSocket proxying.
-   - PWA delivery for remote control via mobile devices and tablets (Samsung Galaxy Tab S9 Ultra).
-4. **Working Profiles Dual-Stack Engine:**
-   - Synchronizes model profiles between Node.js (working_profile_manager.mjs) and Python (working_profiles.py).
-   - Manages reasoning modes (Thinking vs Direct), prompt template kwargs, and token generation ceilings (16K window: max_output_tokens: 16384).
-5. **Local Neural Voice Pipeline (local-voice/service.py):**
-   - Air-gapped STT (GigaAM) and TTS running locally on port 18002 with strict memory/buffer management.
-6. **Non-Destructive Patchers & Localization (OpenHands-Update/scripts/):**
-   - Idempotent scripts that inject UI enhancements (touch targets, model selectors, indicators) and full 2400-key Russian localization into the frontend bundle.
-   - Must remain 100% reversible with automated backup and restore so that upstream OpenHands can be updated cleanly at any time.
+## 3. Subsystem Architecture & Microservices
+Nexus orchestrates 5 local microservices:
+1. **Port 18000 (OpenHands Core Engine):** Headless agent server executing CodeActAgent with local filesystem and terminal.
+2. **Port 8000 (Agent Canvas Web UI):** Desktop web frontend with customized profile/reasoning selectors.
+3. **Port 8080 (llama-swap Router):** Dynamic local LLM router managing VRAM swapping, Dual-GPU tensor splitting, 128K context, and reasoning budgets.
+4. **Port 8443 (HTTPS LAN PWA Gateway):** Mutual TLS gateway with token authentication for couch operation via tablet.
+5. **Port 18002 (Local Voice Bridge):** Air-gapped STT (GigaAM) and TTS (Supertonic) synthesizing executive summaries (`### Резюме`) in <4s.
 
-## 4. Development & Refactoring Principles
-- Never modify upstream OpenHands core files directly.
-- All station features must be implemented as non-invasive wrappers, reverse proxies, profile mappings, or idempotent patchers.
-- Any refactoring must preserve upstream update compatibility and backup/rollback capability.
-- Memory budgets must strictly respect the 48 GB RAM and 37.9 GB VRAM ceiling.
+## 4. Ground Truth & Cognitive Hygiene
+- What is configured in `llama-swap/config.yaml` and loaded on disk is real; discarded models (e.g. Mistral) or closed issues (e.g. BUG-01) do not exist.
+- Roadmaps are derived strictly from causal physical needs (*what was just built* -> *what physical capability is missing or unverified*), never from grepping obsolete markdown archives.
 
-## 5. Definition of Done, QA Verification Discipline & Critical Thinking
-**Mandatory and Non-Negotiable Across the Entire Project:**
-No feature, refactoring, bugfix, or UI modification is ever considered "Ready" or "Complete" without empirical multi-platform proof. Never declare completion based on assumption, plan, compilation, or a simple HTTP 200 / service startup. Every agent and contributor working in this repository must apply the **Three Engineering Lenses**:
-
-1. **Developer Lens (Root Cause & Architectural Cleanliness):**
-   - Non-invasive overlay architecture: never patch upstream OpenHands core files directly.
-   - Zero cosmetic workarounds: fix problems at their root cause.
-   - Adherence to standards: WCAG 2.5.5 Level AAA touch targets ($\ge 48\times48\text{ px}$), clean CSS layouts without overlapping or brittle absolute positions, strict typing/linting, zero unhandled exceptions, and zero console errors.
-   - Resource ceilings: respect 48 GB RAM and 37.9 GB Dual-GPU VRAM limits without compromise.
-
-2. **QA Engineer Lens (Multi-Platform & Scenario Matrix Testing):**
-   - **Cross-Platform Parity:** Every change touching UI, gateway, routing, or agent workflows MUST be tested and verified on BOTH:
-     * **Desktop Chrome / Edge** (Standard desktop viewports, mouse/keyboard interactions, DevTools inspection).
-     * **Physical Mobile LAN PWA** (Samsung Galaxy Tab S9 Ultra / Android / mobile touch screens).
-   - **Stress & Edge-Case Testing:**
-     * Viewport resizes, landscape vs portrait orientation transitions.
-     * On-screen virtual keyboard appearance (preventing composer or popover collapse/overlap).
-     * Popover menu containment and viewport collision detection.
-     * Real-time network transitions (WebSockets reconnect, polling timeouts, offline handling).
-     * Rapid repeated taps, simultaneous multi-touch, and screen reader / accessibility focus traversals.
-
-3. **Critical Thinking Lens (Raw Evidence Over Claims):**
-   - Scrutinize raw telemetry, log traces, and screenshots before making assertions.
-   - A service running on a port is NOT proof of functional end-to-end correctness.
-   - If an edge case or platform scenario has not been verified empirically with raw logs or visual artifacts, it must be explicitly reported as `UNVERIFIED` or `PARTIAL`, NEVER as `Complete`.
-   - Never rationalize or explain away contradictory evidence; resolve it.
-
-## 6. Cognitive Hygiene: Ground Truth vs. Historical Artifacts
-**Strictly Enforced Information Filtering:**
-In an actively evolving engineering repository, there will always exist outdated markdown documents, abandoned experiment drafts, past roadmaps, legacy scratch scripts, and historical bug trackers. Blindly reading an old markdown file and reciting its assertions without verifying them against the physical reality of the machine is a severe cognitive failure.
-
-Every agent MUST adhere to this strict hierarchy of truth:
-1. **Physical Machine State is the Absolute Ground Truth:**
-   - Active runtime configurations (`llama-swap/config.yaml`, `~/.openhands/working-profiles/`, `~/.openhands/agent-profiles/`).
-   - Physical models and weights on disk (`D:\AI\Models\`, VRAM allocations).
-   - Running services, active code, and empirically passing test suites.
-   - If an entity (e.g., an abandoned model like Mistral) is NOT configured in `llama-swap/config.yaml`, **IT DOES NOT EXIST**, regardless of any historical notes, drafts, or proposals.
-   - If an issue (e.g., BUG-01) has been resolved in code and verified with benchmarks, **IT IS CLOSED**, regardless of any historical bug list.
-2. **Never Confuse Exploratory Proposals with Decisions:**
-   - Research notebooks, draft plans, and alternative architectures are historical records, NEVER active roadmaps.
-   - Active roadmap items are derived strictly from: *what has physically been built* $\to*what physical capability is missing or unverified in the live system right now*.
-3. **Causal Reasoning Over Keyword Search:**
-   - When asked about next steps, roadmap, or architecture, NEVER execute a mindless keyword grep for "ROADMAP" and parrot an old file.
-   - Reason causally from the live context: What physical change was just implemented? What does the machine need right now to verify that change? What is the logical next operational requirement for the user?
+## 5. Definition of Done & Multi-Platform Verification
+No feature or refactoring is complete without empirical proof across the target matrix:
+1. **Developer Lens:** Clean non-invasive architecture, zero stubs, strict resource compliance (<=48 GB RAM, <=37.9 GB VRAM).
+2. **QA Engineer Lens (Multi-Platform Parity):**
+   - **Host Desktop (4K UHD):** Standard mouse/keyboard, DevTools inspection, clean layouts.
+   - **Physical Mobile PWA (Samsung Galaxy Tab S9 Ultra, Android 16):** Touch targets >= 48x48 px, virtual keyboard handling, Wi-Fi ADB (`192.168.0.34:5555`).
+3. **Execution Reality:** Station capabilities (coding, Computer Use, Android testing) MUST be executed and proven by the station's local models through port 18000, with raw logs and telemetry captured as proof.
