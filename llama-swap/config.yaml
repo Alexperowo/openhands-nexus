@@ -12,6 +12,10 @@ models:
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
+      C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe
+      K:\Project\Config\qwen_tool_adapter.py
+      --listen-port ${PORT}
+      --
       K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-Q4_K_M.gguf
       --mmproj K:\Project\Models\Qwen3.8\Qwen3.8-27B-Opus-Distill-v2-mmproj-f16.gguf
@@ -23,14 +27,14 @@ models:
       -np 1
       -dev CUDA0,CUDA1
       -ts 14,22
+      -t 6
+      -tb 2
       --slot-save-path K:\Project\Cache\slots
       --spec-type mtp:n_max=3,p_min=0.05
       --reasoning-format deepseek
       --reasoning-budget 4096
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
       --jinja
-      --host 127.0.0.1
-      --port ${PORT}
       --temp 0.7
       --top-p 0.8
       --min-p 0.05
@@ -43,6 +47,10 @@ models:
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
+      C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe
+      K:\Project\Config\qwen_tool_adapter.py
+      --listen-port ${PORT}
+      --
       K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Ornith\Ornith-1.5-35B-MTP-19G-ICE.gguf
       --mmproj K:\Project\Models\Ornith\mmproj-Ornith-1.5-35B-BF16.gguf
@@ -62,8 +70,6 @@ models:
       --reasoning-budget 3072
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
       --jinja
-      --host 127.0.0.1
-      --port ${PORT}
       --temp 0.6
       --top-p 0.95
       --top-k 20
@@ -79,6 +85,10 @@ models:
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
+      C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe
+      K:\Project\Config\qwen_tool_adapter.py
+      --listen-port ${PORT}
+      --
       K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Qwen3-Next\Qwen3-Next-80B-A3B-Thinking-UD-Q3_K_XL.gguf
       -c 131072
@@ -88,6 +98,9 @@ models:
       -ctv q4_0
       -np 1
       -t 6
+      -tb 2
+      -b 2048
+      -ub 768
       -dev CUDA0,CUDA1
       -ts 14,22
       --slot-save-path K:\Project\Cache\slots
@@ -95,20 +108,17 @@ models:
       --reasoning-budget 8192
       --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
       --jinja
-      --host 127.0.0.1
-      --port ${PORT}
       --temp 0.6
       --top-p 0.95
       --top-k 20
       --min-p 0.0
       --presence-penalty 0.6
+
   qwen122:
     aliases:
     - openai/qwen122
     - K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
     - openai/K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
-    - K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
-    - openai/K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
     - openai/gpt-5.6-sol
     - gpt-5.6-sol
     - qwen122
@@ -130,15 +140,17 @@ models:
       --
       K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
-      -c 32768
+      -c 131072
       -ngl 999
       -dev CUDA0,CUDA1
-      -ts 14.3,20.2
-      -ctk q5_0
+      -ts 14.5,20.5
+      -ctk q6_0
       -ctv q4_0
       -ub 256
+      -b 2048
       -fa on
       -t 6
+      -tb 2
       -np 1
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
@@ -165,15 +177,17 @@ models:
       --
       K:\Project\ik_llama\bin\llama-server.exe
       -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-208E-35GB.gguf
-      -c 32768
+      -c 131072
       -ngl 999
       -dev CUDA0,CUDA1
-      -ts 14.3,20.2
-      -ctk q5_0
+      -ts 14.5,20.5
+      -ctk q6_0
       -ctv q4_0
       -ub 256
+      -b 2048
       -fa on
       -t 6
+      -tb 2
       -np 1
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
@@ -184,37 +198,6 @@ models:
       --temp 0.6
       --top-p 0.95
 
-  qwen122-baseline:
-    aliases:
-    - openai/qwen122-baseline
-    - qwen122-baseline
-    proxy: http://127.0.0.1:${PORT}
-    cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
-    unloadTimeout: 15
-    cmd: >-
-      K:\Project\ik_llama\bin\llama-server.exe
-      -m K:\Project\Models\Qwen-122b\Qwen3.5-122B-A10B-44GB-GPT5.6Sol-SFT-LynnStyle-GGUF.gguf
-      -c 16384
-      -ngl 999
-      -ot blk\.(3[6-9]|4[0-7])\.ffn_(up|gate|down)_exps=CPU
-      -dev CUDA0,CUDA1
-      -ts 13,26
-      -ctk q5_0
-      -ctv q4_0
-      -ub 256
-      -fa on
-      -t 6
-      -np 1
-      --slot-save-path K:\Project\Cache\slots
-      --reasoning-format deepseek
-      --reasoning-budget 6144
-      --reasoning-budget-message "Conclude reasoning immediately and output the final answer now."
-      -to 7200
-      --jinja
-      --host 127.0.0.1
-      --port ${PORT}
-      --temp 0.6
-      --top-p 0.95
 
   tinfield:
     aliases:
@@ -230,18 +213,20 @@ models:
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
-      K:\Project\llama-mainline\b11194\llama-server.exe
+      K:\Project\ik_llama\bin\llama-server.exe
       -m D:\AI\Models\Tinfield-1-Mini\tinfield-1-mini-00001-of-00006.gguf
       -c 131072
-      -fit off
       -ngl 999
       -dev CUDA0,CUDA1
       -ts 12.2,19.4
       -ot "blk\.4[4-6]\..*=CPU"
       -ctk q8_0
       -ctv q4_0
+      -b 2048
+      -ub 512
       -fa on
       -t 6
+      -tb 2
       -np 1
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
