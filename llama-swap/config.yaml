@@ -213,7 +213,7 @@ models:
     cmdStop: powershell -NoProfile -Command "Stop-Process -Id ${PID} -Force; python K:\Project\Config\vram_manager.py --wait-free 1200 --timeout 10"
     unloadTimeout: 15
     cmd: >-
-      K:\Project\ik_llama\bin\llama-server.exe
+      K:\Project\llama-mainline\b11270\llama-server.exe
       -m D:\AI\Models\Tinfield-1-Mini\tinfield-1-mini-00001-of-00006.gguf
       -c 131072
       -ngl 999
