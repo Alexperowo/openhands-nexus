@@ -219,14 +219,14 @@ models:
       -ngl 999
       -dev CUDA0,CUDA1
       -ts 12.2,19.4
-      -ot "blk\.4[4-6]\..*=CPU"
+      -ot "blk\.4[4-5]\..*=CPU"
       -ctk q8_0
       -ctv q4_0
       -b 2048
-      -ub 512
+      -ub 256
       -fa on
       -t 6
-      -tb 2
+      -tb 3
       -np 1
       --slot-save-path K:\Project\Cache\slots
       --reasoning-format deepseek
