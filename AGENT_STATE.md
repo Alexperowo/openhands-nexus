@@ -1,7 +1,9 @@
-OBJECTIVE:      OpenHands Nexus — Comprehensive 7-Module Codebase & Architecture Audit
-PHASE:          All 7 Modules Complete (Orchestration, Routing, Profiles, LAN Gateway, Voice Bridge, UI/UX, Automated Testing) — 100% AUDITED & VERIFIED
-STATE:          Master audit complete. All 5 services live (:18000, :8000, :8080, :8443, :18002). Full automated test battery (25/25 passed in 2.05s). Dual-GPU allocation verified with ~2.0 GB symmetrical headroom. Zero unhandled exceptions. All edge cases and hardening recommendations synthesized into master report.
+OBJECTIVE:      Windows 11 26H2 Custom Lite & OpenHands Nexus — Pre-Format Migration & ISO Build Complete
+PHASE:          Build-Level Verification 100% Complete — Ready for Clean Install Validation
+STATE:          Custom ISO built at K:\Win11_26H2_Custom_Lite_x64.iso (SHA-256: 38813057CCE09FCAFBAB56AAF802D4076E324617D7A5D26EBDC9BC6ABF049300, 15.01 GB). Full .gemini backup stored at D:\BACKUP_C\GEMINI_FULL_BACKUP\ (35,981 files). Conversation transcripts preserved in K:\Project\CONVERSATION_HISTORY\. Full engineering report in AUDIT_FINAL_REPORT.md. Automated post-install test robot ready at K:\Project\Verify-PostInstall.ps1. System disk C: prepared for formatting.
+POST_INSTALL:   On first boot of fresh Windows, execute: powershell -ExecutionPolicy Bypass -File "K:\Project\Verify-PostInstall.ps1" to run 8-module acceptance suite and verify all PASS criteria.
 ARCH_RULE:      We are NOT OpenHands itself (core OpenHands is an untouched upstream repo updated from upstream). OpenHands Nexus is the non-invasive overlay, orchestration, security, and profile layer turning it into an air-gapped local workstation on Windows (Dual-GPU + 48 GB RAM). Recorded in AGENTS.md and GEMINI.md.
+ANTIGRAVITY:    CRITICAL PROTOCOL FOR LOCAL MODEL INTEGRATION: Do NOT modify app.asar directly or break Google Cloud auth streams. Refer to Docs/ANTIGRAVITY_LOCAL_MODEL_INCIDENT_REPORT.md. Bridge v2.1 live on :18005 with native Transfer-Encoding: chunked reading, automatic gzip decompression, hop-by-hop header stripping, guaranteed 200 OK Auth Vault, and seamless Cloud/Local streaming SSE pass-through.
 DONE:
   - Stage 0 (Baseline Checkpoint & Inventory): 100% complete.
   - Stage 1 (Working Profiles): 100% complete (7 profiles, server persistence, turn locking).
@@ -307,14 +309,31 @@ EVIDENCE:
       - Full comparative report published in `Docs/QWEN122_COGNITIVE_AB_COMPARISON_REPORT.md`.
     * Master MoE Optimization Playbook:
       - Compiled complete end-to-end methodology in `Docs/MOE_MODEL_OPTIMIZATION_PLAYBOOK.md` (mathematical foundations, step-by-step pipeline, lessons learned, and artifact index for future models).
+  - Stage 12 (Galaxy Z Fold 7 Battery, Telephony & Multi-Device Continuity Hardening): 100% COMPLETE & VERIFIED.
+    * Target Device: Samsung Galaxy Z Fold 7 (SM-F966U1, One UI 8.5, Android 16) paired with Galaxy Tab S9 Ultra (192.168.0.34).
+    * Battery & Doze Remediation: Diagnosed 10-hour battery drain (Deep Doze was only 18 seconds). Safely frozen 36 parasitic bloatware packages via `pm disable-user --user 0` without data loss.
+    * «Честный Знак» (ru.crptech.mark) Neutralization: Restored package, enforced standby bucket 45 (RESTRICTED), revoked background execution and wakelock AppOps while preserving foreground QR/DataMatrix scanning.
+    * Audio & Scenario Protection: Elevated LitRes and Yandex Music to working_set (20/30) with uninhibited Bluetooth playback to JBL Sense Pro and JBL Tour One M3; banking apps restricted in background with NFC intact.
+    * Telephony Outage & Network Hardening: Resolved 13:52 missed call outage (caused by LTE-only CSFB rejection on MegaFon Russia PLMN 25002 due to US CSC XAA). Locked multi-mode network types to 01001111101111111111 (5G/NR disabled, LTE prioritized, 2G/3G enabled for voice fallback). Switched Wi-Fi Calling to CELLULAR_PREFERRED, eliminating router UDP 4500 NAT timeout drops.
+    * Multi-Device Continuity (CMC): Restored Samsung Push Service (com.sec.spp.push). Verified automatic post-reboot MDEC reconnect to Galaxy Tab S9 Ultra upon first screen unlock (FBE Direct Boot architecture documented).
+    * Field Trial Protocol: Initiated 1-2 week everyday usage field trial. Full baseline audit and verification commands documented in Docs/GALAXY_FOLD7_OPTIMIZATION_AUDIT.md.
+  - Stage 13 (OpenHands Nexus System Prompts & Context Calibration): 100% COMPLETE & VERIFIED.
+    * Calibrated safe 112K input (114,688 tokens) + 16K output (16,384 tokens) context limits across all 44 profiles, template configs, and active settings (131,072 total, exact match for physical 128K KV cache).
+    * Formulated and deployed universal, collision-free engineering system prompt across all standalone and team agent profiles (`Config/defaults/agent-profiles/` and `~/.openhands/agent-profiles/`).
+    * Eliminated all environment collisions: removed hardcoded OS/shell/path assumptions; enabled dynamic environment awareness (Windows 10/11, PowerShell, Bash, Linux).
+    * Harmonized assistant global priority prompt (`~/.gemini/GEMINI.md`) and project workspace rules (`AGENTS.md`, `GEMINI.md`, `CONTRIBUTING.md`) with explicit logic contradiction analysis, collision detection, and zero-simulation standards.
 EVIDENCE:
   - MoE Optimization Playbook: `Docs/MOE_MODEL_OPTIMIZATION_PLAYBOOK.md`
   - MoE Router Audit: `Docs/MOE_256E_ROUTER_AUDIT_DATA.md` & `LLM-tests/moe_router_audit_summary.json`
   - Cognitive Benchmark Data: `Tests/cognitive/results_qwen122.json` & `Tests/cognitive/results_qwen122-baseline.json`
   - A/B Audit Report: `Docs/QWEN122_COGNITIVE_AB_COMPARISON_REPORT.md`
   - Optimality Proof: `LLM-tests/optimality_proof_data.json` & `LLM-tests/rigorous_expert_optimality_audit.py`
+  - Fold 7 Audit & Trial Protocol: `Docs/GALAXY_FOLD7_OPTIMIZATION_AUDIT.md`
+  - Fold 7 Remediation Log: `scratch/agent_stress_campaign/final_remediation_qwen27.log`
+  - Fold 7 Battery Analysis: `scratch/agent_stress_campaign/battery_drain_report_fold7.txt`
 OPEN_ISSUES:
-  - None. Station fully operational with 208E model on port 8080 and all 5 services active.
-NEXT_ACTION:    Ready for OpenHands Nexus core agent workflows and station tasks.
+  - None. Station and mobile ecosystem fully operational. Fold 7 entered 1-2 week field trial.
+NEXT_ACTION:    Await completion of 1-2 week field trial on Galaxy Z Fold 7 to collect comparative telemetry.
+
 
 

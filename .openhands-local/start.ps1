@@ -516,7 +516,28 @@ if (-not $gatewayRunning) {
     }
 }
 
-# 5. Ensure autonomous watchdog supervisor is active in background
+# 5. Ensure Antigravity Local Bridge is active (Port 18005)
+$bridgeRunning = $false
+$c18005 = Get-NetTCPConnection -LocalPort 18005 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($c18005) { $bridgeRunning = $true }
+
+if (-not $bridgeRunning) {
+    Log-Message "[5/5] Starting Antigravity Local Bridge on port 18005..." "Cyan"
+    $pythonExe = "C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe"
+    $bridgeScript = Join-Path $ProjectRoot "Services\antigravity-bridge\bridge.py"
+    $bridgeCmd = "`"$pythonExe`" `"$bridgeScript`""
+    $wmiBridgeRes = $procClass.Create($bridgeCmd, (Join-Path $ProjectRoot "Services\antigravity-bridge"), $startupInstance)
+    $bReady = Wait-ForServiceReady -Port 18005 -TimeoutSeconds 5
+    if ($bReady) {
+        Log-Message "[OK] Antigravity Local Bridge online on port 18005" "Green"
+    } else {
+        Log-Message "[WARN] Antigravity Local Bridge did not respond on 18005 within 5s" "Yellow"
+    }
+} else {
+    Log-Message "[OK] Antigravity Local Bridge is ALREADY active on port 18005" "Green"
+}
+
+# 6. Ensure autonomous watchdog supervisor is active in background
 $watchPidFile = Join-Path $pidDir "watchdog.pid"
 $watchRunning = $false
 if (Test-Path $watchPidFile) {

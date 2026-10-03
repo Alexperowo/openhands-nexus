@@ -1,0 +1,23 @@
+[
+  {
+    "mode": "Baseline (mmap) Warm 70K",
+    "run_type": "warm",
+    "lzm": "auto",
+    "prompt_tokens": 82974,
+    "pp_tok_s": 261.96,
+    "ttft_s": 316.74,
+    "tg_tok_s": 0.0,
+    "total_time_s": 342.43,
+    "gpu0_peak_used_mb": 15420,
+    "gpu0_min_free_mb": 633,
+    "gpu1_peak_used_mb": 22146,
+    "gpu1_min_free_mb": 85,
+    "peak_ram_mb": 44771.2,
+    "avg_cpu_percent": 12.1,
+    "disk_read_mb": 22.2,
+    "direct_read_active": false,
+    "direct_read_tensors": [],
+    "return_code": 0,
+    "gen_sample": "Loading model... \n\n\u2584\u2584 \u2584\u2584\n\u2588\u2588 \u2588\u2588\n\u2588\u2588 \u2588\u2588  \u2580\u2580\u2588\u2584 \u2588\u2588\u2588\u2584\u2588\u2588\u2588\u2584  \u2580\u2580\u2588\u2584    \u2584\u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588\u2584 \u2588\u2588\u2588\u2588\u2584\n\u2588\u2588 \u2588\u2588 \u2584\u2588\u2580\u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588 \u2584\u2588\u2580\u2588\u2588    \u2588\u2588    \u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588\n\u2588\u2588 \u2588\u2588 \u2580\u2588\u2584\u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588 \u2580\u2588\u2584\u2588\u2588 \u2588\u2588 \u2580\u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588\u2580 \u2588\u2588\u2588\u2588\u2580\n                         "
+  }
+]

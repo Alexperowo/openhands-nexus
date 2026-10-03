@@ -22,6 +22,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import torch
@@ -80,6 +81,12 @@ DOMAIN_REPLACEMENTS = [
     (r"\bстайджинг\b", "стейджинг"),
     (r"\bТрубопровода\b", "пайплайна"),
     (r"\bтрубопровода\b", "пайплайна"),
+    (r"\bЦЕЛОЕ ЧИСЛО\b", "ЦЕЛИ (Goals)"),
+    (r"\bцелое число\b", "цели"),
+    (r"\bДОБАВЛЕНИЕ\b", "TODO (Задачи к выполнению)"),
+    (r"\bдобавление\b", "TODO"),
+    (r"\bПЛЕНАРНОЕ ЗАСЕДАНИЕ\b", "ПЛАН (Plan)"),
+    (r"\bпленарное заседание\b", "план"),
 ]
 
 
@@ -144,15 +151,23 @@ def translate_text(text: str) -> str:
     if translator_model is None or translator_tokenizer is None:
         return text
 
-    # Step 1: Split into code blocks (```...```) and prose segments
-    block_parts = re.split(r"(```[\s\S]*?```)", text)
+    # Step 1: Split into protected blocks (code blocks, tool calls, think blocks, XML tags) and prose
+    protected_pattern = r"(```[\s\S]*?```|<tool_call[\s\S]*?</tool_call>|<action[\s\S]*?</action>|<think[\s\S]*?</think>|<[^>\n]+>)"
+    block_parts = re.split(protected_pattern, text)
     result_blocks = []
 
     with translator_lock:
         with torch.inference_mode():
             for block in block_parts:
-                if block.startswith("```") and block.endswith("```"):
-                    # Code block: leave 100% untouched
+                if not block:
+                    continue
+
+                # Check if block is protected
+                if ((block.startswith("```") and block.endswith("```")) or
+                    (block.startswith("<tool_call") and block.endswith("</tool_call>")) or
+                    (block.startswith("<action") and block.endswith("</action>")) or
+                    (block.startswith("<think") and block.endswith("</think>")) or
+                    (block.startswith("<") and block.endswith(">"))):
                     result_blocks.append(block)
                     continue
 
@@ -173,12 +188,14 @@ def translate_text(text: str) -> str:
                     else:
                         content_line = line
 
-                    # Step 3: Split line by inline code (`...`)
-                    inline_parts = re.split(r"(`[^`\n]+`)", content_line)
+                    # Step 3: Split line by inline code (`...`) or tags (<...>)
+                    inline_parts = re.split(r"(`[^`\n]+`|<[^>\n]+>)", content_line)
                     trans_inline = []
                     for part in inline_parts:
-                        if part.startswith("`") and part.endswith("`"):
-                            # Inline code: leave 100% untouched
+                        if not part:
+                            continue
+                        if ((part.startswith("`") and part.endswith("`")) or
+                            (part.startswith("<") and part.endswith(">"))):
                             trans_inline.append(part)
                         else:
                             trans_inline.append(translate_text_fragment(part))
@@ -189,6 +206,53 @@ def translate_text(text: str) -> str:
 
     final_result = "".join(result_blocks)
     return final_result
+
+
+def extract_tool_calls_from_content(content: str):
+    """Parses raw XML or JSON tool calls generated inside content and returns OpenAI-format tool_calls."""
+    if not content or not isinstance(content, str):
+        return []
+
+    tool_calls = []
+
+    # Pattern 1: XML syntax <tool_call><function = NAME><parameter = KEY>VAL</parameter>...</function></tool_call>
+    tc_matches = list(re.finditer(r'<tool_call>\s*<function\s*=\s*([\w\-]+)>(.*?)</function>\s*(?:</tool_call>)?', content, re.DOTALL))
+    for m in tc_matches:
+        fn_name = m.group(1).strip()
+        params_body = m.group(2)
+        params = {}
+        for p in re.finditer(r'<parameter\s*=\s*([\w\-]+)>(.*?)</parameter>', params_body, re.DOTALL):
+            params[p.group(1).strip()] = p.group(2).strip()
+        tool_calls.append({
+            "id": f"call_{uuid.uuid4().hex[:8]}",
+            "type": "function",
+            "function": {
+                "name": fn_name,
+                "arguments": json.dumps(params, ensure_ascii=False)
+            }
+        })
+
+    # Pattern 2: JSON syntax <tool_call>{"name": "...", "arguments": {...}}</tool_call>
+    json_matches = re.finditer(r'<tool_call>\s*(\{.*?\})\s*</tool_call>', content, re.DOTALL)
+    for jm in json_matches:
+        try:
+            parsed = json.loads(jm.group(1))
+            name = parsed.get("name")
+            args = parsed.get("arguments", {})
+            if name:
+                args_str = json.dumps(args, ensure_ascii=False) if isinstance(args, dict) else str(args)
+                tool_calls.append({
+                    "id": f"call_{uuid.uuid4().hex[:8]}",
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "arguments": args_str
+                    }
+                })
+        except Exception:
+            pass
+
+    return tool_calls
 
 
 def find_free_port() -> int:
@@ -270,13 +334,30 @@ class Qwen122ProxyHandler(BaseHTTPRequestHandler):
                         if choices and isinstance(choices, list):
                             msg = choices[0].get("message", {})
                             content = msg.get("content")
+
+                            # 1. Recover any raw tool calls from content (XML or JSON)
                             if content and isinstance(content, str):
-                                t0 = time.time()
-                                translated_content = translate_text(content)
-                                dt = time.time() - t0
-                                print(f"[Qwen122-Adapter] Output translation: {len(content)} -> {len(translated_content)} chars ({dt:.3f}s)", flush=True)
-                                msg["content"] = translated_content
-                                resp_data = json.dumps(res_json, ensure_ascii=False).encode("utf-8")
+                                extracted_calls = extract_tool_calls_from_content(content)
+                                if extracted_calls:
+                                    existing = msg.get("tool_calls") or []
+                                    msg["tool_calls"] = existing + extracted_calls
+                                    # Strip tool_call blocks from content
+                                    cleaned = re.sub(r'<tool_call[\s\S]*?(?:</tool_call>|$)', '', content).strip()
+                                    cleaned = re.sub(r'^\s*</think>\s*', '', cleaned).strip()
+                                    cleaned = re.sub(r'^\s*<think>[\s\S]*?</think>\s*', '', cleaned).strip()
+                                    content = cleaned if cleaned else ""
+                                    msg["content"] = content
+                                    print(f"[Qwen122-Adapter] Recovered {len(extracted_calls)} tool call(s) from content!", flush=True)
+
+                                # 2. If text content remains, translate it to Russian
+                                if content:
+                                    t0 = time.time()
+                                    translated_content = translate_text(content)
+                                    dt = time.time() - t0
+                                    print(f"[Qwen122-Adapter] Output translation: {len(content)} -> {len(translated_content)} chars ({dt:.3f}s)", flush=True)
+                                    msg["content"] = translated_content
+
+                            resp_data = json.dumps(res_json, ensure_ascii=False).encode("utf-8")
                     except Exception as e:
                         print(f"[Qwen122-Adapter] Response translation warning: {e}", flush=True)
 

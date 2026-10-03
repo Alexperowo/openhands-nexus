@@ -548,10 +548,10 @@ button[data-testid="chat-plus-button"] {
     min-width: 24px !important;
 }
 
-/* Гарантируем, что левый блок гибко занимает доступное пространство и может прокручиваться */
+/* Гарантируем, что левый блок кнопок гибко занимает доступное пространство и может прокручиваться,
+   НЕ затрагивая родительский контейнер строки и не ломая вертикальный overflow popover'ов */
 [data-testid="chat-input-actions"] > div:first-child,
-div.flex.items-center.justify-between > div:first-child,
-div.flex.min-w-0.items-center {
+div.flex.items-center.justify-between > div:first-child {
     min-width: 0 !important;
     flex: 1 1 auto !important;
     overflow-x: auto !important;
@@ -560,8 +560,7 @@ div.flex.min-w-0.items-center {
 }
 
 [data-testid="chat-input-actions"] > div:first-child::-webkit-scrollbar,
-div.flex.items-center.justify-between > div:first-child::-webkit-scrollbar,
-div.flex.min-w-0.items-center::-webkit-scrollbar {
+div.flex.items-center.justify-between > div:first-child::-webkit-scrollbar {
     display: none !important;
 }
 
@@ -588,12 +587,35 @@ div.flex.min-w-0.items-center::-webkit-scrollbar {
     pointer-events: none !important;
 }
 
-/* 7. Context Window Meter Popover & Compact Button Enhancements */
+/* Скрываем избыточную плашку «Размышление / Thinking» — не несет смысловой нагрузки для пользователей */
+[data-testid="collapsible-thinking"],
+[data-testid="collapsible-thinking-toggle"] {
+    display: none !important;
+}
+
+/* 7. Context Window Meter Popover & Stacking Fixes */
+div.flex.items-center.justify-between,
+div:has(> [data-testid="context-window-meter"]),
+[data-testid="interactive-chat-box"],
+div:has(> [data-testid="interactive-chat-box"]) {
+    overflow: visible !important;
+    position: relative !important;
+    z-index: 100 !important;
+}
+
 [data-testid="context-window-meter-popover"] {
+    position: absolute !important;
+    bottom: calc(100% + 8px) !important;
+    right: 0 !important;
+    z-index: 99999 !important;
+    pointer-events: auto !important;
     min-width: 290px !important;
     background: #18181f !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
 }
 
 button[data-testid="context-window-compact-button"] {

@@ -245,13 +245,33 @@ def clean_rogue_processes(verbose: bool = True) -> list:
             raw_data = json.loads(res.stdout.strip())
             procs = raw_data if isinstance(raw_data, list) else [raw_data]
 
-            # Find swap PID if running
+            # Specifically find the real llama-swap.exe binary process
+            legit_pids = set()
             for p in procs:
                 pname = (p.get("Name") or "").lower()
-                cmd = (p.get("CommandLine") or "").lower()
-                if "llama-swap" in pname or "llama-swap" in cmd:
+                if pname == "llama-swap.exe":
                     swap_pid = p.get("ProcessId")
+                    if swap_pid:
+                        legit_pids.add(swap_pid)
                     break
+
+            if swap_pid:
+                # Direct children of llama-swap (e.g. python qwen_tool_adapter.py or direct llama-server)
+                children = {p.get("ProcessId") for p in procs if p.get("ParentProcessId") == swap_pid and p.get("ProcessId")}
+                legit_pids.update(children)
+                # Grandchildren of llama-swap (e.g. llama-server spawned by adapter scripts)
+                grandchildren = {p.get("ProcessId") for p in procs if p.get("ParentProcessId") in children and p.get("ProcessId")}
+                legit_pids.update(grandchildren)
+
+            # Also protect any adapter processes (qwen_tool_adapter, qwen122_adapter) and their children
+            adapter_pids = {
+                p.get("ProcessId") for p in procs
+                if any(ad in (p.get("CommandLine") or "").lower() for ad in ("qwen_tool_adapter.py", "qwen122_adapter.py"))
+                and p.get("ProcessId")
+            }
+            legit_pids.update(adapter_pids)
+            for apid in adapter_pids:
+                legit_pids.update({p.get("ProcessId") for p in procs if p.get("ParentProcessId") == apid and p.get("ProcessId")})
 
             for p in procs:
                 pid = p.get("ProcessId")
@@ -259,13 +279,13 @@ def clean_rogue_processes(verbose: bool = True) -> list:
                 name = p.get("Name", "")
                 cmdline = p.get("CommandLine") or ""
                 pname_lower = name.lower()
-                if pid == os.getpid():
+                if pid == os.getpid() or pid in legit_pids:
                     continue
 
                 is_rogue = any(kw.lower() in cmdline.lower() for kw in rogue_keywords)
 
-                # Check for orphaned llama-server / llama-cli
-                if not is_rogue and pname_lower in ("llama-server.exe", "llama-cli.exe") and (swap_pid is None or parent_pid != swap_pid):
+                # Check for truly orphaned llama-server / llama-cli (not in swap tree)
+                if not is_rogue and pname_lower in ("llama-server.exe", "llama-cli.exe") and pid not in legit_pids:
                     is_rogue = True
 
                 if is_rogue:

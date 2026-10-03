@@ -195,7 +195,7 @@ try {
                 $swapExe = Join-Path $ProjectRoot "llama-swap\bin\llama-swap.exe"
                 $swapConfig = Join-Path $ProjectRoot "llama-swap\config.yaml"
                 $swapLog = Join-Path $swapLogDir "llama-swap.log"
-                $swapCmd = "cmd.exe /c `"`"$swapExe`" -config `"$swapConfig`" -listen 127.0.0.1:8080 >> `"$swapLog`" 2>&1`""
+                $swapCmd = "cmd.exe /c `"`"$swapExe`" -config `"$swapConfig`" -watch-config -listen 127.0.0.1:8080 >> `"$swapLog`" 2>&1`""
                 
                 $res = $procClass.Create($swapCmd, $serverLogDir, $startupInstance)
                 Start-Sleep -Seconds 2
@@ -352,6 +352,22 @@ try {
                 $failCounts["canvas"] = 0
             }
         }
+
+        # -------------------------------------------------------------
+        # 5. Probe Antigravity Local Bridge (Port 18005) & Auto-Heal
+        # -------------------------------------------------------------
+        $bridgeHealthy = $false
+        $conn18005 = Get-NetTCPConnection -LocalPort 18005 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($conn18005) { $bridgeHealthy = $true }
+
+        if (-not $bridgeHealthy) {
+            Log-Watchdog "[SELF-HEAL] Restarting Antigravity Local Bridge (Port 18005)..." "Yellow"
+            $pythonExe = "C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe"
+            $bridgeScript = Join-Path $ProjectRoot "Services\antigravity-bridge\bridge.py"
+            $bridgeCmd = "`"$pythonExe`" `"$bridgeScript`""
+            $procClass.Create($bridgeCmd, (Join-Path $ProjectRoot "Services\antigravity-bridge"), $startupInstance)
+        }
+
 
         if ($Once) {
             break

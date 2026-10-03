@@ -13,7 +13,7 @@
   "max_message_chars": 30000,
   "temperature": 0.6,
   "top_p": 0.95,
-  "max_input_tokens": 98304,
+  "max_input_tokens": 114688,
   "max_output_tokens": 16384,
   "api_mode": "auto",
   "capability_overrides": {},
@@ -31,7 +31,9 @@
   "extended_thinking_budget": 0,
   "usage_id": "default",
   "litellm_extra_body": {
-    "chat_template_kwargs": {"enable_thinking": false},
+    "chat_template_kwargs": {
+      "enable_thinking": false
+    },
     "thinking_budget_tokens": 0
   },
   "is_subscription": false,

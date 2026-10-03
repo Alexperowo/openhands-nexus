@@ -1,0 +1,9 @@
+# Model Forge Git Ignore
+*.log
+*.part
+*.tmp
+*.gguf
+*.dat
+__pycache__/
+.pytest_cache/
+test_dryrun*

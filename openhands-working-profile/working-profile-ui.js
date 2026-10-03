@@ -271,7 +271,7 @@
                     <span class="oh-telemetry-dot idle"></span>
                     <span class="oh-telemetry-text">Готов</span>
                 `;
-                let idleTitle = `Станция готова к работе · ${activeState?.active_working_profile_id || 'OpenHands'}`;
+                let idleTitle = `Станция готова к работе · ${data?.model || activeState?.active_working_profile_id || 'OpenHands'}`;
                 if (data && data.last_gen_speed > 0) {
                     idleTitle += ` · Посл. генерация: ${data.last_gen_speed} т/с`;
                     if (data.last_prefill_speed > 0) {
@@ -359,7 +359,7 @@
     function startTelemetry() {
         stopTelemetry();
         pollTelemetry();
-        telemetryInterval = setInterval(pollTelemetry, 1500);
+        telemetryInterval = setInterval(pollTelemetry, 800);
 
         if (!visibilityHandlerAttached) {
             visibilityHandlerAttached = true;

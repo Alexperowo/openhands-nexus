@@ -21,6 +21,10 @@ api-key.txt
 # 3. Logs, Temp, and Scratch Data
 Logs/
 *.log
+*.jsonl
+CONVERSATION_HISTORY/
+Services/**/traffic.jsonl
+Services/**/last_payload.json
 Temp/
 Cache/
 scratch/

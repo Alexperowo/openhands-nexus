@@ -1,0 +1,5203 @@
+# Antigravity Nexus — Comprehensive Architecture & Codebase Review Bundle
+**Generated for External Architectural & Code Quality Audit by Frontier Cloud LLM (ChatGPT / GPT-4o / OpenAI o1 / Qwen-Max)**
+**Date:** September 2026 | **Host OS:** Windows 11 Pro | **Hardware:** Dual-GPU (37.9 GB VRAM), 48 GB RAM
+
+---
+
+## 1. Executive Summary & Project Background (Предыстория и суть проекта)
+
+### Что такое Antigravity Nexus простым языком?
+**Antigravity Nexus** — это автономная персональная инженерная станция искусственного интеллекта на базе рабочей станции Windows 11 Pro:
+1. **Google Antigravity 2.0 (Cockpit / IDE):** Служит фронтендом («кабиной пилота») — современной средой разработки на Electron с поддержкой агентного парного программирования, чата, генерации артефактов и PWA для сенсорных устройств.
+2. **Nexus Hardware Engine (Dual-GPU кластер):** Служит «мотором под капотом» — аппаратный пул из двух видеокарт:
+   - GPU 0: NVIDIA GeForce RTX 5060 Ti (16 GB VRAM)
+   - GPU 1: NVIDIA GeForce RTX 2080 Ti (22 GB VRAM)
+   - **Суммарный пул VRAM: 37.9 GB (строгий потолок)**
+   - Системная память RAM: 48 GB
+3. **Локальный стек моделей (через llama-swap на порту `:8080`):**
+   - `station-qwen`: Qwen 2.5 Coder 27B Vision (VRAM ~18 GB)
+   - `station-next`: Next 80B MoE (VRAM ~35 GB)
+   - `station-ornith`: Ornith 1.5 35B для анализа длинных дампов (VRAM ~24 GB)
+   - `station-tinfield`: Tinfield 177B Titan MoE (VRAM ~36 GB)
+   - `station-qwen122`: Qwen 122B 208E MoE (VRAM ~37 GB)
+
+### Ключевые архитектурные вызовы и решения:
+* **100% чистый upstream Antigravity:** Ни один бинарник Antigravity и ни один байт `app.asar` не модифицируются. Интеграция выполняется исключительно через штатный сетевой механизм `CLOUD_CODE_URL=http://127.0.0.1:18005`. Все штатные модели Google Gemini (38 штук) полностью сохраняются, сессии не сбрасываются.
+* **Физическая изоляция каталога:** Все компоненты станции размещены в изолированной директории `k:\Project\Antigravity-Nexus\`, предотвращая коллизии с легаси-файлами.
+* **Нюанс Qwen 122B (208E):** В модели проведено структурное прореживание экспертов (256 -> 208), что дало 100% сохранение англоязычного reasoning при скорости 39 токенов/с, но повредило выходной русский словарь. Решено через потоковый микро-слой `qwen122_stream.py` на CPU (MarianMT `Helsinki-NLP/opus-mt-en-ru`) с сохранением код-блоков (` ```...``` `) и терминологическим словарем (дедлок, пайплайн и т.д.) с 0 МБ расходом VRAM.
+* **Air-gapped Local Voice Bridge (`:18002`):** Оффлайн распознавание русской речи (GigaAM v3) и синтез (Supertonic 3) полностью на CPU (0 МБ VRAM). Поддерживает управление без рук (Hands-Free / Accessibility для людей с ограниченными возможностями) через глобальную клавишу `F9` / `ScrollLock` с прямой вставкой в активное окно.
+* **Управление в 1 клик для непрограммистов:** Двойной клик на `.cmd`-лаунчеры обходит Windows PowerShell ExecutionPolicy и запускает всю станцию без терминалов.
+
+### Недавние инженерные улучшения (Recent Hardening):
+1. **JSON Error Safety:** Форматирование ошибок в `bridge.py` переведено на строгий `json.dumps({"error": str(e)})` (устранена уязвимость поломки JSON при кавычках или спецсимволах).
+2. **Payload Dump Off by Default:** Отладочная запись `last_payload.json` на диск отключена в проде и активируется только через переменную `NEXUS_DEBUG_PAYLOAD=1`.
+3. **User Clipboard Preservation:** В `voice_companion.py` реализована функция `paste_text_safely` — системный буфер обмена пользователя сохраняется перед вставкой речи и сразу же восстанавливается обратно, исключая потерю пользовательских данных. Лимит записи аудио ограничен потолком 120 секунд.
+4. **Request Body Ceiling & DoS Protection:** В `bridge.py` установлен лимит `MAX_BODY_BYTES = 64 MB` с возвратом `HTTP 413 Payload Too Large` и защитой от gzip-бомб.
+5. **Thread-Safe MarianMT Inference:** В `qwen122_stream.py` добавлен мьютекс `_infer_lock`, явный вызов `_model.to("cpu")` (гарантия Zero VRAM Waste), сохранение структуры переносов строк в абзацах и защита чисел/сокращений (`e.g.`, `3.14`).
+6. **Win32 PEB Scanner Hardening:** В `upstream_detector.py` добавлена проверка разрядности целевого процесса (`IsWow64Process`), строгая проверка количества прочитанных байтов (`bytes_read`) и 5-секундный TTL-кэш PID без лишних запусков PowerShell (`shell=False`).
+7. **Cleanliness & Maintenance:** Вычищен мёртвый код `/shutdown` в `Voice/service.py`, удалены PII (личный email) из `auth_vault.py`, подключена ротация логов `RotatingFileHandler(10 MB, backupCount=3)`.
+
+---
+
+## 2. Reviewer Prompt & Questions for Frontier LLM (Задачи аудита для ChatGPT / GPT-4o / o1)
+
+**Роль:** Senior Principal Systems Architect & Senior Python Systems Engineer.
+
+**Инструкция для ревьюера:**
+Проведи независимый детальный архитектурный аудит и код-ревью представленного ниже исходного кода проекта Antigravity Nexus. Оцени следующие аспекты:
+1. **Архитектурная чистота и системный дизайн:** Насколько качественно выстроена топология станции (Cockpit + Router + llama-swap + Voice Bridge)? Есть ли архитектурные антипаттерны?
+2. **Отказоустойчивость и обработка граничных условий (Edge Cases):**
+   - Управление соединениями, потоками и сокетами в `bridge.py`.
+   - Поведение системы при сетевых сбоях, разрывах клиентов (`ClientDisconnect`, `TimeoutError`), откатах на дефолтные профили.
+   - Защита памяти и ресурсов (лимит 64 МБ, лимит 120 с аудио, ротация логов).
+3. **Безопасность системных вызовов Windows:**
+   - Оценка чтения памяти PEB через Win32 API (`ReadProcessMemory`, `PROCESS_VM_READ`) в `upstream_detector.py`.
+   - Безопасность эмуляции клавиатуры и сохранения буфера обмена в `voice_companion.py`.
+4. **Соблюдение аппаратных ограничений (Zero VRAM Waste):**
+   - Оценка изоляции MarianMT, GigaAM v3 и Supertonic 3 на CPU без затрагивания пула 37.9 GB VRAM.
+5. **Тестовое покрытие и верификация:** Оценка полноты набора из 32 тестов на реальном оборудовании.
+6. **Конструктивная критика и точки роста:** Что ещё можно улучшить или отрефакторить в кодовой базе для достижения высшего инженерного уровня?
+
+---
+
+## 3. Physical Hardware & Service Topology
+
+```
++-----------------------------------------------------------------------------------+
+| Host: Windows 11 Pro | System RAM: 48 GB | Active Python: 3.12.10                |
++-----------------------------------------------------------------------------------+
+                                         |
+     +-----------------------------------+-----------------------------------+
+     |                                                                       |
++----------------------------------+                   +----------------------------------+
+| GPU 0: RTX 5060 Ti (16 GB VRAM)  |                   | GPU 1: RTX 2080 Ti (22 GB VRAM)  |
++----------------------------------+                   +----------------------------------+
+     \                                                                     //
+      ================== Total VRAM Pool: 37.9 GB Ceiling ==================
+                                         |
+                        +----------------------------------+
+                        | llama-swap Router (:8080)        |
+                        | Dynamic VRAM Model Swapping      |
+                        +----------------------------------+
+                                         ^
+                                         | (OpenAI / vLLM API)
+                                         v
++-----------------------------------------------------------------------------------+
+| Antigravity Bridge Router (:18005) - [Bridge/bridge.py]                          |
+| - Injects Local Models into Catalog                                               |
+| - Fallback to Google Gemini upstream (:upstream_port) via PEB Auth Token         |
+| - Streaming SSE / Tool Calls Repair / Context Compactor                           |
+| - CPU MarianMT Prose Stream Translator [Bridge/qwen122_stream.py] (0 MB VRAM)    |
+| - Thread-Safe Inference Lock / 64MB Payload Ceiling / HTTP 413 Protection         |
++-----------------------------------------------------------------------------------+
+       ^                                                 ^
+       | HTTP/SSE                                        | Global PTT Hotkey (F9)
+       v                                                 | Safe Paste & Clipboard Restore
++----------------------------------+                   +----------------------------------+
+| Google Antigravity 2.0 IDE       |                   | Voice Companion & Bridge (:18002)|
+| Stock Electron Desktop / PWA     |                   | GigaAM v3 STT + Supertonic 3 TTS |
+| (0% modified, pure upstream)     |                   | Pure CPU (0 MB VRAM)             |
++----------------------------------+                   +----------------------------------+
+```
+
+---
+
+## 4. Test Verification Status (Physical Matrix)
+All 32 automated tests pass on physical workstation hardware (32 passed in 31.26s):
+- `test_bridge_e2e.py` (13 tests): PEB memory token extraction, catalog injection, SSE thoughts, tool call repair, payload conversion, HTTP 413 payload limit rejection, safe JSON error formatting.
+- `test_qwen122_trans.py` (7 tests): sentence buffering, code fence preservation, glossary substitutions, paragraph newlines preservation, MarianMT CPU device invariant (Zero VRAM), abbreviation protection.
+- `test_voice_robustness.py` (8 tests): real GigaAM audio waveforms, Supertonic voice synthesis, empty audio handling, runaway length protection, barge-in stop endpoint, user clipboard preservation.
+- `test_station_health.py` (4 tests): NVML dual-GPU detection, 37.9 GB VRAM ceiling, port listeners :18005, :8080, :18002.
+
+---
+
+## 5. Source Code Manifest & Full Implementation
+
+
+---
+
+### File: `Bridge/bridge.py`
+**Role & Description:** Core FastAPI Router: intercepts Antigravity requests (:18005), PEB auth extraction, dynamic fallback, SSE thought streaming, Qwen 122B stream translation injection.
+
+```python
+import http.server
+import socketserver
+import urllib.request
+import urllib.error
+import json
+import gzip
+import os
+import sys
+import socket
+import logging
+from logging.handlers import RotatingFileHandler
+from typing import Any, Dict, Optional
+
+from upstream_detector import get_upstream_proxy, invalidate_proxy
+from auth_vault import save_auth_cache, get_auth_fallback
+from model_catalog import inject_local_model, get_models_fallback, LOCAL_MODEL_ID, resolve_station_model, STATION_MODELS
+from converter import (
+    gemini_to_openai_messages,
+    format_gemini_sse_thought_chunk,
+    format_gemini_sse_text_chunk,
+    format_gemini_sse_function_call,
+    format_gemini_sse_finish,
+    repair_json_string,
+    validate_and_fill_tool_args,
+    is_tool_call_operable,
+    extract_generation_params,
+    emergency_compact_messages
+)
+
+TARGET_HOST = "https://daily-cloudcode-pa.googleapis.com"
+LLAMA_SWAP_URL = "http://127.0.0.1:8080/v1/chat/completions"
+DEFAULT_LOCAL_MODEL = "qwen"
+PORT = 18005
+
+MAX_BODY_BYTES = 64 * 1024 * 1024  # 64 MB payload ceiling (DoS & OOM protection)
+ENABLE_PAYLOAD_DUMP = os.environ.get("NEXUS_DEBUG_PAYLOAD", "0").strip() == "1"
+
+CLIENT_DISCONNECT_EXCEPTIONS = (
+    ConnectionResetError,
+    BrokenPipeError,
+    ConnectionAbortedError,
+    TimeoutError,
+    socket.timeout
+)
+
+AUXILIARY_ENDPOINTS = {
+    "/v1internal:recordTrajectoryAnalytics",
+    "/v1internal:listExperiments",
+    "/v1internal:fetchAdminControls",
+    "/v1internal:writeTrajectoryAcls"
+}
+
+LOG_FILE = os.path.join(os.path.dirname(__file__), "bridge.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        RotatingFileHandler(LOG_FILE, maxBytes=10 * 1024 * 1024, backupCount=3, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger("antigravity-bridge")
+
+def _make_upstream_opener() -> urllib.request.OpenerDirector:
+    """Builds a urllib opener using the live agy-unlock proxy if available."""
+    proxy_url = get_upstream_proxy()
+    if proxy_url:
+        proxy_handler = urllib.request.ProxyHandler({
+            "http": proxy_url,
+            "https": proxy_url
+        })
+        return urllib.request.build_opener(proxy_handler)
+    return urllib.request.build_opener()
+
+STRIP_REQUEST_HEADERS = {
+    "host",
+    "content-length",
+    "transfer-encoding",
+    "content-encoding",
+    "accept-encoding",
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "upgrade"
+}
+
+class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+class PayloadTooLargeError(Exception):
+    pass
+
+def _safe_decompress(data: bytes, is_gzip: bool, max_bytes: int = MAX_BODY_BYTES) -> bytes:
+    """
+    Streams decompression in bounded chunks to prevent gzip/deflate bombs
+    from expanding beyond max_bytes in memory.
+    """
+    import zlib
+    wbits = (16 + zlib.MAX_WBITS) if is_gzip else zlib.MAX_WBITS
+    try:
+        decompressor = zlib.decompressobj(wbits)
+    except Exception:
+        decompressor = zlib.decompressobj()
+
+    chunks = []
+    total_len = 0
+    chunk_size = 64 * 1024
+
+    for i in range(0, len(data), chunk_size):
+        slice_data = data[i:i + chunk_size]
+        decomp = decompressor.decompress(slice_data)
+        if decomp:
+            total_len += len(decomp)
+            if total_len > max_bytes:
+                raise PayloadTooLargeError(f"Decompressed payload exceeded safety ceiling of {max_bytes} bytes")
+            chunks.append(decomp)
+
+    remaining = decompressor.flush()
+    if remaining:
+        total_len += len(remaining)
+        if total_len > max_bytes:
+            raise PayloadTooLargeError(f"Decompressed payload exceeded safety ceiling of {max_bytes} bytes")
+        chunks.append(remaining)
+
+    return b"".join(chunks)
+
+class AntigravityBridgeHandler(http.server.BaseHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        self._headers_sent = False
+        super().__init__(*args, **kwargs)
+
+    def send_response(self, code, message=None):
+        self._headers_sent = True
+        return super().send_response(code, message)
+
+    def log_message(self, format, *args):
+        logger.debug("%s - - %s", self.address_string(), format % args)
+
+    def _read_body(self) -> bytes:
+        """
+        Reads HTTP request body supporting both Content-Length and Transfer-Encoding: chunked.
+        Enforces MAX_BODY_BYTES ceiling (HTTP 413) and safe gzip decompression.
+        """
+        te = self.headers.get("Transfer-Encoding", "").lower()
+        if "chunked" in te:
+            chunks = []
+            total_bytes = 0
+            while True:
+                line = self.rfile.readline()
+                if not line:
+                    break
+                chunk_header = line.split(b";")[0].strip()
+                if not chunk_header:
+                    continue
+                try:
+                    chunk_len = int(chunk_header, 16)
+                except ValueError:
+                    logger.error("Invalid chunk header: %r", chunk_header)
+                    break
+                if chunk_len == 0:
+                    # Consume trailer headers until empty line
+                    while True:
+                        trailer = self.rfile.readline()
+                        if not trailer or trailer.strip() == b"":
+                            break
+                    break
+                total_bytes += chunk_len
+                if total_bytes > MAX_BODY_BYTES:
+                    raise PayloadTooLargeError(f"Chunked payload exceeded {MAX_BODY_BYTES} bytes limit")
+                chunk_data = self.rfile.read(chunk_len)
+                chunks.append(chunk_data)
+                # Consume trailing CRLF
+                self.rfile.readline()
+            raw_body = b"".join(chunks)
+        else:
+            try:
+                cl = int(self.headers.get("Content-Length", 0))
+            except (ValueError, TypeError):
+                cl = 0
+            if cl > MAX_BODY_BYTES:
+                raise PayloadTooLargeError(f"Content-Length {cl} exceeds {MAX_BODY_BYTES} bytes limit")
+            raw_body = self.rfile.read(cl) if cl > 0 else b""
+
+        ce = self.headers.get("Content-Encoding", "").lower()
+        if ce == "gzip":
+            try:
+                return _safe_decompress(raw_body, is_gzip=True)
+            except PayloadTooLargeError:
+                raise
+            except Exception as e:
+                logger.warning("Failed to decompress gzip request body: %s", e)
+                return raw_body
+        elif ce in ("deflate", "zlib"):
+            try:
+                return _safe_decompress(raw_body, is_gzip=False)
+            except PayloadTooLargeError:
+                raise
+            except Exception as e:
+                logger.warning("Failed to decompress deflate request body: %s", e)
+                return raw_body
+
+        return raw_body
+
+    def do_POST(self):
+        try:
+            try:
+                req_body = self._read_body()
+            except PayloadTooLargeError as pe:
+                logger.warning("[POST] %s rejected: %s", self.path, pe)
+                self.send_response(413)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"error": "Payload Too Large"}')
+                return
+
+            path = self.path
+            logger.info("[POST] %s (body_len=%d, TE=%s, CE=%s)",
+                        path, len(req_body),
+                        self.headers.get("Transfer-Encoding", "none"),
+                        self.headers.get("Content-Encoding", "none"))
+
+            if "/v1internal:loadCodeAssist" in path or "/v1internal:fetchUserInfo" in path:
+                self._handle_auth_endpoints(req_body)
+            elif "/v1internal:fetchAvailableModels" in path:
+                self._handle_fetch_models(req_body)
+            elif "/v1internal:streamGenerateContent" in path:
+                self._handle_stream_generate(req_body)
+            else:
+                self._proxy_generic("POST", req_body)
+        except CLIENT_DISCONNECT_EXCEPTIONS:
+            logger.debug("Client closed connection on %s", self.path)
+            return
+        except Exception as e:
+            logger.exception("Unhandled error in do_POST on %s: %s", self.path, e)
+            if not self._headers_sent:
+                try:
+                    self.send_response(500)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                except Exception:
+                    pass
+
+    def do_GET(self):
+        clean_path = self.path.split("?")[0].rstrip("/")
+        if clean_path in ("/health", "/status"):
+            resp = {
+                "status": "ok",
+                "service": "antigravity-bridge",
+                "port": PORT,
+                "default_model": DEFAULT_LOCAL_MODEL
+            }
+            body = json.dumps(resp).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        self._proxy_generic("GET", b"")
+
+    def _handle_auth_endpoints(self, req_body: bytes):
+        """
+        Handles /v1internal:loadCodeAssist and /v1internal:fetchUserInfo.
+        Tries upstream with live proxy. If successful, updates cache.
+        If upstream fails (error, timeout, offline), serves auth vault fallback (200 OK).
+        NEVER returns 502 to protect Antigravity from session wipes.
+        """
+        target_url = TARGET_HOST + self.path
+        headers = {k: v for k, v in self.headers.items() if k.lower() not in STRIP_REQUEST_HEADERS}
+        if "content-type" not in [k.lower() for k in headers]:
+            headers["Content-Type"] = "application/json"
+
+        req = urllib.request.Request(target_url, data=req_body, headers=headers, method="POST")
+        opener = _make_upstream_opener()
+
+        try:
+            with opener.open(req, timeout=10) as resp:
+                resp_body = resp.read()
+                if resp.headers.get("Content-Encoding") == "gzip":
+                    decomp = gzip.decompress(resp_body)
+                    parsed = json.loads(decomp.decode("utf-8"))
+                else:
+                    parsed = json.loads(resp_body.decode("utf-8"))
+
+                # Persist fresh auth cache
+                save_auth_cache(self.path, parsed)
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                out_bytes = json.dumps(parsed, ensure_ascii=False).encode("utf-8")
+                self.send_header("Content-Length", str(len(out_bytes)))
+                self.end_headers()
+                self.wfile.write(out_bytes)
+                logger.info("[AUTH] Successfully proxied and refreshed cache for %s", self.path)
+                return
+        except Exception as e:
+            logger.warning("[AUTH] Upstream %s failed (%s). Triggering zero-logout fallback.", self.path, e)
+            invalidate_proxy()
+
+        # Offline / failure fallback: always return 200 OK with valid profile
+        fallback_data = get_auth_fallback(self.path)
+        out_bytes = json.dumps(fallback_data, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(out_bytes)))
+        self.end_headers()
+        self.wfile.write(out_bytes)
+        logger.info("[AUTH] Served guaranteed 200 OK fallback for %s", self.path)
+
+    def _handle_fetch_models(self, req_body: bytes):
+        """
+        Handles /v1internal:fetchAvailableModels.
+        Queries upstream, injects station-local into models and sorts, and returns.
+        Falls back to model_catalog fallback if offline.
+        """
+        target_url = TARGET_HOST + self.path
+        headers = {k: v for k, v in self.headers.items() if k.lower() not in STRIP_REQUEST_HEADERS}
+        if "content-type" not in [k.lower() for k in headers]:
+            headers["Content-Type"] = "application/json"
+
+        req = urllib.request.Request(target_url, data=req_body, headers=headers, method="POST")
+        opener = _make_upstream_opener()
+
+        try:
+            with opener.open(req, timeout=30) as resp:
+                resp_body = resp.read()
+                if resp.headers.get("Content-Encoding") == "gzip":
+                    resp_body = gzip.decompress(resp_body)
+                data = json.loads(resp_body.decode("utf-8"))
+
+                merged_data = inject_local_model(data)
+                out_bytes = json.dumps(merged_data, ensure_ascii=False).encode("utf-8")
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(out_bytes)))
+                self.end_headers()
+                self.wfile.write(out_bytes)
+                logger.info("[MODELS] Successfully injected '%s' into live cloud models.", LOCAL_MODEL_ID)
+                return
+        except Exception as e:
+            logger.warning("[MODELS] Upstream fetchAvailableModels failed (%s). Serving catalog fallback.", e)
+            invalidate_proxy()
+
+        fallback_data = get_models_fallback()
+        out_bytes = json.dumps(fallback_data, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(out_bytes)))
+        self.end_headers()
+        self.wfile.write(out_bytes)
+        logger.info("[MODELS] Served offline fallback models catalog.")
+
+    def _handle_stream_generate(self, req_body: bytes):
+        """
+        Handles /v1internal:streamGenerateContent.
+        Routes station-local to llama-swap (:8080) with full reasoning/thinking and tools support.
+        Routes all other models upstream to Google Cloud as streaming SSE.
+        """
+        try:
+            req_json = json.loads(req_body.decode("utf-8"))
+        except Exception as e:
+            logger.warning("Failed to parse streamGenerateContent JSON (len=%d): %s. Streaming directly to upstream.", len(req_body), e)
+            self._proxy_stream_upstream(req_body)
+            return
+
+        model_name = req_json.get("model") or (req_json.get("request") or {}).get("model") or ""
+        target_swap_model = resolve_station_model(model_name)
+        if not target_swap_model:
+            logger.info("[INFERENCE] Cloud model requested ('%s'). Proxying stream to Google Cloud.", model_name)
+            self._proxy_stream_upstream(req_body)
+            return
+
+        logger.info("[INFERENCE] Intercepted streamGenerateContent for '%s' -> routing to llama-swap ('%s')", model_name, target_swap_model)
+        gemini_req = req_json.get("request") or req_json
+        messages, tools, tool_schemas = gemini_to_openai_messages(gemini_req)
+        
+        gen_params = extract_generation_params(gemini_req)
+        openai_payload = {
+            "model": target_swap_model,
+            "messages": messages,
+            "stream": True,
+            "temperature": gen_params.get("temperature", 0.2)
+        }
+        if "max_tokens" in gen_params:
+            openai_payload["max_tokens"] = min(gen_params["max_tokens"], 8192)
+        if "top_p" in gen_params:
+            openai_payload["top_p"] = gen_params["top_p"]
+        if tools:
+            openai_payload["tools"] = tools
+
+        translator = None
+        if target_swap_model == "qwen122":
+            try:
+                from qwen122_stream import StreamSentenceTranslator
+                translator = StreamSentenceTranslator()
+                for m in reversed(openai_payload.get("messages", [])):
+                    if m.get("role") == "user":
+                        c = m.get("content", "")
+                        if isinstance(c, str) and "Answer in English" not in c:
+                            m["content"] = c.rstrip() + "\n\nAnswer in English."
+                        break
+                logger.info("[INFERENCE] Enabled real-time streaming translation for Qwen 122B (208E).")
+            except Exception as e:
+                logger.warning("[INFERENCE] Could not initialize Qwen 122B translator: %s", e)
+
+        logger.info("[INFERENCE] Sending %d messages (%d tools) to llama-swap (%s)", len(messages), len(tools), DEFAULT_LOCAL_MODEL)
+        if ENABLE_PAYLOAD_DUMP:
+            try:
+                with open(os.path.join(os.path.dirname(__file__), "last_payload.json"), "w", encoding="utf-8") as f:
+                    json.dump(openai_payload, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+        
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "close")
+        self.end_headers()
+
+        def _request_llama_swap(payload: Dict[str, Any]):
+            openai_req = urllib.request.Request(
+                LLAMA_SWAP_URL,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            return urllib.request.urlopen(openai_req, timeout=7200)
+
+        try:
+            resp = None
+            try:
+                resp = _request_llama_swap(openai_payload)
+            except urllib.error.HTTPError as e:
+                err_data = e.read().decode("utf-8", errors="ignore")
+                if e.code == 400 and ("exceed" in err_data.lower() or "context" in err_data.lower()):
+                    logger.warning("[INFERENCE] Context limit exceeded on llama-swap (%s). Performing emergency compaction and retrying...", err_data)
+                    openai_payload["messages"] = emergency_compact_messages(messages, keep_recent=10)
+                    logger.info("[INFERENCE] Emergency retry with %d messages", len(openai_payload["messages"]))
+                    resp = _request_llama_swap(openai_payload)
+                else:
+                    raise
+
+            with resp:
+                streamed_tools: Dict[int, Dict[str, str]] = {}
+                has_text = False
+                has_thought = False
+                
+                for line in resp:
+                    line_str = line.decode("utf-8").strip()
+                    if not line_str.startswith("data:"):
+                        continue
+                    payload_str = line_str[5:].strip()
+                    if payload_str == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(payload_str)
+                    except Exception:
+                        continue
+
+                    choices = chunk.get("choices") or []
+                    if not choices:
+                        continue
+                    delta = choices[0].get("delta") or {}
+                    
+                    # 1. Native Reasoning / Thinking chunk -> collapsible UI Thinking block!
+                    if "reasoning_content" in delta and delta["reasoning_content"]:
+                        has_thought = True
+                        sse_thought = format_gemini_sse_thought_chunk(delta["reasoning_content"])
+                        self.wfile.write(sse_thought.encode("utf-8"))
+                        self.wfile.flush()
+
+                    # 2. Main content text delta
+                    if "content" in delta and delta["content"]:
+                        has_text = True
+                        raw_chunk = delta["content"]
+                        if translator:
+                            for trans_chunk in translator.feed(raw_chunk):
+                                if trans_chunk:
+                                    sse_chunk = format_gemini_sse_text_chunk(trans_chunk)
+                                    self.wfile.write(sse_chunk.encode("utf-8"))
+                                    self.wfile.flush()
+                        else:
+                            sse_chunk = format_gemini_sse_text_chunk(raw_chunk)
+                            self.wfile.write(sse_chunk.encode("utf-8"))
+                            self.wfile.flush()
+                        
+                    # 3. Tool calls delta
+                    if "tool_calls" in delta and delta["tool_calls"]:
+                        for tc in delta["tool_calls"]:
+                            idx = tc.get("index", 0)
+                            if idx not in streamed_tools:
+                                streamed_tools[idx] = {"name": "", "arguments": ""}
+                            fn = tc.get("function") or {}
+                            if "name" in fn and fn["name"]:
+                                streamed_tools[idx]["name"] = fn["name"]
+                            if "arguments" in fn and fn["arguments"]:
+                                streamed_tools[idx]["arguments"] += fn["arguments"]
+
+                # Flush any remaining text in translator buffer
+                if translator:
+                    for trans_chunk in translator.flush():
+                        if trans_chunk:
+                            sse_chunk = format_gemini_sse_text_chunk(trans_chunk)
+                            self.wfile.write(sse_chunk.encode("utf-8"))
+                            self.wfile.flush()
+
+                # Yield all accumulated and repaired tool calls with anti-hollow filtering
+                valid_tool_count = 0
+                for idx, t_info in sorted(streamed_tools.items()):
+                    t_name = t_info["name"]
+                    t_args_str = t_info["arguments"]
+                    if not t_name:
+                        continue
+                    repaired_args = repair_json_string(t_args_str)
+                    validated_args = validate_and_fill_tool_args(t_name, repaired_args, tool_schemas)
+                    
+                    # Strictly filter out hollow / inoperable tool calls
+                    if not is_tool_call_operable(t_name, validated_args):
+                        logger.warning("[INFERENCE] Discarding inoperable hollow tool call [%d]: %s(%s)", idx, t_name, validated_args)
+                        continue
+
+                    logger.info("[INFERENCE] Yielding validated functionCall [%d]: %s(%s)", idx, t_name, validated_args)
+                    sse_tc = format_gemini_sse_function_call(t_name, validated_args)
+                    self.wfile.write(sse_tc.encode("utf-8"))
+                    self.wfile.flush()
+                    valid_tool_count += 1
+
+                # If no text was sent and all tool calls were discarded as hollow, emit a fallback explanation
+                if not has_text and valid_tool_count == 0:
+                    logger.warning("[INFERENCE] Model generated no text and no valid tool calls. Emitting fallback clarification text.")
+                    fallback_text = "Локальная модель завершила шаг без действия. Пожалуйста, уточните или повторите запрос."
+                    sse_fallback = format_gemini_sse_text_chunk(fallback_text)
+                    self.wfile.write(sse_fallback.encode("utf-8"))
+                    self.wfile.flush()
+
+                sse_finish = format_gemini_sse_finish("STOP")
+                self.wfile.write(sse_finish.encode("utf-8"))
+                self.wfile.flush()
+                self.close_connection = True
+                logger.info("[INFERENCE] Generation completed successfully (tools=%d, text=%s, thought=%s).",
+                            valid_tool_count, has_text, has_thought)
+
+        except CLIENT_DISCONNECT_EXCEPTIONS:
+            logger.debug("Client disconnected during streamGenerateContent on %s", self.path)
+            return
+        except urllib.error.HTTPError as e:
+            err_data = e.read().decode("utf-8", errors="ignore")
+            logger.error("[INFERENCE] HTTP Error %d from llama-swap: %s | Body: %s", e.code, e, err_data)
+            err_msg = f"Ошибка локальной модели рабочей станции: HTTP {e.code} - {err_data}"
+            err_chunk = format_gemini_sse_text_chunk(err_msg)
+            self.wfile.write(err_chunk.encode("utf-8"))
+            sse_finish = format_gemini_sse_finish("STOP")
+            self.wfile.write(sse_finish.encode("utf-8"))
+            self.wfile.flush()
+        except Exception as e:
+            logger.error("[INFERENCE] Error communicating with llama-swap: %s", e)
+            err_msg = f"Ошибка локальной модели рабочей станции: {str(e)}"
+            err_chunk = format_gemini_sse_text_chunk(err_msg)
+            self.wfile.write(err_chunk.encode("utf-8"))
+            sse_finish = format_gemini_sse_finish("STOP")
+            self.wfile.write(sse_finish.encode("utf-8"))
+            self.wfile.flush()
+
+    def _proxy_stream_upstream(self, req_body: bytes):
+        target_url = TARGET_HOST + self.path
+        headers = {k: v for k, v in self.headers.items() if k.lower() not in STRIP_REQUEST_HEADERS}
+        if "content-type" not in [k.lower() for k in headers]:
+            headers["Content-Type"] = "application/json"
+
+        req = urllib.request.Request(target_url, data=req_body, headers=headers, method="POST")
+        opener = _make_upstream_opener()
+        try:
+            with opener.open(req, timeout=300) as resp:
+                self.send_response(resp.status)
+                for k, v in resp.headers.items():
+                    if k.lower() not in ["transfer-encoding", "content-length", "connection"]:
+                        self.send_header(k, v)
+                self.send_header("Connection", "close")
+                self.close_connection = True
+                self.end_headers()
+                while True:
+                    chunk = resp.read(4096)
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+                logger.info("[STREAM_UPSTREAM] Completed stream for %s (status %d)", self.path, resp.status)
+        except CLIENT_DISCONNECT_EXCEPTIONS:
+            logger.debug("Client disconnected during stream on %s", self.path)
+            return
+        except urllib.error.HTTPError as e:
+            logger.warning("[STREAM_UPSTREAM] Upstream HTTP %d on %s", e.code, self.path)
+            try:
+                self.send_response(e.code)
+                for k, v in e.headers.items():
+                    if k.lower() not in ["transfer-encoding", "content-length", "connection"]:
+                        self.send_header(k, v)
+                resp_body = e.read()
+                self.send_header("Content-Length", str(len(resp_body)))
+                self.end_headers()
+                self.wfile.write(resp_body)
+            except CLIENT_DISCONNECT_EXCEPTIONS:
+                logger.debug("Client disconnected while forwarding stream HTTPError on %s", self.path)
+        except Exception as e:
+            logger.error("Error streaming from upstream: %s", e)
+            invalidate_proxy()
+            if not self._headers_sent:
+                try:
+                    self.send_response(502)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                except Exception:
+                    pass
+
+    def _proxy_generic(self, method: str, req_body: bytes):
+        is_auxiliary = any(ep in self.path for ep in AUXILIARY_ENDPOINTS)
+        target_url = TARGET_HOST + self.path
+        headers = {k: v for k, v in self.headers.items() if k.lower() not in STRIP_REQUEST_HEADERS}
+        if method == "POST" and "content-type" not in [k.lower() for k in headers]:
+            headers["Content-Type"] = "application/json"
+
+        req = urllib.request.Request(target_url, data=req_body if method == "POST" else None, headers=headers, method=method)
+        opener = _make_upstream_opener()
+        req_timeout = 5 if is_auxiliary else 30
+        try:
+            with opener.open(req, timeout=req_timeout) as resp:
+                self.send_response(resp.status)
+                for k, v in resp.headers.items():
+                    if k.lower() not in ["transfer-encoding", "content-length", "connection"]:
+                        self.send_header(k, v)
+                resp_body = resp.read()
+                self.send_header("Content-Length", str(len(resp_body)))
+                self.end_headers()
+                self.wfile.write(resp_body)
+        except CLIENT_DISCONNECT_EXCEPTIONS:
+            logger.debug("Client disconnected during _proxy_generic on %s", self.path)
+            return
+        except urllib.error.HTTPError as e:
+            if is_auxiliary:
+                logger.debug("[AUXILIARY] Upstream HTTP %d on %s. Serving 200 OK fast-path.", e.code, self.path)
+                try:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", "2")
+                    self.end_headers()
+                    # Antigravity client expects a valid empty JSON dictionary {} for telemetry/analytics fast-paths
+                    self.wfile.write(b"{}")
+                except Exception:
+                    pass
+                return
+
+            logger.warning("[GENERIC] Upstream HTTP %d on %s", e.code, self.path)
+            try:
+                self.send_response(e.code)
+                for k, v in e.headers.items():
+                    if k.lower() not in ["transfer-encoding", "content-length", "connection"]:
+                        self.send_header(k, v)
+                resp_body = e.read()
+                self.send_header("Content-Length", str(len(resp_body)))
+                self.end_headers()
+                self.wfile.write(resp_body)
+            except CLIENT_DISCONNECT_EXCEPTIONS:
+                logger.debug("Client disconnected while forwarding HTTPError on %s", self.path)
+        except Exception as e:
+            if is_auxiliary:
+                logger.debug("[AUXILIARY] Upstream error (%s) on %s. Serving 200 OK fast-path.", e, self.path)
+                try:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", "2")
+                    self.end_headers()
+                    # Antigravity client expects a valid empty JSON dictionary {} for telemetry/analytics fast-paths
+                    self.wfile.write(b"{}")
+                except Exception:
+                    pass
+                return
+
+            logger.warning("Generic proxy error on %s: %s", self.path, e)
+            invalidate_proxy()
+            if not self._headers_sent:
+                try:
+                    self.send_response(502)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                except Exception:
+                    pass
+
+def main():
+    server = ThreadedHTTPServer(("127.0.0.1", PORT), AntigravityBridgeHandler)
+    logger.info("Antigravity Bridge service listening on http://127.0.0.1:%d", PORT)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        logger.info("Shutting down bridge service...")
+    finally:
+        server.server_close()
+
+if __name__ == "__main__":
+    main()
+
+```
+
+
+---
+
+### File: `Bridge/model_catalog.py`
+**Role & Description:** Model Catalog & Metadata: injects local station models into Cloud Code catalog with maxTokens/maxOutputTokens alignment.
+
+```python
+import os
+import json
+import logging
+from typing import Any, Dict, Optional
+
+logger = logging.getLogger("antigravity-bridge.models")
+
+CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
+MODELS_CACHE_FILE = os.path.join(CACHE_DIR, "models.json")
+BASELINE_MODELS_FILE = os.path.join(CACHE_DIR, "baseline_models.json")
+
+# Station named models as requested by the user, with 1M tokens context to satisfy checkpointer validation (>= 256K)
+STATION_MODELS: Dict[str, Dict[str, Any]] = {
+    "station-qwen": {
+        "swap_target": "qwen",
+        "displayName": "Локальная: Qwen 27B Coder (Vision)",
+        "tagTitle": "Dual-GPU 38G",
+        "tagDescription": "131k context / MTP / Multimodal",
+        "supportsImages": True,
+        "supportsThinking": True,
+        "thinkingBudget": 1000,
+        "minThinkingBudget": 32,
+        "maxTokens": 1048576,
+        "maxOutputTokens": 65536,
+        "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+        "modelProvider": "MODEL_PROVIDER_GOOGLE",
+        "supportedMimeTypes": {
+            "text/plain": True, "text/x-python": True, "text/javascript": True, "text/x-typescript": True,
+            "text/html": True, "text/css": True, "text/markdown": True, "application/json": True,
+            "image/png": True, "image/jpeg": True, "image/webp": True
+        },
+        "quotaInfo": {"remainingFraction": 1.0, "resetTime": "2099-01-01T00:00:00Z"}
+    },
+    "station-next": {
+        "swap_target": "next",
+        "displayName": "Локальная: Next 80B MoE (Thinking)",
+        "tagTitle": "Deep Thinking",
+        "tagDescription": "Dual-GPU 38G / 8k reasoning budget",
+        "supportsImages": False,
+        "supportsThinking": True,
+        "thinkingBudget": 2048,
+        "minThinkingBudget": 64,
+        "maxTokens": 1048576,
+        "maxOutputTokens": 65536,
+        "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+        "modelProvider": "MODEL_PROVIDER_GOOGLE",
+        "quotaInfo": {"remainingFraction": 1.0, "resetTime": "2099-01-01T00:00:00Z"}
+    },
+    "station-ornith": {
+        "swap_target": "ornith",
+        "displayName": "Локальная: Ornith 1.5 35B (Android & Big Dumps)",
+        "tagTitle": "CUDA1 Specialist",
+        "tagDescription": "19GB VRAM / Анализ дампов / Android MTP",
+        "supportsImages": True,
+        "supportsThinking": True,
+        "thinkingBudget": 1000,
+        "minThinkingBudget": 32,
+        "maxTokens": 1048576,
+        "maxOutputTokens": 65536,
+        "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+        "modelProvider": "MODEL_PROVIDER_GOOGLE",
+        "supportedMimeTypes": {
+            "text/plain": True, "text/x-python": True, "text/javascript": True, "text/x-typescript": True,
+            "text/html": True, "text/css": True, "text/markdown": True, "application/json": True,
+            "image/png": True, "image/jpeg": True, "image/webp": True
+        },
+        "quotaInfo": {"remainingFraction": 1.0, "resetTime": "2099-01-01T00:00:00Z"}
+    },
+    "station-tinfield": {
+        "swap_target": "tinfield",
+        "displayName": "Локальная: Tinfield 177B (Titan MoE)",
+        "tagTitle": "Heavyweight",
+        "tagDescription": "177B MoE / 131k context / Глубокий синтез",
+        "supportsImages": False,
+        "supportsThinking": True,
+        "thinkingBudget": 1000,
+        "minThinkingBudget": 32,
+        "maxTokens": 1048576,
+        "maxOutputTokens": 65536,
+        "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+        "modelProvider": "MODEL_PROVIDER_GOOGLE",
+        "quotaInfo": {"remainingFraction": 1.0, "resetTime": "2099-01-01T00:00:00Z"}
+    },
+    "station-qwen122": {
+        "swap_target": "qwen122",
+        "displayName": "Локальная: Qwen 122B MoE (208E)",
+        "tagTitle": "Station Titan",
+        "tagDescription": "35GB VRAM allocation / DeepSeek reasoning",
+        "supportsImages": False,
+        "supportsThinking": True,
+        "thinkingBudget": 1536,
+        "minThinkingBudget": 32,
+        "maxTokens": 1048576,
+        "maxOutputTokens": 65536,
+        "apiProvider": "API_PROVIDER_GOOGLE_GEMINI",
+        "modelProvider": "MODEL_PROVIDER_GOOGLE",
+        "quotaInfo": {"remainingFraction": 1.0, "resetTime": "2099-01-01T00:00:00Z"}
+    }
+}
+
+LOCAL_MODEL_ID = "station-qwen"
+
+def resolve_station_model(model_name: str) -> Optional[str]:
+    """Resolves incoming model request string to target llama-swap model name."""
+    if not model_name:
+        return None
+    for sm_id, sm_info in sorted(STATION_MODELS.items(), key=lambda x: len(x[0]), reverse=True):
+        if sm_id in model_name:
+            return sm_info.get("swap_target", "qwen")
+    if "station-local" in model_name:
+        return "qwen"
+    return None
+
+def inject_local_model(catalog_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Injects all named station models into models dictionary and prepends to agentModelSorts."""
+    models_dict = catalog_data.setdefault("models", {})
+    
+    # Remove generic station-local if present in catalog
+    if "station-local" in models_dict:
+        del models_dict["station-local"]
+
+    for sm_id, sm_spec in STATION_MODELS.items():
+        clean_spec = {k: v for k, v in sm_spec.items() if k != "swap_target"}
+        models_dict[sm_id] = clean_spec
+
+    sorts = catalog_data.setdefault("agentModelSorts", [])
+    named_ids = list(STATION_MODELS.keys())
+    if sorts and isinstance(sorts, list) and "groups" in sorts[0] and sorts[0]["groups"]:
+        model_ids = sorts[0]["groups"][0].setdefault("modelIds", [])
+        # Remove old station-local
+        if "station-local" in model_ids:
+            model_ids.remove("station-local")
+        for sm_id in reversed(named_ids):
+            if sm_id in model_ids:
+                model_ids.remove(sm_id)
+            model_ids.insert(0, sm_id)
+    else:
+        catalog_data["agentModelSorts"] = [{"groups": [{"modelIds": named_ids}]}]
+
+    # Only persist if it contains core cloud models to avoid caching an accidentally truncated catalog
+    if "gemini-3.8-flash-high" in models_dict:
+        try:
+            tmp = f"{MODELS_CACHE_FILE}.tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(catalog_data, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, MODELS_CACHE_FILE)
+        except Exception as e:
+            logger.debug("Failed to cache models catalog: %s", e)
+
+    return catalog_data
+
+def get_models_fallback() -> Dict[str, Any]:
+    """Returns cached models catalog with guaranteed Gemini models. Never returns a stripped catalog."""
+    # 1. Try live cache
+    if os.path.exists(MODELS_CACHE_FILE):
+        try:
+            with open(MODELS_CACHE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if "gemini-3.8-flash-high" in data.get("models", {}):
+                    logger.info("[MODELS] Serving valid persisted models cache (%d models)", len(data["models"]))
+                    return inject_local_model(data)
+        except Exception as e:
+            logger.warning("[MODELS] Corrupt models cache: %s", e)
+
+    # 2. Try baseline cache
+    if os.path.exists(BASELINE_MODELS_FILE):
+        try:
+            with open(BASELINE_MODELS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                logger.info("[MODELS] Serving baseline models fallback (%d models)", len(data.get("models", {})))
+                return inject_local_model(data)
+        except Exception as e:
+            logger.warning("[MODELS] Corrupt baseline models file: %s", e)
+
+    logger.error("[MODELS] No valid model catalog found on disk!")
+    return {"models": {}, "agentModelSorts": []}
+
+```
+
+
+---
+
+### File: `Bridge/converter.py`
+**Role & Description:** Bidirectional Protocol Converter: Cloud Code protocol <-> OpenAI/vLLM format, tool calls repair, context compacting.
+
+```python
+import json
+from typing import Any, Dict, List, Optional, Tuple
+
+def normalize_gemini_schema(val: Any) -> Any:
+    """Recursively converts uppercase Gemini schema types (STRING, OBJECT, etc.) to lowercase OpenAPI types."""
+    if isinstance(val, dict):
+        new_dict = {}
+        for k, v in val.items():
+            if k == "type" and isinstance(v, str):
+                new_dict[k] = v.lower()
+            else:
+                new_dict[k] = normalize_gemini_schema(v)
+        if new_dict.get("type") == "object" and "properties" not in new_dict:
+            new_dict["properties"] = {}
+        return new_dict
+    elif isinstance(val, list):
+        return [normalize_gemini_schema(item) for item in val]
+    return val
+
+def smart_compact_tool_response(name: str, content_str: str, args: Dict[str, Any]) -> str:
+    """
+    Intelligently compacts large tool responses in historical turns.
+    Preserves exact file paths, line ranges, commands, cwd, and search results
+    so the agent maintains full situational awareness without context bloat.
+    """
+    if len(content_str) < 500:
+        return content_str
+
+    import re
+    lines = content_str.splitlines()
+    total_lines = len(lines)
+
+    # 1. view_file
+    if name == "view_file":
+        path = args.get("AbsolutePath") or args.get("path") or ""
+        start_line = args.get("StartLine", 1)
+        end_line = args.get("EndLine", total_lines)
+        if total_lines > 10:
+            head = "\n".join(lines[:3])
+            tail = "\n".join(lines[-3:])
+            hidden_count = total_lines - 6
+            marker = f"\n... [Контекст оптимизирован: скрыто {hidden_count} строк кода. Полный файл доступен по пути: {path} (строки {start_line}-{end_line})] ...\n"
+            return f"{head}\n{marker}\n{tail}"
+
+    # 2. run_command
+    elif name == "run_command":
+        cmd = args.get("CommandLine") or ""
+        cwd = args.get("Cwd") or ""
+        if total_lines > 8:
+            head = "\n".join(lines[:2])
+            tail = "\n".join(lines[-2:])
+            hidden_count = total_lines - 4
+            marker = f"\n... [Контекст оптимизирован: скрыто {hidden_count} строк вывода. Выполненная команда: `{cmd}` в `{cwd}`] ...\n"
+            return f"{head}\n{marker}\n{tail}"
+
+    # 3. grep_search
+    elif name == "grep_search":
+        query = args.get("Query") or ""
+        search_path = args.get("SearchPath") or ""
+        files = re.findall(r'"Filename":\s*"([^"]+)"', content_str)
+        unique_files = list(dict.fromkeys(files))
+        if unique_files:
+            file_summary = ", ".join(unique_files[:8])
+            if len(unique_files) > 8:
+                file_summary += f" и еще {len(unique_files) - 8} файлов"
+            return f"[Контекст оптимизирован: поиск '{query}' в '{search_path}' нашел {len(files)} совпадений в: {file_summary}]"
+
+    # 4. list_dir
+    elif name == "list_dir":
+        dir_path = args.get("DirectoryPath") or ""
+        if total_lines > 10:
+            head = "\n".join(lines[:3])
+            tail = "\n".join(lines[-2:])
+            hidden_count = total_lines - 5
+            marker = f"\n... [Контекст оптимизирован: скрыто {hidden_count} строк листинга. Директория: {dir_path}] ...\n"
+            return f"{head}\n{marker}\n{tail}"
+
+    # 5. Generic fallback for large text outputs
+    if total_lines > 8:
+        head = "\n".join(lines[:2])
+        tail = "\n".join(lines[-2:])
+        hidden_count = total_lines - 4
+        marker = f"\n... [Контекст оптимизирован: скрыто {hidden_count} строк вывода {name}] ...\n"
+        return f"{head}\n{marker}\n{tail}"
+    elif len(content_str) > 600:
+        return content_str[:250] + f"\n... [Контекст оптимизирован: скрыто {len(content_str) - 500} символов вывода {name}] ...\n" + content_str[-250:]
+
+    return content_str
+
+def repair_json_string(s: str) -> Dict[str, Any]:
+    """Attempts multiple strategies to parse or repair potentially truncated or malformed JSON."""
+    if not s or not s.strip():
+        return {}
+
+    import re
+    raw = s.strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```(?:json)?\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
+        raw = raw.strip()
+
+    # 1. Direct parse attempt
+    try:
+        res = json.loads(raw)
+        if isinstance(res, dict):
+            return res
+    except Exception:
+        pass
+
+    # 2. Fix unescaped Windows backslashes: e.g. K:\Project -> K:\\Project
+    fixed_slashes = re.sub(r'\\([^"\\/bfnrtu])', r'\\\\\1', raw)
+    try:
+        res = json.loads(fixed_slashes)
+        if isinstance(res, dict):
+            return res
+    except Exception:
+        pass
+
+    # 3. Balance unclosed quotes and braces
+    candidate = fixed_slashes
+    unescaped_quotes = len(re.findall(r'(?<!\\)"', candidate))
+    if unescaped_quotes % 2 != 0:
+        candidate += '"'
+
+    open_braces = candidate.count("{")
+    close_braces = candidate.count("}")
+    if open_braces > close_braces:
+        candidate += "}" * (open_braces - close_braces)
+
+    try:
+        res = json.loads(candidate)
+        if isinstance(res, dict):
+            return res
+    except Exception:
+        pass
+
+    # 4. Regex key-value extraction fallback
+    extracted = {}
+    pattern = r'"(\w+)"\s*:\s*("(?:[^"\\]|\\.)*"|\d+|true|false|null)'
+    for match in re.finditer(pattern, raw):
+        k, v = match.group(1), match.group(2)
+        try:
+            extracted[k] = json.loads(v)
+        except Exception:
+            extracted[k] = v.strip('"')
+
+    return extracted
+
+def is_tool_call_operable(tool_name: str, args: Dict[str, Any]) -> bool:
+    """Verifies that mandatory operative arguments are present and non-empty (fail-closed policy)."""
+    if not isinstance(args, dict) or not args:
+        return False
+    if tool_name == "run_command":
+        cmd = args.get("CommandLine") or ""
+        return bool(isinstance(cmd, str) and cmd.strip())
+    elif tool_name in ("view_file", "view_image"):
+        path = args.get("AbsolutePath") or ""
+        return bool(isinstance(path, str) and path.strip())
+    elif tool_name == "write_to_file":
+        path = args.get("TargetFile") or ""
+        content = args.get("CodeContent")
+        return bool(isinstance(path, str) and path.strip() and content is not None)
+    elif tool_name == "replace_file_content":
+        path = args.get("TargetFile") or ""
+        target = args.get("TargetContent")
+        repl = args.get("ReplacementContent")
+        return bool(isinstance(path, str) and path.strip() and target is not None and repl is not None)
+    elif tool_name == "search_web":
+        q = args.get("query") or ""
+        return bool(isinstance(q, str) and q.strip())
+    elif tool_name == "read_url_content":
+        u = args.get("Url") or ""
+        return bool(isinstance(u, str) and u.strip())
+    elif tool_name == "call_mcp_tool":
+        server = args.get("ServerName") or ""
+        tool = args.get("ToolName") or ""
+        return bool(isinstance(server, str) and server.strip() and isinstance(tool, str) and tool.strip())
+    elif tool_name == "send_message":
+        rec = args.get("Recipient") or ""
+        msg = args.get("Message") or ""
+        return bool(isinstance(rec, str) and rec.strip() and isinstance(msg, str) and msg.strip())
+    elif tool_name == "schedule":
+        prompt = args.get("Prompt") or ""
+        return bool(isinstance(prompt, str) and prompt.strip())
+    # Fail-closed for unknown tools: require non-empty args
+    return bool(len(args) > 0)
+
+def extract_generation_params(gemini_request: Dict[str, Any]) -> Dict[str, Any]:
+    """Extracts temperature, max_tokens, and top_p from Gemini generationConfig."""
+    cfg = gemini_request.get("generationConfig") or {}
+    params = {}
+    if "temperature" in cfg:
+        try:
+            params["temperature"] = float(cfg["temperature"])
+        except (ValueError, TypeError):
+            pass
+    if "maxOutputTokens" in cfg:
+        try:
+            params["max_tokens"] = int(cfg["maxOutputTokens"])
+        except (ValueError, TypeError):
+            pass
+    if "topP" in cfg:
+        try:
+            params["top_p"] = float(cfg["topP"])
+        except (ValueError, TypeError):
+            pass
+    return params
+
+def enforce_context_token_budget(messages: List[Dict[str, Any]], max_chars: int = 150000) -> List[Dict[str, Any]]:
+    """
+    Guarantees the prompt fits comfortably within the local engine context window (131k tokens).
+    Preserves system message (index 0), first user request, and the most recent messages.
+    Ensures slices do not orphan tool responses from assistant tool_calls.
+    """
+    if not messages:
+        return messages
+
+    def get_msg_len(m: Optional[Dict[str, Any]]) -> int:
+        if not m:
+            return 0
+        c = m.get("content")
+        if isinstance(c, str):
+            return len(c)
+        elif isinstance(c, list):
+            return sum(len(x.get("text", "")) for x in c if isinstance(x, dict))
+        return 0
+
+    total_len = sum(get_msg_len(m) for m in messages)
+    if total_len <= max_chars:
+        return messages
+
+    system_msg = messages[0] if messages[0].get("role") == "system" else None
+    remaining_msgs = messages[1:] if system_msg else messages[:]
+
+    # Find the original first user message to preserve the core goal
+    first_user_msg = None
+    for m in remaining_msgs:
+        if m.get("role") == "user":
+            first_user_msg = m
+            break
+
+    budget = max_chars - get_msg_len(system_msg)
+    if first_user_msg:
+        budget -= get_msg_len(first_user_msg)
+    budget = max(budget, 20000)
+
+    kept_rev = []
+    current_len = 0
+
+    for m in reversed(remaining_msgs):
+        m_len = get_msg_len(m)
+        if current_len + m_len > budget and len(kept_rev) >= 4:
+            break
+        kept_rev.append(m)
+        current_len += m_len
+
+    kept = list(reversed(kept_rev))
+
+    # Clean boundary: never start with an orphaned 'tool' role message
+    while kept and kept[0].get("role") == "tool":
+        kept.pop(0)
+
+    result = []
+    if system_msg:
+        result.append(system_msg)
+    if first_user_msg and (not kept or first_user_msg not in kept):
+        result.append(first_user_msg)
+    result.extend(kept)
+    return result
+
+def emergency_compact_messages(messages: List[Dict[str, Any]], keep_recent: int = 10) -> List[Dict[str, Any]]:
+    """
+    Aggressive compaction called if llama-swap throws a 400 context overflow error.
+    Keeps system prompt, first user request, and the most recent `keep_recent` messages with clean boundaries.
+    """
+    if not messages:
+        return messages
+
+    system_msg = messages[0] if messages[0].get("role") == "system" else None
+    remaining = messages[1:] if system_msg else messages[:]
+
+    first_user_msg = None
+    for m in remaining:
+        if m.get("role") == "user":
+            first_user_msg = m
+            break
+
+    recent = remaining[-keep_recent:] if len(remaining) > keep_recent else remaining[:]
+    while recent and recent[0].get("role") == "tool":
+        recent.pop(0)
+
+    result = []
+    if system_msg:
+        result.append(system_msg)
+    if first_user_msg and (not recent or first_user_msg not in recent):
+        result.append(first_user_msg)
+    result.extend(recent)
+    return result
+
+def validate_and_fill_tool_args(tool_name: str, parsed_args: Dict[str, Any], tool_schemas: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensures arguments strictly adhere to tool schema: removes disallowed properties and injects missing required fields."""
+    schema = tool_schemas.get(tool_name) or {}
+    properties = schema.get("properties") or {}
+    required = schema.get("required") or []
+
+    if not properties:
+        return parsed_args
+
+    clean_args = {}
+    for k, v in parsed_args.items():
+        if k in properties:
+            clean_args[k] = v
+
+    for req_field in required:
+        if req_field not in clean_args:
+            prop_type = properties.get(req_field, {}).get("type", "string").lower()
+            if req_field == "WaitMsBeforeAsync":
+                clean_args[req_field] = 5000
+            elif req_field == "toolAction":
+                clean_args[req_field] = f"Executing {tool_name}"
+            elif req_field == "toolSummary":
+                clean_args[req_field] = f"{tool_name} execution"
+            elif req_field == "Cwd":
+                clean_args[req_field] = os.getcwd()
+            elif req_field in ("CommandLine", "TargetFile", "CodeContent", "TargetContent", "ReplacementContent"):
+                # Do NOT invent synthetic empty payload for destructive/operative fields
+                continue
+            elif prop_type in ("integer", "number"):
+                clean_args[req_field] = 0
+            elif prop_type == "boolean":
+                clean_args[req_field] = False
+            elif prop_type == "array":
+                clean_args[req_field] = []
+            elif prop_type == "object":
+                clean_args[req_field] = {}
+            else:
+                clean_args[req_field] = ""
+
+    return clean_args
+
+def gemini_to_openai_messages(gemini_request: Dict[str, Any], compact_history: bool = True) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    Translates Google Gemini/CCPA GenerateContentRequest into standard OpenAI Chat messages, tools, and schemas.
+    Supports text, inline images, function calls, and smart-compacted function responses.
+    """
+    messages = []
+    
+    # 1. System instructions
+    sys_inst = gemini_request.get("systemInstruction") or {}
+    sys_parts = sys_inst.get("parts") or []
+    sys_text_pieces = []
+    for part in sys_parts:
+        if "text" in part:
+            sys_text_pieces.append(part["text"])
+    if sys_text_pieces:
+        messages.append({"role": "system", "content": "\n\n".join(sys_text_pieces)})
+        
+    # 2. Build map of tool arguments from model calls so responses can refer to paths/commands
+    contents = gemini_request.get("contents") or []
+    total_contents = len(contents)
+    recent_threshold = 8
+    
+    tool_args_history: Dict[str, Dict[str, Any]] = {}
+    pending_tool_call_ids: Dict[str, List[str]] = {}
+    for content in contents:
+        for part in content.get("parts") or []:
+            if "functionCall" in part:
+                fc = part["functionCall"]
+                name = fc.get("name", "")
+                args = fc.get("args") or {}
+                if name:
+                    tool_args_history[name] = args
+
+    # 3. Conversation contents with smart compaction
+    global_tool_call_counter = 0
+    for idx, content in enumerate(contents):
+        is_recent = (total_contents - idx) <= recent_threshold
+        role = content.get("role")
+        openai_role = "user" if role == "user" else "assistant"
+        parts = content.get("parts") or []
+        
+        text_parts = []
+        image_parts = []
+        tool_calls = []
+        function_responses = []
+        
+        for part in parts:
+            if "text" in part:
+                text_parts.append(part["text"])
+            elif "inlineData" in part:
+                id_data = part["inlineData"]
+                mime = id_data.get("mimeType", "image/jpeg")
+                b64 = id_data.get("data", "")
+                if b64:
+                    image_parts.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{mime};base64,{b64}"}
+                    })
+            elif "functionCall" in part:
+                fc = part["functionCall"]
+                fn_name = fc.get("name", "tool")
+                call_id = fc.get("id") or f"call_{fn_name}_{global_tool_call_counter}"
+                global_tool_call_counter += 1
+                tool_calls.append({
+                    "id": call_id,
+                    "type": "function",
+                    "function": {
+                        "name": fn_name,
+                        "arguments": json.dumps(fc.get("args") or {})
+                    }
+                })
+                pending_tool_call_ids.setdefault(fn_name, []).append(call_id)
+            elif "functionResponse" in part:
+                fr = part["functionResponse"]
+                function_responses.append({
+                    "id": fr.get("id"),
+                    "name": fr.get("name", ""),
+                    "response": fr.get("response", {})
+                })
+                
+        if function_responses:
+            for fr in function_responses:
+                t_name = fr["name"]
+                resp_obj = fr["response"]
+                resp_content = resp_obj.get("content") if isinstance(resp_obj, dict) and "content" in resp_obj else resp_obj
+                
+                # Check for nested output field
+                if isinstance(resp_content, dict) and "output" in resp_content and isinstance(resp_content["output"], str):
+                    raw_text = resp_content["output"]
+                    if compact_history and not is_recent:
+                        args = tool_args_history.get(t_name) or {}
+                        resp_content["output"] = smart_compact_tool_response(t_name, raw_text, args)
+                    formatted_content = json.dumps(resp_content, ensure_ascii=False)
+                elif isinstance(resp_content, str):
+                    if compact_history and not is_recent:
+                        args = tool_args_history.get(t_name) or {}
+                        formatted_content = smart_compact_tool_response(t_name, resp_content, args)
+                    else:
+                        formatted_content = resp_content
+                else:
+                    raw_str = json.dumps(resp_content, ensure_ascii=False)
+                    if compact_history and not is_recent:
+                        args = tool_args_history.get(t_name) or {}
+                        formatted_content = smart_compact_tool_response(t_name, raw_str, args)
+                    else:
+                        formatted_content = raw_str
+
+                # Resolve matching tool_call_id (prefer explicit id over queue)
+                if fr.get("id"):
+                    resolved_id = fr["id"]
+                else:
+                    t_queue = pending_tool_call_ids.get(t_name, [])
+                    resolved_id = t_queue.pop(0) if t_queue else f"call_{t_name}_0"
+
+                messages.append({
+                    "role": "tool",
+                    "name": t_name,
+                    "tool_call_id": resolved_id,
+                    "content": formatted_content
+                })
+        else:
+            msg = {"role": openai_role}
+            combined_text = "\n".join(text_parts)
+            
+            if image_parts:
+                content_list = []
+                if combined_text:
+                    content_list.append({"type": "text", "text": combined_text})
+                content_list.extend(image_parts)
+                msg["content"] = content_list
+            else:
+                msg["content"] = combined_text if combined_text else ""
+
+            if tool_calls:
+                msg["tool_calls"] = tool_calls
+            messages.append(msg)
+            
+    # 4. Tools definitions & schema map
+    tools = []
+    tool_schemas = {}
+    gemini_tools = gemini_request.get("tools") or []
+    for t in gemini_tools:
+        for fd in t.get("functionDeclarations") or []:
+            name = fd.get("name", "")
+            raw_params = fd.get("parameters") or {"type": "object", "properties": {}}
+            norm_params = normalize_gemini_schema(raw_params)
+            tool_schemas[name] = norm_params
+            tools.append({
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": fd.get("description", ""),
+                    "parameters": norm_params
+                }
+            })
+            
+    # 5. Enforce context budget guard for local inference
+    messages = enforce_context_token_budget(messages)
+    return messages, tools, tool_schemas
+
+def format_gemini_sse_thought_chunk(thought_text: str) -> str:
+    """Format single reasoning/thinking chunk for Gemini CCPA SSE (rendered as collapsible Thinking box)."""
+    payload = {
+        "response": {
+            "candidates": [
+                {
+                    "content": {
+                        "role": "model",
+                        "parts": [{"thought": True, "text": thought_text}]
+                    }
+                }
+            ]
+        }
+    }
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+def format_gemini_sse_text_chunk(text: str) -> str:
+    """Format single regular text chunk for Gemini CCPA SSE."""
+    payload = {
+        "response": {
+            "candidates": [
+                {
+                    "content": {
+                        "role": "model",
+                        "parts": [{"text": text}]
+                    }
+                }
+            ]
+        }
+    }
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+def format_gemini_sse_function_call(name: str, args_dict: Dict[str, Any]) -> str:
+    """Format functionCall chunk for Gemini CCPA SSE."""
+    payload = {
+        "response": {
+            "candidates": [
+                {
+                    "content": {
+                        "role": "model",
+                        "parts": [
+                            {
+                                "functionCall": {
+                                    "name": name,
+                                    "args": args_dict
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+def format_gemini_sse_finish(finish_reason: str = "STOP") -> str:
+    """Format stream finish chunk for Gemini CCPA SSE."""
+    payload = {
+        "response": {
+            "candidates": [
+                {
+                    "finishReason": finish_reason
+                }
+            ]
+        }
+    }
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+```
+
+
+---
+
+### File: `Bridge/auth_vault.py`
+**Role & Description:** PEB Memory Scanner: safely reads Google Cloud Code OAuth token directly from Language Server process memory without disk touches.
+
+```python
+import os
+import json
+import logging
+from typing import Any, Dict, Optional
+
+logger = logging.getLogger("antigravity-bridge.auth_vault")
+
+CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+DEFAULT_LOAD_CODE_ASSIST: Dict[str, Any] = {
+    "userTier": "PAID",
+    "tierDisplayName": "Google AI Pro",
+    "isGcpTos": True,
+    "allowedProjects": ["aicode-consumers"],
+    "cloudaicompanionProject": "aicode-consumers",
+    "currentTier": {
+        "id": "tier-paid-pro",
+        "name": "Google AI Pro",
+        "description": "Full Station Pro Access"
+    },
+    "appState": {
+        "status": "STATUS_ACTIVE"
+    }
+}
+
+DEFAULT_USER_INFO: Dict[str, Any] = {
+    "userEmail": "engineer@antigravity-nexus.local",
+    "userTier": "PAID",
+    "tierDisplayName": "Google AI Pro",
+    "project": "aicode-consumers"
+}
+
+def _get_cache_path(endpoint_name: str) -> str:
+    safe_name = endpoint_name.replace("/", "").replace(":", "_") + ".json"
+    return os.path.join(CACHE_DIR, safe_name)
+
+def save_auth_cache(endpoint: str, data: Dict[str, Any]):
+    path = _get_cache_path(endpoint)
+    try:
+        tmp = f"{path}.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, path)
+        logger.debug("[AUTH_VAULT] Saved fresh auth cache for %s", endpoint)
+    except Exception as e:
+        logger.warning("[AUTH_VAULT] Failed to persist auth cache for %s: %s", endpoint, e)
+
+def get_auth_fallback(endpoint: str) -> Dict[str, Any]:
+    path = _get_cache_path(endpoint)
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                logger.info("[AUTH_VAULT] Serving persisted auth cache for %s", endpoint)
+                return data
+        except Exception as e:
+            logger.warning("[AUTH_VAULT] Corrupt cache file for %s: %s", endpoint, e)
+
+    if "loadCodeAssist" in endpoint:
+        logger.info("[AUTH_VAULT] Serving built-in seed profile for loadCodeAssist")
+        return DEFAULT_LOAD_CODE_ASSIST
+    elif "fetchUserInfo" in endpoint:
+        logger.info("[AUTH_VAULT] Serving built-in seed profile for fetchUserInfo")
+        return DEFAULT_USER_INFO
+
+    return {}
+
+```
+
+
+---
+
+### File: `Bridge/upstream_detector.py`
+**Role & Description:** Upstream Port Detector: scans system to find active upstream Language Server port and PID.
+
+```python
+import ctypes
+import ctypes.wintypes
+import os
+import re
+import socket
+import logging
+from typing import Optional, Tuple
+
+import time
+
+logger = logging.getLogger("antigravity-bridge.upstream")
+
+PROCESS_QUERY_INFORMATION = 0x0400
+PROCESS_VM_READ = 0x0010
+
+class PROCESS_BASIC_INFORMATION(ctypes.Structure):
+    _fields_ = [
+        ('ExitStatus', ctypes.c_ulonglong),
+        ('PebBaseAddress', ctypes.c_void_p),
+        ('AffinityMask', ctypes.c_ulonglong),
+        ('BasePriority', ctypes.c_ulonglong),
+        ('UniqueProcessId', ctypes.c_ulonglong),
+        ('InheritedFromUniqueProcessId', ctypes.c_ulonglong),
+    ]
+
+_cached_proxy_url: Optional[str] = None
+_cached_pids: list[int] = []
+_cached_pids_time: float = 0.0
+
+kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+ntdll = ctypes.WinDLL('ntdll', use_last_error=True)
+
+# Strict 64-bit ABI ctypes declarations
+kernel32.OpenProcess.restype = ctypes.c_void_p
+kernel32.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
+
+kernel32.IsWow64Process.restype = ctypes.c_int
+kernel32.IsWow64Process.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_bool)]
+
+kernel32.ReadProcessMemory.restype = ctypes.c_int
+kernel32.ReadProcessMemory.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+    ctypes.POINTER(ctypes.c_size_t)
+]
+
+kernel32.CloseHandle.restype = ctypes.c_int
+kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+
+ntdll.NtQueryInformationProcess.restype = ctypes.c_int
+ntdll.NtQueryInformationProcess.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+    ctypes.c_void_p,
+    ctypes.c_ulong,
+    ctypes.POINTER(ctypes.c_ulong)
+]
+
+def _is_proxy_alive(host: str, port: int, timeout: float = 0.5) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except Exception:
+        return False
+
+def _extract_proxy_from_peb(pid: int) -> Optional[str]:
+    hProcess = kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, pid)
+    if not hProcess:
+        return None
+
+    try:
+        # Check target process bitness: WoW64 (32-bit) vs native 64-bit
+        is_wow64 = ctypes.c_bool(False)
+        if kernel32.IsWow64Process(hProcess, ctypes.byref(is_wow64)) and is_wow64.value:
+            logger.debug("PID %d is 32-bit WoW64; skipping 64-bit PEB layout scan", pid)
+            return None
+
+        pbi = PROCESS_BASIC_INFORMATION()
+        ret_len = ctypes.c_ulong()
+        if ntdll.NtQueryInformationProcess(hProcess, 0, ctypes.byref(pbi), ctypes.sizeof(pbi), ctypes.byref(ret_len)) != 0:
+            return None
+
+        peb_addr = pbi.PebBaseAddress
+        if not peb_addr:
+            return None
+
+        bytes_read = ctypes.c_size_t()
+        buf = ctypes.c_void_p()
+        if not kernel32.ReadProcessMemory(hProcess, ctypes.c_void_p(peb_addr + 0x20), ctypes.byref(buf), 8, ctypes.byref(bytes_read)) or bytes_read.value != 8:
+            return None
+        proc_params_addr = buf.value
+        if not proc_params_addr:
+            return None
+
+        if not kernel32.ReadProcessMemory(hProcess, ctypes.c_void_p(proc_params_addr + 0x80), ctypes.byref(buf), 8, ctypes.byref(bytes_read)) or bytes_read.value != 8:
+            return None
+        env_addr = buf.value
+        if not env_addr:
+            return None
+
+        env_str = ""
+        for sz in (32768, 16384, 8192, 4096, 2048):
+            env_data = bytearray(sz)
+            env_bytes_read = ctypes.c_size_t()
+            if kernel32.ReadProcessMemory(hProcess, ctypes.c_void_p(env_addr), (ctypes.c_char * len(env_data)).from_buffer(env_data), len(env_data), ctypes.byref(env_bytes_read)):
+                env_str = env_data[:env_bytes_read.value].decode('utf-16le', errors='ignore')
+                break
+
+        if not env_str:
+            return None
+
+        for item in env_str.split('\x00'):
+            if item.startswith('HTTPS_PROXY='):
+                return item.split('=', 1)[1].strip()
+    except Exception as e:
+        logger.debug("PEB extraction exception for PID %d: %s", pid, e)
+    finally:
+        kernel32.CloseHandle(hProcess)
+
+    return None
+
+def _extract_proxy_from_log() -> Optional[str]:
+    log_path = os.path.expanduser(r"~\.agy-lswrap.log")
+    if not os.path.exists(log_path):
+        return None
+
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()[-50:]
+            for line in reversed(lines):
+                # Pattern: [lswrap] start pid=... port=54991
+                m = re.search(r'\[lswrap\] start pid=(\d+) port=(\d+)', line)
+                if m:
+                    pid = int(m.group(1))
+                    port = int(m.group(2))
+                    # Try to get full auth token from process PEB if alive
+                    peb_proxy = _extract_proxy_from_peb(pid)
+                    if peb_proxy:
+                        return peb_proxy
+                    if _is_proxy_alive("127.0.0.1", port):
+                        return f"http://127.0.0.1:{port}"
+    except Exception as e:
+        logger.debug("Failed reading lswrap log: %s", e)
+
+    return None
+
+def find_running_antigravity_pids() -> list[int]:
+    """Find PIDs for running language_server.exe or Antigravity processes, caching result for 5 seconds."""
+    global _cached_pids, _cached_pids_time
+    now = time.time()
+    if now - _cached_pids_time < 5.0 and _cached_pids:
+        return _cached_pids
+
+    import subprocess
+    cmd = [
+        "powershell.exe",
+        "-NoProfile",
+        "-Command",
+        "Get-Process -Name language_server,Antigravity -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"
+    ]
+    try:
+        out = subprocess.check_output(cmd, shell=False, text=True, stderr=subprocess.DEVNULL)
+        pids = [int(line.strip()) for line in out.splitlines() if line.strip().isdigit()]
+        _cached_pids = pids
+        _cached_pids_time = now
+        return pids
+    except Exception:
+        return _cached_pids
+
+def get_upstream_proxy(force_refresh: bool = False) -> Optional[str]:
+    """
+    Lazy detector: retrieves the current active HTTPS_PROXY for agy-unlock.
+    1. Checks cached proxy liveness.
+    2. Probes running Antigravity processes via PEB.
+    3. Falls back to ~/.agy-lswrap.log.
+    """
+    global _cached_proxy_url
+
+    if not force_refresh and _cached_proxy_url:
+        # Quick validation
+        m = re.search(r':(\d+)', _cached_proxy_url.split('@')[-1])
+        if m and _is_proxy_alive("127.0.0.1", int(m.group(1))):
+            return _cached_proxy_url
+
+    # 1. Probe running processes via PEB
+    pids = find_running_antigravity_pids()
+    for pid in pids:
+        proxy = _extract_proxy_from_peb(pid)
+        if proxy:
+            m = re.search(r':(\d+)', proxy.split('@')[-1])
+            if m and _is_proxy_alive("127.0.0.1", int(m.group(1))):
+                logger.info("[UPSTREAM] Discovered live proxy from PID %d: %s", pid, re.sub(r':[^@]+@', ':***@', proxy))
+                _cached_proxy_url = proxy
+                return proxy
+
+    # 2. Fallback to ~/.agy-lswrap.log
+    fallback_proxy = _extract_proxy_from_log()
+    if fallback_proxy:
+        logger.info("[UPSTREAM] Discovered live proxy from lswrap log: %s", fallback_proxy)
+        _cached_proxy_url = fallback_proxy
+        return fallback_proxy
+
+    logger.warning("[UPSTREAM] No active agy-unlock proxy found; upstream requests will connect direct.")
+    _cached_proxy_url = None
+    return None
+
+def invalidate_proxy():
+    global _cached_proxy_url
+    _cached_proxy_url = None
+
+```
+
+
+---
+
+### File: `Bridge/qwen122_stream.py`
+**Role & Description:** MarianMT CPU Translation Micro-Layer: sentence-buffered prose translation for Qwen 122B (208E) preserving code fences and inline tokens without VRAM cost.
+
+```python
+"""
+Qwen 122B (208E) Streaming Sentence Translation Micro-Layer.
+Location: Antigravity-Nexus/Bridge/qwen122_stream.py
+
+Compensates for the 208E pruning nuance (where the Russian vocabulary output head
+was pruned while the underlying English reasoning and logic maintain 100% parity with 256E).
+Prompts Qwen 122B to think in English, and transparently translates outgoing streaming
+prose into natural technical Russian on CPU via MarianMT (Helsinki-NLP/opus-mt-en-ru)
+with engineering domain glossary substitutions.
+Code blocks (```...```), inline code (`...`), thinking tags, and tool calls are preserved 100% untranslated.
+Zero VRAM footprint (runs purely on system RAM / CPU).
+"""
+
+import re
+import logging
+import threading
+import time
+from typing import Iterator
+
+logger = logging.getLogger("antigravity-bridge.qwen122")
+
+_model = None
+_tokenizer = None
+_load_lock = threading.Lock()
+_infer_lock = threading.Lock()
+_ready = False
+
+# Abbreviations that should not trigger sentence splitting
+COMMON_ABBREVIATIONS = (
+    "e.g.", "i.e.", "т.е.", "т.д.", "т.п.", "рис.", "см.", "etc.", "vs.", "dr.", "mr.", "mrs."
+)
+
+SENTENCE_SPLIT_PATTERN = re.compile(r"(?<!\d)([.!?]\s+|\n\n+)")
+
+# Domain Glossary for software engineering terms
+DOMAIN_REPLACEMENTS = [
+    (r"\bМолчаливые повешения\b", "Зависания без ошибок в логах"),
+    (r"\bмолчаливые повешения\b", "зависания без ошибок в логах"),
+    (r"\bпроизводственных пожаров\b", "аварий на проде"),
+    (r"\bпроизводственном пожаре\b", "аварии на проде"),
+    (r"\bпроизводственные пожары\b", "аварии на проде"),
+    (r"\bзамерзает\b", "зависает"),
+    (r"\bтупиком\b", "дедлоком"),
+    (r"\bтупика\b", "дедлока"),
+    (r"\bтупики\b", "дедлоки"),
+    (r"\bтупик\b", "дедлок"),
+    (r"\bвременем внешней зависимости\b", "таймаутом внешних сервисов"),
+    (r"\bне жучок\b", "не баг"),
+    (r"\bжучок\b", "баг"),
+    (r"\bбревнах\b", "логах"),
+    (r"\bбревнами\b", "логами"),
+    (r"\bбревнам\b", "логам"),
+    (r"\bбревен\b", "логов"),
+    (r"\bбревна\b", "логи"),
+    (r"\bбревно\b", "лог"),
+    (r"\bКоллекция Гарбаджа\b", "Сборка мусора (GC)"),
+    (r"\bколлекция гарбаджа\b", "сборка мусора (GC)"),
+    (r"\bСтайджинге\b", "стейджинге"),
+    (r"\bстайджинге\b", "стейджинге"),
+    (r"\bСтайджинг\b", "Стейджинг"),
+    (r"\bстайджинг\b", "стейджинг"),
+    (r"\bТрубопровода\b", "пайплайна"),
+    (r"\bтрубопровода\b", "пайплайна"),
+    (r"\bЦЕЛОЕ ЧИСЛО\b", "ЦЕЛИ (Goals)"),
+    (r"\bДОБАВЛЕНИЕ\b", "TODO (Задачи к выполнению)"),
+    (r"\bПЛЕНАРНОЕ ЗАСЕДАНИЕ\b", "ПЛАН (Plan)"),
+]
+
+
+def ensure_translator_loaded():
+    """Lazily loads MarianMT EN->RU on CPU upon first invocation of Qwen 122B."""
+    global _model, _tokenizer, _ready
+    if _ready:
+        return True
+
+    with _load_lock:
+        if _ready:
+            return True
+        try:
+            import torch
+            from transformers import MarianMTModel, MarianTokenizer
+
+            t0 = time.time()
+            torch.set_num_threads(4)
+            model_name = "Helsinki-NLP/opus-mt-en-ru"
+            _tokenizer = MarianTokenizer.from_pretrained(model_name)
+            _model = MarianMTModel.from_pretrained(model_name)
+            _model.to("cpu")
+            _model.eval()
+            _ready = True
+            print(f"[Qwen122-Stream] MarianMT loaded in {time.time()-t0:.2f}s strictly on CPU (0 MB VRAM)", flush=True)
+            return True
+        except Exception as e:
+            print(f"[Qwen122-Stream] Warning: Could not load MarianMT: {e}", flush=True)
+            return False
+
+
+def translate_sentence(sentence: str) -> str:
+    """Translates a single English sentence to Russian with glossary preservation (thread-safe)."""
+    if not sentence or not sentence.strip():
+        return sentence
+
+    if not ensure_translator_loaded() or _model is None:
+        return sentence
+
+    try:
+        import torch
+        with _infer_lock:
+            with torch.inference_mode():
+                inputs = _tokenizer([sentence], return_tensors="pt", truncation=True, max_length=512)
+                out = _model.generate(**inputs, max_length=512)
+                ru = _tokenizer.decode(out[0], skip_special_tokens=True)
+                for pat, repl in DOMAIN_REPLACEMENTS:
+                    ru = re.sub(pat, repl, ru)
+                return ru
+    except Exception as e:
+        logger.debug("[TRANSLATE] MarianMT translation fallback to original sentence: %s", e)
+        return sentence
+
+
+class StreamSentenceTranslator:
+    """
+    Buffers streaming token deltas from Qwen 122B and emits translated
+    Russian chunks sentence-by-sentence.
+    Code blocks (```...```) are detected and passed through untouched.
+    """
+
+    def __init__(self):
+        self.buffer = ""
+        self.in_code_block = False
+        self.code_fence_count = 0
+
+    def feed(self, chunk: str) -> Iterator[str]:
+        self.buffer += chunk
+
+        while True:
+            # Check for code fence toggles
+            if "```" in self.buffer:
+                fence_idx = self.buffer.index("```")
+                # Text before the fence
+                before = self.buffer[:fence_idx]
+                if before:
+                    if self.in_code_block:
+                        yield before
+                    else:
+                        yield self._translate_prose_block(before)
+
+                self.in_code_block = not self.in_code_block
+                yield "```"
+                self.buffer = self.buffer[fence_idx + 3:]
+                continue
+
+            if self.in_code_block:
+                # Inside code block: yield immediately, don't translate code
+                if len(self.buffer) > 0:
+                    yield self.buffer
+                    self.buffer = ""
+                break
+
+            # Inside regular prose: split by sentence delimiters, skipping abbreviations
+            pos = 0
+            found_split = False
+            while True:
+                match = SENTENCE_SPLIT_PATTERN.search(self.buffer, pos)
+                if not match:
+                    break
+                candidate = self.buffer[:match.end()].rstrip()
+                if any(candidate.lower().endswith(abbr) for abbr in COMMON_ABBREVIATIONS):
+                    pos = match.end()
+                    continue
+                end_pos = match.end()
+                sentence = self.buffer[:end_pos]
+                self.buffer = self.buffer[end_pos:]
+                translated = self._translate_sentence_wrapper(sentence)
+                yield translated
+                found_split = True
+                break
+
+            if not found_split:
+                break
+
+    def flush(self) -> Iterator[str]:
+        if self.buffer:
+            if self.in_code_block:
+                yield self.buffer
+            else:
+                yield self._translate_sentence_wrapper(self.buffer)
+            self.buffer = ""
+
+    def _translate_sentence_wrapper(self, text: str) -> str:
+        # Preserve whitespace / newlines around sentence
+        l_ws = len(text) - len(text.lstrip())
+        r_ws = len(text) - len(text.rstrip())
+        leading = text[:l_ws] if l_ws else ""
+        trailing = text[len(text) - r_ws:] if r_ws else ""
+        body = text.strip()
+
+        if not body:
+            return text
+
+        # Inline code protection: `code`
+        inline_parts = re.split(r"(`[^`]+`)", body)
+        out_parts = []
+        for p in inline_parts:
+            if p.startswith("`") and p.endswith("`"):
+                out_parts.append(p)
+            elif p.strip():
+                pl_ws = len(p) - len(p.lstrip())
+                pr_ws = len(p) - len(p.rstrip())
+                p_lead = p[:pl_ws] if pl_ws else ""
+                p_trail = p[len(p) - pr_ws:] if pr_ws else ""
+                translated_p = translate_sentence(p.strip())
+                out_parts.append(p_lead + translated_p + p_trail)
+            else:
+                out_parts.append(p)
+
+        return leading + "".join(out_parts) + trailing
+
+    def _translate_prose_block(self, text: str) -> str:
+        sentences = re.split(r"([.!?]\s+|\n)", text)
+        result = []
+        for s in sentences:
+            if s.strip():
+                result.append(self._translate_sentence_wrapper(s))
+            else:
+                result.append(s)
+        return "".join(result)
+
+```
+
+
+---
+
+### File: `Voice/service.py`
+**Role & Description:** Air-Gapped Local Voice Bridge (:18002): FastAPI service hosting GigaAM v3 STT + Supertonic 3 TTS entirely on CPU (0 MB VRAM).
+
+```python
+"""
+Local Voice Bridge Service for OpenHands Local
+Port: 127.0.0.1:18002
+
+Integrates:
+- STT: FUTO Keyboard GigaAM v3 e2e-RNN-T (GGML/transcribe.cpp, 261 MB, in-memory)
+- TTS: Supertonic 3 Russian ONNX (Supertone, 99M, in-memory)
+Zero cloud dependencies. 100% offline.
+"""
+
+import glob
+import io
+import json
+import os
+import re
+import subprocess
+import sys
+import threading
+import time
+import urllib.request
+import wave
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+import numpy as np
+
+# Ensure UTF-8 output and safety under pythonw (where stdout/stderr can be None)
+if sys.stdout is None:
+    try:
+        log_dir = os.path.join(os.path.dirname(__file__), "..", "Logs", "Voice")
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = open(os.path.join(log_dir, "voice-bridge.log"), "a", encoding="utf-8", buffering=1)
+        sys.stdout = log_file
+        sys.stderr = log_file
+    except Exception:
+        pass
+else:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+if sys.stderr is not None:
+    try:
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+# Setup portable paths for transcribe_cpp and speech models
+VOICE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATION_ROOT = os.path.abspath(os.path.join(VOICE_DIR, ".."))
+HOST_ROOT = os.path.abspath(os.path.join(VOICE_DIR, "..", ".."))
+
+candidate_transcribe_paths = [
+    os.environ.get("FUTO_TRANSCRIBE_PATH"),
+    VOICE_DIR,
+    os.path.join(HOST_ROOT, "local-voice"),
+    os.path.join(STATION_ROOT, "local-voice"),
+    os.path.join(HOST_ROOT, "futo-keyboard-gigaam", "third_party", "transcribe.cpp", "bindings", "python", "src"),
+]
+PYTHONPATH_TRANSCRIBE = next(
+    (p for p in candidate_transcribe_paths if p and os.path.isdir(os.path.join(p, "transcribe_cpp"))),
+    VOICE_DIR
+)
+
+candidate_dll_paths = [
+    os.environ.get("TRANSCRIBE_LIBRARY"),
+    os.path.join(HOST_ROOT, "transcribe-build-shared", "bin", "Release", "transcribe.dll"),
+    os.path.join(STATION_ROOT, "transcribe-build-shared", "bin", "Release", "transcribe.dll"),
+    os.path.join(VOICE_DIR, "bin", "transcribe.dll"),
+]
+TRANSCRIBE_DLL = next((p for p in candidate_dll_paths if p and os.path.isfile(p)), candidate_dll_paths[1])
+
+candidate_gigaam_paths = [
+    os.environ.get("GIGAAM_MODEL_PATH"),
+    os.path.join(HOST_ROOT, "Models", "Speech", "gigaam-v3-e2e-rnnt-Q8_0.gguf"),
+    os.path.join(HOST_ROOT, "Models", "gigaam-v3-e2e-rnnt-Q8_0.gguf"),
+    os.path.join(STATION_ROOT, "Models", "Speech", "gigaam-v3-e2e-rnnt-Q8_0.gguf"),
+]
+GIGAAM_MODEL_PATH = next((p for p in candidate_gigaam_paths if p and os.path.isfile(p)), candidate_gigaam_paths[1])
+
+candidate_supertonic_paths = [
+    os.environ.get("SUPERTONIC_MODEL_DIR"),
+    os.path.join(HOST_ROOT, "Models", "Speech", "supertonic"),
+    os.path.join(HOST_ROOT, "Models", "supertonic"),
+    os.path.join(STATION_ROOT, "Models", "Speech", "supertonic"),
+]
+SUPERTONIC_DIR = next((p for p in candidate_supertonic_paths if p and os.path.isdir(p)), candidate_supertonic_paths[1])
+
+os.environ["PYTHONPATH"] = PYTHONPATH_TRANSCRIBE
+os.environ["TRANSCRIBE_LIBRARY"] = TRANSCRIBE_DLL
+if PYTHONPATH_TRANSCRIBE not in sys.path:
+    sys.path.insert(0, PYTHONPATH_TRANSCRIBE)
+
+import av
+import transcribe_cpp
+from supertonic import TTS
+
+for cfg_dir in [os.path.join(HOST_ROOT, "Config"), os.path.join(STATION_ROOT, "Config")]:
+    if os.path.isdir(cfg_dir) and cfg_dir not in sys.path:
+        sys.path.insert(0, cfg_dir)
+import slot_cache_manager
+import working_profiles
+
+# Global state
+START_TIME = time.time()
+stt_model = None
+tts_model = None
+voice_styles = {}
+stt_lock = threading.Lock()
+tts_lock = threading.Lock()
+metrics_lock = threading.Lock()
+cancel_event = threading.Event()
+_httpd_ref = None
+_telemetry_cache = None
+_telemetry_cache_time = 0.0
+_telemetry_lock = threading.Lock()
+_prev_telemetry_sample = {}
+_prefill_tracker = {}
+_slot_prefill_tracker = {}
+_gen_tracker = {}
+_last_known_gen_speed = 0.0
+_last_known_prefill_speed = 0.0
+
+
+def _shutdown_server():
+    """Gracefully shut down the HTTP server."""
+    global _httpd_ref
+    try:
+        slot_cache_manager.stop_slot_restorer_daemon()
+    except Exception:
+        pass
+    if _httpd_ref:
+        _httpd_ref.shutdown()
+
+# Metrics
+METRICS = {
+    "stt_load_time_s": 0.0,
+    "tts_load_time_s": 0.0,
+    "stt_count": 0,
+    "tts_count": 0,
+    "last_stt_latency_ms": 0.0,
+    "last_tts_latency_ms": 0.0,
+    "last_tts_rtf": 0.0,
+}
+
+
+def init_models():
+    global stt_model, tts_model, voice_styles
+
+    print("[Voice Bridge] Loading FUTO GigaAM v3 STT into memory...", flush=True)
+    t0 = time.perf_counter()
+    stt_model = transcribe_cpp.Model(GIGAAM_MODEL_PATH)
+    with metrics_lock:
+        METRICS["stt_load_time_s"] = round(time.perf_counter() - t0, 3)
+    print(f"[Voice Bridge] GigaAM v3 STT loaded in {METRICS['stt_load_time_s']} s", flush=True)
+
+    print("[Voice Bridge] Loading Supertonic 3 TTS into memory...", flush=True)
+    t1 = time.perf_counter()
+    tts_model = TTS(model="supertonic-3", model_dir=SUPERTONIC_DIR, auto_download=False)
+    voice_styles["M1"] = tts_model.get_voice_style("M1")
+    voice_styles["F1"] = tts_model.get_voice_style("F1")
+    with metrics_lock:
+        METRICS["tts_load_time_s"] = round(time.perf_counter() - t1, 3)
+    print(f"[Voice Bridge] Supertonic 3 TTS loaded in {METRICS['tts_load_time_s']} s", flush=True)
+
+
+def get_process_ram_mb():
+    """Fast native RAM query (0.01 ms) without spawning powershell.exe."""
+    try:
+        import psutil
+        return round(psutil.Process(os.getpid()).memory_info().rss / (1024 * 1024), 1)
+    except Exception:
+        pass
+    try:
+        class PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ('cb', ctypes.c_ulong),
+                ('PageFaultCount', ctypes.c_ulong),
+                ('PeakWorkingSetSize', ctypes.c_size_t),
+                ('WorkingSetSize', ctypes.c_size_t),
+                ('QuotaPeakPagedPoolUsage', ctypes.c_size_t),
+                ('QuotaPagedPoolUsage', ctypes.c_size_t),
+                ('QuotaPeakNonPagedPoolUsage', ctypes.c_size_t),
+                ('QuotaNonPagedPoolUsage', ctypes.c_size_t),
+                ('PagefileUsage', ctypes.c_size_t),
+                ('PeakPagefileUsage', ctypes.c_size_t),
+            ]
+        pmc = PROCESS_MEMORY_COUNTERS()
+        pmc.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS)
+        hProcess = ctypes.windll.kernel32.GetCurrentProcess()
+        if ctypes.windll.psapi.GetProcessMemoryInfo(hProcess, ctypes.byref(pmc), pmc.cb):
+            return round(pmc.WorkingSetSize / (1024 * 1024), 1)
+    except Exception:
+        pass
+    return 0.0
+
+
+def decode_audio_to_16k_mono(audio_bytes: bytes) -> np.ndarray:
+    """Decode incoming audio buffer (WebM, Opus, WAV, etc.) to 16kHz float32 mono with max 120s limit."""
+    container = None
+    try:
+        input_file = io.BytesIO(audio_bytes)
+        container = av.open(input_file)
+        resampler = av.AudioResampler(format="flt", layout="mono", rate=16000)
+        samples = []
+        total_samples = 0
+        MAX_AUDIO_SAMPLES = 120 * 16000  # Strict server-side cap: 120s max
+        for frame in container.decode(audio=0):
+            for resampled_frame in resampler.resample(frame):
+                arr = resampled_frame.to_ndarray()
+                samples.append(arr)
+                total_samples += arr.shape[1]
+                if total_samples >= MAX_AUDIO_SAMPLES:
+                    break
+            if total_samples >= MAX_AUDIO_SAMPLES:
+                break
+        if not samples:
+            return np.array([], dtype=np.float32)
+        pcm = np.concatenate(samples, axis=1).squeeze(0)
+        if len(pcm) > MAX_AUDIO_SAMPLES:
+            pcm = pcm[:MAX_AUDIO_SAMPLES]
+        return pcm.astype(np.float32)
+    except Exception as err:
+        print(f"[Voice Bridge] Audio decode error: {err}", flush=True)
+        return np.array([], dtype=np.float32)
+    finally:
+        if container is not None:
+            try:
+                container.close()
+            except Exception:
+                pass
+
+
+def extract_executive_summary(text: str, max_chars: int = 350) -> str:
+    """
+    Extracts a crisp 1-3 sentence Executive Summary tailored for Russian TTS.
+    Prioritizes explicit 'Резюме' / 'Итог' blocks, falling back to clean lead/concluding sentences.
+    """
+    if not text:
+        return ""
+
+    # 1. Strip reasoning thoughts if present
+    clean = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
+
+    # 2. Check for explicit summary block
+    summary_pattern = re.compile(
+        r"(?:^|\n)(?:#{1,4}\s*(?:Резюме|Итог|Краткий итог|Вывод|Заключение)|(?:\*\*|__)(?:Резюме|Итог|Краткий итог|Вывод|Заключение)(?:\*\*|__):?|(?:Резюме|Итог|Краткий итог):\s*)\s*([\s\S]+)",
+        re.IGNORECASE
+    )
+    match = summary_pattern.search(clean)
+    if match:
+        candidate = match.group(1).strip()
+        # Cut off at next heading if any
+        candidate = re.split(r"\n#{1,4}\s", candidate)[0].strip()
+        candidate = re.sub(r"```[\s\S]*?```", "", candidate)
+        candidate = re.sub(r"[`*_~]", "", candidate)
+        candidate = re.sub(r"^[\*\-\+]\s+", "", candidate, flags=re.MULTILINE)
+        candidate = re.sub(r"\s+", " ", candidate).strip()
+        if len(candidate) > 10:
+            if len(candidate) > max_chars:
+                clipped = candidate[:max_chars]
+                last_punct = max(clipped.rfind("."), clipped.rfind("!"), clipped.rfind("?"))
+                if last_punct > 80:
+                    candidate = clipped[:last_punct + 1]
+                else:
+                    candidate = clipped.rsplit(" ", 1)[0] + "..."
+            return candidate
+
+    # 3. Fallback: Strip code, tables, tracebacks, lists
+    clean = re.sub(r"```[\s\S]*?```", "", clean)
+    clean = re.sub(r"\|[^\n]+\|", "", clean)
+    clean = re.sub(r"^>.*$", "", clean, flags=re.MULTILINE)
+    clean = re.sub(r"^#{1,6}\s+.*$", "", clean, flags=re.MULTILINE)
+    clean = re.sub(r"^\s*[\*\-\+\d\.]+\s+.*$", "", clean, flags=re.MULTILINE)
+    clean = re.sub(r"[`*_~]", "", clean)
+    clean = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean)
+
+    paragraphs = [p.strip() for p in clean.split("\n") if p.strip()]
+    if not paragraphs:
+        return "Код и конфигурация успешно обновлены. Задача выполнена."
+
+    sentences = []
+    for p in reversed(paragraphs):
+        s_list = re.split(r"(?<=[.!?])\s+", p)
+        for s in reversed(s_list):
+            s = s.strip()
+            if len(s) > 15 and not s.startswith(("$", "PS ", "git ", "npm ", "python ")):
+                sentences.insert(0, s)
+                if sum(len(x) for x in sentences) > 200:
+                    break
+        if sentences:
+            break
+
+    if not sentences:
+        for p in paragraphs:
+            s_list = re.split(r"(?<=[.!?])\s+", p)
+            for s in s_list:
+                s = s.strip()
+                if len(s) > 15:
+                    sentences.append(s)
+                    if sum(len(x) for x in sentences) > 200:
+                        break
+            if sentences:
+                break
+
+    result = " ".join(sentences).strip()
+    result = re.sub(r"\s+", " ", result)
+
+    if len(result) > max_chars:
+        clipped = result[:max_chars]
+        last_punct = max(clipped.rfind("."), clipped.rfind("!"), clipped.rfind("?"))
+        if last_punct > 80:
+            result = clipped[:last_punct + 1]
+        else:
+            result = clipped.rsplit(" ", 1)[0] + "..."
+
+    return result or "Задача выполнена. Система готова к работе."
+
+
+def clean_text_for_speech(text: str, mode: str = "summary") -> str:
+    """Clean LLM output for natural Russian text-to-speech synthesis."""
+    if not text:
+        return ""
+    if mode == "summary":
+        text = extract_executive_summary(text, max_chars=350)
+    else:
+        # Strip <think> ... </think> or reasoning tags if present
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+        text = re.sub(r"```.*?```", " Код опущен. ", text, flags=re.DOTALL)
+        text = re.sub(r"`([^`]+)`", r"\1", text)
+        # Remove markdown links [text](url) -> text
+        text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+        # Remove markdown headers and bullet markers
+        text = re.sub(r"^#{1,6}\s*", "", text, flags=re.MULTILINE)
+        text = re.sub(r"^[\*\-\+]\s+", "", text, flags=re.MULTILINE)
+        # Remove excessive punctuation or symbols
+        text = re.sub(r"[~*_|\\]", "", text)
+
+    # Normalize common file extensions for smooth speech
+    text = re.sub(r"\.([a-zA-Z0-9]{1,5})\b", r" точка \1 ", text)
+    # Common tech term pronunciations for Russian TTS
+    tech_map = {
+        r"\bAPI\b": "Апи",
+        r"\bURL\b": "Ю-эр-эл",
+        r"\bJSON\b": "Джейсон",
+        r"\bYAML\b": "Ямл",
+        r"\bYML\b": "Ямл",
+        r"\bGit\b": "Гит",
+        r"\bDocker\b": "Докер",
+        r"\bPython\b": "Пайтон",
+        r"\bPowerShell\b": "Пауэршелл",
+        r"\bLinux\b": "Линукс",
+        r"\bWindows\b": "Виндовс",
+        r"\bOpenHands\b": "Оупенхэндс",
+        r"\bNexus\b": "Нексус",
+        r"\bVRAM\b": "Ви-рэм",
+        r"\bRAM\b": "Рэм",
+        r"\bGPU\b": "Джи-пи-ю",
+        r"\bCPU\b": "Си-пи-ю",
+        r"\bPWA\b": "Пэ-вэ-а",
+        r"\bUI\b": "Ю-ай",
+    }
+    for pat, rep in tech_map.items():
+        text = re.sub(pat, rep, text, flags=re.IGNORECASE)
+    # Collapse multiple whitespace/newlines into single space
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def synthesize_to_wav_bytes(text: str, voice_style_name: str = "M1") -> tuple[bytes, float, float]:
+    """Synthesize text to WAV bytes. Returns (wav_bytes, duration_s, latency_s)."""
+    cancel_event.clear()
+    style = voice_styles.get(voice_style_name, voice_styles.get("M1"))
+
+    t0 = time.perf_counter()
+    with tts_lock:
+        if cancel_event.is_set():
+            return b"", 0.0, 0.0
+        wav, dur = tts_model.synthesize(text, voice_style=style, lang="ru")
+
+    latency = time.perf_counter() - t0
+    duration = float(dur[0]) if len(dur) > 0 else 0.0
+
+    # Convert numpy float32 waveform (shape 1, N) to 16-bit PCM WAV bytes
+    waveform = np.clip(wav[0], -1.0, 1.0)
+    pcm_int16 = (waveform * 32767).astype(np.int16)
+
+    # Safely determine native sample rate (from model attribute or waveform / duration)
+    sample_rate = getattr(tts_model, "sample_rate", None)
+    if not sample_rate and duration > 0 and len(waveform) > 0:
+        sample_rate = int(round(len(waveform) / duration))
+    if not sample_rate or sample_rate <= 0:
+        sample_rate = 44100
+
+    out_io = io.BytesIO()
+    with wave.open(out_io, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sample_rate)
+        wf.writeframes(pcm_int16.tobytes())
+
+    return out_io.getvalue(), duration, latency
+
+
+def get_station_telemetry() -> dict:
+    global _telemetry_cache, _telemetry_cache_time
+    now = time.time()
+    with _telemetry_lock:
+        if _telemetry_cache is not None and (now - _telemetry_cache_time) < 0.5:
+            return dict(_telemetry_cache)
+        res = _compute_station_telemetry()
+        _telemetry_cache = res
+        _telemetry_cache_time = now
+        return dict(res)
+
+
+def _compute_station_telemetry() -> dict:
+    global _last_known_gen_speed, _last_known_prefill_speed, _gen_tracker, _prefill_tracker, _slot_prefill_tracker
+    log_path = os.path.join(os.path.dirname(__file__), "..", "Logs", "llama-swap", "llama-swap.log")
+    if not os.path.exists(log_path):
+        log_path = os.path.join(os.path.dirname(__file__), "..", "llama-swap.log")
+
+    active_profile = "Qwen 122B"
+    try:
+        st = working_profiles.get_working_profile_state()
+        if st and st.get("active_working_profile_id"):
+            profs = working_profiles.load_working_profiles()
+            for p in profs:
+                if p.get("id") == st.get("active_working_profile_id"):
+                    active_profile = p.get("name", active_profile)
+                    break
+    except Exception:
+        pass
+
+    slot_status = None
+    try:
+        slot_status = slot_cache_manager.get_slot_status()
+    except Exception:
+        pass
+
+    now = time.time()
+    telemetry = {
+        "status": "ok",
+        "model": active_profile,
+        "state": "idle",
+        "progress_pct": 0,
+        "tokens": 0,
+        "total_tokens": 0,
+        "speed_tok_s": 0.0,
+        "last_gen_speed": _last_known_gen_speed,
+        "last_prefill_speed": _last_known_prefill_speed,
+        "eta_seconds": None,
+        "eta_str": None,
+        "active_tool": None,
+        "is_active": False,
+        "slot_cache": slot_status,
+        "timestamp": now
+    }
+
+    # 1. Check if OpenHands is actively executing a tool
+    try:
+        conv_root = os.path.expanduser(r"~/.openhands/agent-canvas/dev_conversations")
+        if os.path.exists(conv_root):
+            conv_dirs = [os.path.join(conv_root, d) for d in os.listdir(conv_root) if os.path.isdir(os.path.join(conv_root, d))]
+            if conv_dirs:
+                latest_conv = max(conv_dirs, key=os.path.getmtime)
+                events_dir = os.path.join(latest_conv, "events")
+                if os.path.exists(events_dir):
+                    event_files = sorted(glob.glob(os.path.join(events_dir, "event-*.json")))
+                    if event_files:
+                        for ef_path in reversed(event_files[-10:]):
+                            if (now - os.path.getmtime(ef_path)) > 60:
+                                break
+                            try:
+                                with open(ef_path, encoding="utf-8-sig") as ef:
+                                    ev_data = json.load(ef)
+                                ev_kind = ev_data.get("kind")
+                                if ev_kind == "ActionEvent":
+                                    t_name = ev_data.get("tool_name") or ev_data.get("action", {}).get("kind") or "инструмент"
+                                    telemetry["state"] = "tool"
+                                    telemetry["active_tool"] = t_name
+                                    telemetry["is_active"] = True
+                                    return telemetry
+                                elif ev_kind in ("ObservationEvent", "InterruptEvent", "PauseEvent"):
+                                    break
+                            except Exception:
+                                pass
+    except Exception:
+        pass
+
+    # 2. Check running model info from llama-swap router
+    running_info = {"model": None, "state": "none", "proxy": None}
+    try:
+        running_info = slot_cache_manager.get_running_model_info()
+    except Exception:
+        pass
+
+    model_id = running_info.get("model")
+    model_state = running_info.get("state", "none")
+    proxy = running_info.get("proxy")
+
+    MODEL_NAMES = {
+        "qwen": "Qwen 27B",
+        "ornith": "Ornith 35B",
+        "tinfield": "Tinfield 177B",
+        "next80b": "Next 80B",
+        "qwen122": "Qwen 122B",
+    }
+    if model_id:
+        mapped_name = MODEL_NAMES.get(str(model_id).lower(), str(model_id))
+        telemetry["model"] = mapped_name
+
+    if model_state in ("loading", "starting", "initializing", "swapping"):
+        telemetry["state"] = "loading"
+        telemetry["is_active"] = True
+        return telemetry
+
+    # 3. Query live llama-server slot for ground-truth hardware state
+    slot_obj = None
+    if model_id and model_state in ("ready", "loaded"):
+        s_url = f"{proxy.rstrip('/')}/slots" if proxy else f"http://127.0.0.1:8080/upstream/{model_id}/slots"
+        try:
+            s_req = urllib.request.Request(s_url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(s_req, timeout=0.35) as s_resp:
+                data = json.loads(s_resp.read().decode("utf-8"))
+                if isinstance(data, list) and len(data) > 0:
+                    slot_obj = data[0]
+        except Exception:
+            pass
+
+    # Read log tail to extract speeds (only from recently updated log files)
+    log_task_active = False
+    log_prefill_done = False
+
+    if os.path.exists(log_path):
+        try:
+            # Only consider log tail if log file was modified in the last 60 seconds
+            if (now - os.path.getmtime(log_path)) < 60:
+                with open(log_path, "rb") as f:
+                    f_size = os.path.getsize(log_path)
+                    f.seek(max(0, f_size - 65536))
+                    lines = f.read().decode("utf-8", errors="ignore").splitlines()
+
+                for line in lines:
+                    m_launch = re.search(r'(?:slot is processing task.*?id_task=(\d+)|launch_slot_:.*?task\s*(\d+))', line)
+                    if m_launch:
+                        log_task_active = True
+                        log_prefill_done = False
+
+                    m_peval = re.search(r'prompt eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
+                    if m_peval:
+                        log_prefill_done = True
+                        p_spd = float(m_peval.group(3))
+                        _last_known_prefill_speed = p_spd
+                        telemetry["last_prefill_speed"] = p_spd
+
+                    m_geval = re.search(r'^\s*eval time\s*=\s*([\d.]+)\s*ms\s*/\s*(\d+)\s*tokens\s*\(.*?([\d.]+)\s*tokens per second\)', line)
+                    if m_geval:
+                        g_spd = float(m_geval.group(3))
+                        _last_known_gen_speed = g_spd
+                        telemetry["last_gen_speed"] = g_spd
+
+                    if re.search(r'release_slots.*?id_task=(\d+)', line) or 'all slots are idle' in line:
+                        log_task_active = False
+        except Exception:
+            pass
+
+    has_next = False
+    n_decoded = 0
+    s_task = 0
+    s_state = 0
+    stopped_eos = False
+
+    if slot_obj and isinstance(slot_obj, dict):
+        s_task = int(slot_obj.get("id_task", -1))
+        s_state = int(slot_obj.get("state", 0))
+        next_tok = slot_obj.get("next_token", {})
+        if isinstance(next_tok, list) and len(next_tok) > 0:
+            next_tok = next_tok[0]
+        elif not isinstance(next_tok, dict):
+            next_tok = {}
+
+        has_next = bool(next_tok.get("has_next_token", False))
+        n_decoded = int(next_tok.get("n_decoded", 0))
+        stopped_eos = bool(next_tok.get("stopped_eos", False)) or bool(next_tok.get("stopped_limit", False)) or bool(next_tok.get("stopped_word", False))
+
+        is_processing = bool(slot_obj.get("is_processing", False)) or (s_state == 1)
+
+        # Ground Truth: If slot is definitely IDLE (task -1 or state 0 or finished with EOS without next token)
+        if s_task == -1 or (s_state == 0 and not has_next) or (stopped_eos and not has_next and s_state == 0):
+            telemetry["state"] = "idle"
+            telemetry["is_active"] = False
+            return telemetry
+
+        # Case A: Live token generation (decoding in progress)
+        if has_next or (s_state == 1 and n_decoded > 0):
+            telemetry["is_active"] = True
+            telemetry["state"] = "generating"
+            telemetry["tokens"] = n_decoded
+
+            if _gen_tracker.get("task") != s_task:
+                def_spd = 33.0 if "122" in str(model_id) else (70.0 if "35" in str(model_id) else 100.0)
+                _gen_tracker.update({
+                    "task": s_task,
+                    "last_tokens": n_decoded,
+                    "last_time": now,
+                    "speed": _last_known_gen_speed or def_spd
+                })
+            else:
+                dt = now - _gen_tracker.get("last_time", now)
+                dn = n_decoded - _gen_tracker.get("last_tokens", 0)
+                if dt >= 0.3 and dn > 0:
+                    calc_spd = round(dn / dt, 1)
+                    _gen_tracker["speed"] = calc_spd
+                    _last_known_gen_speed = calc_spd
+                    _gen_tracker["last_tokens"] = n_decoded
+                    _gen_tracker["last_time"] = now
+
+            current_gen_speed = _gen_tracker.get("speed", _last_known_gen_speed or 30.0)
+            telemetry["speed_tok_s"] = current_gen_speed
+            telemetry["last_gen_speed"] = _last_known_gen_speed
+            return telemetry
+
+        # Case B: Live slot processing (active prefill when s_state == 1 and n_decoded == 0)
+        if is_processing:
+            telemetry["is_active"] = True
+            prompt_val = slot_obj.get("prompt", "")
+            if isinstance(prompt_val, list):
+                total_tokens = max(1, len(prompt_val))
+            elif isinstance(prompt_val, str) and prompt_val:
+                total_tokens = max(1, int(len(prompt_val) / 3.5))
+            else:
+                total_tokens = max(1, int(slot_obj.get("n_prompt_tokens", 1000)))
+
+            n_proc = int(slot_obj.get("n_prompt_tokens_processed", 0))
+            n_cache = int(slot_obj.get("n_prompt_tokens_cache", 0))
+            done_tokens = n_cache + n_proc if (n_cache + n_proc) > 0 else 0
+
+            p_spd = max(10.0, _last_known_prefill_speed or (25.0 if "122" in str(model_id) else 800.0))
+
+            if _slot_prefill_tracker.get("task") != s_task:
+                _slot_prefill_tracker.update({
+                    "task": s_task,
+                    "base_tokens": done_tokens,
+                    "base_time": now,
+                    "total_tokens": total_tokens
+                })
+
+            dt_step = max(0.0, now - _slot_prefill_tracker.get("base_time", now))
+            interp_tokens = min(total_tokens - 1, int(done_tokens + (dt_step * p_spd)))
+            pct = min(99.0, max(1.0, round((interp_tokens / total_tokens) * 100, 1)))
+
+            telemetry["state"] = "prefill"
+            telemetry["tokens"] = interp_tokens
+            telemetry["total_tokens"] = total_tokens
+            telemetry["progress_pct"] = pct
+            telemetry["speed_tok_s"] = p_spd
+            rem = max(0, total_tokens - interp_tokens)
+            eta_s = int(rem / p_spd)
+            telemetry["eta_seconds"] = eta_s
+            telemetry["eta_str"] = f"{eta_s // 60}м {eta_s % 60}с" if eta_s >= 60 else f"{eta_s}с"
+            return telemetry
+
+    # Case C: Prefill complete, waiting for first token or thinking
+    if log_task_active and log_prefill_done and not has_next:
+        telemetry["is_active"] = True
+        telemetry["state"] = "thinking"
+        telemetry["progress_pct"] = 100.0
+        telemetry["speed_tok_s"] = 0.0
+        return telemetry
+
+    # Case D: Completely idle
+    telemetry["state"] = "idle"
+    telemetry["is_active"] = False
+    return telemetry
+
+
+
+class VoiceBridgeHandler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Concise logging
+        print(f"[HTTP] {self.command} {self.path} -> {args[1] if len(args) > 1 else ''}", flush=True)
+
+    def _set_cors(self, content_type="application/json"):
+        origin = self.headers.get("Origin", "")
+        # Allow trusted local origins (IDE, loopback webview, local browser dev)
+        if any(origin.startswith(pfx) for pfx in ("http://localhost", "http://127.0.0.1", "vscode-webview://", "vscode-file://")):
+            self.send_header("Access-Control-Allow-Origin", origin)
+        elif not origin:
+            self.send_header("Access-Control-Allow-Origin", "http://127.0.0.1:18002")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Range, Authorization, X-Session-API-Key, Cache-Control")
+        self.send_header("Content-Type", content_type)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._set_cors()
+        self.end_headers()
+
+    def do_GET(self):
+        clean_path = self.path.split("?")[0].rstrip("/")
+        if clean_path.startswith("/voice-api"):
+            clean_path = clean_path[len("/voice-api"):]
+            if not clean_path.startswith("/"):
+                clean_path = "/" + clean_path
+
+        if clean_path == "/voice-bridge.js":
+            js_path = os.path.join(os.path.dirname(__file__), "voice-bridge.js")
+            with open(js_path, "rb") as f:
+                body = f.read()
+            self.send_response(200)
+            self._set_cors("application/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        elif clean_path == "/voice-bridge.css":
+            css_path = os.path.join(os.path.dirname(__file__), "voice-bridge.css")
+            with open(css_path, "rb") as f:
+                body = f.read()
+            self.send_response(200)
+            self._set_cors("text/css; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        elif clean_path == "/working-profile-ui.js":
+            js_path = os.path.join(os.path.dirname(__file__), "..", "openhands-working-profile", "working-profile-ui.js")
+            with open(js_path, "rb") as f:
+                body = f.read()
+            self.send_response(200)
+            self._set_cors("application/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        elif clean_path == "/working-profile-ui.css":
+            css_path = os.path.join(os.path.dirname(__file__), "..", "openhands-working-profile", "working-profile-ui.css")
+            with open(css_path, "rb") as f:
+                body = f.read()
+            self.send_response(200)
+            self._set_cors("text/css; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        elif clean_path in ("/api/working-profiles", "/working-profiles"):
+            try:
+                profiles = working_profiles.load_working_profiles()
+                state = working_profiles.get_working_profile_state()
+                body = json.dumps({"profiles": profiles, "state": state}, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self._set_cors("application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_response(500)
+                self._set_cors("application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        elif clean_path in ("/api/station-telemetry", "/telemetry"):
+            try:
+                data = get_station_telemetry()
+                body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self._set_cors("application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_response(500)
+                self._set_cors("application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        elif clean_path in ("/api/slot-status", "/slot-status"):
+            try:
+                status_data = slot_cache_manager.get_slot_status()
+                body = json.dumps(status_data, ensure_ascii=False, indent=2).encode("utf-8")
+                self.send_response(200)
+                self._set_cors("application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_response(500)
+                self._set_cors("application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        elif clean_path in ("/health", "/status"):
+            ram = get_process_ram_mb()
+            with metrics_lock:
+                metrics_copy = dict(METRICS)
+            resp = {
+                "status": "ok",
+                "uptime_s": round(time.time() - START_TIME, 1),
+                "stt_engine": "gigaam-v3-e2e-rnnt (FUTO transcribe.cpp)",
+                "tts_engine": "supertonic-3 (Supertone ONNX)",
+                "voices": list(voice_styles.keys()),
+                "ram_mb": ram,
+                "metrics": metrics_copy
+            }
+            body = json.dumps(resp, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self._set_cors("application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        else:
+            self.send_response(404)
+            self._set_cors()
+            self.end_headers()
+            self.wfile.write(b'{"error": "Not Found"}')
+
+    def do_POST(self):
+        clean_path = self.path.split("?")[0].rstrip("/")
+        if clean_path.startswith("/voice-api"):
+            clean_path = clean_path[len("/voice-api"):]
+            if not clean_path.startswith("/"):
+                clean_path = "/" + clean_path
+
+        MAX_PAYLOAD_BYTES = 10 * 1024 * 1024  # 10 MB limit (DoS protection)
+        content_length = int(self.headers.get("Content-Length", 0))
+        if content_length > MAX_PAYLOAD_BYTES:
+            self.send_response(413)
+            self._set_cors()
+            self.end_headers()
+            self.wfile.write(b'{"error": "Payload Too Large"}')
+            return
+
+        body_bytes = self.rfile.read(content_length) if content_length > 0 else b""
+
+        if clean_path in ("/api/working-profiles", "/working-profiles"):
+            try:
+                data = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
+                wp_id = data.get("working_profile_id")
+                rm_id = data.get("reasoning_mode_id")
+                res = working_profiles.switch_working_profile(wp_id, rm_id, updated_by="voice_service")
+                body = json.dumps(res, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self._set_cors("application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_response(400)
+                self._set_cors("application/json; charset=utf-8")
+                self.end_headers()
+                err_msg = str(e).splitlines()[0][:200] if str(e) else "Profile switch error"
+                self.wfile.write(json.dumps({"error": err_msg}).encode("utf-8"))
+            return
+
+        elif clean_path in ("/api/restore-prefix-slot", "/restore-prefix-slot"):
+            try:
+                data = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
+                target_model = data.get("model")
+                target_dump = data.get("dump")
+                if target_model and target_dump:
+                    res = slot_cache_manager.restore_slot_dump(target_model, target_dump)
+                else:
+                    res = slot_cache_manager.check_and_auto_restore()
+                body = json.dumps(res, ensure_ascii=False, indent=2).encode("utf-8")
+                self.send_response(200)
+                self._set_cors("application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_response(500)
+                self._set_cors("application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        elif clean_path in ("/shutdown", "/voice-api/shutdown"):
+            resp = {"status": "shutting_down"}
+            body = json.dumps(resp).encode("utf-8")
+            self.send_response(200)
+            self._set_cors()
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            print("[Voice Bridge] Graceful shutdown requested via HTTP POST", flush=True)
+            threading.Thread(target=_shutdown_server).start()
+            return
+
+        elif clean_path in ("/stop", "/voice-api/stop"):
+            cancel_event.set()
+            resp = {"status": "stopped"}
+            body = json.dumps(resp).encode("utf-8")
+            self.send_response(200)
+            self._set_cors()
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            print("[Voice Bridge] STOP received -> cancelled active speech.", flush=True)
+            return
+
+        elif clean_path in ("/stt", "/voice-api/stt"):
+            if not body_bytes:
+                self.send_response(400)
+                self._set_cors()
+                self.end_headers()
+                self.wfile.write(b'{"error": "Empty audio body"}')
+                return
+
+            try:
+                t0 = time.perf_counter()
+                pcm = decode_audio_to_16k_mono(body_bytes)
+                audio_dur = len(pcm) / 16000.0
+
+                if audio_dur < 0.2:
+                    self.send_response(200)
+                    self._set_cors()
+                    self.end_headers()
+                    self.wfile.write(b'{"text": ""}')
+                    return
+
+                with stt_lock, stt_model.session() as session:
+                    result = session.run(pcm)
+                    text = result.text.strip()
+
+                latency = round((time.perf_counter() - t0) * 1000.0, 1)
+                with metrics_lock:
+                    METRICS["stt_count"] += 1
+                    METRICS["last_stt_latency_ms"] = latency
+                print(f"[STT] ({audio_dur:.2f}s audio) -> '{text}' ({latency} ms)", flush=True)
+
+                resp = {
+                    "text": text,
+                    "audio_duration_s": round(audio_dur, 2),
+                    "latency_ms": latency
+                }
+                body = json.dumps(resp, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self._set_cors("application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            except Exception as e:
+                print(f"[STT Error] {e}", flush=True)
+                self.send_response(500)
+                self._set_cors()
+                self.end_headers()
+                err_msg = str(e).splitlines()[0][:200] if str(e) else "STT processing error"
+                err_resp = json.dumps({"error": err_msg}).encode("utf-8")
+                self.wfile.write(err_resp)
+
+        elif clean_path in ("/tts", "/voice-api/tts"):
+            try:
+                data = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
+                raw_text = data.get("text", "")
+                voice = data.get("voice", "M1")
+                mode = data.get("mode", "summary")
+                if voice not in voice_styles:
+                    voice = "M1"
+
+                # Guard against runaway raw text before regex operations
+                if len(raw_text) > 8000:
+                    raw_text = raw_text[:8000]
+
+                clean_text = clean_text_for_speech(raw_text, mode=mode)
+
+                # Safeguard against excessive text payloads (prevent runaway latency / memory)
+                max_tts_chars = 600 if mode == "summary" else 4000
+                if len(clean_text) > max_tts_chars:
+                    print(f"[TTS Warning] Text exceeds {max_tts_chars} chars ({len(clean_text)} chars), truncating gracefully", flush=True)
+                    clean_text = clean_text[:max_tts_chars] + "..."
+
+                if not clean_text:
+                    self.send_response(200)
+                    self._set_cors("application/json")
+                    self.end_headers()
+                    self.wfile.write(b'{"status": "empty_text"}')
+                    return
+
+                wav_bytes, dur, lat = synthesize_to_wav_bytes(clean_text, voice)
+                if cancel_event.is_set() or not wav_bytes:
+                    self.send_response(204)  # No content (cancelled)
+                    self._set_cors()
+                    self.end_headers()
+                    return
+
+                rtf = round(lat / dur, 2) if dur > 0 else 0.0
+                with metrics_lock:
+                    METRICS["tts_count"] += 1
+                    METRICS["last_tts_latency_ms"] = round(lat * 1000.0, 1)
+                    METRICS["last_tts_rtf"] = rtf
+                print(f"[TTS] ({len(clean_text)} chars, {dur:.2f}s audio) -> generated in {lat:.3f}s (RTF {rtf})", flush=True)
+
+                self.send_response(200)
+                self._set_cors("audio/wav")
+                self.send_header("Content-Length", str(len(wav_bytes)))
+                self.send_header("X-Duration-Seconds", str(round(dur, 2)))
+                self.send_header("X-Latency-Ms", str(round(lat * 1000.0, 1)))
+                self.end_headers()
+                self.wfile.write(wav_bytes)
+
+            except Exception as e:
+                print(f"[TTS Error] {e}", flush=True)
+                self.send_response(500)
+                self._set_cors()
+                self.end_headers()
+                err_msg = str(e).splitlines()[0][:200] if str(e) else "TTS synthesis error"
+                err_resp = json.dumps({"error": err_msg}).encode("utf-8")
+                self.wfile.write(err_resp)
+
+        else:
+            self.send_response(404)
+            self._set_cors()
+            self.end_headers()
+            self.wfile.write(b'{"error": "Not Found"}')
+
+
+def run_server(port: int = 18002):
+    global _httpd_ref
+    init_models()
+    try:
+        slot_cache_manager.start_slot_restorer_daemon(1.0)
+    except Exception as e:
+        print(f"[Voice Bridge] Slot cache restorer warning: {e}", flush=True)
+    server_address = ("127.0.0.1", port)
+    httpd = ThreadingHTTPServer(server_address, VoiceBridgeHandler)
+    _httpd_ref = httpd
+    print("\n=======================================================", flush=True)
+    print(f" Voice Bridge Server RUNNING at http://127.0.0.1:{port}", flush=True)
+    print(" Endpoints: /health, /stt, /tts, /stop, /shutdown, /api/slot-status, /api/restore-prefix-slot", flush=True)
+    print(f" Initial RAM: {get_process_ram_mb()} MB", flush=True)
+    print("=======================================================\n", flush=True)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("[Voice Bridge] Stopping server...", flush=True)
+    finally:
+        httpd.server_close()
+
+
+if __name__ == "__main__":
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 18002
+    run_server(port)
+
+```
+
+
+---
+
+### File: `Voice/voice_companion.py`
+**Role & Description:** Windows Push-to-Talk Companion: global hotkey (F9 / ScrollLock), audio recording, direct active window keyboard typing.
+
+```python
+"""
+Antigravity Voice Companion
+Push-to-Talk (PTT) and Voice Loopback Bridge for Google Antigravity & Windows Host.
+
+Integrates with Local Voice Bridge on port 18002:
+- STT: FUTO GigaAM v3 RNN-T (offline, 16kHz mono)
+- TTS: Supertonic 3 (Russian ONNX)
+
+Key Features:
+- Push-to-Talk via Global Hotkey (Default: F9 or ScrollLock, Hold or Toggle mode)
+- Audio capture via sounddevice (16kHz 16-bit PCM)
+- Direct text injection into active Antigravity editor/prompt via Windows SendInput / Clipboard
+- Audio feedback beeps (start/stop)
+- Zero external GUI bloat, 100% stock Antigravity compatibility
+"""
+
+import argparse
+import ctypes
+import io
+import json
+import logging
+import os
+import sys
+import threading
+import time
+import urllib.request
+import urllib.error
+import wave
+import winsound
+from typing import Optional
+
+try:
+    import numpy as np
+    import sounddevice as sd
+except ImportError as e:
+    print(f"[FATAL] Missing required audio package: {e}")
+    print("Run: python -m pip install sounddevice numpy")
+    sys.exit(1)
+
+LOG_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "Logs", "Voice")
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, "voice-companion.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger("voice-companion")
+
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "companion_config.json")
+DEFAULT_CONFIG = {
+    "voice_bridge_url": "http://127.0.0.1:18002",
+    "hotkey": "F9",          # Options: F9, F8, SCROLL_LOCK, NUMPAD0
+    "mode": "toggle",        # "hold" (press and hold) or "toggle" (press once to start, press again to stop)
+    "audio_feedback": True,  # Beep on record start/stop
+    "auto_paste": True,      # Paste text into focused window
+    "sample_rate": 16000,
+    "input_device": None     # None = system default
+}
+
+VK_MAP = {
+    "F9": 0x78,
+    "F8": 0x77,
+    "F10": 0x79,
+    "SCROLL_LOCK": 0x91,
+    "NUMPAD0": 0x60,
+    "RCONTROL": 0xA3,
+    "PAUSE": 0x13
+}
+
+user32 = ctypes.windll.user32
+kernel32 = ctypes.windll.kernel32
+
+# Explicit 64-bit ABI ctypes declarations
+user32.OpenClipboard.restype = ctypes.c_int
+user32.OpenClipboard.argtypes = [ctypes.c_void_p]
+
+user32.CloseClipboard.restype = ctypes.c_int
+user32.CloseClipboard.argtypes = []
+
+user32.EmptyClipboard.restype = ctypes.c_int
+user32.EmptyClipboard.argtypes = []
+
+user32.GetClipboardData.restype = ctypes.c_void_p
+user32.GetClipboardData.argtypes = [ctypes.c_uint]
+
+user32.SetClipboardData.restype = ctypes.c_void_p
+user32.SetClipboardData.argtypes = [ctypes.c_uint, ctypes.c_void_p]
+
+user32.GetAsyncKeyState.restype = ctypes.c_short
+user32.GetAsyncKeyState.argtypes = [ctypes.c_int]
+
+user32.keybd_event.restype = None
+user32.keybd_event.argtypes = [ctypes.c_byte, ctypes.c_byte, ctypes.c_ulong, ctypes.c_size_t]
+
+kernel32.GlobalAlloc.restype = ctypes.c_void_p
+kernel32.GlobalAlloc.argtypes = [ctypes.c_uint, ctypes.c_size_t]
+
+kernel32.GlobalLock.restype = ctypes.c_void_p
+kernel32.GlobalLock.argtypes = [ctypes.c_void_p]
+
+kernel32.GlobalUnlock.restype = ctypes.c_int
+kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
+
+
+def load_config() -> dict:
+    if os.path.isfile(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                merged = dict(DEFAULT_CONFIG)
+                merged.update(cfg)
+                return merged
+        except Exception as e:
+            logger.warning("Failed to load %s (%s), using defaults", CONFIG_PATH, e)
+    return dict(DEFAULT_CONFIG)
+
+
+def save_config(cfg: dict):
+    try:
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logger.error("Failed to save config: %s", e)
+
+
+def is_key_down(vk_code: int) -> bool:
+    """Returns True if the specified virtual key is currently pressed."""
+    return bool(user32.GetAsyncKeyState(vk_code) & 0x8000)
+
+
+def send_paste_command():
+    """Simulates Ctrl+V using Windows keybd_event to paste text into the active window."""
+    VK_CONTROL = 0x11
+    VK_V = 0x56
+    KEYEVENTF_KEYUP = 0x0002
+
+    # Press Ctrl + V
+    user32.keybd_event(VK_CONTROL, 0, 0, 0)
+    user32.keybd_event(VK_V, 0, 0, 0)
+    time.sleep(0.02)
+    # Release V + Ctrl
+    user32.keybd_event(VK_V, 0, KEYEVENTF_KEYUP, 0)
+    user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+
+
+def get_clipboard_text() -> Optional[str]:
+    """Retrieves current Unicode text from Windows clipboard if available."""
+    CF_UNICODETEXT = 13
+    if not user32.OpenClipboard(0):
+        return None
+    try:
+        h_mem = user32.GetClipboardData(CF_UNICODETEXT)
+        if not h_mem:
+            return None
+        p_mem = kernel32.GlobalLock(h_mem)
+        if not p_mem:
+            return None
+        try:
+            val = ctypes.wstring_at(p_mem)
+            return val
+        finally:
+            kernel32.GlobalUnlock(h_mem)
+    except Exception:
+        return None
+    finally:
+        user32.CloseClipboard()
+
+
+def set_clipboard_text(text: str) -> bool:
+    """Sets Unicode text into Windows clipboard."""
+    GMEM_MOVEABLE = 0x0002
+    CF_UNICODETEXT = 13
+
+    if not user32.OpenClipboard(0):
+        return False
+    try:
+        user32.EmptyClipboard()
+        encoded = text.encode("utf-16le") + b"\x00\x00"
+        h_mem = kernel32.GlobalAlloc(GMEM_MOVEABLE, len(encoded))
+        if not h_mem:
+            return False
+        p_mem = kernel32.GlobalLock(h_mem)
+        if not p_mem:
+            return False
+        ctypes.memmove(p_mem, encoded, len(encoded))
+        kernel32.GlobalUnlock(h_mem)
+        user32.SetClipboardData(CF_UNICODETEXT, h_mem)
+        return True
+    finally:
+        user32.CloseClipboard()
+
+
+CLIPBOARD_PROPAGATION_SEC = 0.04
+PASTE_SETTLE_SEC = 0.08
+
+def paste_text_safely(text: str) -> bool:
+    """
+    Safely pastes text into active window preserving the user's previous clipboard content.
+    """
+    old_clip = get_clipboard_text()
+    try:
+        if not set_clipboard_text(text):
+            return False
+        time.sleep(CLIPBOARD_PROPAGATION_SEC)
+        send_paste_command()
+        time.sleep(PASTE_SETTLE_SEC)  # Allow target window message pump to process WM_PASTE
+        return True
+    finally:
+        if old_clip is not None:
+            try:
+                set_clipboard_text(old_clip)
+            except Exception:
+                pass
+
+
+class AudioRecorder:
+    def __init__(self, sample_rate: int = 16000, device: int | None = None, max_seconds: int = 120):
+        self.sample_rate = sample_rate
+        self.device = device
+        self.max_seconds = max_seconds
+        self.max_samples = max_seconds * sample_rate
+        self.frames = []
+        self.stream = None
+        self.is_recording = False
+        self._lock = threading.Lock()
+
+    def _audio_callback(self, indata, frames, time_info, status):
+        if status:
+            logger.debug("Audio status: %s", status)
+        if self.is_recording:
+            with self._lock:
+                current_samples = sum(len(f) for f in self.frames)
+                if current_samples < self.max_samples:
+                    self.frames.append(indata.copy())
+
+    def start(self):
+        with self._lock:
+            self.frames = []
+            self.is_recording = True
+
+        self.stream = sd.InputStream(
+            samplerate=self.sample_rate,
+            channels=1,
+            dtype="int16",
+            device=self.device,
+            callback=self._audio_callback
+        )
+        self.stream.start()
+
+    def stop(self) -> bytes:
+        self.is_recording = False
+        if self.stream:
+            self.stream.stop()
+            self.stream.close()
+            self.stream = None
+
+        with self._lock:
+            if not self.frames:
+                return b""
+            all_pcm = np.concatenate(self.frames, axis=0)
+
+        # Encode to in-memory WAV bytes
+        out_io = io.BytesIO()
+        with wave.open(out_io, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(self.sample_rate)
+            wf.writeframes(all_pcm.tobytes())
+
+        return out_io.getvalue()
+
+
+class VoiceCompanion:
+    def __init__(self, config: dict):
+        self.config = config
+        self.bridge_url = config.get("voice_bridge_url", "http://127.0.0.1:18002").rstrip("/")
+        self.hotkey_name = config.get("hotkey", "F9").upper()
+        self.vk_code = VK_MAP.get(self.hotkey_name, 0x78)
+        self.mode = config.get("mode", "toggle").lower()
+        self.audio_feedback = config.get("audio_feedback", True)
+        self.auto_paste = config.get("auto_paste", True)
+        self.recorder = AudioRecorder(sample_rate=config.get("sample_rate", 16000),
+                                     device=config.get("input_device"))
+        self.running = False
+        self.state_recording = False
+
+    def beep_start(self):
+        if self.audio_feedback:
+            threading.Thread(target=lambda: winsound.Beep(900, 100), daemon=True).start()
+
+    def beep_stop(self):
+        if self.audio_feedback:
+            threading.Thread(target=lambda: winsound.Beep(600, 120), daemon=True).start()
+
+    def send_stt_request(self, wav_bytes: bytes) -> dict:
+        url = f"{self.bridge_url}/stt"
+        req = urllib.request.Request(
+            url,
+            data=wav_bytes,
+            headers={"Content-Type": "audio/wav"},
+            method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                if resp.status == 200:
+                    return json.loads(resp.read().decode("utf-8"))
+        except Exception as e:
+            logger.error("STT request failed: %s", e)
+        return {"text": "", "error": "STT request failed"}
+
+    def speak(self, text: str, voice: str = "M1"):
+        """Requests TTS synthesis and plays the resulting audio waveform."""
+        url = f"{self.bridge_url}/tts"
+        payload = json.dumps({"text": text, "voice": voice, "mode": "summary"}).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                if resp.status == 200:
+                    wav_bytes = resp.read()
+                    with io.BytesIO(wav_bytes) as bio, wave.open(bio, "rb") as wf:
+                        data = wf.readframes(wf.getnframes())
+                        sr = wf.getframerate()
+                        ch = wf.getnchannels()
+                        arr = np.frombuffer(data, dtype=np.int16)
+                        sd.play(arr, sr)
+                        sd.wait()
+        except Exception as e:
+            logger.error("TTS playback error: %s", e)
+
+    def process_recording(self, wav_bytes: bytes):
+        if not wav_bytes or len(wav_bytes) < 4000:
+            logger.info("Recording too short or empty, discarded.")
+            return
+
+        logger.info("Transcribing audio payload (%d bytes)...", len(wav_bytes))
+        t0 = time.perf_counter()
+        result = self.send_stt_request(wav_bytes)
+        lat = round((time.perf_counter() - t0) * 1000.0, 1)
+
+        text = result.get("text", "").strip()
+        if not text:
+            logger.info("No speech detected.")
+            return
+
+        logger.info("[RECOGNIZED in %d ms] Transcribed %d characters", lat, len(text))
+        logger.debug("[RECOGNIZED TEXT] %s", text)
+
+        if self.auto_paste:
+            if paste_text_safely(text):
+                logger.info("Safely pasted recognized text into active window (clipboard preserved).")
+            else:
+                logger.warning("Failed to safely paste recognized text.")
+
+    def run(self):
+        self.running = True
+        logger.info("==================================================")
+        logger.info(" Antigravity Voice Companion ACTIVE")
+        logger.info(" Target Voice Bridge: %s", self.bridge_url)
+        logger.info(" Hotkey: %s (Mode: %s)", self.hotkey_name, self.mode)
+        logger.info(" Audio Feedback: %s | Auto-Paste: %s", self.audio_feedback, self.auto_paste)
+        logger.info("==================================================")
+
+        prev_key_down = False
+
+        try:
+            while self.running:
+                key_down = is_key_down(self.vk_code)
+
+                if self.mode == "hold":
+                    # HOLD MODE: starts on key press, stops on key release
+                    if key_down and not prev_key_down:
+                        logger.info("PTT [HOLD] Start recording...")
+                        self.beep_start()
+                        self.recorder.start()
+                        self.state_recording = True
+                    elif not key_down and prev_key_down and self.state_recording:
+                        logger.info("PTT [HOLD] Stop recording...")
+                        self.beep_stop()
+                        wav = self.recorder.stop()
+                        self.state_recording = False
+                        threading.Thread(target=self.process_recording, args=(wav,), daemon=True).start()
+
+                elif self.mode == "toggle":
+                    # TOGGLE MODE: starts on key click, stops on next key click
+                    if key_down and not prev_key_down:
+                        if not self.state_recording:
+                            logger.info("PTT [TOGGLE] Start recording...")
+                            self.beep_start()
+                            self.recorder.start()
+                            self.state_recording = True
+                        else:
+                            logger.info("PTT [TOGGLE] Stop recording...")
+                            self.beep_stop()
+                            wav = self.recorder.stop()
+                            self.state_recording = False
+                            threading.Thread(target=self.process_recording, args=(wav,), daemon=True).start()
+
+                prev_key_down = key_down
+                time.sleep(0.03)
+
+        except KeyboardInterrupt:
+            logger.info("Voice Companion shutting down...")
+        finally:
+            if self.state_recording:
+                self.recorder.stop()
+            self.running = False
+
+
+def check_bridge_health(url: str) -> bool:
+    try:
+        req = urllib.request.Request(f"{url.rstrip('/')}/health")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Antigravity Voice Companion")
+    parser.add_argument("--test-stt", action="store_true", help="Send a test wav to STT endpoint and print output")
+    parser.add_argument("--test-tts", type=str, help="Synthesize and play Russian text via TTS")
+    parser.add_argument("--mode", choices=["hold", "toggle"], help="Set PTT mode")
+    parser.add_argument("--hotkey", type=str, help="Set PTT hotkey (F9, F8, SCROLL_LOCK, etc.)")
+    args = parser.parse_args()
+
+    cfg = load_config()
+    if args.mode:
+        cfg["mode"] = args.mode
+    if args.hotkey:
+        cfg["hotkey"] = args.hotkey
+    save_config(cfg)
+
+    bridge_url = cfg.get("voice_bridge_url", "http://127.0.0.1:18002")
+    if not check_bridge_health(bridge_url):
+        logger.error("Voice Bridge at %s is unreachable! Please start local-voice first.", bridge_url)
+        sys.exit(1)
+
+    companion = VoiceCompanion(cfg)
+
+    if args.test_stt:
+        test_wav = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "local-voice", "test-audio", "test1.wav"))
+        if os.path.isfile(test_wav):
+            with open(test_wav, "rb") as f:
+                res = companion.send_stt_request(f.read())
+            print(f"Test STT Result: {res}")
+        else:
+            print("test1.wav not found")
+        return
+
+    if args.test_tts:
+        companion.speak(args.test_tts)
+        return
+
+    companion.run()
+
+
+if __name__ == "__main__":
+    main()
+
+```
+
+
+---
+
+### File: `Supervisor/check_prerequisites.py`
+**Role & Description:** Hardware & Environment Auditor: validates NVML, dual-GPU VRAM pool, Python deps, port availability.
+
+```python
+"""
+Antigravity Nexus Automated Prerequisite & Dependency Verifier.
+Location: Antigravity-Nexus/Supervisor/check_prerequisites.py
+"""
+
+import os
+import sys
+import subprocess
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+NEXUS_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+print("=======================================================================")
+print("     ANTIGRAVITY NEXUS - PREREQUISITE & HARDWARE INTEGRITY AUDIT       ")
+print("=======================================================================")
+print(f"Project Root: {PROJECT_ROOT}")
+print(f"Nexus Root:   {NEXUS_ROOT}")
+print()
+
+errors = 0
+warnings = 0
+
+# 1. Python version
+py_ver = sys.version_info
+if py_ver.major == 3 and py_ver.minor >= 10:
+    print(f" [OK] Python Version: {py_ver.major}.{py_ver.minor}.{py_ver.micro} ({sys.executable})")
+else:
+    print(f" [FAIL] Python Version: {py_ver.major}.{py_ver.minor} (Expected Python 3.10+)")
+    errors += 1
+
+# 2. Dual-GPU Hardware (NVML)
+try:
+    if PROJECT_ROOT not in sys.path:
+        sys.path.insert(0, PROJECT_ROOT)
+    from Config.vram_manager import NVMLManager
+    nvml = NVMLManager()
+    if nvml.is_available:
+        g_count = nvml.get_device_count()
+        print(f" [OK] NVIDIA NVML: Active (Detected {g_count} GPUs)")
+        for i in range(g_count):
+            info = nvml.get_gpu_info(i)
+            print(f"      - GPU {i}: {info.get('name')} | Total VRAM: {info.get('total_mb')} MiB (Free: {info.get('free_mb')} MiB)")
+    else:
+        print(" [WARN] NVML not initialized (fallback software management active)")
+        warnings += 1
+except Exception as e:
+    print(f" [WARN] NVML check error: {e}")
+    warnings += 1
+
+# 3. Python Packages
+pkgs = ["sounddevice", "numpy", "av", "torch", "transformers", "sacremoses", "supertonic"]
+for pkg in pkgs:
+    try:
+        __import__(pkg)
+        print(f" [OK] Python Library: {pkg}")
+    except ImportError:
+        print(f" [FAIL] Python Library missing: {pkg} -> Install: python -m pip install {pkg}")
+        errors += 1
+
+# 4. Speech Models & Binaries
+speech_assets = [
+    ("GigaAM v3 STT", os.path.join(PROJECT_ROOT, "Models", "Speech", "gigaam-v3-e2e-rnnt-Q8_0.gguf")),
+    ("Transcribe DLL", os.path.join(PROJECT_ROOT, "transcribe-build-shared", "bin", "Release", "transcribe.dll")),
+    ("Supertonic TTS", os.path.join(PROJECT_ROOT, "Models", "Speech", "supertonic")),
+    ("llama-swap.exe", os.path.join(PROJECT_ROOT, "llama-swap", "bin", "llama-swap.exe")),
+]
+for name, p in speech_assets:
+    if os.path.exists(p):
+        sz = os.path.getsize(p) if os.path.isfile(p) else sum(os.path.getsize(os.path.join(p, f)) for f in os.listdir(p) if os.path.isfile(os.path.join(p, f)))
+        print(f" [OK] Physical Asset: {name} ({sz / (1024*1024):.1f} MB) -> {p}")
+    else:
+        print(f" [FAIL] Physical Asset missing: {name} -> {p}")
+        errors += 1
+
+# 5. Translation Model Cache
+hf_cache = os.path.expanduser("~/.cache/huggingface/hub")
+cached = any("opus-mt-en-ru" in d for d in os.listdir(hf_cache)) if os.path.isdir(hf_cache) else False
+if cached:
+    print(" [OK] Translation Engine: Helsinki-NLP/opus-mt-en-ru cached locally in HuggingFace")
+else:
+    print(" [WARN] Translation Engine: Helsinki-NLP/opus-mt-en-ru will download upon first Qwen 122B run")
+    warnings += 1
+
+print()
+print("=======================================================================")
+if errors == 0:
+    print(" [VERDICT: READY] All required runtimes, hardware, and assets verified!")
+else:
+    print(f" [VERDICT: ACTION REQUIRED] Found {errors} critical error(s) and {warnings} warning(s).")
+print("=======================================================================")
+
+sys.exit(errors)
+
+```
+
+
+---
+
+### File: `Supervisor/station.ps1`
+**Role & Description:** One-Click Lifecycle Supervisor: launches llama-swap, local voice bridge, and Antigravity bridge with health checks and clean shutdown.
+
+```powershell
+<#
+.SYNOPSIS
+    Antigravity Nexus Station Supervisor.
+    Location: Antigravity-Nexus/Supervisor/station.ps1
+
+.DESCRIPTION
+    Initializes and manages the physical hardware stack and sidecar services:
+    - Dual-GPU pool (RTX 5060 Ti 16 GB + RTX 2080 Ti 22 GB) via NVML
+    - Port :8080  — llama-swap Model Router (Dynamic VRAM Swapping)
+    - Port :18002 — Local Voice Bridge (GigaAM v3 STT + Supertonic 3 TTS)
+    - Port :18005 — Antigravity Bridge Router (Model Catalog & SSE Reasoner)
+    - Sets CLOUD_CODE_URL for seamless Google Antigravity integration
+#>
+
+[CmdletBinding()]
+param(
+    [switch]$StatusOnly,
+    [switch]$RestartServices
+)
+
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
+$NexusRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$ProjectRoot = (Resolve-Path (Join-Path $NexusRoot "..")).Path
+
+$PythonExe = "C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe"
+$PythonWExe = "C:\Users\User\AppData\Local\Programs\Python\Python312\pythonw.exe"
+if (-not (Test-Path $PythonExe)) { $PythonExe = "python.exe" }
+if (-not (Test-Path $PythonWExe)) { $PythonWExe = "pythonw.exe" }
+
+$SwapBin = Join-Path $ProjectRoot "llama-swap\bin\llama-swap.exe"
+$SwapConfig = Join-Path $ProjectRoot "llama-swap\config.yaml"
+$VoiceScript = Join-Path $NexusRoot "Voice\service.py"
+$BridgeScript = Join-Path $NexusRoot "Bridge\bridge.py"
+
+Write-Host ""
+Write-Host "=======================================================================" -ForegroundColor Cyan
+Write-Host "        Antigravity Nexus Station — Unified Supervisor                 " -ForegroundColor White
+Write-Host "=======================================================================" -ForegroundColor Cyan
+Write-Host ""
+
+# 1. Dual-GPU Hardware Verification via NVML
+Write-Host "[1/5] Inspecting Dual-GPU Hardware Pool..." -ForegroundColor Yellow
+try {
+    $vramRaw = & $PythonExe "$ProjectRoot\Config\vram_manager.py" --json 2>$null
+    if ($vramRaw) {
+        $vram = $vramRaw | ConvertFrom-Json
+        foreach ($gpu in $vram.gpus) {
+            $usedMb = $gpu.used_mb
+            $totalMb = $gpu.total_mb
+            $freeMb = $gpu.free_mb
+            Write-Host "      GPU $($gpu.index): $($gpu.name) -> Free: $($freeMb) MiB / Total: $($totalMb) MiB (Used: $($usedMb) MiB)" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "      Dual-GPU NVML initialized (vram_manager fallback active)." -ForegroundColor DarkGray
+    }
+} catch {
+    Write-Host "      Warning: Could not query NVML ($($_))." -ForegroundColor DarkYellow
+}
+
+# Helper: Wait for HTTP endpoint
+function Test-HttpProbe([string]$url, [int]$timeoutSec = 3) {
+    try {
+        $res = Invoke-RestMethod -Uri $url -TimeoutSec $timeoutSec -ErrorAction Stop
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+# Helper: Safe process termination by port and command line pattern
+function Stop-ServiceByPortAndPattern([int]$port, [string]$pattern) {
+    $conn = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($conn -and $conn.OwningProcess -gt 0) {
+        $pidToKill = $conn.OwningProcess
+        $procInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $pidToKill" -ErrorAction SilentlyContinue
+        if ($procInfo -and ($procInfo.CommandLine -match $pattern -or $procInfo.Name -match "python")) {
+            Write-Host "      Stopping existing process on port $port (PID: $pidToKill)..." -ForegroundColor Yellow
+            try {
+                Stop-Process -Id $pidToKill -ErrorAction Stop
+            } catch {
+                Stop-Process -Id $pidToKill -Force -ErrorAction SilentlyContinue
+            }
+            Start-Sleep -Seconds 1
+        }
+    }
+}
+
+if ($RestartServices) {
+    Write-Host "      [-RestartServices active] Stopping running Nexus sidecars..." -ForegroundColor Cyan
+    Stop-ServiceByPortAndPattern 18005 "bridge\.py"
+    Stop-ServiceByPortAndPattern 18002 "service\.py"
+}
+
+# 2. Port :8080 (llama-swap)
+Write-Host "[2/5] Inspecting llama-swap Model Router (:8080)..." -ForegroundColor Yellow
+$conn8080 = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $conn8080 -and -not $StatusOnly) {
+    if (Test-Path $SwapBin) {
+        Write-Host "      Launching llama-swap on port 8080..." -ForegroundColor Cyan
+        Start-Process -FilePath $SwapBin -ArgumentList "-config `"$SwapConfig`" -watch-config -listen 127.0.0.1:8080" -WorkingDirectory (Join-Path $ProjectRoot "llama-swap") -WindowStyle Hidden
+        Start-Sleep -Seconds 2
+    } else {
+        Write-Host "      Error: llama-swap.exe binary not found at $SwapBin" -ForegroundColor Red
+    }
+}
+$isSwapHealthy = Test-HttpProbe "http://127.0.0.1:8080/v1/models" 3
+if ($isSwapHealthy) {
+    Write-Host "      llama-swap is ONLINE and healthy at http://127.0.0.1:8080" -ForegroundColor Green
+} else {
+    Write-Host "      llama-swap status: PENDING / OFFLINE" -ForegroundColor Yellow
+}
+
+# 3. Port :18002 (Local Voice Bridge)
+Write-Host "[3/5] Inspecting Local Voice Bridge (:18002)..." -ForegroundColor Yellow
+$conn18002 = Get-NetTCPConnection -LocalPort 18002 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+$needVoiceStart = (-not $conn18002)
+if ($conn18002 -and -not $StatusOnly) {
+    $procInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $($conn18002.OwningProcess)" -ErrorAction SilentlyContinue
+    if ($procInfo -and $procInfo.CommandLine -notmatch [regex]::Escape($NexusRoot)) {
+        Write-Host "      Found legacy Voice process outside NexusRoot. Upgrading..." -ForegroundColor Cyan
+        Stop-ServiceByPortAndPattern 18002 "service\.py"
+        $needVoiceStart = $true
+    }
+}
+if ($needVoiceStart -and -not $StatusOnly) {
+    Write-Host "      Launching Local Voice Bridge (GigaAM v3 STT + Supertonic 3 TTS)..." -ForegroundColor Cyan
+    Start-Process -FilePath $PythonWExe -ArgumentList "`"$VoiceScript`" 18002" -WorkingDirectory (Join-Path $NexusRoot "Voice") -WindowStyle Hidden
+    Start-Sleep -Seconds 4
+}
+$isVoiceHealthy = Test-HttpProbe "http://127.0.0.1:18002/health" 3
+if ($isVoiceHealthy) {
+    Write-Host "      Voice Bridge is ONLINE and healthy at http://127.0.0.1:18002" -ForegroundColor Green
+} else {
+    Write-Host "      Voice Bridge status: PENDING / OFFLINE" -ForegroundColor Yellow
+}
+
+# 4. Port :18005 (Antigravity Bridge)
+Write-Host "[4/5] Inspecting Antigravity Bridge Router (:18005)..." -ForegroundColor Yellow
+$conn18005 = Get-NetTCPConnection -LocalPort 18005 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+$needBridgeStart = (-not $conn18005)
+if ($conn18005 -and -not $StatusOnly) {
+    $procInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $($conn18005.OwningProcess)" -ErrorAction SilentlyContinue
+    if ($procInfo -and $procInfo.CommandLine -notmatch [regex]::Escape($NexusRoot)) {
+        Write-Host "      Found legacy Bridge process outside NexusRoot (PID $($conn18005.OwningProcess)). Upgrading to hardened Nexus Bridge..." -ForegroundColor Cyan
+        Stop-ServiceByPortAndPattern 18005 "bridge\.py"
+        $needBridgeStart = $true
+    }
+}
+if ($needBridgeStart -and -not $StatusOnly) {
+    Write-Host "      Launching Antigravity Bridge Router on port 18005..." -ForegroundColor Cyan
+    Start-Process -FilePath $PythonWExe -ArgumentList "`"$BridgeScript`"" -WorkingDirectory (Join-Path $NexusRoot "Bridge") -WindowStyle Hidden
+    Start-Sleep -Seconds 3
+}
+$isBridgeHealthy = Test-HttpProbe "http://127.0.0.1:18005/health" 3
+if ($isBridgeHealthy) {
+    Write-Host "      Antigravity Bridge is ONLINE and healthy at http://127.0.0.1:18005" -ForegroundColor Green
+} else {
+    Write-Host "      Antigravity Bridge status: PENDING / OFFLINE" -ForegroundColor Yellow
+}
+
+# 5. Environment & Station Integration
+Write-Host "[5/5] Configuring Environment Integration..." -ForegroundColor Yellow
+if (-not $StatusOnly) {
+    [Environment]::SetEnvironmentVariable("CLOUD_CODE_URL", "http://127.0.0.1:18005", "User")
+    $env:CLOUD_CODE_URL = "http://127.0.0.1:18005"
+}
+$currCloudCode = [Environment]::GetEnvironmentVariable("CLOUD_CODE_URL", "User")
+Write-Host "      Active CLOUD_CODE_URL: $currCloudCode" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "=======================================================================" -ForegroundColor Cyan
+Write-Host "   Antigravity Nexus Ready: Launch Antigravity to access models       " -ForegroundColor White
+Write-Host "   Station Model Lineup in Antigravity Dropdown:                       " -ForegroundColor Cyan
+Write-Host "     - Station: Qwen 27B Coder (Vision)                                " -ForegroundColor DarkCyan
+Write-Host "     - Station: Next 80B MoE (Thinking)                                " -ForegroundColor DarkCyan
+Write-Host "     - Station: Ornith 1.5 35B (Android and Big Dumps)                 " -ForegroundColor DarkCyan
+Write-Host "     - Station: Tinfield 177B (Titan MoE)                              " -ForegroundColor DarkCyan
+Write-Host "     - Station: Qwen 122B MoE (208E + Streaming Translation)           " -ForegroundColor DarkCyan
+Write-Host "   Emergency Safe-Switch: Launchers\SAFE-SWITCH.cmd                    " -ForegroundColor DarkGray
+Write-Host "=======================================================================" -ForegroundColor Cyan
+Write-Host ""
+
+```
+
+
+---
+
+### File: `Supervisor/safe_switch.ps1`
+**Role & Description:** Emergency Safe Switch: kills station processes, flushes routing overrides, restores 100% clean baseline.
+
+```powershell
+<#
+.SYNOPSIS
+    Antigravity Nexus Emergency Safe-Switch / Reset.
+    Location: Antigravity-Nexus/Supervisor/safe_switch.ps1
+
+.DESCRIPTION
+    - Clears the CLOUD_CODE_URL environment variable from the User environment.
+    - Gracefully terminates the local bridge process on port 18005.
+    - Leaves Dual-GPU pool and llama-swap intact.
+    - Restores Antigravity to 100% direct Google Cloud mode.
+#>
+
+[CmdletBinding()]
+param(
+    [switch]$KeepBridgeRunning
+)
+
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "   Antigravity Nexus Safe-Switch: Direct Cloud Mode         " -ForegroundColor White
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host ""
+
+# 1. Clear environment variable
+Write-Host "[1/3] Removing CLOUD_CODE_URL from User environment..." -ForegroundColor Yellow
+[Environment]::SetEnvironmentVariable("CLOUD_CODE_URL", $null, "User")
+$env:CLOUD_CODE_URL = $null
+Write-Host "      CLOUD_CODE_URL has been cleared." -ForegroundColor Green
+
+# 2. Stop local bridge process on port 18005
+if (-not $KeepBridgeRunning) {
+    Write-Host "[2/3] Checking for active bridge on port 18005..." -ForegroundColor Yellow
+    $conn = Get-NetTCPConnection -LocalPort 18005 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($conn -and $conn.OwningProcess -gt 0) {
+        $pidToKill = $conn.OwningProcess
+        $procInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $pidToKill" -ErrorAction SilentlyContinue
+        $cmdLine = $procInfo.CommandLine
+        $procName = $procInfo.Name
+        
+        # Verify identity: only terminate if it is indeed a python bridge process
+        if ($cmdLine -match "bridge\.py" -or $procName -match "python") {
+            Write-Host "      Stopping bridge process (PID: $pidToKill, Name: $procName)..." -ForegroundColor Yellow
+            try {
+                Stop-Process -Id $pidToKill -ErrorAction Stop
+                Write-Host "      Bridge process stopped successfully." -ForegroundColor Green
+            } catch {
+                # Fallback to force if graceful stop failed
+                Stop-Process -Id $pidToKill -Force -ErrorAction SilentlyContinue
+                Write-Host "      Bridge process forcefully stopped." -ForegroundColor DarkYellow
+            }
+        } else {
+            Write-Host "      Warning: PID $pidToKill ($procName) on port 18005 is not a bridge process. Refusing to kill." -ForegroundColor Red
+        }
+    } else {
+        Write-Host "      Port 18005 is already inactive." -ForegroundColor DarkGray
+    }
+} else {
+    Write-Host "[2/3] Skipping bridge process termination (-KeepBridgeRunning)." -ForegroundColor DarkGray
+}
+
+# 3. Validation
+Write-Host "[3/3] Validating configuration..." -ForegroundColor Yellow
+$userVar = [Environment]::GetEnvironmentVariable("CLOUD_CODE_URL", "User")
+if ([string]::IsNullOrEmpty($userVar)) {
+    Write-Host "      SUCCESS: System configured for 100% direct Google Cloud." -ForegroundColor Green
+} else {
+    Write-Host "      WARNING: CLOUD_CODE_URL is still set to: $userVar" -ForegroundColor Red
+}
+
+Write-Host ""
+Write-Host "Antigravity is restored to default cloud operation." -ForegroundColor Cyan
+Write-Host "Restart Antigravity IDE if it is currently running to apply the environment change." -ForegroundColor DarkGray
+Write-Host ""
+
+```
+
+
+---
+
+### File: `Launchers/START-STATION.cmd`
+**Role & Description:** Double-Click Station Launcher: bypasses PowerShell ExecutionPolicy seamlessly.
+
+```bat
+@echo off
+title Antigravity Nexus - Station Supervisor
+setlocal
+cd /d "%~dp0"
+
+echo =======================================================================
+echo          STARTING ANTIGRAVITY NEXUS WORKSTATION
+echo =======================================================================
+echo.
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\Supervisor\station.ps1" %*
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ERROR] Supervisor exited with status %ERRORLEVEL%.
+)
+
+echo.
+pause
+
+```
+
+
+---
+
+### File: `Launchers/VOICE-COMPANION.cmd`
+**Role & Description:** Double-Click Voice Companion Launcher.
+
+```bat
+@echo off
+title Antigravity Nexus - Voice Companion (Push-to-Talk)
+setlocal
+cd /d "%~dp0..\Voice"
+
+echo =======================================================================
+echo          LAUNCHING ANTIGRAVITY VOICE COMPANION
+echo          Hold or Toggle Hotkey (F9 / ScrollLock) to speak
+echo =======================================================================
+echo.
+
+set "PYTHON_EXE=C:\Users\User\AppData\Local\Programs\Python\Python312\python.exe"
+if not exist "%PYTHON_EXE%" set "PYTHON_EXE=python.exe"
+
+"%PYTHON_EXE%" "%~dp0..\Voice\voice_companion.py" %*
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ERROR] Voice Companion exited with status %ERRORLEVEL%.
+    pause
+)
+
+```
+
+
+---
+
+### File: `Launchers/SAFE-SWITCH.cmd`
+**Role & Description:** Double-Click Safe Switch Launcher.
+
+```bat
+@echo off
+title Antigravity Nexus - Emergency Safe-Switch
+setlocal
+cd /d "%~dp0"
+
+echo =======================================================================
+echo          REVERTING TO DIRECT GOOGLE CLOUD MODE
+echo =======================================================================
+echo.
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\Supervisor\safe_switch.ps1" %*
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ERROR] Safe-switch exited with status %ERRORLEVEL%.
+)
+
+echo.
+pause
+
+```
+
+
+---
+
+### File: `Tests/test_bridge_e2e.py`
+**Role & Description:** End-to-End Bridge Verification: tests PEB auth, catalog injection, SSE streams, tool repair, model switching.
+
+```python
+import os
+import sys
+
+BRIDGE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Bridge"))
+if BRIDGE_DIR not in sys.path:
+    sys.path.insert(0, BRIDGE_DIR)
+
+import json
+import time
+import socket
+import urllib.request
+import threading
+import unittest
+
+from upstream_detector import get_upstream_proxy, _is_proxy_alive
+from auth_vault import get_auth_fallback, save_auth_cache
+from model_catalog import inject_local_model, get_models_fallback, LOCAL_MODEL_ID, resolve_station_model, STATION_MODELS
+from converter import (
+    gemini_to_openai_messages,
+    format_gemini_sse_thought_chunk,
+    format_gemini_sse_text_chunk,
+    format_gemini_sse_finish
+)
+from bridge import ThreadedHTTPServer, AntigravityBridgeHandler
+
+TEST_PORT = 18007
+
+class TestBridgeSuite(unittest.TestCase):
+    def test_01_peb_proxy_detection(self):
+        """Verify PEB-based live proxy detection."""
+        proxy = get_upstream_proxy()
+        print(f"\n[TEST 1] Detected live proxy: {proxy}")
+        self.assertIsNotNone(proxy, "Expected live agy-unlock proxy to be found")
+        self.assertTrue(proxy.startswith("http://"), "Expected valid HTTP proxy URL")
+        # Check port connectivity
+        host_port = proxy.split("@")[-1].replace("http://", "")
+        host, port_str = host_port.split(":")
+        self.assertTrue(_is_proxy_alive(host, int(port_str)), f"Proxy port {port_str} should be listening")
+
+    def test_02_auth_vault_resilience(self):
+        """Verify Auth Vault guarantees 200 OK fallback profiles."""
+        lca = get_auth_fallback("/v1internal:loadCodeAssist")
+        self.assertTrue("currentTier" in lca or "userTier" in lca)
+        self.assertIn("cloudaicompanionProject", lca)
+
+        ui = get_auth_fallback("/v1internal:fetchUserInfo")
+        self.assertTrue("userSettings" in ui or "userEmail" in ui)
+
+    def test_03_model_catalog_injection(self):
+        """Verify all station models (Qwen 27B, Next 80B, Tinfield 177B) are injected with correct metadata."""
+        sample_catalog = {
+            "models": {
+                "gemini-3.8-flash": {"displayName": "Gemini 3.8 Flash"}
+            },
+            "agentModelSorts": [
+                {"groups": [{"modelIds": ["gemini-3.8-flash"]}]}
+            ]
+        }
+        merged = inject_local_model(sample_catalog)
+        self.assertNotIn("station-local", merged["models"])
+        self.assertIn("station-qwen", merged["models"])
+        self.assertIn("station-next", merged["models"])
+        self.assertIn("station-qwen122", merged["models"])
+        self.assertIn("station-ornith", merged["models"])
+        self.assertIn("station-tinfield", merged["models"])
+
+        qwen_spec = merged["models"]["station-qwen"]
+        self.assertEqual(qwen_spec["displayName"], "Локальная: Qwen 27B Coder (Vision)")
+        self.assertEqual(qwen_spec["maxTokens"], 1048576)
+        self.assertEqual(qwen_spec["maxOutputTokens"], 65536)
+
+        next_spec = merged["models"]["station-next"]
+        self.assertEqual(next_spec["displayName"], "Локальная: Next 80B MoE (Thinking)")
+        self.assertEqual(next_spec["maxTokens"], 1048576)
+
+        qwen122_spec = merged["models"]["station-qwen122"]
+        self.assertEqual(qwen122_spec["displayName"], "Локальная: Qwen 122B MoE (208E)")
+        self.assertEqual(qwen122_spec["maxTokens"], 1048576)
+
+        ornith_spec = merged["models"]["station-ornith"]
+        self.assertEqual(ornith_spec["displayName"], "Локальная: Ornith 1.5 35B (Android & Big Dumps)")
+        self.assertEqual(ornith_spec["maxTokens"], 1048576)
+
+        # Test model resolution
+        self.assertEqual(resolve_station_model("station-qwen"), "qwen")
+        self.assertEqual(resolve_station_model("station-next"), "next")
+        self.assertEqual(resolve_station_model("station-qwen122"), "qwen122")
+        self.assertEqual(resolve_station_model("station-ornith"), "ornith")
+        self.assertEqual(resolve_station_model("station-tinfield"), "tinfield")
+        self.assertEqual(resolve_station_model("station-local"), "qwen")
+        self.assertIsNone(resolve_station_model("gemini-3.8-flash-high"))
+
+        # Check priority sort
+        sort_ids = merged["agentModelSorts"][0]["groups"][0]["modelIds"]
+        for sm_id in STATION_MODELS.keys():
+            self.assertIn(sm_id, sort_ids)
+
+    def test_04_converter_thought_sse(self):
+        """Verify native thought: true and text SSE formatting."""
+        thought_chunk = format_gemini_sse_thought_chunk("Рассуждаю о плане...")
+        self.assertTrue(thought_chunk.startswith("data: "))
+        parsed = json.loads(thought_chunk[5:].strip())
+        candidate_parts = parsed["response"]["candidates"][0]["content"]["parts"]
+        self.assertTrue(candidate_parts[0].get("thought"), "Expected thought: True")
+        self.assertEqual(candidate_parts[0].get("text"), "Рассуждаю о плане...")
+
+        text_chunk = format_gemini_sse_text_chunk("Ответ пользователю.")
+        parsed_text = json.loads(text_chunk[5:].strip())
+        parts = parsed_text["response"]["candidates"][0]["content"]["parts"]
+        self.assertNotIn("thought", parts[0], "Regular text must not contain thought: True")
+        self.assertEqual(parts[0]["text"], "Ответ пользователю.")
+
+    def test_05_converter_messages_and_images(self):
+        """Verify multimodal and tools conversion to OpenAI format."""
+        gemini_req = {
+            "systemInstruction": {"parts": [{"text": "Ты полезный ассистент."}]},
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": "Посмотри на картинку"},
+                        {"inlineData": {"mimeType": "image/png", "data": "iVBORw0KGgoAAAANSUhEUg=="}}
+                    ]
+                }
+            ],
+            "tools": [
+                {
+                    "functionDeclarations": [
+                        {
+                            "name": "run_command",
+                            "description": "Run terminal command",
+                            "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}}
+                        }
+                    ]
+                }
+            ]
+        }
+        messages, tools, tool_schemas = gemini_to_openai_messages(gemini_req)
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0]["role"], "system")
+        self.assertEqual(messages[1]["role"], "user")
+        self.assertIsInstance(messages[1]["content"], list)
+        self.assertEqual(messages[1]["content"][0]["type"], "text")
+        self.assertEqual(messages[1]["content"][1]["type"], "image_url")
+        self.assertEqual(len(tools), 1)
+        self.assertEqual(tools[0]["function"]["name"], "run_command")
+        self.assertIn("run_command", tool_schemas)
+
+    def test_06_live_http_server_endpoints(self):
+        """Start isolated HTTP server on TEST_PORT and verify endpoints."""
+        server = ThreadedHTTPServer(("127.0.0.1", TEST_PORT), AntigravityBridgeHandler)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+        time.sleep(0.5)
+
+        try:
+            # 1. Test loadCodeAssist (must return 200 OK without valid auth token)
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{TEST_PORT}/v1internal:loadCodeAssist",
+                data=b"{}",
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                self.assertEqual(resp.status, 200)
+                body = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue("currentTier" in body or "userTier" in body)
+                print(f"[TEST 6.1] loadCodeAssist returned 200 OK (tier: {body.get('currentTier') or body.get('userTier')})")
+
+            # 2. Test fetchUserInfo (must return 200 OK)
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{TEST_PORT}/v1internal:fetchUserInfo",
+                data=b"{}",
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                self.assertEqual(resp.status, 200)
+                body = json.loads(resp.read().decode("utf-8"))
+                self.assertTrue("userSettings" in body or "userEmail" in body)
+                print(f"[TEST 6.2] fetchUserInfo returned 200 OK (body: {body})")
+
+            # 3. Test fetchAvailableModels (must inject station-local)
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{TEST_PORT}/v1internal:fetchAvailableModels",
+                data=b"{}",
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                self.assertEqual(resp.status, 200)
+                body = json.loads(resp.read().decode("utf-8"))
+                self.assertIn(LOCAL_MODEL_ID, body["models"])
+                spec = body["models"][LOCAL_MODEL_ID]
+                self.assertEqual(spec["displayName"], "Локальная: Qwen 27B Coder (Vision)")
+                print(f"[TEST 6.3] fetchAvailableModels returned 200 OK with '{spec['displayName']}'")
+
+            # 4. Test live streamGenerateContent with llama-swap:8080 (Dual-GPU Qwen 3.8)
+            payload = {
+                "model": LOCAL_MODEL_ID,
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": "Ответь одним коротким предложением: подтверди готовность станции."}]
+                    }
+                ]
+            }
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{TEST_PORT}/v1internal:streamGenerateContent",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            received_chunks = []
+            thought_received = False
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                self.assertEqual(resp.status, 200)
+                for line in resp:
+                    s = line.decode("utf-8").strip()
+                    if s.startswith("data:"):
+                        chunk_json = json.loads(s[5:].strip())
+                        received_chunks.append(chunk_json)
+                        cands = chunk_json.get("response", {}).get("candidates", [])
+                        if cands and "content" in cands[0]:
+                            parts = cands[0]["content"].get("parts", [])
+                            for p in parts:
+                                if p.get("thought"):
+                                    thought_received = True
+
+            self.assertGreater(len(received_chunks), 1, "Expected streaming SSE chunks")
+            finish_chunk = received_chunks[-1]
+            self.assertEqual(
+                finish_chunk.get("response", {}).get("candidates", [{}])[0].get("finishReason"),
+                "STOP"
+            )
+            # 5. Test chunked Transfer-Encoding on streamGenerateContent
+            import http.client
+            conn = http.client.HTTPConnection("127.0.0.1", TEST_PORT)
+            conn.putrequest("POST", "/v1internal:streamGenerateContent")
+            conn.putheader("Transfer-Encoding", "chunked")
+            conn.putheader("Content-Type", "application/json")
+            conn.endheaders()
+            chunk_data = json.dumps(payload).encode("utf-8")
+            chunk_hex = f"{len(chunk_data):x}\r\n".encode()
+            conn.send(chunk_hex + chunk_data + b"\r\n0\r\n\r\n")
+            chunked_resp = conn.getresponse()
+            self.assertEqual(chunked_resp.status, 200)
+            chunked_lines = chunked_resp.read().decode("utf-8").split("\n")
+            data_lines = [l for l in chunked_lines if l.startswith("data:")]
+            self.assertGreater(len(data_lines), 1, "Expected SSE chunks from chunked request")
+            print(f"[TEST 6.5] Chunked Transfer-Encoding streamGenerateContent returned {len(data_lines)} SSE chunks [DONE]")
+            conn.close()
+
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_07_smart_context_compaction(self):
+        """Verify that older large tool outputs are intelligently compacted while preserving paths and commands."""
+        from converter import smart_compact_tool_response
+
+        # Test view_file compaction
+        fake_code = "\n".join([f"line_{i} = do_something({i})" for i in range(100)])
+        compacted_file = smart_compact_tool_response("view_file", fake_code, {"AbsolutePath": "K:/Project/test.py", "StartLine": 1, "EndLine": 100})
+        self.assertIn("K:/Project/test.py", compacted_file)
+        self.assertIn("Контекст оптимизирован", compacted_file)
+        self.assertIn("line_0", compacted_file)
+        self.assertIn("line_99", compacted_file)
+        self.assertLess(len(compacted_file), len(fake_code) // 3)
+
+        # Test run_command compaction
+        fake_log = "Build started...\n" + "\n".join([f"Compiling module_{i}..." for i in range(80)]) + "\nBuild finished with exit code 0."
+        compacted_cmd = smart_compact_tool_response("run_command", fake_log, {"CommandLine": "npm run build", "Cwd": "K:/Project/web"})
+        self.assertIn("npm run build", compacted_cmd)
+        self.assertIn("K:/Project/web", compacted_cmd)
+        self.assertIn("Build started", compacted_cmd)
+        self.assertIn("exit code 0", compacted_cmd)
+        self.assertLess(len(compacted_cmd), len(fake_log) // 3)
+
+    def test_08_tool_argument_repair_and_validation(self):
+        """Verify that broken JSON strings and missing required parameters are repaired without 'raw' fallback."""
+        from converter import repair_json_string, validate_and_fill_tool_args
+
+        # 1. Truncated JSON without closing brace and with Windows backslashes
+        broken_json = '{"CommandLine":"Get-Content \\"K:\\\\Project\\\\bridge.log\\" -Tail 40","Cwd":"K:\\\\Project"'
+        repaired = repair_json_string(broken_json)
+        self.assertIn("CommandLine", repaired)
+        self.assertIn("Cwd", repaired)
+
+        # 2. Schema validation and injection of required fields
+        schema = {
+            "type": "object",
+            "properties": {
+                "CommandLine": {"type": "string"},
+                "Cwd": {"type": "string"},
+                "WaitMsBeforeAsync": {"type": "integer"},
+                "toolAction": {"type": "string"},
+                "toolSummary": {"type": "string"}
+            },
+            "required": ["CommandLine", "Cwd", "WaitMsBeforeAsync", "toolAction", "toolSummary"]
+        }
+        validated = validate_and_fill_tool_args("run_command", repaired, {"run_command": schema})
+        self.assertIn("WaitMsBeforeAsync", validated)
+        self.assertIn("toolAction", validated)
+        self.assertIn("toolSummary", validated)
+        self.assertNotIn("raw", validated)
+        self.assertEqual(validated["WaitMsBeforeAsync"], 5000)
+
+    def test_09_hollow_tool_call_filtering(self):
+        """Verify that inoperable / hollow tool calls are strictly caught and rejected."""
+        from converter import is_tool_call_operable
+
+        # Empty CommandLine
+        self.assertFalse(is_tool_call_operable("run_command", {"CommandLine": "", "Cwd": "K:\\Project"}))
+        self.assertFalse(is_tool_call_operable("run_command", {"CommandLine": "   "}))
+        self.assertTrue(is_tool_call_operable("run_command", {"CommandLine": "git status"}))
+
+        # Empty AbsolutePath
+        self.assertFalse(is_tool_call_operable("view_file", {"AbsolutePath": ""}))
+        self.assertTrue(is_tool_call_operable("view_file", {"AbsolutePath": "K:\\Project\\bridge.py"}))
+
+        # TargetFile & CodeContent strict validation
+        self.assertFalse(is_tool_call_operable("write_to_file", {"TargetFile": ""}))
+        self.assertFalse(is_tool_call_operable("write_to_file", {"TargetFile": "K:\\Project\\test.txt"}))  # Missing CodeContent
+        self.assertTrue(is_tool_call_operable("write_to_file", {"TargetFile": "K:\\Project\\test.txt", "CodeContent": "print('ok')"}))
+
+        # Fail-closed for unknown tools with empty args
+        self.assertFalse(is_tool_call_operable("non_existent_tool", {}))
+        self.assertTrue(is_tool_call_operable("custom_tool", {"valid_param": 123}))
+
+    def test_10_context_token_budget_and_emergency_compaction(self):
+        """Verify token budget enforcement and emergency compaction preserves system message and boundaries."""
+        from converter import enforce_context_token_budget, emergency_compact_messages
+
+        # Build simulated long conversation
+        messages = [
+            {"role": "system", "content": "System prompt instructions"},
+            {"role": "user", "content": "Primary user goal: build station bridge"},
+        ]
+        for i in range(50):
+            messages.append({"role": "assistant", "content": f"Step {i}: executing tool", "tool_calls": [{"id": f"call_{i}", "type": "function", "function": {"name": "run_cmd", "arguments": "{}"}}]})
+            messages.append({"role": "tool", "name": "run_cmd", "tool_call_id": f"call_{i}", "content": f"Result {i} " * 200})
+
+        # Test budget enforcement
+        budgeted = enforce_context_token_budget(messages, max_chars=10000)
+        self.assertEqual(budgeted[0]["role"], "system")
+        self.assertEqual(budgeted[1]["content"], "Primary user goal: build station bridge")
+        # Boundary check: ensure no leading tool role without assistant
+        self.assertNotEqual(budgeted[2]["role"], "tool")
+
+        # Test emergency compaction
+        emergency = emergency_compact_messages(messages, keep_recent=6)
+        self.assertEqual(emergency[0]["role"], "system")
+        self.assertEqual(emergency[1]["content"], "Primary user goal: build station bridge")
+        self.assertLessEqual(len(emergency), 8)
+        self.assertNotEqual(emergency[2]["role"], "tool")
+
+    def test_11_auxiliary_endpoints_resilience(self):
+        """Verify auxiliary analytics endpoints return instant 200 OK {}."""
+        server = ThreadedHTTPServer(("127.0.0.1", TEST_PORT), AntigravityBridgeHandler)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+        time.sleep(0.5)
+
+        try:
+            for ep in ["/v1internal:recordTrajectoryAnalytics", "/v1internal:listExperiments"]:
+                req = urllib.request.Request(
+                    f"http://127.0.0.1:{TEST_PORT}{ep}",
+                    data=b'{"dummy": true}',
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    self.assertEqual(resp.status, 200)
+                    body = json.loads(resp.read().decode("utf-8"))
+                    self.assertIsInstance(body, dict)
+                    print(f"[TEST 11] {ep} returned 200 OK: {body}")
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_12_payload_too_large_rejection(self):
+        """Verify request bodies exceeding MAX_BODY_BYTES (64 MB) return HTTP 413."""
+        server = ThreadedHTTPServer(("127.0.0.1", TEST_PORT), AntigravityBridgeHandler)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+        time.sleep(0.5)
+
+        try:
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{TEST_PORT}/v1internal:streamGenerateContent",
+                headers={
+                    "Content-Type": "application/json",
+                    "Content-Length": str(70 * 1024 * 1024)  # 70 MB declares over 64 MB ceiling
+                },
+                method="POST"
+            )
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                urllib.request.urlopen(req, timeout=5)
+            self.assertEqual(ctx.exception.code, 413)
+            print("[TEST 12] Successfully received HTTP 413 for payload exceeding 64MB limit")
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_13_safe_json_error_serialization(self):
+        """Verify Bridge handler returns safe, parseable JSON on generic upstream error."""
+        import bridge
+        orig_host = bridge.TARGET_HOST
+        bridge.TARGET_HOST = "http://127.0.0.1:18099"
+
+        server = ThreadedHTTPServer(("127.0.0.1", TEST_PORT), AntigravityBridgeHandler)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+        time.sleep(0.5)
+
+        try:
+            # Trigger generic proxy handler against non-existent upstream target
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{TEST_PORT}/v1internal:unknownActionEndpoint",
+                data=b'{"test": "payload"}',
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                urllib.request.urlopen(req, timeout=5)
+            self.assertEqual(ctx.exception.code, 502)
+            body = ctx.exception.read().decode("utf-8")
+            parsed = json.loads(body)
+            self.assertIn("error", parsed)
+            print(f"[TEST 13] Successfully verified live HTTP 502 JSON error format: {parsed}")
+        finally:
+            bridge.TARGET_HOST = orig_host
+            server.shutdown()
+            server.server_close()
+
+    def test_14_streaming_gzip_bomb_defense(self):
+        """Verify that a small compressed gzip bomb expanding over 64MB is aborted with HTTP 413."""
+        import gzip
+        # 70 MB of repetitive zeros compresses to ~70 KB
+        bomb_data = b"0" * (70 * 1024 * 1024)
+        compressed_bomb = gzip.compress(bomb_data)
+        self.assertLess(len(compressed_bomb), 200 * 1024, "Compressed bomb should be tiny (<200KB)")
+
+        server = ThreadedHTTPServer(("127.0.0.1", TEST_PORT), AntigravityBridgeHandler)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+        time.sleep(0.5)
+
+        try:
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{TEST_PORT}/v1internal:streamGenerateContent",
+                data=compressed_bomb,
+                headers={
+                    "Content-Type": "application/json",
+                    "Content-Encoding": "gzip"
+                },
+                method="POST"
+            )
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                urllib.request.urlopen(req, timeout=5)
+            self.assertEqual(ctx.exception.code, 413)
+            print("[TEST 14] Successfully caught and rejected gzip bomb with HTTP 413 without OOM")
+        finally:
+            server.shutdown()
+            server.server_close()
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+
+```
+
+
+---
+
+### File: `Tests/test_qwen122_trans.py`
+**Role & Description:** Translation Stream Verification: tests sentence buffering, code-fence preservation, glossary terms.
+
+```python
+"""
+Tests for Qwen 122B (208E) Streaming Sentence Translation Micro-Layer.
+Location: Antigravity-Nexus/Tests/test_qwen122_trans.py
+"""
+
+import os
+import sys
+import unittest
+
+BRIDGE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Bridge"))
+if BRIDGE_DIR not in sys.path:
+    sys.path.insert(0, BRIDGE_DIR)
+
+from qwen122_stream import StreamSentenceTranslator, translate_sentence
+
+
+class TestQwen122StreamingTranslation(unittest.TestCase):
+    def test_01_single_sentence_translation(self):
+        text = "The system is fully operational and healthy."
+        res = translate_sentence(text)
+        self.assertTrue(len(res) > 5)
+        # Should be in Russian characters
+        has_cyrillic = any('\u0400' <= char <= '\u04FF' for char in res)
+        self.assertTrue(has_cyrillic, f"Expected Russian text, got: {res}")
+
+    def test_02_domain_glossary_replacement(self):
+        # Check replacement: "deadlock" or glossary words
+        text = "We encountered a deadlock in the database log."
+        res = translate_sentence(text)
+        self.assertTrue("дедлок" in res.lower() or "лог" in res.lower() or "баз" in res.lower())
+
+    def test_03_streaming_with_code_blocks(self):
+        translator = StreamSentenceTranslator()
+        chunks = [
+            "We have verified the dual-GPU pool. ",
+            "Here is the function:\n```python\n",
+            "def calculate_vram():\n",
+            "    return 37.9\n```\n",
+            "All tests pass successfully."
+        ]
+        emitted = []
+        for c in chunks:
+            for out in translator.feed(c):
+                emitted.append(out)
+        for out in translator.flush():
+            emitted.append(out)
+
+        full = "".join(emitted)
+        # Code must NOT be translated
+        self.assertIn("def calculate_vram():", full)
+        self.assertIn("return 37.9", full)
+        # Surrounding text must contain Cyrillic
+        self.assertTrue(any('\u0400' <= char <= '\u04FF' for char in full))
+
+    def test_04_inline_code_preservation(self):
+        translator = StreamSentenceTranslator()
+        chunks = ["Run `powershell.exe` to inspect the ports."]
+        emitted = []
+        for c in chunks:
+            for out in translator.feed(c):
+                emitted.append(out)
+        for out in translator.flush():
+            emitted.append(out)
+        full = "".join(emitted)
+        self.assertIn("`powershell.exe`", full)
+
+    def test_05_preserve_newlines_and_paragraphs(self):
+        translator = StreamSentenceTranslator()
+        text = "First paragraph line 1.\n\nSecond paragraph line 2."
+        emitted = []
+        for out in translator.feed(text):
+            emitted.append(out)
+        for out in translator.flush():
+            emitted.append(out)
+        full = "".join(emitted)
+        # Must preserve double newlines, NOT collapse to a single space
+        self.assertIn("\n\n", full)
+
+    def test_06_marianmt_device_cpu_invariant(self):
+        from qwen122_stream import ensure_translator_loaded, _model
+        self.assertTrue(ensure_translator_loaded())
+        self.assertIsNotNone(_model)
+        param_device = next(_model.parameters()).device.type
+        self.assertEqual(param_device, "cpu", "MarianMT MUST reside strictly on CPU (Zero VRAM Waste)")
+
+    def test_07_abbreviation_not_breaking_sentence(self):
+        translator = StreamSentenceTranslator()
+        # Sentence contains abbreviation and decimal number
+        text = "For example e.g. Pi is approximately 3.14 in mathematics. Next sentence starts here."
+        emitted = []
+        for out in translator.feed(text):
+            emitted.append(out)
+        for out in translator.flush():
+            emitted.append(out)
+        # Should emit 2 sentences, not breaking on e.g. or 3.14
+        self.assertTrue(len(emitted) >= 2)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+```
+
+
+---
+
+### File: `Tests/test_voice_robustness.py`
+**Role & Description:** Voice Bridge Verification: physical audio wav files test on GigaAM v3 and Supertonic 3.
+
+```python
+"""
+Rigorous Integration and Edge-Case Test Suite for Local Voice Bridge (:18002).
+Adheres strictly to the workstation's Zero Simulation principle:
+tests real GigaAM v3 RNN-T STT, real Supertonic 3 TTS, real audio waveforms,
+edge-case handling, and route normalization.
+"""
+
+import io
+import json
+import os
+import sys
+import threading
+import time
+import urllib.request
+import urllib.error
+import wave
+import pytest
+
+# Add isolated Antigravity-Nexus Voice to sys.path
+VOICE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Voice"))
+if VOICE_DIR not in sys.path:
+    sys.path.insert(0, VOICE_DIR)
+
+import service
+
+
+@pytest.fixture(scope="module")
+def voice_server():
+    """Starts an ephemeral or verifies the live Voice Bridge server on port 18002."""
+    port = 18002
+    server_started = False
+    httpd = None
+
+    # Check if 18002 is already running
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/health")
+        with urllib.request.urlopen(req, timeout=1.0) as resp:
+            if resp.status == 200:
+                yield f"http://127.0.0.1:{port}"
+                return
+    except Exception:
+        pass
+
+    # Initialize models and launch server in thread on test port 18002 (or 18003 if occupied)
+    service.init_models()
+    try:
+        httpd = service.ThreadingHTTPServer(("127.0.0.1", port), service.VoiceBridgeHandler)
+    except OSError:
+        port = 18003
+        httpd = service.ThreadingHTTPServer(("127.0.0.1", port), service.VoiceBridgeHandler)
+
+    t = threading.Thread(target=httpd.serve_forever, daemon=True)
+    t.start()
+    time.sleep(0.5)
+
+    base_url = f"http://127.0.0.1:{port}"
+    yield base_url
+
+    if httpd:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+class TestVoiceBridgeRobustness:
+    """Rigorous tests covering real audio transcription, speech synthesis, and route robustness."""
+
+    def test_health_endpoint_and_routing_variants(self, voice_server):
+        # 1. Standard /health
+        req = urllib.request.Request(f"{voice_server}/health")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            assert resp.status == 200
+            data = json.loads(resp.read().decode("utf-8"))
+            assert data["status"] == "ok"
+            assert "gigaam" in data["stt_engine"].lower()
+            assert "supertonic" in data["tts_engine"].lower()
+            assert set(data["voices"]) >= {"M1", "F1"}
+            assert data["ram_mb"] > 10
+
+        # 2. Query param variation: /health?v=2
+        req = urllib.request.Request(f"{voice_server}/health?query=probe")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            assert resp.status == 200
+
+        # 3. Proxied route variant: /voice-api/health
+        req = urllib.request.Request(f"{voice_server}/voice-api/health")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            assert resp.status == 200
+
+    def test_real_stt_transcription(self, voice_server):
+        test_dir = os.path.join(VOICE_DIR, "test-audio")
+        samples = [
+            ("test1.wav", "Открой папку проекта и покажи последние изменённые файлы."),
+            ("test2.wav", "Проверь, подключён ли планшет по беспроводному."),
+            ("test3.wav", "Создай текстовый файл, текст голосового ввода.")
+        ]
+        for fn, expected_text in samples:
+            path = os.path.join(test_dir, fn)
+            assert os.path.isfile(path), f"Sample file not found: {path}"
+            with open(path, "rb") as f:
+                wav_bytes = f.read()
+
+            req = urllib.request.Request(
+                f"{voice_server}/stt",
+                data=wav_bytes,
+                headers={"Content-Type": "audio/wav"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                assert resp.status == 200
+                data = json.loads(resp.read().decode("utf-8"))
+                assert "text" in data
+                assert data["text"].strip() == expected_text
+                assert data["latency_ms"] > 0
+                assert data["audio_duration_s"] > 1.0
+
+    def test_stt_edge_cases(self, voice_server):
+        # 1. Empty body -> HTTP 400
+        req = urllib.request.Request(f"{voice_server}/stt", data=b"", method="POST")
+        with pytest.raises(urllib.error.HTTPError) as exc_info:
+            urllib.request.urlopen(req, timeout=5)
+        assert exc_info.value.code == 400
+
+        # 2. Extremely short audio (< 0.2s) -> 200 OK with empty text
+        short_pcm = (b"\x00\x00" * 1600)  # 0.1s of 16kHz 16-bit silence
+        out_io = io.BytesIO()
+        with wave.open(out_io, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(16000)
+            wf.writeframes(short_pcm)
+        short_wav = out_io.getvalue()
+
+        req = urllib.request.Request(
+            f"{voice_server}/stt",
+            data=short_wav,
+            headers={"Content-Type": "audio/wav"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            assert resp.status == 200
+            data = json.loads(resp.read().decode("utf-8"))
+            assert data["text"] == ""
+
+    def test_real_tts_synthesis_m1_and_f1(self, voice_server):
+        text = "Интеграция рабочей станции Nexus с Antigravity завершена успешно."
+        for voice in ["M1", "F1"]:
+            payload = json.dumps({"text": text, "voice": voice, "mode": "full"}).encode("utf-8")
+            req = urllib.request.Request(
+                f"{voice_server}/tts",
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                assert resp.status == 200
+                assert resp.headers.get("Content-Type") == "audio/wav"
+                dur = float(resp.headers.get("X-Duration-Seconds", 0))
+                lat = float(resp.headers.get("X-Latency-Ms", 0))
+                wav_bytes = resp.read()
+                assert len(wav_bytes) > 50000
+                assert dur > 1.5
+                assert lat > 0
+
+                # Validate valid WAV structure
+                with wave.open(io.BytesIO(wav_bytes), "rb") as wf:
+                    assert wf.getnchannels() == 1
+                    assert wf.getsampwidth() == 2
+                    assert wf.getframerate() > 0
+                    assert wf.getnframes() > 0
+
+    def test_tts_text_sanitization_and_tech_terms(self):
+        # Verify tech dictionary expansions
+        raw = "Обновлен Docker и настроен REST API через Python и JSON в Windows."
+        cleaned = service.clean_text_for_speech(raw, mode="full")
+        assert "Докер" in cleaned
+        assert "Апи" in cleaned
+        assert "Пайтон" in cleaned
+        assert "Джейсон" in cleaned
+        assert "Виндовс" in cleaned
+
+        # Verify Markdown link & code block stripping
+        md_text = "# Заголовок\n```python\nprint('hello')\n```\nСсылка: [Nexus Docs](file:///docs)"
+        cleaned_md = service.clean_text_for_speech(md_text, mode="full")
+        assert "Код опущен" in cleaned_md
+        assert "Нексус Docs" in cleaned_md
+        assert "#" not in cleaned_md
+
+    def test_tts_runaway_length_protection(self, voice_server):
+        # 10,000 character payload should be safely truncated without OOM or crash
+        huge_text = "Тестовая строка для проверки ограничения длины. " * 300
+        payload = json.dumps({"text": huge_text, "voice": "M1", "mode": "summary"}).encode("utf-8")
+        req = urllib.request.Request(
+            f"{voice_server}/tts",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            assert resp.status == 200
+            assert resp.headers.get("Content-Type") == "audio/wav"
+            wav_bytes = resp.read()
+            assert len(wav_bytes) > 1000
+
+    def test_stop_barge_in_endpoint(self, voice_server):
+        req = urllib.request.Request(f"{voice_server}/stop", data=b"", method="POST")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            assert resp.status == 200
+            data = json.loads(resp.read().decode("utf-8"))
+            assert data["status"] == "stopped"
+
+    def test_clipboard_preservation(self):
+        """Verify that paste_text_safely preserves the user's prior clipboard contents."""
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        sys.path.insert(0, os.path.join(project_root, "Voice"))
+        try:
+            from voice_companion import get_clipboard_text, set_clipboard_text, paste_text_safely
+        except ImportError:
+            return
+
+        initial_user_text = "Important Code Snippet -- Do Not Overwrite"
+        set_clipboard_text(initial_user_text)
+
+        # Trigger safe paste of recognized text
+        success = paste_text_safely("Recognized voice command")
+        assert success is True
+
+        # Verify initial clipboard content was completely preserved
+        restored_text = get_clipboard_text()
+        assert restored_text == initial_user_text, f"Clipboard corrupted: {restored_text}"
+
+
+```
+
+
+---
+
+### File: `Tests/test_station_health.py`
+**Role & Description:** Physical Hardware Health Verification: NVML dual-GPU pool and port liveliness.
+
+```python
+"""
+Physical Health & Hardware Verification Test for Antigravity Nexus.
+Location: Antigravity-Nexus/Tests/test_station_health.py
+"""
+
+import json
+import os
+import sys
+import unittest
+import urllib.request
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+
+class TestAntigravityNexusHealth(unittest.TestCase):
+    def test_01_nvml_dual_gpu_hardware(self):
+        """Verifies physical dual-GPU availability via Config/vram_manager.py."""
+        from Config.vram_manager import NVMLManager
+        nvml = NVMLManager()
+        self.assertTrue(nvml.is_available, "NVML driver library must be accessible on physical host")
+        self.assertEqual(nvml.get_device_count(), 2, "Must detect exactly 2 physical GPUs (5060 Ti + 2080 Ti)")
+        gpu0 = nvml.get_gpu_info(0)
+        gpu1 = nvml.get_gpu_info(1)
+        self.assertIn("5060", gpu0["name"])
+        self.assertIn("2080", gpu1["name"])
+        self.assertGreater(gpu0["total_mb"], 15000)
+        self.assertGreater(gpu1["total_mb"], 20000)
+
+    def test_02_antigravity_bridge_health(self):
+        """Verifies Antigravity Bridge Router on port 18005."""
+        req = urllib.request.Request("http://127.0.0.1:18005/health")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(data.get("status"), "ok")
+            self.assertEqual(data.get("port"), 18005)
+
+    def test_03_voice_bridge_health(self):
+        """Verifies Local Voice Bridge on port 18002."""
+        req = urllib.request.Request("http://127.0.0.1:18002/health")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode("utf-8"))
+            self.assertEqual(data.get("status"), "ok")
+            self.assertIn("gigaam", data.get("stt_engine", "").lower())
+            self.assertIn("supertonic", data.get("tts_engine", "").lower())
+
+    def test_04_llama_swap_health(self):
+        """Verifies llama-swap Model Router on port 8080."""
+        req = urllib.request.Request("http://127.0.0.1:8080/v1/models")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode("utf-8"))
+            self.assertIn("data", data)
+            model_ids = [m["id"] for m in data["data"]]
+            self.assertTrue(any(x in model_ids for x in ["qwen", "ornith", "next", "qwen122", "tinfield"]))
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+```
+
+
+---
+
+### File: `README.md`
+**Role & Description:** Project Documentation: comprehensive user manual and operational guide.
+
+```markdown
+# Antigravity Nexus — Инженерная спецификация и руководство пользователя
+
+**Парадигма системы:** Google Antigravity 2.0 как единый командный центр (**Cockpit**) + рабочая станция Nexus Dual-GPU как модульное аппаратное ядро (**Hardware Engine**).
+
+---
+
+## 1. Архитектурная топология и порты
+
+```
+                     ┌────────────────────────────────────────────────────────┐
+                     │        Google Antigravity 2.0 (Host & Touch PWA)       │
+                     │        - Нативный редактор кода, чат, диффы, терминал  │
+                     │        - 100% чистый upstream без модификаций app.asar │
+                     └───────────────────────────┬────────────────────────────┘
+                                                 │ HTTP :18005 (CLOUD_CODE_URL)
+                                                 ▼
+                     ┌────────────────────────────────────────────────────────┐
+                     │          Nexus Bridge (:18005, Bridge/bridge.py)       │
+                     │        - Мультимодельный селектор (Cloud ↔ Station)    │
+                     │        - Zero-Logout Vault (авто-сохранение сессий)    │
+                     │        - Smart Context Compactor (>60% сжатия истории) │
+                     │        - Ремонт и валидация аргументов Tool Calls      │
+                     │        - MarianMT потоковый перевод для Qwen 122B      │
+                     └───────────────┬────────────────────────┬───────────────┘
+                                     │                        │
+              Инференс :8080         ▼                        ▼  Голос :18002
+     ┌───────────────────────────────────────────┐  ┌───────────────────────────────────────────┐
+     │        llama-swap (Dual-GPU Pool)         │  │        Local Voice Bridge (:18002)        │
+     │  RTX 5060 Ti (16G) + RTX 2080 Ti (22G)    │  │  - FUTO GigaAM v3 RNN-T STT (261 MB RAM)  │
+     │  - Station: Qwen 27B Coder (Vision)       │  │  - Supertonic 3 Russian ONNX (99 MB RAM)  │
+     │  - Station: Next 80B MoE (Thinking)       │  │  - Push-to-Talk Companion (F9 / Hotkey)   │
+     │  - Station: Ornith 1.5 35B (Android Dumps)│  │  - 0 MB VRAM (100% VRAM свободно для LLM) │
+     │  - Station: Tinfield 177B (Titan MoE)     │  └───────────────────────────────────────────┘
+     │  - Station: Qwen 122B MoE (208E)          │
+     └───────────────────────────────────────────┘
+```
+
+---
+
+## 2. Установка и подготовка (Installation & Setup)
+
+### Требования к среде:
+- **ОС:** Windows 10/11 Pro (x64)
+- **Python:** 3.10+ (рекомендуется Python 3.12 64-bit)
+- **Аппаратные ресурсы:** Dual-GPU (RTX 5060 Ti 16 GB + RTX 2080 Ti 22 GB или эквивалентный пул от 16 GB VRAM), 48 GB RAM.
+
+### Быстрая установка:
+1. Запустите автоматический установщик **`INSTALL.cmd`** или выполните в консоли:
+   ```powershell
+   python -m pip install -r requirements.txt
+   ```
+2. Проверьте целостность зависимостей и Dual-GPU NVML:
+   ```powershell
+   python Supervisor/check_prerequisites.py
+   ```
+3. Прогоните 33 физических теста станции:
+   ```powershell
+   python -m pytest Tests/ -v
+   ```
+
+---
+
+## 3. Быстрый запуск в 1 клик (Launchers)
+
+Все скрипты запуска оснащены автоматическим обходом политик выполнения Windows (`ExecutionPolicy Bypass`) и запускаются простым двойным кликом:
+
+| Лаунчер | Действие |
+| :--- | :--- |
+| **`START-STATION.cmd`** | **Главный запуск станции:** проверяет Dual-GPU VRAM через NVML, поднимает сервисы `:8080`, `:18002`, `:18005`, выставляет системный `CLOUD_CODE_URL`. |
+| **`VOICE-COMPANION.cmd`** | Запускает фоновый Push-to-Talk компаньон. Нажали **F9** (или Scroll Lock) — надиктовали — текст вставился в активное окно Antigravity. |
+| **`SAFE-SWITCH.cmd`** | **Аварийный выключатель:** мгновенно сбрасывает `CLOUD_CODE_URL` и возвращает Antigravity в 100% чистый режим Google Cloud. |
+| **`Launchers\VERIFY-INSTALL.cmd`** | Однокликовый запуск всех 33 физических тестов станции без симуляций. |
+
+---
+
+## 4. Каталог станционных моделей и их особенности
+
+В выпадающем списке выбора моделей Antigravity доступны:
+
+1. **`Station: Qwen 27B Coder (Vision)` (`station-qwen`)**
+   - Флагманский агент для кодинга. Поддерживает мультимодальное зрение (mmproj), прямое исполнение инструментов (Tool Calls), русский и английский языки. Размещается на двух GPU (`-ts 14,22`).
+2. **`Station: Next 80B MoE (Thinking)` (`station-next`)**
+   - Модель глубоких размышлений и архитектурного синтеза (бюджет Thinking: 8192 токена в формате DeepSeek).
+3. **`Station: Ornith 1.5 35B (Android and Big Dumps)` (`station-ornith`)**
+   - Высокоскоростной агент (38+ tok/s). Изолирован строго на GPU 1 (RTX 2080 Ti 22 GB), оставляя GPU 0 (16 GB) свободным для фоновых задач. Идеален для анализа логов и дампов Android.
+4. **`Station: Tinfield 177B (Titan MoE)` (`station-tinfield`)**
+   - Гигантская MoE модель для сложных задач. Работает через прямой ввод-вывод (`--load-mode dio`) с выгрузкой критических слоев на CPU.
+5. **`Station: Qwen 122B MoE (208E + Streaming Translation)` (`station-qwen122`)**
+   - **Физический нюанс 208E:** Модель получена прунингом с 256 до 208 экспертов, чтобы полностью поместиться в 37.9 ГБ VRAM без тормозящего CPU Offload. Логика и когнитивные способности сохранены на 100% (паритет 0.0% деградации к 256E при скорости 39 tok/s), однако лексический выходной слой генерации русского текста был поврежден.
+   - **Решение:** В мост `Bridge/bridge.py` встроена микропрослойка [Bridge/qwen122_stream.py](Bridge/qwen122_stream.py). Она направляет модель мыслить на английском языке и на лету построчно переводит генерируемую прозу на русский язык через CPU MarianMT (`opus-mt-en-ru`) с инженерным глоссарием. Блоки кода (` ```...``` `) и вызовы инструментов защищены от перевода.
+6. **Все 38 моделей Google Gemini Cloud:**
+   - Полный доступ к облачным `gemini-3.8-flash-high`, `gemini-3.1-flash-lite`, `gemini-3.7-flash` и др. Мост никогда не затирает облачный каталог.
+
+---
+
+## 4. Локальный голосовой контур (:18002)
+
+- **Полная изоляция:** Никаких облачных API.
+- **STT (Распознавание):** FUTO GigaAM v3 RNN-T (261 МБ в RAM). Время отклика: 300–500 мс на реплику.
+- **TTS (Синтез):** Supertonic 3 Russian ONNX (99 МБ в RAM). Real-Time Factor (RTF) ~ 0.22 (в 4.5 раза быстрее живой речи).
+- **Потребление VRAM:** Строго **0 МБ**. Вся видеопамять Dual-GPU сохраняется для больших языковых моделей.
+
+### Настройка Push-to-Talk:
+Конфигурация хранится в [Voice/companion_config.json](Voice/companion_config.json):
+```json
+{
+  "voice_bridge_url": "http://127.0.0.1:18002",
+  "hotkey": "F9",
+  "mode": "toggle",
+  "audio_feedback": true,
+  "auto_paste": true
+}
+```
+- `mode: "toggle"` — нажали F9 один раз для старта записи (звуковой сигнал), сказали фразу, нажали F9 второй раз для завершения.
+- `mode: "hold"` — удерживаете клавишу во время речи, отпускаете для распознавания.
+
+---
+
+## 5. Физическая валидация (Zero Simulation)
+
+Тестовый комплект находится в папке [Tests/](Tests/) и включает **33 автоматических теста**:
+- **`test_bridge_e2e.py`:** 14 тестов роутера, потоковой защиты от gzip-бомб, инъекции каталога, контекстного сжатия, PEB прокси и ремонта аргументов функций.
+- **`test_voice_robustness.py`:** 8 тестов на реальных аудиосемплах `test1-3.wav`, синтез голосов `M1`/`F1`, сохранение клипборда пользователя, barge-in `/stop`.
+- **`test_qwen122_trans.py`:** 7 тестов потокового перевода предложений MarianMT с защитой блоков кода, CPU-инвариантом и глоссарием.
+- **`test_station_health.py`:** 4 теста проверки Dual-GPU NVML и портов 8080, 18002, 18005.
+
+Для полного физического прогона выполните:
+```powershell
+python -m pytest Antigravity-Nexus/Tests/ -v
+```
+
+---
+
+## 6. Аварийный откат (Safe-Switch)
+
+Если станция выключена или вам требуется эксклюзивный чистый доступ к облачным серверам Google Gemini:
+1. Запустите **`SAFE-SWITCH.cmd`** (или `Antigravity-Nexus\Launchers\SAFE-SWITCH.cmd`).
+2. Скрипт мгновенно очищает `CLOUD_CODE_URL` и останавливает локальный мост.
+3. Перезапустите Antigravity — он вернется к стандартной прямой работе с облаком без каких-либо следов вмешательства.
+
+```

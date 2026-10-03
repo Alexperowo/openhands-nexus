@@ -1,0 +1,26 @@
+[
+  {
+    "mode": "PR #29030 (Direct-Read) Warm 50K",
+    "run_type": "warm",
+    "lzm": "auto",
+    "prompt_tokens": 57260,
+    "pp_tok_s": 302.71,
+    "ttft_s": 189.16,
+    "tg_tok_s": 0.0,
+    "total_time_s": 213.25,
+    "gpu0_peak_used_mb": 15420,
+    "gpu0_min_free_mb": 633,
+    "gpu1_peak_used_mb": 22075,
+    "gpu1_min_free_mb": 156,
+    "peak_ram_mb": 43230.8,
+    "avg_cpu_percent": 17.6,
+    "disk_read_mb": 5.0,
+    "direct_read_active": true,
+    "direct_read_tensors": [
+      "per_layer_token_embd.weight",
+      "per_layer_token_embd.weight"
+    ],
+    "return_code": 0,
+    "gen_sample": "Loading model... \n\n\u2584\u2584 \u2584\u2584\n\u2588\u2588 \u2588\u2588\n\u2588\u2588 \u2588\u2588  \u2580\u2580\u2588\u2584 \u2588\u2588\u2588\u2584\u2588\u2588\u2588\u2584  \u2580\u2580\u2588\u2584    \u2584\u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588\u2584 \u2588\u2588\u2588\u2588\u2584\n\u2588\u2588 \u2588\u2588 \u2584\u2588\u2580\u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588 \u2584\u2588\u2580\u2588\u2588    \u2588\u2588    \u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588\n\u2588\u2588 \u2588\u2588 \u2580\u2588\u2584\u2588\u2588 \u2588\u2588 \u2588\u2588 \u2588\u2588 \u2580\u2588\u2584\u2588\u2588 \u2588\u2588 \u2580\u2588\u2588\u2588\u2588 \u2588\u2588\u2588\u2588\u2580 \u2588\u2588\u2588\u2588\u2580\n                         "
+  }
+]

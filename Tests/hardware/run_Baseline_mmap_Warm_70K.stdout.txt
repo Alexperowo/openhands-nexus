@@ -1,0 +1,45 @@
+
+
+Loading model... 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b11276-19e28a277
+model      : D:\AI\Models\Tinfield-1-Mini\tinfield-1-mini-00001-of-00006.gguf
+ftype      : Q8_0
+modalities : text
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> # Antigravity Nexus — Comprehensive Architecture & Codebase Review Bundle
+**Generated for External Architectural & Code Quality Audit by Frontier Cloud LLM (ChatGPT / GPT-4o / OpenAI o1 / Qwen-Max)**
+**Date:** September 2026 | **Host OS:** Windows 11 Pro | **Hardware:** Dual-GPU (37.9 GB VRAM), 48 GB RAM
+
+---
+
+## 1. Executive Summary & Project Background (Предыстория и суть проекта)
+
+### Что такое Antigravity Nexus простым языком?
+**Antigravity Nexus ... (truncated)
+
+[Start thinking]
+
+The user has provided a
+
+[ Prompt: 262.0 t/s | Generation: 11.0 t/s ]
+
+
+Exiting...

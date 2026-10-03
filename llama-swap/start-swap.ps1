@@ -51,7 +51,7 @@ $startup = [wmiclass]"Win32_ProcessStartup"
 $startupInstance = $startup.CreateInstance()
 $startupInstance.ShowWindow = 0
 
-$cmdLine = "cmd.exe /c `"`"$binExe`" -config `"$cfgFile`" -listen 127.0.0.1:$port > `"$logFile`" 2>&1`""
+$cmdLine = "cmd.exe /c `"`"$binExe`" -config `"$cfgFile`" -watch-config -listen 127.0.0.1:$port > `"$logFile`" 2>&1`""
 $wmiRes = $procClass.Create($cmdLine, $swapDir, $startupInstance)
 
 $ready = $false

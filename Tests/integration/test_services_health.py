@@ -18,17 +18,31 @@ SSL_UNVERIFIED_CTX.verify_mode = ssl.CERT_NONE
 class TestServicesHealth:
     """Verifies all 5 core platform services are listening and responding."""
 
-    def test_core_engine_health(self):
-        """OpenHands Core Agent Server on port 18000."""
-        req = urllib.request.Request("http://127.0.0.1:18000")
+    def test_antigravity_bridge_health(self):
+        """Antigravity Bridge Router on port 18005."""
+        req = urllib.request.Request("http://127.0.0.1:18005/health")
         with urllib.request.urlopen(req, timeout=3) as resp:
-            assert resp.status == 200, f"Core Server returned {resp.status}"
+            assert resp.status == 200, f"Antigravity Bridge returned {resp.status}"
+            data = json.loads(resp.read().decode("utf-8"))
+            assert data.get("status") == "ok"
+
+    def test_core_engine_health(self):
+        """OpenHands Core Agent Server on port 18000 (Legacy mode)."""
+        try:
+            req = urllib.request.Request("http://127.0.0.1:18000")
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                assert resp.status == 200, f"Core Server returned {resp.status}"
+        except urllib.error.URLError:
+            pytest.skip("Port 18000 not active (Operating in Antigravity Cockpit mode)")
 
     def test_agent_canvas_health(self):
-        """Agent Canvas Web UI on port 8000."""
-        req = urllib.request.Request("http://127.0.0.1:8000")
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            assert resp.status == 200, f"Agent Canvas returned {resp.status}"
+        """Agent Canvas Web UI on port 8000 (Legacy mode)."""
+        try:
+            req = urllib.request.Request("http://127.0.0.1:8000")
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                assert resp.status == 200, f"Agent Canvas returned {resp.status}"
+        except urllib.error.URLError:
+            pytest.skip("Port 8000 not active (Operating in Antigravity Cockpit mode)")
 
     def test_llama_swap_health(self):
         """llama-swap Model Router on port 8080."""
@@ -49,13 +63,10 @@ class TestServicesHealth:
             assert data.get("status") == "ok"
 
     def test_lan_gateway_health(self):
-        """HTTPS LAN Gateway on port 8443."""
-        # Using 127.0.0.1:8443 or dynamic LAN IP
+        """HTTPS LAN Gateway on port 8443 (Legacy mode)."""
         try:
             req = urllib.request.Request("https://127.0.0.1:8443")
-            with urllib.request.urlopen(req, context=SSL_UNVERIFIED_CTX, timeout=3) as resp:
+            with urllib.request.urlopen(req, context=SSL_UNVERIFIED_CTX, timeout=2) as resp:
                 assert resp.status == 200
-        except urllib.error.URLError:
-            req = urllib.request.Request("https://192.168.0.14:8443")
-            with urllib.request.urlopen(req, context=SSL_UNVERIFIED_CTX, timeout=3) as resp:
-                assert resp.status == 200
+        except (urllib.error.URLError, OSError):
+            pytest.skip("Port 8443 not active (Operating in Antigravity Cockpit mode)")

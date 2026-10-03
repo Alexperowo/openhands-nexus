@@ -32,6 +32,37 @@ body {
   padding-right: var(--oh-safe-right);
 }
 
+/* Unconditionally hide thinking banner in PWA across all viewports & device forms */
+[data-testid="collapsible-thinking"],
+[data-testid="collapsible-thinking-toggle"] {
+  display: none !important;
+}
+
+/* Ensure composer row forms an elevated stacking context and never vertically clips popovers */
+div.flex.items-center.justify-between,
+div:has(> [data-testid="context-window-meter"]),
+[data-testid="interactive-chat-box"],
+div:has(> [data-testid="interactive-chat-box"]) {
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 100 !important;
+}
+
+/* Context Window Popover: elevated stacking context & crisp appearance */
+[data-testid="context-window-meter-popover"] {
+  position: absolute !important;
+  bottom: calc(100% + 8px) !important;
+  right: 0 !important;
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+  background: #18181f !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
 /* Mobile & Touch Viewport Adjustments (including Samsung Galaxy Tab S9 Ultra & Mobile) */
 @media (max-width: 1024px), (pointer: coarse) {
   /* Prevent auto-zoom on form inputs */
@@ -78,24 +109,13 @@ body {
     padding: 2px 8px !important;
   }
 
-  /* Context Window popover styling */
+  /* Context Window popover touch styling */
   [data-testid="context-window-meter-popover"] {
     max-width: calc(100vw - 24px) !important;
-    background: #18181f !important;
-    border: 1px solid #3f3f46 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
-    z-index: 9999 !important;
   }
 
   /* Hide irrelevant cloud provider balance card on local offline station */
   [data-testid="provider-balance-card"] {
-    display: none !important;
-  }
-
-  /* Hide collapsed thinking block on mobile — no useful info in compact state,
-     wastes vertical space above the composer. Full trace is still visible on desktop. */
-  [data-testid="collapsible-thinking"] {
     display: none !important;
   }
 

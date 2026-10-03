@@ -432,16 +432,23 @@ def _compute_station_telemetry() -> dict:
                 if os.path.exists(events_dir):
                     event_files = sorted(glob.glob(os.path.join(events_dir, "event-*.json")))
                     if event_files:
-                        last_f = event_files[-1]
-                        if (now - os.path.getmtime(last_f)) < 30:
-                            with open(last_f, encoding="utf-8-sig") as ef:
-                                ev_data = json.load(ef)
-                            if ev_data.get("kind") == "ActionEvent":
-                                t_name = ev_data.get("tool_name") or ev_data.get("action", {}).get("kind") or "инструмент"
-                                telemetry["state"] = "tool"
-                                telemetry["active_tool"] = t_name
-                                telemetry["is_active"] = True
-                                return telemetry
+                        for ef_path in reversed(event_files[-10:]):
+                            if (now - os.path.getmtime(ef_path)) > 60:
+                                break
+                            try:
+                                with open(ef_path, encoding="utf-8-sig") as ef:
+                                    ev_data = json.load(ef)
+                                ev_kind = ev_data.get("kind")
+                                if ev_kind == "ActionEvent":
+                                    t_name = ev_data.get("tool_name") or ev_data.get("action", {}).get("kind") or "инструмент"
+                                    telemetry["state"] = "tool"
+                                    telemetry["active_tool"] = t_name
+                                    telemetry["is_active"] = True
+                                    return telemetry
+                                elif ev_kind in ("ObservationEvent", "InterruptEvent", "PauseEvent"):
+                                    break
+                            except Exception:
+                                pass
     except Exception:
         pass
 
@@ -456,6 +463,17 @@ def _compute_station_telemetry() -> dict:
     model_state = running_info.get("state", "none")
     proxy = running_info.get("proxy")
 
+    MODEL_NAMES = {
+        "qwen": "Qwen 27B",
+        "ornith": "Ornith 35B",
+        "tinfield": "Tinfield 177B",
+        "next80b": "Next 80B",
+        "qwen122": "Qwen 122B",
+    }
+    if model_id:
+        mapped_name = MODEL_NAMES.get(str(model_id).lower(), str(model_id))
+        telemetry["model"] = mapped_name
+
     if model_state in ("loading", "starting", "initializing", "swapping"):
         telemetry["state"] = "loading"
         telemetry["is_active"] = True
@@ -463,7 +481,7 @@ def _compute_station_telemetry() -> dict:
 
     # 3. Query live llama-server slot for ground-truth hardware state
     slot_obj = None
-    if model_id and model_state == "ready":
+    if model_id and model_state in ("ready", "loaded"):
         s_url = f"{proxy.rstrip('/')}/slots" if proxy else f"http://127.0.0.1:8080/upstream/{model_id}/slots"
         try:
             s_req = urllib.request.Request(s_url, headers={"Accept": "application/json"})
@@ -511,24 +529,14 @@ def _compute_station_telemetry() -> dict:
         except Exception:
             pass
 
-    # Ground Truth: If slot is present and says IDLE, model is definitely idle!
-    if slot_obj and isinstance(slot_obj, dict):
-        s_task_id = int(slot_obj.get("id_task", -1))
-        s_state_code = int(slot_obj.get("state", 0))
-        s_is_processing = bool(slot_obj.get("is_processing", False))
-
-        if s_task_id == -1 or (s_state_code == 0 and not s_is_processing):
-            telemetry["state"] = "idle"
-            telemetry["is_active"] = False
-            return telemetry
-
     has_next = False
     n_decoded = 0
     s_task = 0
     s_state = 0
+    stopped_eos = False
 
     if slot_obj and isinstance(slot_obj, dict):
-        s_task = int(slot_obj.get("id_task", 0))
+        s_task = int(slot_obj.get("id_task", -1))
         s_state = int(slot_obj.get("state", 0))
         next_tok = slot_obj.get("next_token", {})
         if isinstance(next_tok, list) and len(next_tok) > 0:
@@ -538,53 +546,63 @@ def _compute_station_telemetry() -> dict:
 
         has_next = bool(next_tok.get("has_next_token", False))
         n_decoded = int(next_tok.get("n_decoded", 0))
+        stopped_eos = bool(next_tok.get("stopped_eos", False)) or bool(next_tok.get("stopped_limit", False)) or bool(next_tok.get("stopped_word", False))
 
-    # Case A: Live token generation (decoding in progress)
-    if has_next or (s_state == 1 and n_decoded > 0):
-        telemetry["is_active"] = True
-        telemetry["state"] = "generating"
-        telemetry["tokens"] = n_decoded
+        is_processing = bool(slot_obj.get("is_processing", False)) or (s_state == 1)
 
-        if _gen_tracker.get("task") != s_task:
-            def_spd = 33.0 if "122" in str(model_id) else (70.0 if "35" in str(model_id) else 100.0)
-            _gen_tracker.update({
-                "task": s_task,
-                "last_tokens": n_decoded,
-                "last_time": now,
-                "speed": _last_known_gen_speed or def_spd
-            })
-        else:
-            dt = now - _gen_tracker.get("last_time", now)
-            dn = n_decoded - _gen_tracker.get("last_tokens", 0)
-            if dt >= 0.3 and dn > 0:
-                calc_spd = round(dn / dt, 1)
-                _gen_tracker["speed"] = calc_spd
-                _last_known_gen_speed = calc_spd
-                _gen_tracker["last_tokens"] = n_decoded
-                _gen_tracker["last_time"] = now
+        # Ground Truth: If slot is definitely IDLE (task -1 or state 0 or finished with EOS without next token)
+        if s_task == -1 or (s_state == 0 and not has_next) or (stopped_eos and not has_next and s_state == 0):
+            telemetry["state"] = "idle"
+            telemetry["is_active"] = False
+            return telemetry
 
-        current_gen_speed = _gen_tracker.get("speed", _last_known_gen_speed or 30.0)
-        telemetry["speed_tok_s"] = current_gen_speed
-        telemetry["last_gen_speed"] = _last_known_gen_speed
-        return telemetry
+        # Case A: Live token generation (decoding in progress)
+        if has_next or (s_state == 1 and n_decoded > 0):
+            telemetry["is_active"] = True
+            telemetry["state"] = "generating"
+            telemetry["tokens"] = n_decoded
 
-    # Case B: Live slot processing (active prefill or thinking when has_next is not yet true)
-    if slot_obj and bool(slot_obj.get("is_processing")):
-        telemetry["is_active"] = True
-        n_prompt = int(slot_obj.get("n_prompt_tokens", 0))
-        n_proc = int(slot_obj.get("n_prompt_tokens_processed", 0))
-        n_cache = int(slot_obj.get("n_prompt_tokens_cache", 0))
+            if _gen_tracker.get("task") != s_task:
+                def_spd = 33.0 if "122" in str(model_id) else (70.0 if "35" in str(model_id) else 100.0)
+                _gen_tracker.update({
+                    "task": s_task,
+                    "last_tokens": n_decoded,
+                    "last_time": now,
+                    "speed": _last_known_gen_speed or def_spd
+                })
+            else:
+                dt = now - _gen_tracker.get("last_time", now)
+                dn = n_decoded - _gen_tracker.get("last_tokens", 0)
+                if dt >= 0.3 and dn > 0:
+                    calc_spd = round(dn / dt, 1)
+                    _gen_tracker["speed"] = calc_spd
+                    _last_known_gen_speed = calc_spd
+                    _gen_tracker["last_tokens"] = n_decoded
+                    _gen_tracker["last_time"] = now
 
-        done_tokens = n_cache + n_proc
-        total_tokens = max(n_prompt, done_tokens, 1)
+            current_gen_speed = _gen_tracker.get("speed", _last_known_gen_speed or 30.0)
+            telemetry["speed_tok_s"] = current_gen_speed
+            telemetry["last_gen_speed"] = _last_known_gen_speed
+            return telemetry
 
-        if total_tokens > 0 and done_tokens < total_tokens:
-            telemetry["state"] = "prefill"
-            p_spd = max(5.0, _last_known_prefill_speed or (20.0 if "122" in str(model_id) else 1000.0))
+        # Case B: Live slot processing (active prefill when s_state == 1 and n_decoded == 0)
+        if is_processing:
+            telemetry["is_active"] = True
+            prompt_val = slot_obj.get("prompt", "")
+            if isinstance(prompt_val, list):
+                total_tokens = max(1, len(prompt_val))
+            elif isinstance(prompt_val, str) and prompt_val:
+                total_tokens = max(1, int(len(prompt_val) / 3.5))
+            else:
+                total_tokens = max(1, int(slot_obj.get("n_prompt_tokens", 1000)))
 
-            # Smooth time-based interpolation between discrete batch updates
-            s_task = int(slot_obj.get("id_task", 0))
-            if _slot_prefill_tracker.get("task") != s_task or _slot_prefill_tracker.get("base_tokens") != done_tokens:
+            n_proc = int(slot_obj.get("n_prompt_tokens_processed", 0))
+            n_cache = int(slot_obj.get("n_prompt_tokens_cache", 0))
+            done_tokens = n_cache + n_proc if (n_cache + n_proc) > 0 else 0
+
+            p_spd = max(10.0, _last_known_prefill_speed or (25.0 if "122" in str(model_id) else 800.0))
+
+            if _slot_prefill_tracker.get("task") != s_task:
                 _slot_prefill_tracker.update({
                     "task": s_task,
                     "base_tokens": done_tokens,
@@ -596,6 +614,7 @@ def _compute_station_telemetry() -> dict:
             interp_tokens = min(total_tokens - 1, int(done_tokens + (dt_step * p_spd)))
             pct = min(99.0, max(1.0, round((interp_tokens / total_tokens) * 100, 1)))
 
+            telemetry["state"] = "prefill"
             telemetry["tokens"] = interp_tokens
             telemetry["total_tokens"] = total_tokens
             telemetry["progress_pct"] = pct
@@ -604,11 +623,6 @@ def _compute_station_telemetry() -> dict:
             eta_s = int(rem / p_spd)
             telemetry["eta_seconds"] = eta_s
             telemetry["eta_str"] = f"{eta_s // 60}м {eta_s % 60}с" if eta_s >= 60 else f"{eta_s}с"
-            return telemetry
-        else:
-            telemetry["state"] = "thinking"
-            telemetry["progress_pct"] = 100.0
-            telemetry["speed_tok_s"] = 0.0
             return telemetry
 
     # Case C: Prefill complete, waiting for first token or thinking
@@ -749,7 +763,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
-        elif self.path in ("/health", "/status"):
+        elif clean_path in ("/health", "/status"):
             ram = get_process_ram_mb()
             with metrics_lock:
                 metrics_copy = dict(METRICS)
@@ -848,7 +862,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             threading.Thread(target=_shutdown_server).start()
             return
 
-        if self.path == "/stop":
+        if clean_path in ("/stop", "/voice-api/stop"):
             cancel_event.set()
             resp = {"status": "stopped"}
             body = json.dumps(resp).encode("utf-8")
@@ -859,7 +873,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             print("[Voice Bridge] STOP received -> cancelled active speech.", flush=True)
 
-        elif self.path == "/stt":
+        elif clean_path in ("/stt", "/voice-api/stt"):
             if not body_bytes:
                 self.send_response(400)
                 self._set_cors()
@@ -910,7 +924,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 err_resp = json.dumps({"error": err_msg}).encode("utf-8")
                 self.wfile.write(err_resp)
 
-        elif self.path == "/tts":
+        elif clean_path in ("/tts", "/voice-api/tts"):
             try:
                 data = json.loads(body_bytes.decode("utf-8")) if body_bytes else {}
                 raw_text = data.get("text", "")
@@ -969,7 +983,7 @@ class VoiceBridgeHandler(BaseHTTPRequestHandler):
                 err_resp = json.dumps({"error": err_msg}).encode("utf-8")
                 self.wfile.write(err_resp)
 
-        elif self.path == "/shutdown":
+        elif clean_path in ("/shutdown", "/voice-api/shutdown"):
             self.send_response(200)
             self._set_cors()
             self.end_headers()
