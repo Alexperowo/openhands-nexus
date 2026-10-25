@@ -7,14 +7,15 @@
 
 | Команда | Действие |
 |---|---|
-| `./nexus-update [check]` | Установленные/доступные версии: npm, pins из tarball, git ls-remote и отставание, GitHub releases Caddy, uv resolver dry-run. Проекты/окружения не меняются; допустимы журнал и кэши инструментов |
+| `./nexus-update [check]` | Установленные/доступные версии: npm, pins из tarball, git ls-remote и отставание, GitHub releases Caddy и llama-swap, uv resolver dry-run. Проекты/окружения не меняются; допустимы журнал и кэши инструментов |
 | `./nexus-update check --offline` | Без сети; доступные версии — unknown |
 | `./nexus-update canvas [VERSION]` | Точная одинаковая версия в двух проектах, build overlay, отчёт локали, restart agent → gateway, health и API smoke guard. При ошибке восстановление обоих проектов, build, restart и health |
 | `./nexus-update ik-llama [COMMIT]` | По умолчанию origin/main; проверки занятости, диска и чистоты tracked-файлов, новый каталог сборки, --version до/после swap. Сохраняет build.prev; службу модели не запускает |
 | `./nexus-update ik-llama [COMMIT] --bench /path/model.gguf` | Только явное разрешение короткого чтения указанной модели: 64 prompt / 16 generation / 1 повтор. Отказ при compute-процессах, загрузке GPU >5% или занятой памяти >1024 МиБ |
 | `./nexus-update caddy [VERSION]` | linux_amd64 tarball, SHA-256 из checksums релиза, validate, caddy.prev, restart gateway, HTTPS health; автоматическое восстановление при ошибке |
+| `./nexus-update llama-swap [VERSION]` | linux_amd64 tarball, SHA-256 из checksums релиза, `--version`, llama-swap.prev. ohn-models перезапускается и проверяется `/health`, только если уже работал: модели ради обновления не запускаются |
 | `./nexus-update voice` | Снимок uv.lock, upgrade/sync, restart voice, health, TTS WAV → STT. При ошибке старый lock/sync/restart/smoke. Верхние pins torch/torchaudio <=2.5.1 обязательны |
-| `./nexus-update rollback canvas\|ik-llama\|caddy\|voice` | Предыдущее состояние последнего успешного обновления данного компонента. Запись отката расходуется только после успеха |
+| `./nexus-update rollback canvas\|ik-llama\|caddy\|llama-swap\|voice` | Предыдущее состояние последнего успешного обновления данного компонента. Запись отката расходуется только после успеха |
 
 `--dry-run` работает со всеми командами: только план, без сети, файлов, журнала
 и вызовов systemd. Другого «обновить всё» нет.

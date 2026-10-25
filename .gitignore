@@ -10,6 +10,7 @@ __pycache__/
 models/llama-swap
 gateway/caddy
 gateway/caddy.prev
+models/llama-swap.prev
 voice/models/
 *.gguf
 *.pt

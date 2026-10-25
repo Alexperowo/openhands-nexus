@@ -234,6 +234,56 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(self.u.restart.call_args_list[0].args, ("ohn-gateway",))
         self.assertEqual(self.u.restart.call_count, 2)
 
+    def llama_swap_release(self, active):
+        base = self.root / "models"
+        base.mkdir()
+        (base / "llama-swap").write_bytes(b"old swap")
+        self.u.args.target = "266"
+        names = ["llama-swap_266_linux_amd64.tar.gz", "llama-swap_266_checksums.txt"]
+        self.u.fetch_json = Mock(return_value={"assets": [{"name": name, "browser_download_url":
+                    "https://github.com/mostlygeek/llama-swap/releases/download/v266/" + name} for name in names]})
+        archive_hash = None
+
+        def run(command, **kwargs):
+            nonlocal archive_hash
+            if command[:2] == ["systemctl", "--user"]:
+                return "active" if active else "inactive"
+            if command[0] != "curl":
+                return ""
+            destination = Path(command[command.index("--output") + 1])
+            if destination.suffix == ".txt":
+                destination.write_text(archive_hash + "  " + names[0] + "\n")
+            else:
+                with tarfile.open(destination, "w:gz") as tar:
+                    member = tarfile.TarInfo("llama-swap");member.size = 8
+                    tar.addfile(member, io.BytesIO(b"new swap"))
+                archive_hash = update.digest(destination)
+            return ""
+
+        self.u.run = Mock(side_effect=run)
+        self.u.restart = Mock()
+        return base
+
+    def test_llama_swap_swaps_without_starting_stopped_models(self):
+        base = self.llama_swap_release(active=False)
+        self.u.models_health = Mock()
+        self.u.llama_swap()
+        self.assertEqual((base / "llama-swap").read_bytes(), b"new swap")
+        self.assertEqual((base / "llama-swap.prev").read_bytes(), b"old swap")
+        self.u.restart.assert_not_called()
+        self.u.models_health.assert_not_called()
+        self.assertFalse(list(base.glob("llama-swap.next-*")))
+
+    def test_llama_swap_health_failure_restores_running_models(self):
+        base = self.llama_swap_release(active=True)
+        self.u.models_health = Mock(side_effect=[update.UpdateError("health failed"), None])
+        with self.assertRaises(update.UpdateError):
+            self.u.llama_swap()
+        self.assertEqual((base / "llama-swap").read_bytes(), b"old swap")
+        self.assertFalse((base / "llama-swap.prev").exists())
+        self.assertEqual(self.u.restart.call_args_list[0].args, ("ohn-models",))
+        self.assertEqual(self.u.restart.call_count, 2)
+
     def test_check_reports_uv_upgrade_output(self):
         self.u.args = update.parse_args(["check"])
         base = self.root / "voice"

@@ -18,7 +18,7 @@
 | `gateway/` | Caddy: HTTPS для планшета, сам подставляет ключ сессии в `/api` и `/sockets` | `ohn-gateway`: 8443 |
 | `guard/` | Страж опасных команд агента (PreToolUse-хук): не даёт убить Nexus, сеанс или систему | — |
 | `launcher/` | `run.sh` для user-юнитов systemd, ярлыки «Запустить/Остановить Nexus», `install.sh` | — |
-| `update/` | `nexus-update`: проверка и обновление Canvas, ik_llama, Caddy, голосовых пакетов с откатом | — |
+| `update/` | `nexus-update`: проверка и обновление Canvas, ik_llama, llama-swap, Caddy, голосовых пакетов с откатом | — |
 
 Службы работают прямо из этого клона. Ключи — в `~/.config/openhands-nexus/session.env` (0600),
 вне репозитория. Автозапуска нет намеренно: видеокарты делятся с другими задачами.

@@ -211,6 +211,14 @@ class Updater:
                 available = self.fetch_json(f"{GITHUB}/caddyserver/caddy/releases/latest")["tag_name"]
             return [("Caddy", installed, available)]
 
+        def llama_swap():
+            output = self.run([self.root / "models/llama-swap", "--version"], capture=True, timeout=10)
+            installed = re.search(r"v\d+", output)[0]
+            available = UNKNOWN
+            with contextlib.suppress(Exception):
+                available = self.fetch_json(f"{GITHUB}/mostlygeek/llama-swap/releases/latest")["tag_name"]
+            return [("llama-swap", installed, available)]
+
         def voice():
             project = self.root / "voice"
             lock = tomllib.loads((project / "uv.lock").read_text())
@@ -245,8 +253,8 @@ class Updater:
                                                 capture=True, timeout=5), UNKNOWN)]
                 return [(label, UNKNOWN, UNKNOWN)]
 
-        tasks = [("canvas", canvas), ("ik_llama", ik), ("Caddy", caddy), ("Voice", voice)]
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+        tasks = [("canvas", canvas), ("ik_llama", ik), ("Caddy", caddy), ("llama-swap", llama_swap), ("Voice", voice)]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
             results = list(pool.map(lambda pair: safe(*pair), tasks))
         self.emit("Компонент | Установлено | Доступно")
         for rows in results:
@@ -325,7 +333,7 @@ class Updater:
             self.emit("Песочница: службы, health и API smoke пропущены.")
             return
         for unit in units:
-            require(unit in {"ohn-agent", "ohn-gateway", "ohn-voice"}, "Недопустимая служба")
+            require(unit in {"ohn-agent", "ohn-gateway", "ohn-voice", "ohn-models"}, "Недопустимая служба")
             # Quick update + rollback restarts can trip systemd's start limit.
             self.run(["systemctl", "--user", "reset-failed", unit], timeout=30)
             self.run(["systemctl", "--user", "restart", unit], timeout=120)
@@ -490,8 +498,8 @@ class Updater:
         state = self.run(["systemctl", "--user", "show", "--property=ActiveState", "--value", "ohn-models"],
                          capture=True, timeout=10)
         require(state in {"inactive", "failed"}, "ohn-models активен или его состояние неизвестно; отказ")
-        sockets = self.run(["ss", "-H", "-lntu", "( sport = :18030 or sport = :18035 )"], capture=True, timeout=10)
-        require(not sockets, "Порт 18030/18035 занят; отказ")
+        sockets = self.run(["ss", "-H", "-lntu", "( sport = :18030 )"], capture=True, timeout=10)
+        require(not sockets, "Порт 18030 занят; отказ")
         processes = self.run(["nvidia-smi", "--query-compute-apps=pid,process_name", "--format=csv,noheader,nounits"],
                              capture=True, timeout=15)
         require("llama-server" not in processes, "nvidia-smi показывает llama-server; отказ")
@@ -621,38 +629,48 @@ class Updater:
         self.restart("ohn-gateway")
         self.health()
 
-    def caddy(self):
+    def release_binary(self, repo, binary, base, version_pattern):
+        """linux_amd64 archive of a GitHub release, checked against the release checksums.
+        Returns the unpacked binary next to the working one; the caller removes it."""
         if self.args.target:
             version = self.args.target.removeprefix("v")
-            require(re.fullmatch(r"\d+\.\d+\.\d+", version), "Нужна точная версия Caddy X.Y.Z")
-            release = self.fetch_json(f"{GITHUB}/caddyserver/caddy/releases/tags/v{version}")
+            require(re.fullmatch(version_pattern, version), f"Нужна точная версия {binary}")
+            release = self.fetch_json(f"{GITHUB}/{repo}/releases/tags/v{version}")
         else:
-            release = self.fetch_json(f"{GITHUB}/caddyserver/caddy/releases/latest")
+            release = self.fetch_json(f"{GITHUB}/{repo}/releases/latest")
             version = release["tag_name"].removeprefix("v")
-        archive_name = f"caddy_{version}_linux_amd64.tar.gz"
-        checksum_name = f"caddy_{version}_checksums.txt"
+        archive_name = f"{binary}_{version}_linux_amd64.tar.gz"
+        checksum_name = f"{binary}_{version}_checksums.txt"
         assets = {asset["name"]: asset["browser_download_url"] for asset in release["assets"]}
         require(archive_name in assets and checksum_name in assets, "В релизе нет архива/контрольных сумм")
-        base = self.root / "gateway"
-        candidate = base / ("caddy.next-" + uuid.uuid4().hex)
+        candidate = base / f"{binary}.next-{uuid.uuid4().hex}"
         try:
-            with tempfile.TemporaryDirectory(prefix="nexus-update-caddy.") as temp:
+            with tempfile.TemporaryDirectory(prefix=f"nexus-update-{binary}.") as temp:
                 archive = Path(temp) / archive_name
                 checksums = Path(temp) / checksum_name
                 for name, destination in [(archive_name, archive), (checksum_name, checksums)]:
-                    require(assets[name].startswith("https://github.com/caddyserver/caddy/releases/"), "Неожиданный URL релиза")
+                    require(assets[name].startswith(f"https://github.com/{repo}/releases/"), "Неожиданный URL релиза")
                     self.run(["curl", "--fail", "--silent", "--show-error", "--location", "--proto", "=https",
-                              "--connect-timeout", "10", "--max-time", "180", "--output", destination, assets[name]], timeout=190)
+                              "--connect-timeout", "10", "--max-time", "600", "--output", destination, assets[name]], timeout=610)
                 expected = [line.split()[0] for line in checksums.read_text().splitlines()
                             if len(line.split()) == 2 and line.split()[1].lstrip("*") == archive_name]
-                require(len(expected) == 1 and digest(archive) == expected[0], "SHA-256 архива Caddy не совпал")
-                self.emit("SHA-256 Caddy подтверждён файлом контрольных сумм релиза.")
+                require(len(expected) == 1 and digest(archive) == expected[0], f"SHA-256 архива {binary} не совпал")
+                self.emit(f"SHA-256 {binary} подтверждён файлом контрольных сумм релиза.")
                 with tarfile.open(archive) as tar:
-                    member = tar.getmember("caddy")
-                    require(member.isfile(), "В архиве caddy не обычный файл")
+                    member = tar.getmember(binary)
+                    require(member.isfile(), f"В архиве {binary} не обычный файл")
                     with candidate.open("wb") as output:
                         shutil.copyfileobj(tar.extractfile(member), output)
-                candidate.chmod(0o755)
+            candidate.chmod(0o755)
+        except BaseException:
+            candidate.unlink(missing_ok=True)
+            raise
+        return candidate
+
+    def caddy(self):
+        base = self.root / "gateway"
+        candidate = self.release_binary("caddyserver/caddy", "caddy", base, r"\d+\.\d+\.\d+")
+        try:
             self.run([candidate, "validate", "--config", base / "Caddyfile", "--adapter", "caddyfile"],
                      env=self.caddy_environment(), timeout=60)
             backup = self.snapshot("caddy", [(base / "caddy", "caddy"), (base / "caddy.prev", "caddy.prev")])
@@ -664,6 +682,50 @@ class Updater:
                 self.health()
 
             self.transaction("caddy", backup, action, self.caddy_restore)
+        finally:
+            candidate.unlink(missing_ok=True)
+
+    def models_active(self):
+        return self.run(["systemctl", "--user", "show", "--property=ActiveState", "--value", "ohn-models"],
+                        capture=True, timeout=10) == "active"
+
+    def models_health(self):
+        if self.args.sandbox:
+            return
+        deadline = time.monotonic() + 60
+        while True:
+            try:
+                self.curl("http://127.0.0.1:18030/health")
+                return
+            except UpdateError:
+                require(time.monotonic() < deadline, "llama-swap не ответил на /health за 60 с")
+                time.sleep(2)
+
+    def llama_swap_restore(self, backup):
+        self.restore_files(backup)
+        # Never start the models just for a rollback: the GPUs may belong to another task.
+        if self.models_active():
+            self.restart("ohn-models")
+            self.models_health()
+
+    def llama_swap(self):
+        base = self.root / "models"
+        candidate = self.release_binary("mostlygeek/llama-swap", "llama-swap", base, r"\d+")
+        try:
+            self.run([candidate, "--version"], timeout=30)
+            backup = self.snapshot("llama-swap", [(base / "llama-swap", "llama-swap"),
+                                                  (base / "llama-swap.prev", "llama-swap.prev")])
+
+            def action():
+                shutil.copy2(base / "llama-swap", base / "llama-swap.prev")
+                os.replace(candidate, base / "llama-swap")
+                if self.models_active():
+                    self.restart("ohn-models")
+                    self.models_health()
+                else:
+                    self.emit("ohn-models не запущен; новая версия заработает при следующем запуске Nexus.")
+
+            self.transaction("llama-swap", backup, action, self.llama_swap_restore)
         finally:
             candidate.unlink(missing_ok=True)
 
@@ -725,6 +787,8 @@ class Updater:
             self.canvas_smoke()
         elif kind == "caddy":
             self.caddy_restore(backup)
+        elif kind == "llama-swap":
+            self.llama_swap_restore(backup)
         elif kind == "voice":
             self.voice_restore(backup)
         elif kind == "ik-llama":
@@ -753,10 +817,11 @@ class Updater:
     def dry_run(self):
         command = self.args.command
         plans = {
-            "check": "npm view; pins canvas; git ls-remote + отставание; GitHub Caddy; uv lock --upgrade --dry-run.",
+            "check": "npm view; pins canvas; git ls-remote + отставание; GitHub Caddy и llama-swap; uv lock --upgrade --dry-run.",
             "canvas": "Копия обоих manifest/lock/node_modules и dist → установка одной точной версии → build UI → отчёт локали → restart ohn-agent, затем ohn-gateway → health → беседа/guard без LLM → удаление беседы. При ошибке восстановление/build/restart/health.",
-            "ik-llama": "Отказ при активном ohn-models, слушателях 18030/18035 или llama-server на GPU → проверка диска → сохранение commit → fetch/checkout → новый build с флагами cache и относительным RUNPATH → --version → повторная проверка занятости → swap build/build.prev. ohn-models НЕ запускается.",
+            "ik-llama": "Отказ при активном ohn-models, слушателе 18030 или llama-server на GPU → проверка диска → сохранение commit → fetch/checkout → новый build с флагами cache и относительным RUNPATH → --version → повторная проверка занятости → swap build/build.prev. ohn-models НЕ запускается.",
             "caddy": "GitHub linux_amd64 + SHA-256 → validate текущего Caddyfile с окружением launcher (ключ-заглушка) → caddy.prev/swap → restart ohn-gateway → HTTPS health. При ошибке восстановление/restart/health.",
+            "llama-swap": "GitHub linux_amd64 + SHA-256 → --version → llama-swap.prev/swap → restart ohn-models и /health, только если он уже запущен. При ошибке восстановление.",
             "voice": "Проверка torch/torchaudio <=2.5.1 → копия uv.lock → uv lock --upgrade → uv sync --frozen → restart ohn-voice → health, TTS и STT. При ошибке старый lock/sync/restart/smoke.",
             "rollback": "Восстановить последнее сохранённое состояние выбранного компонента; для ik_llama сначала проверить занятость. Модели не запускать.",
         }
@@ -771,22 +836,22 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(prog="nexus-update", add_help=False,
                                      description="Обновление движков Nexus; по умолчанию только проверка.")
     parser.add_argument("-h", "--help", action="help", help="Показать справку")
-    parser.add_argument("command", nargs="?", default="check", choices=["check", "canvas", "ik-llama", "caddy", "voice", "rollback"])
+    parser.add_argument("command", nargs="?", default="check", choices=["check", "canvas", "ik-llama", "caddy", "llama-swap", "voice", "rollback"])
     parser.add_argument("target", nargs="?", help="Версия/commit либо компонент для rollback")
     parser.add_argument("--dry-run", action="store_true", help="Показать план без изменений, включая журнал")
     parser.add_argument("--offline", action="store_true", help="check без сетевых запросов")
     parser.add_argument("--bench", metavar="MODEL.gguf", help="Явно разрешённое чтение модели для короткого benchmark ik_llama")
     parser.add_argument("--sandbox", metavar="DIR", help="Только canvas: независимая копия /tmp/nexus-update-test.*, без служб/API")
     args = parser.parse_args(argv)
-    if args.command == "rollback" and args.target not in {"canvas", "ik-llama", "caddy", "voice"}:
-        parser.error("rollback требует canvas|ik-llama|caddy|voice")
+    if args.command == "rollback" and args.target not in {"canvas", "ik-llama", "caddy", "llama-swap", "voice"}:
+        parser.error("rollback требует canvas|ik-llama|caddy|llama-swap|voice")
     if args.command in {"check", "voice"} and args.target:
         parser.error("Эта команда не принимает версию")
     if args.offline and args.command != "check":
         parser.error("--offline предназначен для check")
     if args.bench and args.command != "ik-llama":
         parser.error("--bench допустим только с ik-llama")
-    if args.target and args.command in {"canvas", "caddy", "ik-llama"}:
+    if args.target and args.command in {"canvas", "caddy", "llama-swap", "ik-llama"}:
         require(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,199}", args.target), "Недопустимая версия/commit")
     return args
 

@@ -96,8 +96,8 @@ models:
     env: *env_cuda1_vision
     cmd: |
       ${server}
-      -m /home/user/Models/Holo4-27B/Holo4-27B-q4_k_m.gguf
-      --mmproj /home/user/Models/Holo4-27B/Holo4-27B-mmproj.f16.gguf
+      -m /data/home/user/Models/Holo4-27B/Holo4-27B-q4_k_m.gguf
+      --mmproj /data/home/user/Models/Holo4-27B/Holo4-27B-mmproj.f16.gguf
       -dev CUDA0,CUDA1 -sm layer -ts 16,20 -ngl 999 -c 262144
       ${common}
     metadata: {ctx: 262144}
