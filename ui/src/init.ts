@@ -3,8 +3,14 @@ import "./seed-backend.ts";
 import { getActiveBackend, getActiveSelection, getRegisteredBackends, setActiveSelection, setRegisteredBackends, subscribeActiveBackend } from "../node_modules/@openhands/agent-canvas/dist/api/backend-registry/active-store.js";
 import { SEEDED_DEFAULT_BACKEND_ID } from "../node_modules/@openhands/agent-canvas/dist/api/backend-registry/default-backend.js";
 import { isOriginSelection, originBackends } from "./backend-origin.ts";
+import { installGuardFetch } from "./guard-hooks.ts";
+
+// The guard path is resolved at build time on this machine, which also runs agent-server.
+declare const __NEXUS_GUARD__: string; // vite.config.ts `define`
 
 if (typeof window !== "undefined") {
+  installGuardFetch(`/usr/bin/python3 -I '${__NEXUS_GUARD__}'`);
+
   // Host requests always use this origin; Canvas must use the same backend, including after a switch.
   let syncing = false;
   const syncBackend = () => {

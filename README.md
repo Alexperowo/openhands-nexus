@@ -65,7 +65,7 @@ curl -X POST https://localhost:8443/api/profiles/Nex-25G -H 'Content-Type: appli
 ## Проверки
 
 ```bash
-(cd ui && for t in test-logic test-providers test-stream test-smooth test-backend-origin; do node $t.mjs; done)
+(cd ui && for t in test-logic test-providers test-stream test-smooth test-backend-origin test-stream-ui test-smooth-ui; do node $t.mjs || break; done)  # *-ui: Firefox
 (cd guard && python3 test_guard.py)
 (cd voice && .venv/bin/python test_pronunciation.py)
 (cd update && python3 test_update.py)

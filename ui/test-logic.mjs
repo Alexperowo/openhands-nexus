@@ -10,6 +10,7 @@ import { dialogLabel } from "./src/dialog-label.ts";
 import { initialOpening, requestOpening, beginOpening, finishOpening, mayShowOpened, isNewConversationClick } from "./src/conversation-opening.ts";
 import { originBackends, isOriginSelection, originLocation } from "./src/backend-origin.ts";
 import { shouldFoldSidebar } from "./src/narrow-sidebar.ts";
+import { withGuard, guardedBody } from "./src/guard-hooks.ts";
 
 test("opening: one page-load attempt, including StrictMode effect replay; redirects never create a loop", () => {
   for (const path of ["/", "/conversations"]) {
@@ -1032,4 +1033,27 @@ test("sidebar folds where its rem width would squeeze the chat, not on phones or
   assert.equal(shouldFoldSidebar(1280, 18), false);
   assert.equal(shouldFoldSidebar(800, 18), true);
   assert.equal(shouldFoldSidebar(600, 28), false, "below 768 px Canvas uses its drawer");
+});
+
+test("guard: every conversation start gets the guard first, other requests stay untouched", () => {
+  const command = "/usr/bin/python3 -I '/x/guard.py'";
+  const origin = "https://pc:8443";
+  const project = { pre_tool_use: [{ matcher: "terminal", hooks: [{ type: "command", command: "lint" }] }], stop: [{ hooks: [] }] };
+  const started = JSON.parse(guardedBody(`${origin}/api/conversations`, "post", JSON.stringify({ a: 1, hook_config: project }), origin, command));
+  assert.equal(started.a, 1);
+  assert.equal(started.hook_config.pre_tool_use[0].hooks[0].command, command);
+  assert.equal(started.hook_config.pre_tool_use[1].hooks[0].command, "lint", "workspace hooks are kept");
+  assert.deepEqual(started.hook_config.stop, project.stop);
+  const relative = JSON.parse(guardedBody("/api/conversations", "POST", "{}", origin, command));
+  assert.equal(relative.hook_config.pre_tool_use.length, 1);
+  const twice = withGuard(withGuard(null, command), command);
+  assert.equal(twice.pre_tool_use.length, 1, "no duplicate guard");
+  const legacy = withGuard({ hooks: { PreToolUse: [{ hooks: [{ command: "lint" }] }] } }, command);
+  assert.deepEqual(Object.keys(legacy), ["pre_tool_use"]);
+  assert.equal(legacy.pre_tool_use.length, 2);
+  for (const [url, method] of [["/api/conversations", "GET"], ["/api/conversations/abc/events", "POST"], ["/api/settings", "PATCH"]]) {
+    assert.equal(guardedBody(url, method, "{}", origin, command), "{}");
+  }
+  assert.throws(() => guardedBody("/api/conversations", "POST", new Blob(["{}"]), origin, command), /Страж Nexus/);
+  assert.throws(() => guardedBody("/api/conversations", "POST", "not json", origin, command));
 });

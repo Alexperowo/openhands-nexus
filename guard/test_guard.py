@@ -8,6 +8,8 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 import guard
 
@@ -40,7 +42,6 @@ DANGEROUS = {
     "systemd-run --user --scope cinnamon --replace": guard.REASON_START,
     "kill -9 -1": guard.REASON_ALL,
     "pkill -u user": guard.REASON_ALL,
-    "sudo pkill -f llama-server": guard.REASON_NEXUS,
     "kill $(lsof -t -i:18030)": guard.REASON_NEXUS,
     "fuser -k 8443/tcp": guard.REASON_NEXUS,
     "pkill python": guard.REASON_NEXUS,
@@ -106,6 +107,18 @@ class GuardRules(unittest.TestCase):
         for command, reason in DANGEROUS.items():
             with self.subTest(command=command):
                 self.assertTrue((decide(command) or "").startswith(reason.split("{")[0]), decide(command))
+
+    def test_killing_a_running_nexus_service_is_blocked(self):
+        """pkill reaches only live processes, so the model server is faked: the test must not need it running."""
+        argv = ["/opt/llama/bin/llama-server", "-m", "model.gguf", "--port", "18040"]
+        server = SimpleNamespace(pid="4242", comm="llama-server", argv=argv, line=" ".join(argv),
+                                 cgroup="/user.slice/user-1000.slice/user@1000.service/app.slice/ohn-models.service",
+                                 pgrp="4242", unit="ohn-models.service")
+        with mock.patch.object(guard, "processes", return_value=(server,)):
+            for command in ("sudo pkill -f llama-server", "killall llama-server", "kill -9 4242"):
+                with self.subTest(command=command):
+                    self.assertEqual(guard.decide(terminal(command)), guard.REASON_NEXUS)
+            self.assertIsNone(guard.decide(terminal("pkill -f some-other-tool")))
 
     def test_ordinary_commands_pass(self):
         for command in ORDINARY:

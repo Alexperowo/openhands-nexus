@@ -30,8 +30,11 @@ const bundle = await build({
   bundle: true, write: false, platform: "browser", format: "iife", jsx: "automatic",
   plugins: [{ name: "offline-data", setup(builder) {
     builder.onResolve({ filter: /\/hooks\/use-(context-window-usage|compact-context-action|select-conversation-tab)\.js$/ }, ({ path }) => ({ path, namespace: "offline-data" }));
+    // The input's connection bridge needs a live conversation; offline it renders nothing.
+    builder.onResolve({ filter: /^\.\/connection-bridge$/ }, ({ path }) => ({ path, namespace: "offline-data" }));
     builder.onLoad({ filter: /.*/, namespace: "offline-data" }, ({ path }) => ({ contents:
       path.includes("context-window-usage") ? "export const useContextWindowUsage = () => window.sample;" :
+      path.includes("connection-bridge") ? "export const ConnectionBridge = () => null;" :
       path.includes("compact-context-action") ? "export const useCompactContextAction = () => ({ handleCompact() {}, isDisabled: true, isCompacting: false });" :
       "export const useSelectConversationTab = () => ({ navigateToTab() {} });",
     }));

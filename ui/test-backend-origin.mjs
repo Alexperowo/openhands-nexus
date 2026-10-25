@@ -24,11 +24,14 @@ test("init pins Canvas before its consumers: stale selection, URL override and l
   const localStorage = memory(), sessionStorage = memory();
   let url = new URL("https://nexus.invalid:8443/conversations/example?backend=other&org=old&keep=1#answer");
   globalThis.localStorage = localStorage;
+  const sent = [];
+  globalThis.__NEXUS_GUARD__ = "/nexus/guard.py";
   globalThis.window = {
     localStorage, sessionStorage, get location() { return url; },
+    fetch(input, init) { sent.push([input, init]); return Promise.resolve(null); },
     history: { state: { marker: 1 }, replaceState(state, title, href) { url = new URL(href, url); assert.deepEqual(state, { marker: 1 }); } },
   };
-  t.after(() => { delete globalThis.window; delete globalThis.localStorage; });
+  t.after(() => { delete globalThis.window; delete globalThis.localStorage; delete globalThis.__NEXUS_GUARD__; });
   const other = { id: "other", name: "Other", host: "https://other.invalid", apiKey: "", kind: "local" };
   const { SEEDED_DEFAULT_BACKEND_ID: id } = await import(`${canvas}api/backend-registry/default-backend.js`);
   const storage = await import(`${canvas}api/backend-registry/storage.js`);
@@ -36,6 +39,9 @@ test("init pins Canvas before its consumers: stale selection, URL override and l
   storage.writeStoredActiveBackend({ backendId: "other", orgId: "old" });
   // Import the actual host entry, not a reimplementation of its initialization.
   await import("./src/init.ts");
+  // Every conversation start from the page, Canvas's own included, carries the guard.
+  await window.fetch(`${url.origin}/api/conversations`, { method: "POST", body: "{}" });
+  assert.match(JSON.parse(sent.at(-1)[1].body).hook_config.pre_tool_use[0].hooks[0].command, /'\/nexus\/guard\.py'$/);
   const store = await import(`${canvas}api/backend-registry/active-store.js`);
   const pinned = () => {
     assert.deepEqual(store.getActiveBackend(), {

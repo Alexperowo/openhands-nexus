@@ -7,18 +7,8 @@ export async function latestConversationId(signal: AbortSignal) {
   return data.items[0]?.id ?? null;
 }
 
-// PreToolUse guard: stops commands that break the desktop session or Nexus itself and tells
-// the agent the right way instead (nobody confirms actions, Aleksandr's decision). The
-// guard path is resolved at build time on this machine, which also runs agent-server.
-declare const __NEXUS_GUARD__: string; // vite.config.ts `define`
-const guardHooks = {
-  pre_tool_use: [{
-    matcher: "terminal|file_editor|planning_file_editor",
-    hooks: [{ type: "command", command: `/usr/bin/python3 -I '${__NEXUS_GUARD__}'`, timeout: 10 }],
-  }],
-};
-
-// Canvas keeps its "new chat" start page private, so the host creates the conversation.
+// Canvas keeps its "new chat" start page private, so the host creates the conversation;
+// installGuardFetch (init.ts) adds the guard hook to it like to every other start.
 export async function createConversation(signal: AbortSignal) {
   const settings = await requestJson<{
     agent_settings?: { llm?: { api_key?: string; base_url?: string }; [key: string]: unknown };
@@ -37,7 +27,7 @@ export async function createConversation(signal: AbortSignal) {
   const result = await requestJson<{ id: string }>("/api/conversations", {
     method: "POST", signal,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ agent_settings: agentSettings, workspace: { working_dir: "/tmp" }, hook_config: guardHooks }),
+    body: JSON.stringify({ agent_settings: agentSettings, workspace: { working_dir: "/tmp" } }),
   });
   if (!result.id) throw new Error("Сервер не вернул ID диалога");
   return result.id;
