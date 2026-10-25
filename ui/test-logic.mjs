@@ -1096,6 +1096,23 @@ test("reasoning: each level round-trips, the profile defaults are High, external
   assert.equal(reasoningOf(undefined), null);
 });
 
+test("reasoning: every profile starts at High, Nex gets its own efforts (none, medium, high)", () => {
+  const profiles = JSON.parse(readFileSync(new URL("../agent/config/profiles.json", import.meta.url), "utf8"));
+  // The same merge as agent/config.py: nested objects key by key.
+  const merged = (common, own) => Object.fromEntries(Object.entries({ ...common, ...own }).map(([key, value]) =>
+    [key, own[key] && typeof own[key] === "object" && common[key] && typeof common[key] === "object" ? merged(common[key], own[key]) : value]));
+  for (const [name, own] of Object.entries(profiles.profiles)) {
+    const llm = merged(profiles.common, own);
+    assert.equal(reasoningOf(llm), "high", name);
+    assert.equal(llm.litellm_extra_body.min_p, 0, `${name}: common keys survive the profile's own`);
+  }
+  const nex = merged(profiles.common, profiles.profiles["Nex-25G"]);
+  const efforts = Object.fromEntries(REASONING_LEVELS.map((level) => [level, withReasoning(nex, level).litellm_extra_body.chat_template_kwargs.reasoning_effort]));
+  assert.deepEqual(efforts, { off: "none", minimal: "medium", low: "medium", medium: "medium", high: "high", max: "high" });
+  for (const level of REASONING_LEVELS) assert.equal(reasoningOf(withReasoning(nex, level)), level, `Nex ${level}`);
+  assert.equal(withReasoning(nex, "low").litellm_extra_body.top_k, 40, "Nex keeps its own top_k");
+});
+
 test("reasoning: starts and model switches get the level, other requests pass unchanged", () => {
   const origin = "https://pc.local:8443";
   const llm = { model: "openai/tess", base_url: "http://127.0.0.1:18030/v1" };

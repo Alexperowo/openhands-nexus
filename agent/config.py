@@ -36,13 +36,22 @@ def call(method, path, body=None):
         return json.load(response)
 
 
+def merged(common, own):
+    """The profile over the common part; objects inside (litellm_extra_body) merge key by key."""
+    result = dict(common)
+    for key, value in own.items():
+        result[key] = merged(common[key], value) \
+            if isinstance(value, dict) and isinstance(common.get(key), dict) else value
+    return result
+
+
 def wanted():
     """Settings and profiles exactly as the files describe them."""
     settings = json.loads((CONFIG / "settings.json").read_text())
     settings["agent_settings"].setdefault("agent_context", {})["system_message_suffix"] = \
         (CONFIG / "suffix.md").read_text()
     data = json.loads((CONFIG / "profiles.json").read_text())
-    profiles = {name: {**data["common"], **own} for name, own in data["profiles"].items()}
+    profiles = {name: merged(data["common"], own) for name, own in data["profiles"].items()}
     for name, llm in profiles.items():
         if urlsplit(llm["base_url"]).hostname not in LOCAL_HOSTS:
             raise SystemExit(f"Профиль {name}: внешний провайдер, его ключ этим скриптом не задаётся")

@@ -2,7 +2,8 @@
 // is and a new level applies from the agent's next step. Tess and Holo templates read
 // enable_thinking and reasoning_effort (low, medium, xhigh; low and xhigh add a line to the
 // system prompt, so moving between efforts makes the server read the context once again);
-// the Nex template turns thinking off with reasoning_effort "none" and ignores the rest.
+// the Nex template reads only reasoning_effort, by its card "none", "medium" (adaptive, the
+// model decides whether to think) and "high" (always thinks), so the levels map onto those.
 // llama-server ends thinking after thinking_budget_tokens, so a model that loops in its
 // reasoning still gets to act. High matches the defaults in agent/config/profiles.json.
 import { isLocalModel } from "./conversations.ts";
@@ -24,6 +25,10 @@ export const REASONING_LEVELS = Object.keys(REASONING) as ReasoningLevel[];
 type Llm = Record<string, unknown>;
 const record = (value: unknown) => (value && typeof value === "object" ? value as Record<string, unknown> : {});
 
+const NEX_EFFORT: Record<string, string> = { none: "none", low: "medium", medium: "medium", xhigh: "high" };
+/** The effort as the model's template names it. */
+const effortFor = (llm: Llm, effort: string) => (/(^|\/)nex/i.test(String(llm.model ?? "")) ? NEX_EFFORT[effort] : effort);
+
 /** The model with this level; an external provider is returned unchanged. */
 export function withReasoning<T extends Llm>(llm: T, level: ReasoningLevel): T {
   if (!isLocalModel(llm.base_url)) return llm;
@@ -33,7 +38,7 @@ export function withReasoning<T extends Llm>(llm: T, level: ReasoningLevel): T {
     ...llm,
     litellm_extra_body: {
       ...extra,
-      chat_template_kwargs: { ...record(extra.chat_template_kwargs), enable_thinking: thinking, reasoning_effort: effort },
+      chat_template_kwargs: { ...record(extra.chat_template_kwargs), enable_thinking: thinking, reasoning_effort: effortFor(llm, effort) },
       thinking_budget_tokens: budget,
     },
   };
@@ -45,7 +50,8 @@ export function reasoningOf(llm: unknown): ReasoningLevel | null {
   const kwargs = record(extra.chat_template_kwargs);
   return REASONING_LEVELS.find((level) => {
     const { thinking, effort, budget } = REASONING[level];
-    return kwargs.enable_thinking === thinking && kwargs.reasoning_effort === effort && extra.thinking_budget_tokens === budget;
+    return kwargs.enable_thinking === thinking && kwargs.reasoning_effort === effortFor(record(llm), effort)
+      && extra.thinking_budget_tokens === budget;
   }) ?? null;
 }
 

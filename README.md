@@ -62,6 +62,13 @@ python3 -I agent/config.py check   # что на сервере агента р�
 python3 -I agent/config.py apply   # записать профили и настройки, включить активный профиль
 ```
 
+Профиль дополняет общую часть `profiles.json`, вложенные объекты сливаются по ключам. Выборка —
+по карточкам моделей: Nex N2.5 — 0.7 / top_p 0.95 / top_k 40, Tess и Holo4 (Qwen3.8) —
+1.0 / 0.95 / 20, min_p 0. `send_reasoning_content` в `capability_overrides` возвращает модели её
+прошлые размышления: Tess (карточка: preserve_thinking в агентных циклах) и Nex (шаблон всегда
+их выводит) — да, Holo4 — нет (её harness их не повторяет). agent-server 1.58 этот ключ не
+читает: до релиза с PR OpenHands/software-agent-sdk#4446 его учитывает `agent/sdk-patch`.
+
 ## Проверки
 
 ```bash

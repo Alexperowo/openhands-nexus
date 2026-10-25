@@ -30,6 +30,8 @@ case "${1:-}" in
       OH_CANVAS_SAFE_AUTOMATION_PORT=18011 OH_CANVAS_SAFE_VITE_PORT=3011 \
       OH_CANVAS_SAFE_STATE_DIR="$PWD/state/agent-canvas" OH_PERSISTENCE_DIR="$PWD/state" \
       LOCAL_BACKEND_API_KEY="$OHN_SESSION_KEY" OH_SECRET_KEY="$OHN_SECRET_KEY"
+    # Canvas passes its environment on to agent-server: an SDK fix it loads at startup.
+    export PYTHONPATH="$PWD/sdk-patch${PYTHONPATH:+:$PYTHONPATH}"
     mkdir -p "$OH_CANVAS_SAFE_STATE_DIR"
     # Canvas only logs it when its agent-server child dies and keeps running, so the unit would stay
     # "active" without an agent. Leave once 18010 stops answering (1 min) or never answers after
