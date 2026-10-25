@@ -12,6 +12,8 @@ import { originBackends, isOriginSelection, originLocation } from "./src/backend
 import { shouldFoldSidebar } from "./src/narrow-sidebar.ts";
 import { withGuard, guardedBody } from "./src/guard-hooks.ts";
 import { profileSwitch } from "./src/model-switch.ts";
+import { REASONING_LEVELS, withReasoning, reasoningOf, reasonedBody } from "./src/reasoning.ts";
+import { readFileSync } from "node:fs";
 
 test("opening: one page-load attempt, including StrictMode effect replay; redirects never create a loop", () => {
   for (const path of ["/", "/conversations"]) {
@@ -1075,4 +1077,40 @@ test("model switch: only a Canvas profile switch to a local model is taken over,
     ["/api/conversations/e1b6/switch_llm", "POST", JSON.stringify({ llm: { ...llm, usage_id: "default" } })],
     ["/api/conversations/e1b6/switch_llm", "POST", JSON.stringify({ llm: { ...llm, base_url: "https://api.example.com/v1" } })],
   ]) assert.equal(profileSwitch(url, method, raw, origin), null, `${method} ${url}`);
+});
+
+test("reasoning: each level round-trips, the profile defaults are High, external models are left alone", () => {
+  const profiles = JSON.parse(readFileSync(new URL("../agent/config/profiles.json", import.meta.url), "utf8"));
+  const local = { model: "openai/tess", base_url: "http://127.0.0.1:18030/v1", litellm_extra_body: profiles.common.litellm_extra_body };
+  assert.equal(reasoningOf(local), "high");
+  for (const level of REASONING_LEVELS) {
+    const llm = withReasoning(local, level);
+    assert.equal(reasoningOf(llm), level);
+    assert.equal(llm.litellm_extra_body.top_k, 20, "other extra body keys stay");
+  }
+  assert.deepEqual(withReasoning(local, "off").litellm_extra_body.chat_template_kwargs, { enable_thinking: false, reasoning_effort: "none" });
+  const external = { model: "openai/gpt", base_url: "https://api.example.com/v1" };
+  assert.equal(withReasoning(external, "max"), external);
+  // Conversations from before the levels carry no budget: no level is claimed for them.
+  assert.equal(reasoningOf({ litellm_extra_body: { chat_template_kwargs: { enable_thinking: true, reasoning_effort: "xhigh" } } }), null);
+  assert.equal(reasoningOf(undefined), null);
+});
+
+test("reasoning: starts and model switches get the level, other requests pass unchanged", () => {
+  const origin = "https://pc.local:8443";
+  const llm = { model: "openai/tess", base_url: "http://127.0.0.1:18030/v1" };
+  const start = JSON.parse(reasonedBody("/api/conversations", "post", JSON.stringify({ agent_settings: { llm, tools: [] }, workspace: {} }), origin, "low"));
+  assert.equal(reasoningOf(start.agent_settings.llm), "low");
+  assert.deepEqual(start.agent_settings.tools, []);
+  const switched = JSON.parse(reasonedBody(`${origin}/api/conversations/e1b6/switch_llm`, "POST", JSON.stringify({ llm }), origin, "max"));
+  assert.equal(reasoningOf(switched.llm), "max");
+  for (const [url, method, raw] of [
+    ["/api/conversations", "GET", JSON.stringify({ agent_settings: { llm } })],
+    ["/api/conversations/e1b6/events", "POST", JSON.stringify({ llm })],
+    ["/api/conversations", "POST", "not json"],
+    ["/api/conversations", "POST", JSON.stringify({ workspace: {} })],
+    ["/api/conversations/e1b6/switch_llm", "POST", JSON.stringify({ profile: "Tess-27B" })],
+  ]) assert.equal(reasonedBody(url, method, raw, origin, "off"), raw, `${method} ${url}`);
+  const blob = new Blob(["{}"]);
+  assert.equal(reasonedBody("/api/conversations", "POST", blob, origin, "off"), blob);
 });

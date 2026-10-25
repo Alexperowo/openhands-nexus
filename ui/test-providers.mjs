@@ -55,6 +55,17 @@ for (const [module, name] of Object.entries(ADAPTED)) {
   });
 }
 
+// The reasoning adapter replaces both exports: the row's button and the overflow menu content.
+test("the model picker is still the private module with the two exports its adapter replaces", () => {
+  const picker = `${dist}/components/features/chat/components/chat-input-llm-profile-picker.js`;
+  const exports = readFileSync(picker, "utf8").match(/^export \{[^}]*\}/gm) ?? [];
+  assert.equal(exports.length, 1);
+  assert.match(exports[0], /^export \{ \w+ as ChatInputLlmProfileMenuContent, \w+ as ChatInputLlmProfilePicker \}$/);
+  assert.match(modules.get(`${dist}/components/features/chat/components/chat-input-actions.js`),
+    /import \{ ChatInputLlmProfileMenuContent as \w+, ChatInputLlmProfilePicker as \w+ \} from "\.\/chat-input-llm-profile-picker\.js"/);
+  assert.ok(build.some((source) => source.includes("nexus-reasoning-options")), "run `npx vite build --outDir dist-next` first; the reasoning adapter is missing");
+});
+
 test("the build includes the read-aloud adapter", () => {
   assert.ok(build.some((source) => source.includes("speak-button")), "run `npx vite build --outDir dist-next` first; the ▶ button is not in dist");
 });

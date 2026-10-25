@@ -12,7 +12,8 @@
     "log_completions": false,
     "litellm_extra_body": {
       "chat_template_kwargs": {"enable_thinking": true, "reasoning_effort": "xhigh"},
-      "top_k": 20
+      "top_k": 20,
+      "thinking_budget_tokens": 8192
     }
   },
   "profiles": {

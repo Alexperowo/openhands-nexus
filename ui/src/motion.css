@@ -53,6 +53,14 @@ button:disabled { cursor: default; }
   [data-agent-server-ui] div.ml-auto:has(> [data-testid='chat-dictation-button']) { inline-size: 192px; }
 }
 [data-testid='scroll-to-bottom']::after { content: 'К новым сообщениям'; }
+/* Model name over the reasoning level: two short lines, no wider than the name alone. */
+[data-agent-server-ui] .nexus-model-pill-text { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; line-height: 1.1; }
+[data-agent-server-ui] .nexus-model-pill-text > .truncate { max-width: 100%; font-size: 0.8rem; color: #f0f0f5; }
+[data-agent-server-ui] .nexus-model-pill-level { font-size: 0.7rem; color: #d0d0dc; }
+.nexus-reasoning-group { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.25rem 0.5rem 0.5rem; border-bottom: 2px solid #888899; }
+.nexus-reasoning-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem; }
+.nexus-reasoning-options > button { border: 2px solid #888899; border-radius: 0.5rem; padding: 0 0.5rem; font-size: 0.85rem; color: #f0f0f5; background: #16161e; white-space: nowrap; }
+.nexus-reasoning-options > button[aria-checked='true'] { color: #000; background: #ffdd00; border-color: #ffdd00; font-weight: 600; }
 [data-testid='sidebar-mobile-drawer'], [data-testid='settings-navbar'] { transition-duration: var(--nexus-motion-page) !important; transition-timing-function: var(--nexus-motion-ease) !important; }
 .nexus-field { max-width: 100%; min-width: 0; }
 .nexus-field select { max-width: 100%; min-width: 0; }

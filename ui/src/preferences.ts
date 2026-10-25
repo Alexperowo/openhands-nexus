@@ -11,11 +11,13 @@ export interface Preferences {
   fontSize: number;
   highContrast: boolean;
   motion: import("./motion").MotionPreference;
+  /** Level for new conversations and model switches (reasoning.ts). */
+  reasoning: import("./reasoning").ReasoningLevel;
 }
 
 const KEY = "nexus-preferences";
 const DEFAULTS: Preferences = {
-  autoSpeak: true, speakSteps: false, voice: "xenia", speed: 1, volume: 1, cues: true, fontSize: 20, highContrast: true, motion: "system",
+  autoSpeak: true, speakSteps: false, voice: "xenia", speed: 1, volume: 1, cues: true, fontSize: 20, highContrast: true, motion: "system", reasoning: "high",
 };
 
 function load(): Preferences {
