@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Desktop shortcut «Остановить Nexus»: stops every ohn-* service and frees the GPU.
+set -uo pipefail
+SOUNDS=/usr/share/sounds/freedesktop/stereo
+# Started from the tablet (KDE Connect «Выполнить команду»), the PC screen and speakers are out of reach.
+tablet() {
+  local id
+  for id in $(kdeconnect-cli -a --id-only 2>/dev/null); do
+    kdeconnect-cli -d "$id" --ping-msg "$1" >/dev/null 2>&1
+  done
+}
+
+systemctl --user stop ohn.target ohn-models ohn-voice ohn-agent ohn-gateway
+status=$?
+if ((status == 0)); then
+  notify-send -a Nexus "Nexus остановлен" "Модель выгружена, планшет отключён." 2>/dev/null
+  tablet "Nexus остановлен."
+  paplay "$SOUNDS/complete.oga" 2>/dev/null
+else
+  notify-send -a Nexus -u critical "Nexus не остановился" "Проверьте: systemctl --user status 'ohn-*'" 2>/dev/null
+  tablet "Nexus не остановился."
+  paplay "$SOUNDS/dialog-error.oga" 2>/dev/null
+fi
+exit $status

@@ -1,5 +1,0 @@
-{
-  "lan_auth_enabled": false,
-  "hsts_enabled": true,
-  "rate_limit_per_minute": 120
-}

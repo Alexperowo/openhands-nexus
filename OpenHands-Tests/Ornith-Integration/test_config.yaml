@@ -1,3 +1,0 @@
-models:
-  mock_model:
-    cmd: "python K:\\Project\\OpenHands-Tests\\Ornith-Integration\\mock_backend.py ${PORT}"

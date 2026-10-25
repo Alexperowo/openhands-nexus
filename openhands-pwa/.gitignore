@@ -1,7 +1,0 @@
-certs/*.pfx
-certs/*.key
-certs/*.pem
-certs/*.crt
-certs/*.txt
-certs/
-

@@ -1,0 +1,73 @@
+# HTTPS для планшета в LAN: без паролей, только TLS (микрофону и PWA нужен secure context).
+{
+	# Собственный CA Caddy; в системное хранилище не устанавливать.
+	skip_install_trust
+	admin 127.0.0.1:2029
+	# Порт 80 недоступен без root; перенаправление HTTP→HTTPS не нужно.
+	auto_https disable_redirects
+	# CA Windows-версии (уже установлен на планшете). Ключ — локально, не в git.
+	pki {
+		ca local {
+			root {
+				cert {$CA_DIR}/openhands-ca.crt
+				key {$CA_DIR}/openhands-ca.key
+			}
+		}
+	}
+}
+
+# Корневой сертификат для установки на планшет (обычный HTTP, только этот файл).
+http://{$LAN_IP}:8081 {
+	# Listen only on the LAN address: a site address alone binds every interface.
+	bind {$LAN_IP}
+	handle /ca.crt {
+		header Content-Type application/x-x509-ca-cert
+		root * {$CA_DIR}
+		rewrite * /openhands-ca.crt
+		file_server
+	}
+	respond 404
+}
+
+https://{$LAN_IP}:8443, https://localhost:8443 {
+	bind {$LAN_IP} 127.0.0.1
+	tls internal
+	encode gzip
+	# Явные handle: иначе общий handle со страницей перехватит /api.
+	# Ключ сессии подставляет только шлюз (из session.env), в коде страницы его нет.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:18010 {
+			header_up X-Session-API-Key {$OHN_SESSION_KEY}
+		}
+	}
+	handle /sockets/* {
+		reverse_proxy 127.0.0.1:18010 {
+			header_up X-Session-API-Key {$OHN_SESSION_KEY}
+		}
+	}
+	handle /v1/* {
+		reverse_proxy 127.0.0.1:18020
+	}
+	# Только состояние llama-swap и модели; /slots и прочее llama-server содержат текст промптов.
+	@llm_running {
+		method GET
+		path /llm/running
+	}
+	handle @llm_running {
+		rewrite * /running
+		reverse_proxy 127.0.0.1:18030
+	}
+	@llm_model_health {
+		method GET
+		path_regexp model ^/llm/model/([A-Za-z0-9._-]+)/health$
+	}
+	handle @llm_model_health {
+		rewrite * /upstream/{re.model.1}/health
+		reverse_proxy 127.0.0.1:18030
+	}
+	handle {
+		root * {$SHELL_DIST}
+		try_files {path} /index.html
+		file_server
+	}
+}

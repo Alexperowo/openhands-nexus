@@ -1,0 +1,104 @@
+# Меню моделей Nexus: llama-swap держит одну модель за раз и переключает по полю "model" запроса.
+# Слушает 127.0.0.1:18030 (launcher/run.sh models, рабочая папка — models/); каждая модель — свой ik_llama llama-server на ${PORT}.
+# CUDA_DEVICE_ORDER=PCI_BUS_ID: CUDA0 = RTX 5060 Ti 16 ГБ, CUDA1 = RTX 2080 Ti 22 ГБ.
+# Nex — MoE qwen35moe (40 слоёв, 256 экспертов); Tess и Holo4 — плотные Qwen3.8-27B.
+# metadata.ctx — окно модели; оверлей берёт из /v1/models порог сжатия для выбранной модели.
+# Tess: MTP-головы в файле; замер 25.10: генерация 19→28 ток/с, обработка промпта −23% — на шаге агента выигрыш.
+
+healthCheckTimeout: 600
+logLevel: info
+startPort: 18040
+globalTTL: 0
+unloadTimeout: 15
+sendLoadingState: false
+
+# Запуск Nexus сразу загружает основную модель: первый запрос не ждёт загрузки.
+hooks:
+  on_startup:
+    preload: ["nex25"]
+
+macros:
+  server: /home/user/backend/ik_llama-fresh/build/bin/llama-server
+  nex_dir: /data/home/user/Models/Nex-N2.5-mini-OrcaRouter
+  common: >-
+    --host 127.0.0.1 --port ${PORT}
+    -fa on -ctk q8_0 -ctv q8_0 -b 2048 -ub 512 -np 1 -t 6
+    --image-min-tokens 1024
+    --reasoning-format deepseek --reasoning-budget -1
+    --jinja --temp 0.6 --top-p 0.95 --top-k 20
+  nex_template: --chat-template-file nex-stock.jinja
+
+models:
+  nex25:
+    name: "Nex 25G — обе карты"
+    description: "Основная модель агента"
+    aliases: ["nex"]
+    env: &env_cuda1_vision
+      - "CUDA_DEVICE_ORDER=PCI_BUS_ID"
+      - "NCCL_SOCKET_IFNAME=lo"
+      - "MTMD_BACKEND_DEVICE=CUDA1"
+      - "LD_LIBRARY_PATH=/usr/local/cuda-13.1/lib64"
+    cmd: |
+      ${server}
+      -m ${nex_dir}/Nex-N2.5-mini-OrcaRouter-Sangreal-25G-ICEv2.gguf
+      --mmproj ${nex_dir}/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf
+      -dev CUDA0,CUDA1 -sm layer -ts 16,20 -ngl 999 -c 262144
+      ${nex_template} ${common}
+    metadata: {ctx: 262144}
+    disableKeepAlives: true
+
+  nex19-2080:
+    name: "Nex 19G — RTX 2080 Ti"
+    description: "Одна карта 2080 Ti, 5060 Ti свободна"
+    env: *env_cuda1_vision
+    cmd: |
+      ${server}
+      -m ${nex_dir}/Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf
+      --mmproj ${nex_dir}/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf
+      -dev CUDA1 -ngl 999 -c 65536
+      ${nex_template} ${common}
+    metadata: {ctx: 65536}
+    disableKeepAlives: true
+
+  nex19-5060:
+    name: "Nex 19G — RTX 5060 Ti + ОЗУ"
+    description: "Одна карта 5060 Ti, эксперты 20 слоёв в ОЗУ (~41 ток/с); 2080 Ti свободна"
+    env:
+      - "CUDA_DEVICE_ORDER=PCI_BUS_ID"
+      - "MTMD_BACKEND_DEVICE=CUDA0"
+      - "LD_LIBRARY_PATH=/usr/local/cuda-13.1/lib64"
+    cmd: |
+      ${server}
+      -m ${nex_dir}/Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf
+      --mmproj ${nex_dir}/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf
+      -dev CUDA0 -ngl 999 --n-cpu-moe 20 -c 131072
+      ${nex_template} ${common}
+    metadata: {ctx: 131072}
+    disableKeepAlives: true
+
+  tess:
+    name: "Tess 4.5 27B — обе карты"
+    description: "Агентная модель migtissera, Q5_K_M"
+    env: *env_cuda1_vision
+    cmd: |
+      ${server}
+      -m /data/home/user/Models/Tess-4.5-27B/migtissera_Tess-4.5-27B-Q5_K_M.gguf
+      --mmproj /data/home/user/Models/Tess-4.5-27B/mmproj-Tess-4.5-27B-F16.gguf
+      -dev CUDA0,CUDA1 -sm layer -ts 16,20 -ngl 999 -c 262144
+      --spec-type mtp:n_max=2
+      ${common}
+    metadata: {ctx: 262144}
+    disableKeepAlives: true
+
+  holo:
+    name: "Holo4 27B — обе карты"
+    description: "Управление экраном (H Company), Q4_K_M"
+    env: *env_cuda1_vision
+    cmd: |
+      ${server}
+      -m /home/user/Models/Holo4-27B/Holo4-27B-q4_k_m.gguf
+      --mmproj /home/user/Models/Holo4-27B/Holo4-27B-mmproj.f16.gguf
+      -dev CUDA0,CUDA1 -sm layer -ts 16,20 -ngl 999 -c 262144
+      ${common}
+    metadata: {ctx: 262144}
+    disableKeepAlives: true

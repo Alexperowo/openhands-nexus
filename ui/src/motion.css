@@ -1,0 +1,76 @@
+/* Shared motion tokens. Only opacity/transform animate; text, height and scroll position do not tween. */
+:root {
+  --nexus-motion-fast: 180ms;
+  --nexus-motion-page: 220ms;
+  --nexus-motion-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+.nexus-page { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; animation: nexus-page-in var(--nexus-motion-page) var(--nexus-motion-ease); }
+.nexus-page > * { min-height: 0; }
+.nexus-page > .settings-shell { flex: 1; }
+.nexus-event { min-width: 0; max-width: 100%; overflow-wrap: anywhere; animation: nexus-appear var(--nexus-motion-fast) var(--nexus-motion-ease); }
+.nexus-event article { margin-top: 0.6rem; }
+.nexus-speech-slot { min-height: 48px; }
+.nexus-speech-slot .speak-row { margin: 0; }
+.nexus-reasoning-slot { min-height: 48px; }
+.nexus-reasoning { margin: 0; }
+.nexus-reasoning > summary { min-height: 48px; }
+.nexus-reasoning-body { overflow-wrap: anywhere; }
+.nexus-event pre, .nexus-event img { max-width: 100%; }
+.nexus-topbar { display: flex; align-items: flex-start; flex-shrink: 0; background: #111115; border-bottom: 2px solid #888899; }
+.nexus-status-slot { flex: 1; min-width: 0; }
+.nexus-status-slot .status-bar { border: 0; display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.9rem; font-weight: 500; line-height: 1.5; min-height: 3.8em; transition: opacity var(--nexus-motion-fast) var(--nexus-motion-ease); }
+.status-bar[data-empty] { opacity: 0; }
+.nexus-working { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; margin-top: 0.6em; background: currentColor; animation: nexus-working 2s ease-in-out infinite; }
+.nexus-audio-controls { display: flex; gap: 0.25rem; flex-shrink: 0; align-items: center; padding: 0.2rem 0.5rem; }
+/* Lit while something is being read, so the one button that matters stands out. */
+.nexus-stop-speech:not([aria-disabled="true"]) { color: #000; background: #ffdd00; }
+.nexus-audio-controls > .icon-button { flex: 0 0 48px; }
+button:disabled { cursor: default; }
+[data-testid='chat-scroll-container'] { scrollbar-gutter: stable; overflow-anchor: none; overscroll-behavior-y: contain; }
+[data-testid='scroll-to-bottom'] { min-width: 48px; min-height: 48px; width: auto; gap: 0.4rem; padding: 0 0.7rem; border: 2px solid #888899; transform: none; color: #fff; background: #16161e; font: inherit; font-size: 0.85rem; white-space: nowrap; }
+[data-testid='scroll-to-bottom'] svg { transform: rotate(180deg); }
+[data-agent-server-ui] [data-testid='scroll-to-bottom'] { rotate: none; }
+.nexus-backend-label { display: block; font-size: 0.8rem; color: #fff; }
+[data-agent-server-ui] [data-testid='chat-input'] { line-height: 1.55 !important; min-height: 1.55em; }
+[data-agent-server-ui] [data-testid='chat-input']::before { font-size: inherit !important; line-height: inherit !important; }
+/* The frame buffer handles reveal; Canvas's per-word fade lowers text contrast. */
+.nexus-event [data-stream-word] { animation: none !important; }
+/* Keep microphone/send positions fixed when Canvas hides its transient status. */
+[data-agent-server-ui] div.ml-auto:has(> [data-testid='chat-dictation-button']) {
+  inline-size: calc(112px + 6rem); max-inline-size: calc(100% - 48px - 0.5rem);
+  flex-shrink: 1; justify-content: flex-end;
+}
+[data-testid='scroll-to-bottom']::after { content: 'К новым сообщениям'; }
+[data-testid='sidebar-mobile-drawer'], [data-testid='settings-navbar'] { transition-duration: var(--nexus-motion-page) !important; transition-timing-function: var(--nexus-motion-ease) !important; }
+.nexus-field { max-width: 100%; min-width: 0; }
+.nexus-field select { max-width: 100%; min-width: 0; }
+@keyframes nexus-appear { from { opacity: 1; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes nexus-page-in { from { opacity: 1; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes nexus-working { 0%, 100% { opacity: 1; } 50% { opacity: 0.65; } }
+/* A full opacity cycle takes two seconds: no flashing or rapid shimmer. */
+html[data-nexus-motion='reduced'] *, html[data-nexus-motion='off'] * {
+  animation: none !important; transition: none !important; scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-nexus-motion='full']) *, html:not([data-nexus-motion='full']) *::before, html:not([data-nexus-motion='full']) *::after {
+    animation: none !important; transition: none !important; scroll-behavior: auto !important;
+  }
+}
+
+.nexus-status-text { animation: nexus-appear var(--nexus-motion-fast) var(--nexus-motion-ease); }
+[data-agent-server-ui] button { min-width: 48px; min-height: 48px; }
+[data-agent-server-ui] select { min-height: 48px; }
+html[data-nexus-motion='reduced'] *::before, html[data-nexus-motion='reduced'] *::after,
+html[data-nexus-motion='off'] *::before, html[data-nexus-motion='off'] *::after { animation: none !important; transition: none !important; }
+[data-agent-server-ui] button:disabled { opacity: 1; }
+html[data-nexus-motion='full'] [data-testid='sidebar-mobile-drawer'],
+html[data-nexus-motion='full'] [data-testid='settings-navbar'] { transition-property: transform !important; }
+/* Reduced: only the non-text backdrop may fade; Off: every transition is disabled. */
+html[data-nexus-motion='reduced'] div:has(+ [data-testid='sidebar-mobile-drawer']),
+html[data-nexus-motion='reduced'] div:has(+ [data-testid='settings-navbar']) {
+  transition: opacity var(--nexus-motion-fast) var(--nexus-motion-ease) !important;
+}
+/* Canvas spacing is in rem and balloons at 28 px; the git bar stays empty here (no repository). */
+[data-agent-server-ui] [data-testid='chat-git-control-bar']:empty { display: none; }
+[data-agent-server-ui] .custom-scrollbar-always.grow { padding-bottom: 0.75rem; }
+[data-agent-server-ui] .shrink-0.flex-col.pb-4 { padding-bottom: 0.5rem; }

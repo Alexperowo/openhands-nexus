@@ -1,0 +1,182 @@
+:root {
+  --nexus-font-size: 20px;
+  --nexus-focus-color: #ffdd00;
+  font-family: system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+/* Canvas sizes everything in rem, so one root size scales the whole interface
+   and keeps its hierarchy. Pinch-zoom stays available on top of it. */
+html { font-size: var(--nexus-font-size); height: 100%; }
+body, #root { margin: 0; height: 100%; background: #000; color: #fff; }
+*, *::before, *::after { box-sizing: border-box; }
+
+[data-agent-server-ui] {
+  line-height: 1.5;
+  /* Captions and metadata: smaller than text, but still readable. */
+  --text-xs: 0.875rem;
+}
+/* Error text: Canvas red (#e76a5e) is 6.6:1 on black and under 5:1 on raised panels;
+   this one keeps 7:1 on every dark surface. Red backgrounds keep the Canvas colour,
+   their white text needs the darker shade. */
+[data-agent-server-ui] .text-danger { color: #ff9a90; }
+/* Reading text is the main thing: Canvas sets it in text-sm, here it is full size. */
+[data-testid="agent-message"], [data-testid="user-message"], [data-testid="chat-input"] {
+  --text-sm: 1rem;
+  line-height: 1.55;
+}
+/* The input is pinned to text-[16px] in Canvas; it must follow the chosen size too. */
+[data-testid="chat-input"] { font-size: 1rem !important; }
+
+*:focus-visible {
+  outline: 3px solid var(--nexus-focus-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* Hidden by Aleksandr's decision: Git and the side panel stay reachable from the menu. */
+[data-testid="conversation-git-actions-toggle"],
+[data-testid="right-panel-toggle"],
+/* Update card and version tile: Canvas is upgraded deliberately. Native completion
+   sound: the Voice section cues replace it. */
+[data-testid="agent-canvas-update-card"],
+[data-testid="agent-canvas-version-tile"],
+label:has([data-testid="enable-sound-notifications-switch"]) {
+  display: none !important;
+}
+
+/* The host meter retains the last valid reading and represents missing data explicitly. */
+.nexus-context { position: relative; flex-shrink: 0; }
+.nexus-context > summary {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 48px; min-height: 48px; cursor: pointer; list-style: none;
+}
+.nexus-context > summary::-webkit-details-marker { display: none; }
+.nexus-context-content {
+  position: absolute; bottom: 100%; right: 0; z-index: 60;
+  width: min(18rem, 75vw); padding: 0.6rem;
+  color: #fff; background: #16161e; border: 2px solid #888899; border-radius: 10px;
+}
+.nexus-context-content p { margin: 0 0 0.4rem; }
+.nexus-context-content button { width: 100%; margin-top: 0.4rem; }
+.nexus-reasoning { margin: 0.5rem 0; }
+.nexus-reasoning > summary { min-height: 48px; cursor: pointer; }
+.nexus-reasoning > div { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Native controls used constantly on the tablet get full-size touch targets. */
+[data-testid="sidebar-mobile-menu-toggle"],
+[data-testid="ellipsis-button"],
+[data-testid="conversation-overview-toggle"],
+[data-testid="chat-plus-button"],
+[data-testid="chat-dictation-button"],
+[data-testid="submit-button"],
+[data-testid="stop-button"],
+[data-testid="action-confirm-button"],
+[data-testid="action-reject-button"],
+[data-testid="server-status-menu-trigger"],
+[data-testid="dropdown-trigger"],
+[data-testid="dropdown-clear"],
+[data-testid="generic-event-message-title"] > button,
+[data-testid="settings-navbar"] > div:first-child > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+}
+/* Full-width rows: only the height needs to grow. */
+[data-testid="collapsible-thinking-toggle"] { min-height: 48px; }
+
+.app { display: flex; height: 100dvh; width: 100%; }
+.app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.app-note { margin: auto; padding: 1rem; text-align: center; overflow-wrap: anywhere; }
+.app-note p { margin: 0 0 1rem; }
+
+.status-bar {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.4rem 1rem;
+  font-weight: 600;
+  border-bottom: 2px solid #888899;
+  background: #111115;
+}
+.status-bar[data-tone="work"] { color: #9abaff; }
+.status-bar[data-tone="done"] { color: #8ee59a; }
+.status-bar[data-tone="attention"] { color: #000; background: #ffdd00; }
+.status-bar[data-tone="error"] { color: #fff; background: #7a1d1d; }
+.status-problem {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.4rem 1rem;
+  color: #ffd0d0;
+  background: #300909;
+  overflow-wrap: anywhere;
+}
+
+/* ▶/■ under an answer: always visible, a full-size touch target. */
+.speak-row { display: flex; margin: -0.25rem 0 0.5rem; }
+.speak-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #e4e4e7;
+  cursor: pointer;
+}
+.speak-button svg { width: 24px; height: 24px; }
+.speak-button:has(span) { width: auto; gap: 0.4rem; padding: 0 0.75rem; }
+.speak-button:hover { background: #22222d; }
+.speak-button[aria-pressed="true"] { color: #000; background: #ffdd00; }
+.sound-on { align-self: flex-start; margin: 0.25rem 0.75rem; }
+
+.nexus-settings { display: flex; flex-direction: column; align-items: flex-start; gap: 1rem; max-width: 40rem; }
+.nexus-settings h2 { margin: 0; font-size: 1.25rem; }
+.nexus-check { display: flex; align-items: center; gap: 0.75rem; min-height: 48px; cursor: pointer; }
+.nexus-check input { width: 28px; height: 28px; margin: 0; accent-color: #ffdd00; flex-shrink: 0; }
+.nexus-field { display: flex; flex-direction: column; gap: 0.4rem; border: 0; margin: 0; padding: 0; }
+.nexus-field legend { padding: 0; margin-bottom: 0.25rem; }
+.nexus-field select, .nexus-button {
+  min-height: 48px;
+  padding: 0.35rem 0.9rem;
+  font: inherit;
+  color: #fff;
+  background: #1a1a24;
+  border: 2px solid #888899;
+  border-radius: 10px;
+}
+.nexus-button { font-weight: 600; cursor: pointer; }
+.nexus-button:hover { background: #282838; }
+.nexus-button[aria-pressed="true"] { color: #000; background: #ffdd00; border-color: #fff; }
+
+.settings-shell { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.settings-shell > :last-child { flex: 1; min-height: 0; overflow: auto; padding: 0 1rem 1rem; }
+.settings-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; border-bottom: 2px solid #888899; }
+.settings-bar h1 { flex: 1; margin: 0; font-size: 1.1rem; }
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.icon-button svg { width: 26px; height: 26px; }
+.icon-button:hover { background: #22222d; }
+.nexus-error { margin: 0; padding: 0.4rem 0.75rem; color: #ffd0d0; background: #300909; border-radius: 8px; overflow-wrap: anywhere; }

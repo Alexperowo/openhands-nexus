@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Desktop shortcut «Запустить Nexus»: starts ohn.target, waits until every service answers
+# and reports by notification, sound and — once the voice service is up — speech.
+set -uo pipefail
+WORK=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+SOUNDS=/usr/share/sounds/freedesktop/stereo
+UNITS=(ohn-models ohn-voice ohn-agent ohn-gateway)
+TIMEOUT=600
+
+notify() {
+  notify-send -a Nexus ${3:+-u "$3"} "$1" "$2" 2>/dev/null
+  tablet "$1. $2"
+}
+# Started from the tablet (KDE Connect «Выполнить команду»), the PC screen and speakers are out of reach.
+tablet() {
+  local id
+  for id in $(kdeconnect-cli -a --id-only 2>/dev/null); do
+    kdeconnect-cli -d "$id" --ping-msg "$1" >/dev/null 2>&1
+  done
+  true
+}
+sound() { [ -f "$SOUNDS/$1.oga" ] && paplay "$SOUNDS/$1.oga" 2>/dev/null || true; }
+say() {
+  local wav
+  wav=$(mktemp --suffix=.wav) || return 1
+  curl -sf -m 30 -H 'Content-Type: application/json' -d "{\"input\": \"$1\"}" \
+    http://127.0.0.1:18020/v1/audio/speech -o "$wav" && paplay "$wav"
+  local status=$?
+  rm -f "$wav"
+  return $status
+}
+up() { [ "$(curl -s -o /dev/null -w '%{http_code}' -m 3 "${@:2}" "$1")" = 200 ]; }
+ready() {
+  up http://127.0.0.1:18030/health && up http://127.0.0.1:18020/health && up http://127.0.0.1:18010/ready &&
+    up https://localhost:8443/ --cacert "$WORK/gateway/ca/openhands-ca.crt"
+}
+
+# One watcher: a second click while starting only says so.
+exec 9>"${XDG_RUNTIME_DIR:-/tmp}/ohn-start.lock"
+if ! flock -n 9; then
+  notify "Nexus уже запускается" "Дождитесь сообщения о готовности."
+  exit 0
+fi
+
+if ready; then
+  notify "Nexus уже работает" "Все службы отвечают."
+  say "Нексус уже работает" || sound complete
+  exit 0
+fi
+
+systemctl --user reset-failed "${UNITS[@]/%/.service}" 2>/dev/null
+if ! systemctl --user start ohn.target; then
+  notify "Nexus не запустился" "systemctl --user start ohn.target: ошибка" critical
+  sound dialog-error
+  exit 1
+fi
+notify "Запускаю Nexus" "Модель загружается, обычно около минуты."
+sound dialog-information
+
+deadline=$((SECONDS + TIMEOUT))
+while ((SECONDS < deadline)); do
+  # «Остановить Nexus» during the wait: stop watching quietly.
+  systemctl --user --quiet is-active ohn.target || exit 0
+  if ready; then
+    notify "Nexus готов" "Планшет: https://$(cat "${XDG_RUNTIME_DIR:-/tmp}/ohn-lan-ip"):8443/"
+    say "Нексус готов" || sound complete
+    exit 0
+  fi
+  for unit in "${UNITS[@]}"; do
+    if systemctl --user is-failed --quiet "$unit"; then
+      notify "Nexus не запустился" "Служба $unit упала. Журнал: journalctl --user -u $unit" critical
+      sound dialog-error
+      exit 1
+    fi
+  done
+  sleep 2
+done
+notify "Nexus не запустился" "За $((TIMEOUT / 60)) минут не все службы ответили. Журнал: journalctl --user -u 'ohn-*'" critical
+sound dialog-error
+exit 1

@@ -1,0 +1,68 @@
+import { useEffect, useRef } from "react";
+import type { SocketState } from "./connection-state";
+import EventService from "../node_modules/@openhands/agent-canvas/dist/api/event-service/event-service.api.js";
+import { useUserConversation } from "../node_modules/@openhands/agent-canvas/dist/hooks/query/use-user-conversation.js";
+import { useSendMessage } from "../node_modules/@openhands/agent-canvas/dist/hooks/use-send-message.js";
+import { createChatMessage } from "../node_modules/@openhands/agent-canvas/dist/services/chat-service.js";
+import { useOptimisticUserMessageStore } from "../node_modules/@openhands/agent-canvas/dist/stores/optimistic-user-message-store.js";
+import { isUserMessageEvent } from "../node_modules/@openhands/agent-canvas/dist/types/agent-server/type-guards.js";
+import { matchesPendingConversationId } from "../node_modules/@openhands/agent-canvas/dist/utils/pending-task-message-link.js";
+import { parseDateAsUTC } from "../node_modules/@openhands/agent-canvas/dist/utils/format-time-delta.js";
+
+// The socket replays missed events right after reopening; wait for that before deciding a message was lost.
+const REPLAY_GRACE_MS = 3000;
+
+type Pending = { id: string; conversationId: string; content: string; status: string; timestamp: string; afterTimestamp?: number; imageUrls: string[]; fileUrls: string[] };
+type ServerMessage = { text: string; at: number };
+
+/** Messages written into a socket that died before the server got them: still "sending" after the reconnect replay. */
+export function lostPending(pending: Pending[], conversationId: string, reopenedAt: number, server: ServerMessage[]) {
+  return pending.filter((message) => matchesPendingConversationId(conversationId, message.conversationId) &&
+    message.status === "sending" && Date.parse(message.timestamp) < reopenedAt &&
+    !server.some((event) => event.text.trim() === message.content.trim() &&
+      (message.afterTimestamp === undefined || event.at > message.afterTimestamp)));
+}
+
+/** Canvas never resends a message whose WebSocket frame was lost; it shows «Отправка...» until its 150 s timeout. */
+export function usePendingResend(conversationId: string | null, state: SocketState) {
+  const { data: conversation } = useUserConversation(conversationId);
+  const { send } = useSendMessage();
+  const outage = useRef({ id: conversationId, wasOpen: false, lost: false });
+  if (outage.current.id !== conversationId) outage.current = { id: conversationId, wasOpen: false, lost: false };
+  const latest = useRef({ conversation, send });
+  latest.current = { conversation, send };
+
+  useEffect(() => {
+    const seen = outage.current;
+    if (state !== "OPEN") { if (seen.wasOpen) seen.lost = true; return; }
+    seen.wasOpen = true;
+    if (!seen.lost || !conversationId) return;
+    seen.lost = false;
+    const reopenedAt = Date.now();
+    const timer = setTimeout(async () => {
+      const store = useOptimisticUserMessageStore.getState();
+      if (!lostPending(store.pendingMessages, conversationId, reopenedAt, []).length) return;
+      const { conversation, send } = latest.current;
+      let server: ServerMessage[];
+      try {
+        const page = await EventService.searchEvents(conversationId, conversation?.conversation_url ?? null,
+          conversation?.session_api_key ?? null, { limit: 50, sortOrder: "TIMESTAMP_DESC" });
+        server = page.items.filter(isUserMessageEvent).map((event: any) => ({
+          text: event.llm_message.content.filter((part: any) => part.type === "text").map((part: any) => part.text).join(""),
+          at: parseDateAsUTC(event.timestamp).getTime(),
+        }));
+      } catch {
+        // Unknown delivery: show the retry button now instead of after the timeout, never risk a duplicate.
+        for (const message of lostPending(useOptimisticUserMessageStore.getState().pendingMessages, conversationId, reopenedAt, []))
+          store.markPendingMessageError(message.id, "Connection lost");
+        return;
+      }
+      for (const message of lostPending(useOptimisticUserMessageStore.getState().pendingMessages, conversationId, reopenedAt, server)) {
+        store.markPendingMessageSending(message.id);
+        try { await send(createChatMessage(message.content, message.imageUrls, message.fileUrls, message.timestamp)); }
+        catch (error) { store.markPendingMessageError(message.id, error instanceof Error ? error.message : "Send failed"); }
+      }
+    }, REPLAY_GRACE_MS);
+    return () => clearTimeout(timer);
+  }, [conversationId, state]);
+}
