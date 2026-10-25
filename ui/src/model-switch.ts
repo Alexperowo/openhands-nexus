@@ -1,7 +1,8 @@
 // agent-server 1.58 (still in 1.58.2 and main) adds LLMs to the usage stats only when the agent
 // starts with the first message, so a model switched in before that is never counted and the
 // context meter stays empty. Until the agent has started a conversation holds nothing, so the
-// host starts a new one with the chosen model instead of switching.
+// host starts a new one with the chosen model instead of switching. Upstream: issue
+// OpenHands/software-agent-sdk#5639, fix in PR #5667; drop this once a release has it.
 import { createConversation, isLocalModel } from "./conversations.ts";
 import { requestJson } from "./api.ts";
 
