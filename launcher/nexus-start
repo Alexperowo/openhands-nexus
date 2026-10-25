@@ -30,8 +30,10 @@ say() {
   return $status
 }
 up() { [ "$(curl -s -o /dev/null -w '%{http_code}' -m 3 "${@:2}" "$1")" = 200 ]; }
+# llama-swap answers at once and preloads the model in the background: wait for the model itself.
+model_ready() { curl -s -m 3 http://127.0.0.1:18030/running | grep -q '"state":"ready"'; }
 ready() {
-  up http://127.0.0.1:18030/health && up http://127.0.0.1:18020/health && up http://127.0.0.1:18010/ready &&
+  model_ready && up http://127.0.0.1:18020/health && up http://127.0.0.1:18010/ready &&
     up https://localhost:8443/ --cacert "$WORK/gateway/ca/openhands-ca.crt"
 }
 

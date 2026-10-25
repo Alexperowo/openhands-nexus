@@ -35,12 +35,29 @@ https://{$LAN_IP}:8443, https://localhost:8443 {
 	encode gzip
 	# Явные handle: иначе общий handle со страницей перехватит /api.
 	# Ключ сессии подставляет только шлюз (из session.env), в коде страницы его нет.
+	# Автоматизации Canvas — отдельная служба (как у его собственного сервера на 8010).
+	handle /api/automation/* {
+		reverse_proxy 127.0.0.1:18011 {
+			header_up X-Session-API-Key {$OHN_SESSION_KEY}
+		}
+	}
 	handle /api/* {
 		reverse_proxy 127.0.0.1:18010 {
 			header_up X-Session-API-Key {$OHN_SESSION_KEY}
 		}
 	}
 	handle /sockets/* {
+		reverse_proxy 127.0.0.1:18010 {
+			header_up X-Session-API-Key {$OHN_SESSION_KEY}
+		}
+	}
+	# Корневые адреса agent-server: по /server_info Canvas узнаёт версию и возможности сервера,
+	# без него «Local» помечен неисправным (страница вместо JSON).
+	@agent_root {
+		method GET
+		path /server_info /health /ready /alive
+	}
+	handle @agent_root {
 		reverse_proxy 127.0.0.1:18010 {
 			header_up X-Session-API-Key {$OHN_SESSION_KEY}
 		}

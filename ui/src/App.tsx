@@ -177,6 +177,16 @@ export default function App() {
     content = ready
       ? <ConversationView key={conversationId} />
       : !pollingError && <p className="app-note" role="status">Подключение к диалогу…</p>;
+  } else if (!isOpeningPath(currentPath)) {
+    // Canvas pages this host does not render (skills, automations, extensions): say so plainly.
+    content = (
+      <div className="app-note">
+        <p role="alert">Этого раздела OpenHands в Nexus нет.</p>
+        <button type="button" className="nexus-button" onClick={() => { requestOpen("/"); navigate("/"); }}>
+          К последнему диалогу
+        </button>
+      </div>
+    );
   } else if (routeError) {
     content = (
       <div className="app-note">
