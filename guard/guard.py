@@ -43,9 +43,11 @@ NEXUS_PORTS = {"18010", "18011", "18020", "18030", "3011", "8443", "8081", "2029
 NETWORK_UNITS = re.compile(r"^(systemd-resolved|NetworkManager|wpa_supplicant|happd)")
 SESSION_UNITS = re.compile(r"^(display-manager|lightdm|gdm3?|sddm|systemd-logind|dbus|graphical\.target)")
 NETWORK_FILES = ("/etc/resolv.conf", "/etc/systemd/resolved.conf", "/etc/NetworkManager/")
+# Nexus itself and its keys too: settings and secrets are encrypted with OHN_SECRET_KEY.
 PROTECTED_DIRS = {"/", "/home", HOME, f"{HOME}/Agents", f"{HOME}/.config", f"{HOME}/.local",
                   f"{HOME}/.local/share", "/usr", "/etc", "/boot", "/var", "/opt", "/bin", "/sbin",
-                  "/lib", "/lib64", "/srv", "/root"}
+                  "/lib", "/lib64", "/srv", "/root", str(GUARD_DIR.parent), str(GUARD_DIR.parent / "agent"),
+                  str(GUARD_DIR.parent / "agent/state"), f"{HOME}/.config/openhands-nexus"}
 READERS = {"cat", "less", "more", "head", "tail", "grep", "rg", "ls", "stat", "readlink", "file", "wc",
            "diff", "md5sum", "sha256sum", "python3", "python", "cd", "pushd", "find", "tree", "du",
            "realpath", "dirname", "basename", "echo", "test", "[", "nl", "jq", "awk", "bat", "xxd"}
@@ -80,7 +82,7 @@ REASON_NEXUS = (
     "Страж Nexus: это службы, на которых работает сам ассистент (модель, голос, агент, шлюз, "
     "интерфейс) или прежняя установка. Их остановка оборвёт текущую работу. "
     "Не останавливай их. Если служба мешает — обойди это, а в итоге напиши, что службу должен проверить руководитель проекта.")
-REASON_RM = ("Страж Nexus: рекурсивное удаление системного, домашнего или каталога настроек целиком "
+REASON_RM = ("Страж Nexus: рекурсивное удаление системного, домашнего, каталога настроек или самого Nexus целиком "
              "запрещено. Удаляй конкретные файлы или подкаталоги по полному пути.")
 REASON_SESSION = ("Страж Nexus: это завершит сеанс или выключит компьютер и выкинет пользователя из системы "
                   "посреди работы. Не делай этого; если перезапуск действительно нужен — закончи остальное и в итоге напиши, зачем он нужен.")
