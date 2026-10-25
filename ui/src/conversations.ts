@@ -1,5 +1,5 @@
-import { requestJson } from "./api";
-import type { ConversationItem } from "./types";
+import { requestJson } from "./api.ts";
+import type { ConversationItem } from "./types.ts";
 
 export async function latestConversationId(signal: AbortSignal) {
   const data = await requestJson<{ items: ConversationItem[] }>("/api/conversations/search?limit=1", { signal });
@@ -7,18 +7,29 @@ export async function latestConversationId(signal: AbortSignal) {
   return data.items[0]?.id ?? null;
 }
 
+type LlmConfig = { api_key?: string; base_url?: string; [key: string]: unknown };
+
+export const isLocalModel = (baseUrl: unknown) => {
+  try {
+    return ["127.0.0.1", "localhost", "[::1]"].includes(new URL(String(baseUrl || "http://invalid")).hostname);
+  } catch {
+    return false;
+  }
+};
+
 // Canvas keeps its "new chat" start page private, so the host creates the conversation;
 // installGuardFetch (init.ts) adds the guard hook to it like to every other start.
-export async function createConversation(signal: AbortSignal) {
+// `model` replaces the default model (a profile chosen before the first message).
+export async function createConversation(signal: AbortSignal, model?: LlmConfig) {
   const settings = await requestJson<{
-    agent_settings?: { llm?: { api_key?: string; base_url?: string }; [key: string]: unknown };
+    agent_settings?: { llm?: LlmConfig; [key: string]: unknown };
   }>("/api/settings", { signal });
   const agentSettings = settings.agent_settings;
-  const llm = agentSettings?.llm;
+  const llm = model ?? agentSettings?.llm;
   if (!agentSettings || !llm) throw new Error("Сначала настройте локальную модель");
+  agentSettings.llm = llm;
   if (!llm.api_key || llm.api_key.includes("*")) {
-    const host = new URL(llm.base_url || "http://invalid").hostname;
-    if (!["127.0.0.1", "localhost", "[::1]"].includes(host)) {
+    if (!isLocalModel(llm.base_url)) {
       throw new Error("Замаскированный ключ внешней модели нельзя восстановить из настроек");
     }
     // Fallback for the local model only, never for an external provider.

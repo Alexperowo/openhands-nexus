@@ -35,10 +35,22 @@ button:disabled { cursor: default; }
 [data-agent-server-ui] [data-testid='chat-input']::before { font-size: inherit !important; line-height: inherit !important; }
 /* The frame buffer handles reveal; Canvas's per-word fade lowers text contrast. */
 .nexus-event [data-stream-word] { animation: none !important; }
-/* Keep microphone/send positions fixed when Canvas hides its transient status. */
+/* Fixed reserve: four 48px buttons side by side plus a whole 0.8rem "Выполняется", so the
+   microphone/send stay put and Canvas keeps the model button inline when the status comes and goes. */
 [data-agent-server-ui] div.ml-auto:has(> [data-testid='chat-dictation-button']) {
-  inline-size: calc(112px + 6rem); max-inline-size: calc(100% - 48px - 0.5rem);
-  flex-shrink: 1; justify-content: flex-end;
+  inline-size: calc(196px + 5.1rem); max-inline-size: calc(100% - 48px - 0.5rem);
+  flex-shrink: 1; justify-content: flex-end; gap: 0;
+}
+[data-agent-server-ui] div.ml-auto:has(> [data-testid='chat-dictation-button']) > div:has(> span[title]) {
+  flex: 1 1 auto; min-width: 0; justify-content: flex-end; gap: 0.2rem;
+}
+[data-agent-server-ui] div.ml-auto:has(> [data-testid='chat-dictation-button']) > div > span[title] {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  font-size: 0.8rem; line-height: 1.15; color: #f0f0f5; white-space: normal; hyphens: auto; text-align: end;
+}
+/* Canvas drops the status below a 360px toolbar (phones); keep only the buttons' room there. */
+@media (max-width: 439.98px) {
+  [data-agent-server-ui] div.ml-auto:has(> [data-testid='chat-dictation-button']) { inline-size: 192px; }
 }
 [data-testid='scroll-to-bottom']::after { content: 'К новым сообщениям'; }
 [data-testid='sidebar-mobile-drawer'], [data-testid='settings-navbar'] { transition-duration: var(--nexus-motion-page) !important; transition-timing-function: var(--nexus-motion-ease) !important; }

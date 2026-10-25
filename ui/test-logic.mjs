@@ -11,6 +11,7 @@ import { initialOpening, requestOpening, beginOpening, finishOpening, mayShowOpe
 import { originBackends, isOriginSelection, originLocation } from "./src/backend-origin.ts";
 import { shouldFoldSidebar } from "./src/narrow-sidebar.ts";
 import { withGuard, guardedBody } from "./src/guard-hooks.ts";
+import { profileSwitch } from "./src/model-switch.ts";
 
 test("opening: one page-load attempt, including StrictMode effect replay; redirects never create a loop", () => {
   for (const path of ["/", "/conversations"]) {
@@ -1056,4 +1057,22 @@ test("guard: every conversation start gets the guard first, other requests stay 
   }
   assert.throws(() => guardedBody("/api/conversations", "POST", new Blob(["{}"]), origin, command), /Страж Nexus/);
   assert.throws(() => guardedBody("/api/conversations", "POST", "not json", origin, command));
+});
+
+test("model switch: only a Canvas profile switch to a local model is taken over, without its key", () => {
+  const origin = "https://pc.local:8443";
+  const llm = { model: "openai/tess", base_url: "http://127.0.0.1:18030/v1", api_key: "gAAAA-encrypted", usage_id: "profile:Tess-27B:1f2e" };
+  const body = JSON.stringify({ llm });
+  const early = profileSwitch(`${origin}/api/conversations/e1b6/switch_llm`, "post", body, origin);
+  assert.deepEqual(early, { conversationId: "e1b6", profile: "Tess-27B", llm: { model: "openai/tess", base_url: "http://127.0.0.1:18030/v1", usage_id: "profile:Tess-27B:1f2e" } });
+  assert.equal(profileSwitch("/api/conversations/e1b6/switch_llm", "POST", JSON.stringify({ llm: { ...llm, usage_id: "profile:Nex:19G:ab" } }), origin).profile, "Nex:19G");
+  for (const [url, method, raw] of [
+    ["/api/conversations/e1b6/switch_llm", "GET", body],
+    ["/api/conversations/e1b6/switch_profile", "POST", body],
+    ["/api/conversations", "POST", body],
+    ["/api/conversations/e1b6/switch_llm", "POST", "not json"],
+    ["/api/conversations/e1b6/switch_llm", "POST", new Blob([body])],
+    ["/api/conversations/e1b6/switch_llm", "POST", JSON.stringify({ llm: { ...llm, usage_id: "default" } })],
+    ["/api/conversations/e1b6/switch_llm", "POST", JSON.stringify({ llm: { ...llm, base_url: "https://api.example.com/v1" } })],
+  ]) assert.equal(profileSwitch(url, method, raw, origin), null, `${method} ${url}`);
 });

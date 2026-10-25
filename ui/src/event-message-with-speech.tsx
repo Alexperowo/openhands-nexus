@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { EventMessage as CanvasEventMessage } from "../node_modules/@openhands/agent-canvas/dist/components/conversation-events/chat/event-message.js";
 import { ChatMessage } from "../node_modules/@openhands/agent-canvas/dist/components/features/chat/chat-message.js";
-import { isActionEvent, isStreamingDeltaEvent } from "../node_modules/@openhands/agent-canvas/dist/types/agent-server/type-guards.js";
+import { isActionEvent, isHookExecutionEvent, isStreamingDeltaEvent } from "../node_modules/@openhands/agent-canvas/dist/types/agent-server/type-guards.js";
 import { CriticResultDisplay } from "../node_modules/@openhands/agent-canvas/dist/components/conversation-events/chat/event-message-components/critic-result-display.js";
 import { ImageCarousel } from "../node_modules/@openhands/agent-canvas/dist/components/features/images/image-carousel.js";
 import { useForkConversation } from "../node_modules/@openhands/agent-canvas/dist/hooks/mutation/use-fork-conversation.js";
@@ -66,6 +66,8 @@ function StableAnswer({ event }: Pick<Props, "event">) {
 
 function EventMessageWithSpeech(props: Props) {
   const event = props.event;
+  // The guard runs before every tool call; only a block or a failure is worth a card.
+  if (isHookExecutionEvent(event) && event.success && !event.blocked) return null;
   const answer = isStreamingDeltaEvent(event) || (event.kind === "MessageEvent" && event.source === "agent") ||
     (isActionEvent(event) && event.action.kind === "FinishAction");
   return <div className="nexus-event" data-nexus-event={event.id} aria-live={answer ? "off" : undefined}
