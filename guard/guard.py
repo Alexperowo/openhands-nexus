@@ -37,9 +37,7 @@ INTERPRETERS = {"python", "python3", "perl", "ruby", "node", "bash", "sh", "dash
 INFO_ONLY = {"--version", "--help", "-h", "-V"}
 
 NEXUS = re.compile(r"llama-server|agent-server|agent-canvas|caddy|llama-swap|service:app|vite|openhands|^ohn[-.]", re.I)
-NEXUS_PORTS = {"18010", "18011", "18020", "18030", "3011", "8443", "8081", "2029", "3021", "8010",
-               # The current Windows-port installation stays untouched until migration.
-               "3001", "8000", "8001", "18000", "18001"}
+NEXUS_PORTS = {"18010", "18011", "18020", "18030", "3011", "8443", "8081", "2029", "8010"}
 NETWORK_UNITS = re.compile(r"^(systemd-resolved|NetworkManager|wpa_supplicant|happd)")
 SESSION_UNITS = re.compile(r"^(display-manager|lightdm|gdm3?|sddm|systemd-logind|dbus|graphical\.target)")
 NETWORK_FILES = ("/etc/resolv.conf", "/etc/systemd/resolved.conf", "/etc/NetworkManager/")

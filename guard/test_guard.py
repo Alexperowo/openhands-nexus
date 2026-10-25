@@ -44,7 +44,6 @@ DANGEROUS = {
     "pkill -u user": guard.REASON_ALL,
     "kill $(lsof -t -i:18030)": guard.REASON_NEXUS,
     "fuser -k 8443/tcp": guard.REASON_NEXUS,
-    "pkill python": guard.REASON_NEXUS,
     "systemctl --user stop openhands-agent-server": guard.REASON_NEXUS,
     "systemctl --user restart llama-server": guard.REASON_NEXUS,
     "systemctl --user stop ohn.target": guard.REASON_NEXUS,
@@ -117,8 +116,12 @@ class GuardRules(unittest.TestCase):
         server = SimpleNamespace(pid="4242", comm="llama-server", argv=argv, line=" ".join(argv),
                                  cgroup="/user.slice/user-1000.slice/user@1000.service/app.slice/ohn-models.service",
                                  pgrp="4242", unit="ohn-models.service")
-        with mock.patch.object(guard, "processes", return_value=(server,)):
-            for command in ("sudo pkill -f llama-server", "killall llama-server", "kill -9 4242"):
+        voice_argv = ["/opt/nexus/voice/.venv/bin/python3", "-m", "uvicorn", "service:app", "--port", "18020"]
+        voice = SimpleNamespace(pid="4343", comm="python3", argv=voice_argv, line=" ".join(voice_argv),
+                                cgroup="/user.slice/user-1000.slice/user@1000.service/app.slice/ohn-voice.service",
+                                pgrp="4343", unit="ohn-voice.service")
+        with mock.patch.object(guard, "processes", return_value=(server, voice)):
+            for command in ("sudo pkill -f llama-server", "killall llama-server", "kill -9 4242", "pkill python"):
                 with self.subTest(command=command):
                     self.assertEqual(guard.decide(terminal(command)), guard.REASON_NEXUS)
             self.assertIsNone(guard.decide(terminal("pkill -f some-other-tool")))
