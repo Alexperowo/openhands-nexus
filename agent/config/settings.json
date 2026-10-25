@@ -1,0 +1,6 @@
+{
+  "agent_settings": {
+    "condenser": {"max_tokens": 160000}
+  },
+  "conversation_settings": {}
+}

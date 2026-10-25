@@ -1,0 +1,25 @@
+{
+  "active": "Nex-25G",
+  "common": {
+    "base_url": "http://127.0.0.1:18030/v1",
+    "num_retries": 2,
+    "timeout": 2400,
+    "stream_idle_timeout": 600.0,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "capability_overrides": {"supports_sampling_params": true, "supports_vision": true},
+    "stream": true,
+    "log_completions": false,
+    "litellm_extra_body": {
+      "chat_template_kwargs": {"enable_thinking": true, "reasoning_effort": "xhigh"},
+      "top_k": 20
+    }
+  },
+  "profiles": {
+    "Nex-25G": {"model": "openai/nex25", "max_input_tokens": 229376, "max_output_tokens": 32768},
+    "Nex-19G-2080": {"model": "openai/nex19-2080", "max_input_tokens": 49152, "max_output_tokens": 16384},
+    "Nex-19G-5060": {"model": "openai/nex19-5060", "max_input_tokens": 114688, "max_output_tokens": 16384},
+    "Tess-27B": {"model": "openai/tess", "max_input_tokens": 229376, "max_output_tokens": 32768},
+    "Holo4-27B": {"model": "openai/holo", "max_input_tokens": 229376, "max_output_tokens": 32768}
+  }
+}

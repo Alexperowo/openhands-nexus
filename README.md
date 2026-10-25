@@ -11,7 +11,7 @@
 
 | Папка | Что это | Служба, порт |
 |---|---|---|
-| `agent/` | Agent Canvas как зависимость (agent-server, automation); состояние в `agent/state/` | `ohn-agent`: 8010, 18010, 18011 |
+| `agent/` | Agent Canvas как зависимость (agent-server, automation); состояние в `agent/state/`, настройки агента и LLM-профили в `agent/config/` | `ohn-agent`: 8010, 18010, 18011 |
 | `ui/` | Надстройка: React-хост компонентов Canvas, русская локаль, озвучка, диктовка, переключатель моделей | статика через шлюз |
 | `voice/` | Распознавание GigaAM v3 и синтез Silero v5.6 (CPU), OpenAI-совместимые `/v1/audio/*` | `ohn-voice`: 18020 |
 | `models/` | Меню моделей: [llama-swap](https://github.com/mostlygeek/llama-swap) поверх ik_llama `llama-server` | `ohn-models`: 18030, модели 18040+ |
@@ -54,22 +54,23 @@ launcher/install.sh   # ключи сессии (один раз), юниты oh
 
 Меню llama-swap держит одну модель за раз. В Canvas каждой модели соответствует LLM-профиль
 (`openai/<id из llama-swap.yaml>`, адрес `http://127.0.0.1:18030/v1`, свой `max_input_tokens`);
-переключатель под строкой ввода меняет модель беседы на ходу. Профили создаются через API агента:
+переключатель под строкой ввода меняет модель беседы на ходу. Профили, подсказка агента
+(`agent/config/suffix.md`) и прочие отличия от настроек OpenHands по умолчанию хранятся в git:
 
 ```bash
-curl -X POST https://localhost:8443/api/profiles/Nex-25G -H 'Content-Type: application/json' \
-  -d '{"llm": {"model": "openai/nex25", "base_url": "http://127.0.0.1:18030/v1", "api_key": "not-needed",
-       "max_input_tokens": 229376, "max_output_tokens": 32768}}'
+python3 -I agent/config.py check   # что на сервере агента разошлось с git (без значений)
+python3 -I agent/config.py apply   # записать профили и настройки, включить активный профиль
 ```
 
 ## Проверки
 
 ```bash
-(cd ui && for t in test-logic test-providers test-stream test-smooth test-backend-origin test-stream-ui test-smooth-ui; do node $t.mjs || break; done)  # *-ui: Firefox
+(cd ui && for t in test-logic test-providers test-stream test-smooth test-backend-origin test-stream-ui test-smooth-ui; do node $t.mjs || break; done)  # *-ui: Firefox, Chrome
 (cd guard && python3 test_guard.py)
 (cd voice && .venv/bin/python test_pronunciation.py)
 (cd update && python3 test_update.py)
 update/nexus-update check
+python3 -I agent/config.py check
 ```
 
 Стенд интерфейса без настоящих служб — `ui/dev/README.md`.
