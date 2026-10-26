@@ -1096,7 +1096,7 @@ test("reasoning: each level round-trips, the profile defaults are High, external
   assert.equal(reasoningOf(undefined), null);
 });
 
-test("reasoning: every profile starts at High, Nex gets its own efforts (none, medium, high)", () => {
+test("reasoning: every profile starts at High, Nex gets its own efforts (none, medium adaptive, high only at Max)", () => {
   const profiles = JSON.parse(readFileSync(new URL("../agent/config/profiles.json", import.meta.url), "utf8"));
   // The same merge as agent/config.py: nested objects key by key.
   const merged = (common, own) => Object.fromEntries(Object.entries({ ...common, ...own }).map(([key, value]) =>
@@ -1108,7 +1108,7 @@ test("reasoning: every profile starts at High, Nex gets its own efforts (none, m
   }
   const nex = merged(profiles.common, profiles.profiles["Nex-25G"]);
   const efforts = Object.fromEntries(REASONING_LEVELS.map((level) => [level, withReasoning(nex, level).litellm_extra_body.chat_template_kwargs.reasoning_effort]));
-  assert.deepEqual(efforts, { off: "none", minimal: "medium", low: "medium", medium: "medium", high: "high", max: "high" });
+  assert.deepEqual(efforts, { off: "none", minimal: "medium", low: "medium", medium: "medium", high: "medium", max: "high" });
   for (const level of REASONING_LEVELS) assert.equal(reasoningOf(withReasoning(nex, level)), level, `Nex ${level}`);
   assert.equal(withReasoning(nex, "low").litellm_extra_body.top_k, 40, "Nex keeps its own top_k");
 });
