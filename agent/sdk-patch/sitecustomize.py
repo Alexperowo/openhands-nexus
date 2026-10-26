@@ -16,6 +16,9 @@ A step whose reasoning looped (the same sentences over and over until the thinki
 back to the model in every later request, and the model kept looping on it. Only what is sent
 is cleaned, the same way every time so the prompt cache still matches; the conversation's
 events keep the original. Ours, not an upstream bug.
+
+The conversation condenser keeps a ledger of the forgotten steps instead of the model's retelling
+and starts at 70% of each model's window: nexus_ledger.py.
 """
 import dataclasses
 import os
@@ -99,10 +102,16 @@ def patch_message(module):
     module.Message.to_chat_dict = to_chat_dict
 
 
+def patch_condenser(module):
+    import nexus_ledger
+    nexus_ledger.install(module)
+
+
 PATCHES = {
     "openhands.sdk.llm.llm": (patch_llm, "send_reasoning_content override"),
     "openhands.sdk.conversation.impl.local_conversation": (patch_conversation, "switch_llm stats fix"),
     "openhands.sdk.llm.message": (patch_message, "looped reasoning cleanup"),
+    "openhands.sdk.context.condenser.llm_summarizing_condenser": (patch_condenser, "step ledger condenser"),
 }
 
 

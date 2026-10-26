@@ -2,7 +2,8 @@
 # Слушает 127.0.0.1:18030 (launcher/run.sh models, рабочая папка — models/); каждая модель — свой ik_llama llama-server на ${PORT}.
 # CUDA_DEVICE_ORDER=PCI_BUS_ID: CUDA0 = RTX 5060 Ti 16 ГБ, CUDA1 = RTX 2080 Ti 22 ГБ.
 # Nex — MoE qwen35moe (40 слоёв, 256 экспертов); Tess и Holo4 — плотные Qwen3.8-27B.
-# metadata.ctx — окно модели; оверлей берёт из /v1/models порог сжатия для выбранной модели.
+# metadata.ctx — окно сервера, для справки: агенту окно задаёт max_input_tokens профиля (agent/config/profiles.json),
+# сжатие беседы начинается с 70% от него.
 # Tess: MTP-головы в файле; замер 25.10: генерация 19→28 ток/с, обработка промпта −23% — на шаге агента выигрыш.
 
 healthCheckTimeout: 600
