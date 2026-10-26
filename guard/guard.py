@@ -5,12 +5,15 @@ The agent runs unsandboxed on Aleksandr's PC and nobody confirms its actions (hi
 decision), so a blocked action must teach the right way instead of asking him.
 Contract (openhands-sdk hooks): the HookEvent JSON comes on stdin; exit 2 with
 {"decision": "deny", "reason": ...} on stdout blocks the action, and the agent gets
-the reason as a rejection. Any other outcome lets the action run.
+the reason as a rejection. Any other outcome lets the action run; input that cannot
+be read is blocked too.
 
 Nothing here names a desktop environment: session components are recognised by where
 systemd keeps them (the login session scope, the user session.slice, system services),
 so the same rules hold for Cinnamon, KDE or GNOME on any systemd distribution.
 Rules are deliberately narrow: they are a net under recoverable mistakes, not a judge.
+Whole personal folders go to the trash instead of being removed; inline scripts
+(python -c, heredocs) are searched for the same removals and writes.
 """
 import json
 import os
@@ -23,6 +26,7 @@ from functools import lru_cache
 from pathlib import Path
 
 GUARD_DIR = Path(__file__).resolve().parent
+REPO = GUARD_DIR.parent
 HOME = os.path.expanduser("~")
 
 # The agent's terminal is a process group of agent-server, killed when the terminal closes.
@@ -36,19 +40,27 @@ INTERPRETERS = {"python", "python3", "perl", "ruby", "node", "bash", "sh", "dash
                 "sleep", "cat", "tail", "timeout"}
 INFO_ONLY = {"--version", "--help", "-h", "-V"}
 
-NEXUS = re.compile(r"llama-server|agent-server|agent-canvas|caddy|llama-swap|service:app|vite|openhands|^ohn[-.]", re.I)
-NEXUS_PORTS = {"18010", "18011", "18020", "18030", "3011", "8443", "8081", "2029", "8010"}
+# Command lines of the Nexus services (launcher/run.sh is the main process of ohn-agent).
+NEXUS = re.compile(r"llama-server|llama-swap|agent-server|agent-canvas|openhands[-.]automation|caddy|"
+                   r"service:app|launcher/run\.sh|^ohn[-.]", re.I)
+# Canvas, agent-server, voice, llama-swap, gateway, CA, Canvas and Caddy internals; 18040+ — model servers.
+NEXUS_PORTS = {"18010", "18011", "18020", "18030", "3011", "8443", "8081", "2029", "8010"} | \
+    {str(port) for port in range(18040, 18050)}
 NETWORK_UNITS = re.compile(r"^(systemd-resolved|NetworkManager|wpa_supplicant|happd)")
 SESSION_UNITS = re.compile(r"^(display-manager|lightdm|gdm3?|sddm|systemd-logind|dbus|graphical\.target)")
-NETWORK_FILES = ("/etc/resolv.conf", "/etc/systemd/resolved.conf", "/etc/NetworkManager/")
+NETWORK_FILES = {"/etc/resolv.conf", "/etc/systemd/resolved.conf"}  # a copy next to them is fine
+NETWORK_DIRS = ("/etc/systemd/resolved.conf.d/", "/etc/NetworkManager/", "/etc/netplan/")
 # Nexus itself and its keys too: settings and secrets are encrypted with OHN_SECRET_KEY.
 PROTECTED_DIRS = {"/", "/home", HOME, f"{HOME}/Agents", f"{HOME}/.config", f"{HOME}/.local",
                   f"{HOME}/.local/share", "/usr", "/etc", "/boot", "/var", "/opt", "/bin", "/sbin",
-                  "/lib", "/lib64", "/srv", "/root", str(GUARD_DIR.parent), str(GUARD_DIR.parent / "agent"),
-                  str(GUARD_DIR.parent / "agent/state"), f"{HOME}/.config/openhands-nexus"}
+                  "/lib", "/lib64", "/srv", "/root", str(REPO), str(REPO / "agent"),
+                  str(REPO / "agent/state"), f"{HOME}/.config/openhands-nexus"}
+# XDG folders whose subfolders are the user's own files (downloads are not: they are cleaned up).
+XDG_PERSONAL = {"DESKTOP", "DOCUMENTS", "MUSIC", "PICTURES", "VIDEOS"}
 READERS = {"cat", "less", "more", "head", "tail", "grep", "rg", "ls", "stat", "readlink", "file", "wc",
            "diff", "md5sum", "sha256sum", "python3", "python", "cd", "pushd", "find", "tree", "du",
-           "realpath", "dirname", "basename", "echo", "test", "[", "nl", "jq", "awk", "bat", "xxd"}
+           "realpath", "dirname", "basename", "echo", "test", "[", "nl", "jq", "awk", "bat", "xxd",
+           "git", "pytest"}
 COPIERS = {"cp", "rsync", "install", "ln", "scp"}  # only the last path is written
 REDIRECTS = {">", ">>", ">|", "&>"}
 # Prefix programs and their options that take a value; the real command follows them.
@@ -62,34 +74,60 @@ SYSTEMD_RUN_VALUED = {"-u", "--unit", "-p", "--property", "--description", "--sl
                       "-M", "--machine", "-H", "--host", "--working-directory", "--uid", "--gid", "--nice"}
 KILLERS = {"kill", "pkill", "killall"}
 FINDERS = {"pgrep", "pidof"}
+TRASHERS = {"gio", "trash-put", "trash", "gvfs-trash"}
+# find tests that pick some files; without one, -delete takes the whole tree.
+FIND_TESTS = {"-name", "-iname", "-path", "-ipath", "-wholename", "-iwholename", "-regex", "-iregex",
+              "-mtime", "-mmin", "-atime", "-amin", "-ctime", "-cmin", "-newer", "-size", "-empty",
+              "-user", "-inum", "-samefile"}
+SCRIPTERS = {"python", "python3", "perl", "ruby", "node", "php"}
+TREE_REMOVAL = re.compile(r"""\b(?:rmtree|remove_tree|rmSync|rimraf|fs\.(?:promises\.)?rm)\s*\(\s*"""
+                          r"""(?:[\w.]+\(\s*)*[rbuf]?(['"])([^'"\n]+)\1""")
+CODE_WRITES = re.compile(r"""\bopen\([^()]*,\s*(?:mode\s*=\s*)?[rbuf]?['"][^'"]*[wax+]|"""
+                         r"""\.open\(\s*(?:mode\s*=\s*)?['"][^'"]*[wax+]|write_(?:text|bytes)|"""
+                         r"""(?:write|append)File|\b(?:unlink|remove|rename|copy\w*|move|symlink|truncate)\s*\(""")
+CODE_LITERAL = re.compile(r"""(['"])([^'"\s]*[/.][^'"\s]*)\1""")
 
+# The shell's own restart, the same for every desktop: a D-Bus method, found and checked.
+DBUS_RESTART = (
+    "Оболочку рабочего стола перезапускай её собственным методом D-Bus: найди его (busctl --user list, "
+    "затем gdbus introspect --session --dest <имя> --object-path <путь>; окружение — в "
+    "$XDG_CURRENT_DESKTOP), вызови и проверь результат снимком экрана. Если такого метода нет — не "
+    "перезапускай: продолжай остальную работу и в итоге напиши пользователю, что нужен перезапуск.")
 REASON_SESSION_PROC = (
     "Страж Nexus: {what} — часть сеанса рабочего стола или системная служба ({unit}). "
-    "Не убивай её из терминала. Службу systemd перезапускает её же команда "
-    "(systemctl --user restart <служба> или sudo systemctl restart <служба>); оболочку рабочего "
-    "стола — её штатный способ (окружение в $XDG_CURRENT_DESKTOP; найди официальный способ, "
-    "обычно вызов D-Bus), а не kill или --replace.")
+    "Не убивай её из терминала. Службу systemd перезапускай её командой: systemctl --user restart "
+    "<служба> (системную — sudo systemctl restart <служба>). " + DBUS_RESTART)
 REASON_START = (
     "Страж Nexus: {what} — компонент сеанса рабочего стола. Запущенный из терминала агента, "
     "он погибнет, когда терминал закроется (так уже погибла оболочка рабочего стола). "
-    f"Запускай отдельно от агента: {DETACHED}; оболочку рабочего стола перезапускай её "
-    "штатным способом (окружение в $XDG_CURRENT_DESKTOP).")
+    "Упавший компонент поднимай отдельно от агента: " + DETACHED + ". " + DBUS_RESTART)
+REASON_REPLACE = (
+    "Страж Nexus: {what} — замена оболочки или оконного менеджера на ходу: новая копия оказывается вне "
+    "менеджера сеанса, и он может завершить сеанс или запустить вторую копию. " + DBUS_RESTART +
+    " Если оболочка не работает совсем — запусти её без --replace отдельно от агента: " + DETACHED + ".")
 REASON_ALL = ("Страж Nexus: эта команда убьёт все процессы пользователя — весь сеанс и сам ассистент. "
               "Называй конкретный процесс.")
 REASON_NEXUS = (
     "Страж Nexus: это службы, на которых работает сам ассистент (модель, голос, агент, шлюз, "
-    "интерфейс) или прежняя установка. Их остановка оборвёт текущую работу. "
-    "Не останавливай их. Если служба мешает — обойди это, а в итоге напиши пользователю, какую службу и почему нужно проверить.")
-REASON_RM = ("Страж Nexus: рекурсивное удаление системного, домашнего, каталога настроек или самого Nexus целиком "
-             "запрещено. Удаляй конкретные файлы или подкаталоги по полному пути.")
+    "интерфейс). Их остановка оборвёт текущую работу. Не останавливай их. Если служба мешает "
+    "(занят порт или видеокарта) — обойди это другим портом или способом, а в итоге напиши пользователю, "
+    "какую службу и почему нужно проверить.")
+REASON_RM = ("Страж Nexus: рекурсивное удаление системного или домашнего каталога, каталога настроек, "
+             "целого диска, самого Nexus или его моделей запрещено. Удаляй конкретные файлы или подкаталоги "
+             "по полному пути.")
+REASON_TRASH = (
+    "Страж Nexus: {path} — личные данные пользователя (папка в домашнем каталоге, проект, каталог на диске); "
+    "удаление необратимо. Если их действительно нужно убрать — перемести в корзину: gio trash {path} "
+    "(пользователь сможет восстановить) и в итоге напиши, что отправил в корзину и зачем.")
 REASON_SESSION = ("Страж Nexus: это завершит сеанс или выключит компьютер и выкинет пользователя из системы "
                   "посреди работы. Не делай этого; если перезапуск действительно нужен — закончи остальное и в итоге напиши, зачем он нужен.")
 REASON_NETWORK = ("Страж Nexus: DNS, VPN, прокси и сеть настроены вручную (обход региональных ограничений, "
                   "связь с планшетом) и не меняются агентом. Если сеть не работает — собери диагностику только чтением "
                   "(ip addr, resolvectl status, ping) и в итоге передай её пользователю.")
-REASON_SELF = "Страж Nexus: файлы стража меняет только пользователь."
-REASON_ERROR = ("Страж Nexus: не смог разобрать команду (внутренняя ошибка стража), поэтому не пропустил её. "
-                "Разбей её на простые шаги.")
+REASON_SELF = ("Страж Nexus: файлы стража меняет только пользователь. Если правило мешает делу — обойди его "
+               "другим способом, а в итоге напиши пользователю, какое правило и почему стоит пересмотреть.")
+REASON_ERROR = ("Страж Nexus: не смог разобрать запрос (внутренняя ошибка стража), поэтому не пропустил его. "
+                "Разбей команду на простые шаги.")
 
 
 def tokens(command: str):
@@ -180,6 +218,18 @@ def _scan():
                 continue  # gone or a kernel thread
 
 
+def probe_only(program: str, args: list[str]):
+    """Signal 0 (`kill -0 PID`) only asks whether a process exists."""
+    if program == "kill":
+        return args[:1] == ["-0"] or args[:2] in (["-s", "0"], ["-n", "0"])
+    for i, arg in enumerate(args):
+        if not arg.startswith("-"):
+            break  # the patterns follow the options
+        if arg in ("-0", "--signal=0") or arg in ("-s", "--signal") and args[i + 1:i + 2] == ["0"]:
+            return True
+    return False
+
+
 def matching(program: str, args: list[str]):
     """Processes a kill/pkill/killall/pgrep/pidof call would reach, or None for "all of them"."""
     if program == "kill":
@@ -260,14 +310,119 @@ def normalized(path: str):
     return os.path.normpath(path) if path.startswith("/") else path
 
 
-def writes_to(argv: list[str], match):
-    """True when the command changes a file that `match(path)` accepts."""
+def absolute(word: str, dirs: list[str]):
+    """Full paths a command word names: itself when absolute, else what exists under the current folders."""
+    if not word or word.startswith("-"):
+        return []
+    path = normalized(word)
+    if path.startswith("/"):
+        return [path]
+    if "$" in path:
+        return []
+    path = "." if path in ("*", ".*") else path  # everything in the current folder
+    return [full for d in dirs if os.path.lexists(full := os.path.normpath(os.path.join(d, path)))]
+
+
+def network_file(path: str):
+    return path in NETWORK_FILES or (path + "/").startswith(NETWORK_DIRS)
+
+
+@lru_cache(maxsize=1)
+def mount_points():
+    """Disk mounts: removing one whole wipes the disk."""
+    try:
+        lines = Path("/proc/self/mounts").read_text().splitlines()
+    except OSError:
+        return frozenset()
+    return frozenset(fields[1].replace("\\040", " ") for fields in map(str.split, lines)
+                     if fields[0].startswith("/dev/") and not fields[0].startswith("/dev/loop"))
+
+
+@lru_cache(maxsize=1)
+def homes():
+    """The home folder and those of other systems on data disks (<disk>/home/<user>)."""
+    found = {HOME}
+    for mount in mount_points() - {"/"}:
+        try:
+            found.update(entry.path for entry in os.scandir(os.path.join(mount, "home")) if entry.is_dir())
+        except OSError:
+            continue
+    return frozenset(found)
+
+
+@lru_cache(maxsize=1)
+def personal_roots():
+    """Folders whose direct subfolders are the user's own data: removed only to the trash."""
+    roots = set(homes()) | {f"{HOME}/Agents"} | {m for m in mount_points() if m != "/" and not m.startswith("/boot")}
+    try:
+        dirs = Path(HOME, ".config/user-dirs.dirs").read_text()
+    except OSError:
+        dirs = ""
+    roots.update(os.path.normpath(value.replace("$HOME", HOME))
+                 for name, value in re.findall(r'^XDG_(\w+)_DIR="(.+)"', dirs, re.M) if name in XDG_PERSONAL)
+    return frozenset(roots)
+
+
+@lru_cache(maxsize=1)
+def nexus_paths():
+    """What Nexus runs from: the clone, its keys, llama-server and the model files of models/llama-swap.yaml."""
+    paths = {str(REPO), f"{HOME}/.config/openhands-nexus"}
+    try:
+        menu = (REPO / "models/llama-swap.yaml").read_text()
+    except OSError:
+        menu = ""
+    for line in menu.splitlines():
+        paths.update(re.findall(r"(?<![\w}$])(/[\w.+-]+(?:/[\w.+-]+)+)", line.split("#", 1)[0]))
+    return frozenset(paths)
+
+
+def removal(word: str, dirs: list[str]):
+    """Why removing this whole path is stopped, or None."""
+    for path in absolute(word, dirs):
+        if path in PROTECTED_DIRS or path in mount_points() or path in homes() or \
+                any(p == path or p.startswith(path.rstrip("/") + "/") for p in nexus_paths()):
+            return REASON_RM
+        if os.path.dirname(path) in personal_roots():
+            return REASON_TRASH.format(path=path)
+    return None
+
+
+def check_find(args: list[str], dirs: list[str], fed_to_rm: bool):
+    """`find DIR -delete`, `-exec rm` or `| xargs rm -r` without a test removes the whole tree."""
+    deletes = fed_to_rm or "-delete" in args or any(
+        a in ("-exec", "-execdir", "-ok", "-okdir") and os.path.basename(args[i + 1]) in ("rm", "shred")
+        for i, a in enumerate(args[:-1]))
+    if not deletes or set(args) & FIND_TESTS:
+        return None
+    starts = []
+    for arg in args:
+        if arg.startswith("-") or arg in ("(", "!", ")"):
+            break
+        starts.append(arg)
+    for start in starts or ["."]:
+        reason = removal(start, dirs)
+        if reason:
+            return reason
+    return None
+
+
+def written(argv: list[str]):
+    """Words of a command that name what it changes."""
     program = os.path.basename(argv[0])
-    paths = [i for i, word in enumerate(argv) if i and word[:1] in ("/", "~")]
-    for i in paths:
-        written = argv[i - 1] in REDIRECTS or program not in READERS | COPIERS or \
-            program in COPIERS and i == len(argv) - 1
-        if written and match(argv[i]):
+    words = []
+    for i, word in enumerate(argv[1:], 1):
+        if argv[i - 1] in REDIRECTS or program not in READERS | COPIERS or \
+                program in COPIERS and i == len(argv) - 1:
+            words.append(word[3:] if word.startswith("of=") else word)  # dd of=
+    return words
+
+
+def changes_guard(words: list[str], dirs: list[str]):
+    """A guard file by path, or by name when the terminal's folder is unknown and nothing else has that name."""
+    scripts = {entry.name for entry in GUARD_DIR.glob("*.py")}
+    for word in words:
+        paths = absolute(word, dirs)
+        if any(inside(p, GUARD_DIR) for p in paths) or not paths and "/" not in word and word in scripts:
             return True
     return False
 
@@ -332,18 +487,20 @@ def check_start(program: str, argv: list[str]):
     args = set(argv[1:])
     if args & INFO_ONLY:
         return None
+    detached = False
     if program == "systemd-run":
-        if "--scope" not in args:
-            return None  # the right way: a transient service owned by systemd
         i = 1
         while i < len(argv) and argv[i].startswith("-"):
             i += 2 if argv[i] in SYSTEMD_RUN_VALUED else 1
-        if i >= len(argv):
+        inner = unwrap(argv[i:])
+        if not inner:
             return None
-        program, args = os.path.basename(argv[i]), set(argv[i + 1:])
-    if "--replace" in args:
-        return REASON_START.format(what=f"{program} --replace (замена оконного менеджера или оболочки)")
-    if program in INTERPRETERS or any(not a.startswith("-") for a in args):
+        detached = "--scope" not in args  # a transient service owned by systemd, not by the terminal
+        program, args = os.path.basename(inner[0]), set(inner[1:])
+    # Window managers and shells take options only; `podman run --replace IMAGE` is a CLI call.
+    if "--replace" in args and not any(not a.startswith(("-", ":")) for a in args):
+        return REASON_REPLACE.format(what=f"{program} --replace")
+    if detached or program in INTERPRETERS or any(not a.startswith("-") for a in args):
         return None  # daemons and applets start with options only; a positional means a CLI call
     for p in processes():
         if p.comm == program[:15] and AUTOSTART_CGROUP.search(p.cgroup):
@@ -351,16 +508,26 @@ def check_start(program: str, argv: list[str]):
     return None
 
 
-def check_argv(argv: list[str]):
+def check_argv(argv: list[str], dirs: list[str], fed_to_rm=False):
     program = os.path.basename(argv[0])
     args = argv[1:]
     words = " ".join(argv)
     if program in KILLERS:
-        return check_targets(matching(program, args))
+        return None if probe_only(program, args) else check_targets(matching(program, args))
     if program == "fuser" and any(re.fullmatch(r"-\w*k\w*", a) for a in args) and nexus_port(words):
         return REASON_NEXUS
     if program == "rm" and any(re.fullmatch(r"-\w*[rR]\w*|--recursive", a) for a in args):
-        if any(normalized(a) in PROTECTED_DIRS for a in args if not a.startswith("-")):
+        for arg in args:
+            reason = removal(arg, dirs)
+            if reason:
+                return reason
+    if program == "find":
+        reason = check_find(args, dirs, fed_to_rm)
+        if reason:
+            return reason
+    if program in TRASHERS and (program != "gio" or args[:1] == ["trash"]):
+        # The trash is the way for personal folders, not for the home, settings or Nexus.
+        if any(removal(arg, dirs) == REASON_RM for arg in args[program == "gio":]):
             return REASON_RM
     if program == "systemctl":
         return check_systemctl(args)
@@ -383,21 +550,39 @@ def check_argv(argv: list[str]):
             or program == "ip" and re.search(r"\blink set\b.*\bdown\b|\baddr(ess)? (flush|del)|"
                                              r"\broute (flush|del)", words):
         return REASON_NETWORK
-    if writes_to(argv, lambda path: normalized(path).startswith(NETWORK_FILES)):
+    changed = written(argv)
+    if any(network_file(path) for word in changed for path in absolute(word, dirs)):
         return REASON_NETWORK
-    if writes_to(argv, lambda path: inside(path, GUARD_DIR)):
+    if changes_guard(changed, dirs):
         return REASON_SELF
     return check_start(program, argv)
+
+
+def check_code(command: str, dirs: list[str]):
+    """Inline scripts that remove a tree or write a protected file by a literal path."""
+    for match in TREE_REMOVAL.finditer(command):
+        reason = removal(match[2], dirs)
+        if reason:
+            return reason
+    if CODE_WRITES.search(command):
+        for match in CODE_LITERAL.finditer(command):
+            for path in absolute(match[2], dirs):
+                if network_file(path):
+                    return REASON_NETWORK
+                if inside(path, GUARD_DIR):
+                    return REASON_SELF
+    return None
 
 
 def nexus_port(text: str):
     return any(port in NEXUS_PORTS for port in re.findall(r"(?<!\d)(\d{4,5})(?!\d)", text))
 
 
-def check_terminal(command: str):
+def check_terminal(command: str, dirs: list[str]):
     parts = list(segments(command))
     programs = {os.path.basename(argv[0]) for argv in parts}
-    if programs & KILLERS:
+    if any(os.path.basename(argv[0]) in KILLERS and not probe_only(os.path.basename(argv[0]), argv[1:])
+           for argv in parts):
         # `kill $(lsof -t -i:PORT)` or `pgrep x | xargs kill` split into harmless-looking parts.
         if programs & {"lsof", "fuser", "ss", "netstat"} and nexus_port(command):
             return REASON_NEXUS
@@ -406,8 +591,19 @@ def check_terminal(command: str):
                 reason = check_targets(matching(os.path.basename(argv[0]), argv[1:]))
                 if reason:
                     return reason
+    if programs & SCRIPTERS:
+        reason = check_code(command, dirs)
+        if reason:
+            return reason
+    # `find DIR | xargs rm -rf`: the paths come from find.
+    fed_to_rm = any(os.path.basename(argv[0]) == "rm" and all(a.startswith("-") for a in argv[1:])
+                    for argv in parts)
     for argv in parts:
-        reason = check_argv(argv)
+        if os.path.basename(argv[0]) in ("cd", "pushd") and argv[1:2] != ["-"]:
+            target = normalized(argv[1]) if len(argv) > 1 else HOME
+            dirs = [os.path.normpath(os.path.join(d, target)) for d in dirs]  # an absolute target replaces d
+            continue
+        reason = check_argv(argv, dirs, fed_to_rm)
         if reason:
             return reason
     return None
@@ -416,15 +612,16 @@ def check_terminal(command: str):
 def decide(event: dict):
     tool = event.get("tool_name") or ""
     tool_input = event.get("tool_input") or {}
+    # The hook runs in the conversation's folder; a `cd` earlier in the command line moves it.
+    dirs = [event.get("working_dir") or os.getcwd()]
     if tool == "terminal":
-        if tool_input.get("is_input"):
-            return None
-        return check_terminal(tool_input.get("command") or "")
+        # Text sent with is_input goes to the running program, and at a shell prompt it runs as a command.
+        return check_terminal(tool_input.get("command") or "", dirs)
     if tool in ("file_editor", "planning_file_editor") and tool_input.get("command") != "view":
         path = str(tool_input.get("path") or "")
         if path.startswith("/") and inside(path, GUARD_DIR):
             return REASON_SELF
-        if path.startswith("/") and normalized(path).startswith(NETWORK_FILES):
+        if path.startswith("/") and network_file(normalized(path)):
             return REASON_NETWORK
     if tool == "apply_patch" and str(GUARD_DIR) in str(tool_input.get("patch") or ""):
         return REASON_SELF
@@ -433,12 +630,8 @@ def decide(event: dict):
 
 def main():
     try:
-        event = json.load(sys.stdin)
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        return 0
-    try:
-        reason = decide(event)
-    except Exception:  # a broken rule must be visible, not a silent pass
+        reason = decide(json.load(sys.stdin))
+    except Exception:  # unreadable input or a broken rule must be visible, not a silent pass
         traceback.print_exc(file=sys.stderr)
         reason = REASON_ERROR
     if reason:

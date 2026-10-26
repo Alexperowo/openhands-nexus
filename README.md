@@ -16,7 +16,7 @@
 | `voice/` | Распознавание GigaAM v3 и синтез Silero v5.6 (CPU), OpenAI-совместимые `/v1/audio/*` | `ohn-voice`: 18020 |
 | `models/` | Меню моделей: [llama-swap](https://github.com/mostlygeek/llama-swap) поверх ik_llama `llama-server` | `ohn-models`: 18030, модели 18040+ |
 | `gateway/` | Caddy: HTTPS для планшета, сам подставляет ключ сессии в `/api` и `/sockets` | `ohn-gateway`: 8443 |
-| `guard/` | Страж опасных команд агента (PreToolUse-хук): не даёт убить Nexus, сеанс или систему | — |
+| `guard/` | Страж опасных команд агента (PreToolUse-хук): не даёт убить Nexus, сеанс или систему, менять сеть; личные папки целиком — только в корзину | — |
 | `launcher/` | `run.sh` для user-юнитов systemd, ярлыки «Запустить/Остановить Nexus», `install.sh` | — |
 | `update/` | `nexus-update`: проверка и обновление Canvas, ik_llama, llama-swap, Caddy, голосовых пакетов с откатом | — |
 
