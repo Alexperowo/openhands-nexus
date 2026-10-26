@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
-from pronunciation import for_silero
+from pronunciation import for_silero, spoken_numbers
 
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / "models"
@@ -158,7 +158,7 @@ TTS_PAUSE_SECONDS = 0.25
 
 
 def tts_chunks(text: str) -> list[str]:
-    text = for_silero(text)
+    text = spoken_numbers(for_silero(text))
     text = text.replace("*", "")
     # A line without its own punctuation (list item, heading) still ends a phrase.
     text = re.sub(r"(?<![.!?…:;,])[ \t]*\n\s*", ". ", text)

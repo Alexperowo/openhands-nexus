@@ -12,6 +12,7 @@ dependencies = [
     "torchaudio>=2.2.0,<=2.5.1",
     "gigaam>=0.1.0",
     "soundfile>=0.12.1",
+    "ru-normalizr>=1.3,<2",
 ]
 
 [tool.uv.sources]

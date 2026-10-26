@@ -12,7 +12,7 @@ TERMS = {
     "silero": "силеро", "gigaam": "гига ам", "fastapi": "фаст эй-пи-ай",
     "javascript": "джаваскрипт", "typescript": "тайпскрипт",
     "git": "гит", "pip": "пип", "uv": "ю-ви", "npm": "эн-пи-эм",
-    "sudo": "судо", "bash": "баш", "curl": "кёрл", "pytest": "пай тест",
+    "sudo": "судо", "systemd": "систем-ди", "dpkg": "ди-пи-кей-джи", "bash": "баш", "curl": "кёрл", "pytest": "пай тест",
     "py": "пай", "md": "эм-ди", "ts": "ти-эс", "tsx": "ти-эс-экс",
     "yaml": "ямл", "yml": "ямл", "toml": "томл", "txt": "текст",
     "sql": "эс-кью-эл", "localhost": "локал хост",
@@ -114,7 +114,7 @@ def _identifier(match: re.Match) -> str:
 
 _TRAIL = ".,;:!?…"
 _URL = re.compile(r"(?:[a-zA-Z][a-zA-Z0-9+.-]*://|www\.)[^\s<>\[\]()«»\"'`]+", re.I)
-_DOMAIN = re.compile(r"(?<![\w@])(?:[a-zA-Z0-9-]+\.)+(?:com|org|net|io|dev|ru|рф)\b"
+_DOMAIN = re.compile(r"(?<![\w@])(?:[a-zA-Z0-9-]+\.)+(?-i:com|org|net|io|dev|ru|рф)\b"
                      r"(?:/[^\s<>\[\]()«»\"'`]+)?", re.I)
 _PATH = re.compile(r"(?<![\w])(?:[A-Za-z]:[\\/]|~?/|\.{1,2}/|"
                    r"(?=[\w.-]+/[\w.-]+/))[\w./\\-]+")
@@ -135,6 +135,19 @@ def _path(match: re.Match) -> str:
     return _shorten(match, replacement)
 
 
+_SENTENCE_END = re.compile(r"(?:[.!?…][ \t]+|\n[ \t]*)\Z")
+
+
+def _latin(match: re.Match) -> str:
+    spoken = TERMS.get(match.group().lower()) or _identifier(match)
+    # "34 ГБ. SSH открыт": a lowercase "эс-эс-эйч" would make the number normalizer
+    # take the period for an abbreviation dot and join the two sentences.
+    start = match.start()
+    if start == 0 or _SENTENCE_END.search(match.string[max(0, start - 4):start]):
+        spoken = spoken[:1].upper() + spoken[1:]
+    return spoken
+
+
 def for_silero(text: str) -> str:
     text = _URL.sub(lambda m: _shorten(m, "ссылка"), text)
     text = _DOMAIN.sub(lambda m: _shorten(m, "ссылка"), text)
@@ -142,7 +155,31 @@ def for_silero(text: str) -> str:
     text = _HASH.sub("хэш", text)
     text = re.sub(r"(?<=[A-Za-z0-9])\.(?=[A-Za-z])", " точка ", text)
     # Protect conventional names before splitting their internal capital letters.
-    text = re.sub(r"[A-Za-z][A-Za-z0-9_]*", lambda m: TERMS.get(m.group().lower())
-                  or _identifier(m), text)
+    text = re.sub(r"[A-Za-z][A-Za-z0-9_]*", _latin, text)
     text = text.replace("`", "")
     return text
+
+
+# Silero says nothing for digits: "занято 68%" came out as "занято". ru-normalizr puts numbers,
+# units, dates and times into words in the right case ("из сорока шести гигабайтов").
+_SPEED = re.compile(r"(?<=\d)\s*(?:т/с|ток/с)(?![\w/])")
+_BINARY_UNITS = re.compile(r"(?<=\d)(\s*)([КМГТ])иБ\b")
+_GLUED = re.compile(r"(?<=[^\W\d_])(?=\d)|(?<=\d)(?=[^\W\d_])")
+_normalizer = None
+_normalizer_lock = threading.Lock()
+
+
+def spoken_numbers(text: str) -> str:
+    """After for_silero: Latin, paths and hashes are already words, numbers are left."""
+    global _normalizer
+    if not re.search(r"\d", text):
+        return text
+    text = _SPEED.sub(" токенов в секунду", text)
+    text = _BINARY_UNITS.sub(r"\1\2Б", text)
+    # "маунт7921и", "16ГБ": the normalizer reads only numbers standing apart.
+    text = _GLUED.sub(" ", text)
+    with _normalizer_lock:
+        if _normalizer is None:
+            from ru_normalizr import NormalizeOptions, Normalizer
+            _normalizer = Normalizer(NormalizeOptions.safe())
+        return _normalizer.normalize(text)

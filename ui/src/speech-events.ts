@@ -77,6 +77,8 @@ function replacePaths(text: string): string {
 }
 
 // Markdown is for the eyes: speak the words, not the markup.
+const LIST_ORDINALS = ["Первое", "Второе", "Третье", "Четвёртое", "Пятое", "Шестое", "Седьмое", "Восьмое", "Девятое", "Десятое"];
+
 export function forSpeech(text: string, full = false): string {
   if (full) {
     return text
@@ -92,7 +94,9 @@ export function forSpeech(text: string, full = false): string {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     // The voice model takes **…** as its own emphasis markup and fails on it.
     .replace(/(\*\*|__)(.+?)\1/g, "$2")
-    .replace(/^#{1,6}\s+|^[*+\-]\s+/gm, "");
+    .replace(/^#{1,6}\s+|^[*+\-]\s+/gm, "")
+    // "внимание:\n1. Есть…" reached the voice as "внимание: 1." and came out "внимание: одного".
+    .replace(/^[ \t]*(\d{1,2})[.)][ \t]+/gm, (_, n: string) => LIST_ORDINALS[Number(n) - 1] ? `${LIST_ORDINALS[Number(n) - 1]}. ` : "");
 
   res = replaceUrls(res);
   res = replacePaths(res);

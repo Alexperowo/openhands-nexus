@@ -3,7 +3,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
-from pronunciation import for_silero
+from pronunciation import for_silero, spoken_numbers
 
 
 EXAMPLES = [
@@ -29,15 +29,15 @@ EXAMPLES = [
     ("Открой ./README.md и ~/project/src/service.py.", "Открой ридми точка эм-ди и путь к файлу."),
     ("Получен 0123456789abcdef0123456789abcdef.", "Получен хэш."),
     ("Коммит a1b2c3d готов.", "Коммит хэш готов."),
-    ("UUID 550e8400-e29b-41d4-a716-446655440000.", "ю-ю-ай-ди хэш."),
+    ("UUID 550e8400-e29b-41d4-a716-446655440000.", "Ю-ю-ай-ди хэш."),
     ("Версия v5_6_ru и HTTP2.", "Версия ви5 6 ру и эйч-ти-ти-пи2."),
-    ("CPU RAM SSD CLI UI URL.", "си-пи-ю ар-эй-эм эс-эс-ди си-эл-ай ю-ай ю-ар-эл."),
+    ("CPU RAM SSD CLI UI URL.", "Си-пи-ю ар-эй-эм эс-эс-ди си-эл-ай ю-ай ю-ар-эл."),
     ("Кириллица, ёж и число 2026.", "Кириллица, ёж и число 2026."),
     ("Проверь src/one/two/three/four.py.", "Проверь путь к файлу."),
-    ("Читай **OpenHands**\nAPI доступен.", "Читай **Оупен Хэндс**\nэй-пи-ай доступен."),
+    ("Читай **OpenHands**\nAPI доступен.", "Читай **Оупен Хэндс**\nЭй-пи-ай доступен."),
     ("Параметр max_tokens = 128.", "Параметр мэкс тоукэнз = 128."),
-    ("HelloWorld и user_name.", "хэлоу уёрлд и юзер нэйм."),
-    ("ID задачи: " + "x" * 80 + ".", "ай-ди задачи: идентификатор."),
+    ("HelloWorld и user_name.", "Хэлоу уёрлд и юзер нэйм."),
+    ("ID задачи: " + "x" * 80 + ".", "Ай-ди задачи: идентификатор."),
     ("Версии Python3.12 и UTF8.", "Версии Пайтон3.12 и ю-ти-эф8."),
     ("Скачай ftp://example.org/file.zip!", "Скачай ссылка!"),
 ]
@@ -59,7 +59,7 @@ class PronunciationTests(unittest.TestCase):
         for text in ("/../", "/./", "./../"):
             with self.subTest(text=text):
                 self.assertEqual(for_silero(text), "путь")
-        self.assertEqual(for_silero("QWERTYUIOPASDFGHJKL"), "идентификатор")
+        self.assertEqual(for_silero("QWERTYUIOPASDFGHJKL"), "Идентификатор")
         self.assertEqual(for_silero("WWW.example.org!"), "ссылка!")
 
     def test_concurrent_g2p(self):
@@ -67,7 +67,7 @@ class PronunciationTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=8) as executor:
             results = list(executor.map(for_silero, words))
         for result in results:
-            self.assertRegex(result, r"^[а-яё]+$")
+            self.assertRegex(result, r"^[А-ЯЁ][а-яё]+$", "a lone word starts a sentence")
         self.assertEqual(results[:4] * 20, results)
 
     def test_expansion_before_chunking(self):
@@ -78,7 +78,34 @@ class PronunciationTests(unittest.TestCase):
         self.assertNotRegex(" ".join(chunks), "[A-Za-z*]")
         self.assertEqual(" ".join(chunks).count("Оупен Хэндс"), 100)
         self.assertEqual(tts_chunks("**OpenHands**\nAPI доступен."),
-                         ["Оупен Хэндс. эй-пи-ай доступен."])
+                         ["Оупен Хэндс. Эй-пи-ай доступен."])
+
+    def test_numbers_become_words(self):
+        # From a real answer where Silero skipped every number.
+        cases = [
+            ("Иноды заняты только на 13%.", "Иноды заняты только на тринадцать процентов."),
+            ("Памяти достаточно: из 46 ГБ свободно около 34 ГБ.",
+             "Памяти достаточно: из сорока шести гигабайтов свободно около тридцати четырёх гигабайтов."),
+            ("1. Есть обновления системы.", "Один. Есть обновления системы."),
+            ("Ответ за 1,5 секунды.", "Ответ за одну целую пять десятых секунды."),
+            ("Генерация 35 т/с, видеопамять 16ГиБ.",
+             "Генерация тридцать пять токенов в секунду, видеопамять шестнадцать гигабайтов."),
+            ("Без чисел текст не меняется.", "Без чисел текст не меняется."),
+        ]
+        for original, expected in cases:
+            with self.subTest(text=original):
+                self.assertEqual(spoken_numbers(original), expected)
+
+    def test_numbers_after_latin_and_names(self):
+        from service import tts_chunks
+        spoken = " ".join(tts_chunks("Порты 8081 и 8443, адрес 192.168.0.14, драйвер mt7921e, пакеты X.Org."))
+        self.assertNotRegex(spoken, r"[\dA-Za-z]")
+        self.assertIn("восемь тысяч четыреста сорок три", spoken)
+        self.assertIn("сто девяносто два точка сто шестьдесят восемь", spoken)
+        self.assertNotIn("ссылка", spoken)
+        # A sentence that starts with a Latin word keeps the period after a unit.
+        self.assertEqual(" ".join(tts_chunks("Свободно 34 ГБ. SSH закрыт.")),
+                         "Свободно тридцать четыре гигабайта. Эс-эс-эйч закрыт.")
 
     def test_speech_passes_normalized_text_to_model(self):
         import torch

@@ -850,6 +850,12 @@ test("step phrases: explanation is clipped to first sentence under 150 chars wit
   assert.ok(longSentence.startsWith(clipped));
 });
 
+test("speech: numbered list items are read as ordinals, not as digits glued to the heading", () => {
+  assert.equal(forSpeech("**На что стоит обратить внимание:**\n\n1. **Есть обновления**.\n2. Журнал.\n11. Ещё.\nВерсия 1. Готово."),
+    "На что стоит обратить внимание:\n\nПервое. Есть обновления.\nВторое. Журнал.\nЕщё.\nВерсия 1. Готово.");
+  assert.equal(forSpeech("1) Шаг", true), "1) Шаг", "full reading keeps the text as written");
+});
+
 test("step phrases: step title is spoken when the model wrote no explanation", () => {
   const cursor = new SpeechEvents();
   const titled = (id, summary, thought = []) => ({ ...tool(id, "terminal", { command: "ls" }), summary, thought });
