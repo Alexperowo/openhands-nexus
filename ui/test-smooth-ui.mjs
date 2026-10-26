@@ -2,11 +2,16 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
+import { execFileSync } from "node:child_process";
 import puppeteer from "puppeteer-core";
 import { startFixture } from "./dev/server.mjs";
 import { chromeOptions, openPage, pause, replay } from "./dev/measure.mjs";
 
-const root = path.resolve(process.env.OHN_REPLAY_DIR || "/tmp/ohn-ui-after");
+// A kept fixture build would test old code: without OHN_REPLAY_DIR the current source is built afresh.
+const built = process.env.OHN_REPLAY_DIR ? null : await fs.mkdtemp(path.join(os.tmpdir(), "ohn-ui-replay-"));
+if (built) execFileSync(process.execPath, ["--import", "./dev/forbid-secrets.mjs", "dev/build.mjs", built], {stdio: "inherit"});
+const root = path.resolve(process.env.OHN_REPLAY_DIR || built);
 const output = path.resolve(process.env.OHN_UI_EVIDENCE || "dev/evidence");
 await fs.mkdir(output, {recursive: true});
 let fixture, browser;
@@ -145,4 +150,7 @@ try {
 } catch (error) {
   await fs.writeFile(path.join(output, "ui-results.json"), JSON.stringify({status: error.code === "EPERM" ? "blocked" : "failed", reason: error.message, code: error.code ?? null, results}, null, 2) + "\n");
   throw error;
-} finally { await browser?.close(); await fixture?.close(); }
+} finally {
+  await browser?.close(); await fixture?.close();
+  if (built) await fs.rm(built, {recursive: true, force: true});
+}

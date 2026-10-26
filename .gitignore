@@ -17,7 +17,6 @@ voice/models/
 
 # Runtime state, keys, certificates, logs.
 agent/state/
-agent/logs/
 gateway/ca/
 gateway/data/
 gateway/config/

@@ -21,7 +21,7 @@ const sources = (directory) => {
   return result;
 };
 const modules = sources(dist);
-const build = [...sources(path.join(process.env.OHN_UI_BUILD_DIR || "dist-next", "assets")).values()];
+const build = [...sources(path.join(process.env.OHN_UI_BUILD_DIR || "dist", "assets")).values()];
 const grep = (pattern) => [...modules.values()].flatMap((source) => source.match(new RegExp(pattern, "g")) ?? []).join("\n");
 
 test("every dropped Canvas provider has a host copy", () => {
@@ -63,15 +63,15 @@ test("the model picker is still the private module with the two exports its adap
   assert.match(exports[0], /^export \{ \w+ as ChatInputLlmProfileMenuContent, \w+ as ChatInputLlmProfilePicker \}$/);
   assert.match(modules.get(`${dist}/components/features/chat/components/chat-input-actions.js`),
     /import \{ ChatInputLlmProfileMenuContent as \w+, ChatInputLlmProfilePicker as \w+ \} from "\.\/chat-input-llm-profile-picker\.js"/);
-  assert.ok(build.some((source) => source.includes("nexus-reasoning-options")), "run `npx vite build --outDir dist-next` first; the reasoning adapter is missing");
+  assert.ok(build.some((source) => source.includes("nexus-reasoning-options")), "run `npm run build` first; the reasoning adapter is missing");
 });
 
 test("the build includes the read-aloud adapter", () => {
-  assert.ok(build.some((source) => source.includes("speak-button")), "run `npx vite build --outDir dist-next` first; the ▶ button is not in dist");
+  assert.ok(build.some((source) => source.includes("speak-button")), "run `npm run build` first; the ▶ button is not in dist");
 });
 
 test("the build includes the named chat input adapter", () => {
-  assert.ok(build.some((source) => source.includes("Сообщение агенту")), "run `npx vite build --outDir dist-next` first; the chat input adapter is missing");
+  assert.ok(build.some((source) => source.includes("Сообщение агенту")), "run `npm run build` first; the chat input adapter is missing");
 });
 
 test("dictation keeps Canvas insert-only text insertion and IME handling", () => {

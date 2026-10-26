@@ -140,7 +140,11 @@ export default defineConfig(({ command, mode }) => {
         { find: /^.*\bapi\/agent-canvas-updates(\.js)?$/, replacement: path.resolve(directory, "src/no-update-check.ts") },
       ],
     },
-    define: { __NEXUS_GUARD__: JSON.stringify(path.resolve(directory, "../guard/guard.py")) },
+    define: {
+      __NEXUS_GUARD__: JSON.stringify(path.resolve(directory, "../guard/guard.py")),
+      // Not /tmp: agent-server runs `git init` in the workspace, and tmpfs loses the files at reboot.
+      __NEXUS_WORKSPACE__: JSON.stringify(path.join(os.homedir(), "Nexus")),
+    },
     build: { target: "esnext" },
     server: listener,
     preview: listener,

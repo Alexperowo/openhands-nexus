@@ -434,14 +434,6 @@ class Updater:
                 self.emit("Тестовая беседа удалена.")
 
     def locale_report(self):
-        checker = self.root / "i18n-ru/check.py"
-        if checker.is_file():
-            try:
-                self.run(["python3", checker], timeout=30)
-            except UpdateError:
-                self.emit("Предупреждение: i18n-ru/check.py сообщил ошибки; это только отчёт.")
-        else:
-            self.emit("Предупреждение: i18n-ru/check.py отсутствует в этой копии.")
         try:
             en = read_json(self.root / "ui/node_modules" / PACKAGE / "dist/locales/en/openhands.json")
             ru = read_json(self.root / "ui/src/locales/ru.json")

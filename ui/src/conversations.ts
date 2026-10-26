@@ -7,6 +7,8 @@ export async function latestConversationId(signal: AbortSignal) {
   return data.items[0]?.id ?? null;
 }
 
+declare const __NEXUS_WORKSPACE__: string; // vite.config.ts `define`
+
 type LlmConfig = { api_key?: string; base_url?: string; [key: string]: unknown };
 
 export const isLocalModel = (baseUrl: unknown) => {
@@ -38,7 +40,7 @@ export async function createConversation(signal: AbortSignal, model?: LlmConfig)
   const result = await requestJson<{ id: string }>("/api/conversations", {
     method: "POST", signal,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ agent_settings: agentSettings, workspace: { working_dir: "/tmp" } }),
+    body: JSON.stringify({ agent_settings: agentSettings, workspace: { working_dir: __NEXUS_WORKSPACE__ } }),
   });
   if (!result.id) throw new Error("Сервер не вернул ID диалога");
   return result.id;
