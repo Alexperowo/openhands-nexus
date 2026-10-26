@@ -791,14 +791,15 @@ test("code blocks: every token colour of the dark theme is at least 7:1, at full
   assert.equal(getSyntaxHighlighterTheme("openhands-neutral"), theme, "derived once, not on every render");
 });
 
-test("step phrases: action without explanation produces short Russian action phrase", () => {
+test("step phrases: without explanation or title only phrases that name something are spoken", () => {
   const cursor = new SpeechEvents();
-  assert.equal(cursor.takeStep(tool("1", "terminal", { command: "python3 test.py" })), "Выполняю команду");
+  assert.equal(cursor.takeStep(tool("1", "terminal", { command: "python3 test.py" })), "", "no \"Выполняю команду\"");
   assert.equal(cursor.takeStep(tool("2", "file_editor", { command: "view", path: "/srv/app/server.ts" })), "Читаю файл server.ts");
   assert.equal(cursor.takeStep(tool("3", "file_editor", { command: "str_replace", path: "/srv/app/server.ts" })), "Правлю файл server.ts");
-  assert.equal(cursor.takeStep(tool("4", "apply_patch", {})), "Правлю файлы");
-  assert.equal(cursor.takeStep(tool("5", "glob", {})), "Поиск файлов");
-  assert.equal(cursor.takeStep(tool("6", "grep", {})), "Поиск в файлах");
+  assert.equal(cursor.takeStep(tool("3b", "file_editor", { command: "view" })), "");
+  for (const [id, name] of [["4", "apply_patch"], ["5", "glob"], ["6", "grep"], ["6b", "browser_navigate"], ["6c", "custom_tool"]]) {
+    assert.equal(cursor.takeStep(tool(id, name, {})), "", name);
+  }
   assert.equal(cursor.takeStep(tool("7", "finish", { message: "Ответ" })), "");
   assert.equal(cursor.takeStep(tool("8", "think", {})), "");
 });
@@ -847,6 +848,28 @@ test("step phrases: explanation is clipped to first sentence under 150 chars wit
   const clipped = clipStepExplanation(longSentence);
   assert.ok(clipped.length <= 150);
   assert.ok(longSentence.startsWith(clipped));
+});
+
+test("step phrases: step title is spoken when the model wrote no explanation", () => {
+  const cursor = new SpeechEvents();
+  const titled = (id, summary, thought = []) => ({ ...tool(id, "terminal", { command: "ls" }), summary, thought });
+  assert.equal(cursor.takeStep(titled("1", "Проверить наличие файла иконки Antigravity")), "Проверить наличие файла иконки Antigravity");
+  assert.equal(cursor.takeStep(titled("2", "Найти встроенные изображения", [{ type: "text", text: "Ищу картинки внутри программы. Потом проверю." }])),
+    "Ищу картинки внутри программы.", "the model's own words win over the title");
+  assert.equal(cursor.takeStep(titled("3", null)), "", "no title, no words: silence");
+});
+
+test("step phrases: identical phrases in a row are spoken once until something else is said", () => {
+  const cursor = new SpeechEvents();
+  const view = (id) => tool(id, "file_editor", { command: "view", path: "/srv/app/server.ts" });
+  assert.equal(cursor.takeStep(view("1")), "Читаю файл server.ts");
+  assert.equal(cursor.takeStep(view("2")), "");
+  assert.equal(cursor.takeStep(tool("3", "terminal", { command: "ls" })), "", "silent step does not break the run");
+  assert.equal(cursor.takeStep(view("4")), "");
+  assert.equal(cursor.takeStep({ ...tool("5", "terminal", { command: "ls" }), summary: "Проверить панель" }), "Проверить панель");
+  assert.equal(cursor.takeStep(view("6")), "Читаю файл server.ts");
+  cursor.takeText({ id: "u1", source: "user", kind: "MessageEvent", llm_message: { role: "user", content: [{ type: "text", text: "Ещё раз" }] } });
+  assert.equal(cursor.takeStep(view("7")), "Читаю файл server.ts", "a new request starts afresh");
 });
 
 test("intermediate speech: disabled by default and speaks nothing", async (t) => {

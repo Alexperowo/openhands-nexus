@@ -15,6 +15,8 @@ export interface AgentEvent {
   };
   llm_message?: { role?: string; content?: { type: string; text?: string }[] };
   thought?: Array<{ type: string; text?: string }> | string;
+  /** SDK step title (the line Canvas shows for the step), present even when thought is empty. */
+  summary?: string | null;
   message?: string;
 }
 
@@ -239,26 +241,18 @@ export function extractStepExplanation(event: AgentEvent): string {
   return raw ? clipStepExplanation(raw) : "";
 }
 
+/** Fallback when the step has neither the model's words nor a title: only phrases that name something.
+ *  "Выполняю команду" on every call says nothing, and the owner asked not to hear it. */
 export function actionSpeechPhrase(event: AgentEvent): string {
   const tool = event.tool_name ?? "";
   const action = (event.action ?? {}) as Record<string, unknown>;
-  if (tool === "terminal") {
-    if (action.is_input) return "Ввод в терминал";
-    return "Выполняю команду";
-  }
   if (tool === "file_editor" || tool === "planning_file_editor") {
     const name = extractFileName(action.path);
-    if (action.command === "view") {
-      return name ? `Читаю файл ${name}` : "Читаю файл";
-    }
-    return name ? `Правлю файл ${name}` : "Правлю файл";
+    if (!name) return "";
+    return action.command === "view" ? `Читаю файл ${name}` : `Правлю файл ${name}`;
   }
-  if (tool === "apply_patch") return "Правлю файлы";
-  if (tool === "glob") return "Поиск файлов";
-  if (tool === "grep") return "Поиск в файлах";
-  if (tool.startsWith("browser")) return "Работа в браузере";
   if (tool === "delegate" || tool === "task") return "Ожидание исполнителя";
-  return "Выполняю действие";
+  return "";
 }
 
 function extractTaskList(event: AgentEvent): Array<{ title: string; status: string }> | null {
@@ -281,6 +275,7 @@ export class SpeechEvents {
   private turnTexts = new Set<string>();
   private knownTasks = new Map<string, string>();
   private handledStepIds = new Set<string>();
+  private lastStepPhrase = "";
 
   seedHistory(history: AgentEvent[]) {
     for (const event of history) {
@@ -328,12 +323,13 @@ export class SpeechEvents {
   }
 
   takeText(event: AgentEvent) {
-    if (event.source === "user" && event.kind === "MessageEvent") this.turnTexts.clear();
+    if (event.source === "user" && event.kind === "MessageEvent") { this.turnTexts.clear(); this.lastStepPhrase = ""; }
     const text = speechText(event);
     const key = text.replace(/\s+/g, " ").trim();
     if (!key || this.turnTexts.has(key)) return "";
     // Finish and MessageEvent can contain the same answer under different IDs.
     this.turnTexts.add(key);
+    this.lastStepPhrase = "";
     return text;
   }
 
@@ -353,12 +349,14 @@ export class SpeechEvents {
       }
     }
 
-    // Step explanation if present
-    const explanation = extractStepExplanation(event);
-    if (explanation) return explanation;
-
-    // Action phrase
-    return actionSpeechPhrase(event);
+    // The model's own words first, then the step title Canvas shows, the tool phrase last.
+    const phrase = extractStepExplanation(event)
+      || (typeof event.summary === "string" ? clipStepExplanation(event.summary) : "")
+      || actionSpeechPhrase(event);
+    // A run of identical phrases ("Выполняю команду" five times) tells the listener nothing new.
+    if (!phrase || phrase === this.lastStepPhrase) return "";
+    this.lastStepPhrase = phrase;
+    return phrase;
   }
 
   private processPlanUpdate(tasks: Array<{ title: string; status: string }>): string {
