@@ -22,10 +22,17 @@ and starts at 70% of each model's window: nexus_ledger.py.
 
 The desktop commands' `@@attach <image>` lines become images of the terminal result, as in the
 harness Holo4 is trained with: nexus_screen.py.
+
+Every conversation gets the guard (guard/guard.py) as its first PreToolUse hook. The UI adds it to
+each start request it sends, but scheduled tasks (automation) and scripts start conversations
+through the API with hook configs of their own, and their agent ran unguarded. Ours, not an
+upstream bug.
 """
 import dataclasses
 import os
+import inspect
 import re
+import shlex
 import sys
 from collections import Counter
 from importlib.machinery import PathFinder
@@ -54,8 +61,34 @@ def patch_llm(module):
     module.LLM._model_features = _model_features
 
 
+# The same hook the UI adds (ui/src/guard-hooks.ts, ui/vite.config.ts).
+GUARD = "/usr/bin/python3 -I '%s'" % os.path.join(os.path.dirname(os.path.dirname(HERE)), "guard", "guard.py")
+GUARD_TOOLS = "terminal|file_editor|planning_file_editor"
+
+
+def with_guard(config):
+    """The guard first, then the caller's hooks without another copy of it (any quoting)."""
+    from openhands.sdk.hooks import HookConfig, HookDefinition, HookMatcher
+    guard = HookMatcher(matcher=GUARD_TOOLS, hooks=[HookDefinition(command=GUARD, timeout=10)])
+    if config is None:
+        return HookConfig(pre_tool_use=[guard])
+    words = shlex.split(GUARD)
+    others = [matcher for matcher in config.pre_tool_use
+              if not (matcher.hooks and all(shlex.split(hook.command) == words for hook in matcher.hooks))]
+    return config.model_copy(update={"pre_tool_use": [guard, *others]})
+
+
 def patch_conversation(module):
     from openhands.sdk.llm.llm_registry import RegistryEvent
+    init = module.LocalConversation.__init__
+    signature = inspect.signature(init)
+
+    def __init__(*args, **kwargs):
+        bound = signature.bind(*args, **kwargs)
+        bound.arguments["hook_config"] = with_guard(bound.arguments.get("hook_config"))
+        init(*bound.args, **bound.kwargs)
+
+    module.LocalConversation.__init__ = __init__
     original = module.LocalConversation.switch_llm
 
     def switch_llm(self, llm):
@@ -122,7 +155,7 @@ def patch_terminal_observation(module):
 
 PATCHES = {
     "openhands.sdk.llm.llm": (patch_llm, "send_reasoning_content override"),
-    "openhands.sdk.conversation.impl.local_conversation": (patch_conversation, "switch_llm stats fix"),
+    "openhands.sdk.conversation.impl.local_conversation": (patch_conversation, "guard hook, switch_llm stats fix"),
     "openhands.sdk.llm.message": (patch_message, "looped reasoning cleanup"),
     "openhands.sdk.context.condenser.llm_summarizing_condenser": (patch_condenser, "step ledger condenser"),
     "openhands.tools.terminal.impl": (patch_terminal_executor, "desktop images from @@attach"),
