@@ -11,10 +11,17 @@ A model or reasoning switch (switch_llm) also lost the conversation's token coun
 streams no stats (only the LLMs present at start got the callback), and one switched in before
 the first run after a restart is never added to the stats at all (#5639, fix in PR #5667).
 The context meter then said "no data yet". Drop each fix once a release has it.
+
+A step whose reasoning looped (the same sentences over and over until the thinking budget) went
+back to the model in every later request, and the model kept looping on it. Only what is sent
+is cleaned, the same way every time so the prompt cache still matches; the conversation's
+events keep the original. Ours, not an upstream bug.
 """
 import dataclasses
 import os
+import re
 import sys
+from collections import Counter
 from importlib.machinery import PathFinder
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -57,9 +64,45 @@ def patch_conversation(module):
     module.LocalConversation.switch_llm = switch_llm
 
 
+# Sentences and lines with what separates them; split() keeps the separators at odd places.
+_PIECES = re.compile(r"((?<=[.!?…])[ \t]+|\n+)")
+
+
+def unloop(reasoning):
+    """Reasoning with a long sentence 3+ times is a loop: keep each sentence only once."""
+    parts = _PIECES.split(reasoning)
+    pieces, gaps = parts[0::2], parts[1::2] + [""]
+    keys = [" ".join(piece.split()).lower() for piece in pieces]
+    counts = Counter(key for key in keys if len(key) >= 40)
+    if not counts or max(counts.values()) < 3:
+        return reasoning
+    seen, kept, dropped = set(), [], 0
+    for piece, gap, key in zip(pieces, gaps, keys):
+        if len(key) >= 8 and key in seen:  # short ones ("Но это сложно.") repeat in loops too
+            dropped += 1
+            continue
+        seen.add(key)
+        kept.append(piece + gap)
+    return ("".join(kept).rstrip()
+            + f"\n\n[Nexus: this reasoning looped; {dropped} repeated sentences were removed.]")
+
+
+def patch_message(module):
+    original = module.Message.to_chat_dict
+
+    def to_chat_dict(self, **kwargs):
+        message_dict = original(self, **kwargs)
+        if message_dict.get("reasoning_content"):
+            message_dict["reasoning_content"] = unloop(message_dict["reasoning_content"])
+        return message_dict
+
+    module.Message.to_chat_dict = to_chat_dict
+
+
 PATCHES = {
     "openhands.sdk.llm.llm": (patch_llm, "send_reasoning_content override"),
     "openhands.sdk.conversation.impl.local_conversation": (patch_conversation, "switch_llm stats fix"),
+    "openhands.sdk.llm.message": (patch_message, "looped reasoning cleanup"),
 }
 
 
