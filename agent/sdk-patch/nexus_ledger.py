@@ -13,8 +13,7 @@ the numbering goes on. The model's own summary stays where the context is really
 (hard_context_reset) and takes over when the ledger fails or outgrows its share.
 
 Condensation starts at 70% of the model's window instead of at the window itself (Nex 19G with
-a 48K window at ~34K, with 112K at ~80K); agent/config/settings.json caps it at 160000 for the
-224K models. Ours, not an upstream feature: the idea comes from Antigravity-Nexus.
+its 112K window at ~80K); agent/config/settings.json caps it at 160000 for the 224K models. Ours, not an upstream feature: the idea comes from Antigravity-Nexus.
 """
 import contextvars
 import json

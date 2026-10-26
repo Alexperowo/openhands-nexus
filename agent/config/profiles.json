@@ -34,7 +34,7 @@
     },
     "Nex-19G-2080": {
       "model": "openai/nex19-2080",
-      "max_input_tokens": 49152,
+      "max_input_tokens": 114688,
       "max_output_tokens": 16384,
       "temperature": 0.7,
       "capability_overrides": {"send_reasoning_content": true},

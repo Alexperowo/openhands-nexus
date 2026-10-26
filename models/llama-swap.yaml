@@ -60,13 +60,18 @@ models:
     name: "Nex 19G — RTX 2080 Ti"
     description: "Одна карта 2080 Ti, 5060 Ti свободна"
     env: *env_cuda1_vision
+    # 128K fits 22 GB only with V cache q4_0 (the later -ctv overrides common). Measured 26.10 with a
+    # screenshot and a 115K prompt: q8_0/q8_0 runs out of memory on the screenshot, q8_0 K with q6_0 or
+    # q5_0 V at ~60K (flash attention converts those V types into an extra buffer); q8_0/q4_0 peaks at
+    # 21.97 of 22.5 GB with the desktop's 1.5 GB, 94 tok/s, 35 at 115K. Vision on the CPU would free
+    # 1.1 GB but takes 76 s per screenshot; q6_0/q4_0 leaves 160 MB more.
     cmd: |
       ${server}
       -m ${nex_dir}/Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf
       --mmproj ${nex_dir}/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf
-      -dev CUDA1 -ngl 999 -c 65536
-      ${nex_template} ${nex_sampling} ${common}
-    metadata: {ctx: 65536}
+      -dev CUDA1 -ngl 999 -c 131072
+      ${nex_template} ${nex_sampling} ${common} -ctv q4_0
+    metadata: {ctx: 131072}
     disableKeepAlives: true
 
   nex19-5060:
