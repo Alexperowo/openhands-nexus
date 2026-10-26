@@ -19,6 +19,9 @@ events keep the original. Ours, not an upstream bug.
 
 The conversation condenser keeps a ledger of the forgotten steps instead of the model's retelling
 and starts at 70% of each model's window: nexus_ledger.py.
+
+The desktop commands' `@@attach <image>` lines become images of the terminal result, as in the
+harness Holo4 is trained with: nexus_screen.py.
 """
 import dataclasses
 import os
@@ -107,11 +110,23 @@ def patch_condenser(module):
     nexus_ledger.install(module)
 
 
+def patch_terminal_executor(module):
+    import nexus_screen
+    nexus_screen.patch_executor(module)
+
+
+def patch_terminal_observation(module):
+    import nexus_screen
+    nexus_screen.patch_observation(module)
+
+
 PATCHES = {
     "openhands.sdk.llm.llm": (patch_llm, "send_reasoning_content override"),
     "openhands.sdk.conversation.impl.local_conversation": (patch_conversation, "switch_llm stats fix"),
     "openhands.sdk.llm.message": (patch_message, "looped reasoning cleanup"),
     "openhands.sdk.context.condenser.llm_summarizing_condenser": (patch_condenser, "step ledger condenser"),
+    "openhands.tools.terminal.impl": (patch_terminal_executor, "desktop images from @@attach"),
+    "openhands.tools.terminal.definition": (patch_terminal_observation, "desktop images to the model"),
 }
 
 

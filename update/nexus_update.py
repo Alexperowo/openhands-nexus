@@ -243,6 +243,15 @@ class Updater:
                 require(digest(project / "uv.lock") == before, "Проверка неожиданно изменила uv.lock")
             return [(f"Voice ({environment})", installed, available)]
 
+        def screen():
+            # Pinned in screen/pyproject.toml: a new version is a deliberate pin change.
+            installed = self.run([self.root / "screen/.venv/bin/desk", "--version"], capture=True, timeout=10).split()[-1]
+            available = UNKNOWN
+            if not self.args.offline:
+                with contextlib.suppress(Exception):
+                    available = self.fetch_json("https://pypi.org/pypi/hai-drivers/json")["info"]["version"]
+            return [("Screen (hai-drivers)", installed, available)]
+
         def safe(label, function):
             try:
                 return function()
@@ -253,8 +262,9 @@ class Updater:
                                                 capture=True, timeout=5), UNKNOWN)]
                 return [(label, UNKNOWN, UNKNOWN)]
 
-        tasks = [("canvas", canvas), ("ik_llama", ik), ("Caddy", caddy), ("llama-swap", llama_swap), ("Voice", voice)]
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+        tasks = [("canvas", canvas), ("ik_llama", ik), ("Caddy", caddy), ("llama-swap", llama_swap), ("Voice", voice),
+                 ("Screen", screen)]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
             results = list(pool.map(lambda pair: safe(*pair), tasks))
         self.emit("Компонент | Установлено | Доступно")
         for rows in results:

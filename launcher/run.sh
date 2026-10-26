@@ -32,6 +32,9 @@ case "${1:-}" in
       LOCAL_BACKEND_API_KEY="$OHN_SESSION_KEY" OH_SECRET_KEY="$OHN_SECRET_KEY"
     # Canvas passes its environment on to agent-server: an SDK fix it loads at startup.
     export PYTHONPATH="$PWD/sdk-patch${PYTHONPATH:+:$PYTHONPATH}"
+    # The agent's terminal gets the desktop commands (screen/); Holo4 and the Qwen-based models
+    # point in 0-1000 of the screen.
+    export PATH="$WORK/screen/bin:$PATH" COORDINATE_SYSTEM=0-1000
     mkdir -p "$OH_CANVAS_SAFE_STATE_DIR"
     # Canvas only logs it when its agent-server child dies and keeps running, so the unit would stay
     # "active" without an agent. Leave once 18010 stops answering (1 min) or never answers after

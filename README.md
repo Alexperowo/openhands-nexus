@@ -16,6 +16,7 @@
 | `voice/` | Распознавание GigaAM v3 и синтез Silero v5.6 (CPU), OpenAI-совместимые `/v1/audio/*` | `ohn-voice`: 18020 |
 | `models/` | Меню моделей: [llama-swap](https://github.com/mostlygeek/llama-swap) поверх ik_llama `llama-server` | `ohn-models`: 18030, модели 18040+ |
 | `gateway/` | Caddy: HTTPS для планшета, сам подставляет ключ сессии в `/api` и `/sockets` | `ohn-gateway`: 8443 |
+| `screen/` | Команды экрана для агента: `desk` от H Company ([hai-drivers](https://pypi.org/project/hai-drivers/), MIT; на них обучена Holo4) — снимок, клик, клавиши, текст, окна; координаты 0–1000 | в терминале агента |
 | `guard/` | Страж опасных команд агента (PreToolUse-хук): не даёт убить Nexus, сеанс или систему, менять сеть; личные папки целиком — только в корзину | — |
 | `launcher/` | `run.sh` для user-юнитов systemd, ярлыки «Запустить/Остановить Nexus», `install.sh` | — |
 | `update/` | `nexus-update`: проверка и обновление Canvas, ik_llama, llama-swap, Caddy, голосовых пакетов с откатом | — |
@@ -33,6 +34,7 @@
 (cd agent && npm ci)
 (cd ui && npm ci && npm run build)
 (cd voice && uv sync --frozen && .venv/bin/python download_models.py)
+(cd screen && uv sync --frozen)   # нужны системные xdotool, wmctrl, xclip
 ```
 
 Бинарники не хранятся в git: положить `caddy` в `gateway/`, `llama-swap` в `models/`.
@@ -80,6 +82,11 @@ python3 -I agent/config.py apply   # записать профили и наст
 и отказы стража — дословно; журнал прошлого сжатия сворачивается в строки
 (`agent/sdk-patch/nexus_ledger.py`). Резюме самой моделью остаётся на пределе контекста
 и на случай, если журнал перерос четверть порога.
+
+Экран агент видит и трогает командами из `screen/bin` (`screenshot`, `click`, `key`, `text`,
+`focus`…; описание — `desk skill`). Строка `@@attach <картинка>` в их выводе становится
+изображением в результате команды, как в обвязке, на которой обучена Holo4: до 1920 px, JPEG 85
+(`agent/sdk-patch/nexus_screen.py`).
 
 ## Проверки
 
