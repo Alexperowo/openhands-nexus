@@ -2,7 +2,7 @@
 """
 Скрипт загрузки моделей голосовой службы:
 1. Silero TTS v5.6 ru (v5_6_ru.pt)
-2. GigaAM v3 (v3_ctc / v3_e2e_ctc)
+2. GigaAM v3_e2e_rnnt с токенизатором
 
 Все модели сохраняются исключительно в папку voice/models/
 """
@@ -61,14 +61,15 @@ def main():
     print("\nПроверка/скачивание GigaAM v3...")
     try:
         import gigaam
-        print("Загрузка GigaAM v3_ctc в папку models/...")
-        model_ctc = gigaam.load_model("v3_ctc", download_root=str(MODELS_DIR), device="cpu")
-        print("GigaAM v3_ctc успешно инициализирована на CPU!")
-        
-        ctc_file = MODELS_DIR / "v3_ctc.ckpt"
-        if ctc_file.exists():
-            md5_giga, sha256_giga = get_hashes(ctc_file)
-            print(f"GigaAM v3_ctc: MD5={md5_giga}, SHA256={sha256_giga}")
+        from service import STT_MODEL
+        print(f"Загрузка GigaAM {STT_MODEL} в папку models/...")
+        gigaam.load_model(STT_MODEL, download_root=str(MODELS_DIR), device="cpu")
+        print(f"GigaAM {STT_MODEL} успешно инициализирована на CPU!")
+
+        ckpt_file = MODELS_DIR / f"{STT_MODEL}.ckpt"
+        if ckpt_file.exists():
+            md5_giga, sha256_giga = get_hashes(ckpt_file)
+            print(f"GigaAM {STT_MODEL}: MD5={md5_giga}, SHA256={sha256_giga}")
     except Exception as e:
         print(f"Ошибка инициализации GigaAM: {e}")
         return 1

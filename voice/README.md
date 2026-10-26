@@ -5,12 +5,12 @@
 
 | Адрес | Что делает |
 |---|---|
-| `POST /v1/audio/transcriptions` | Речь → текст: [GigaAM v3_ctc](https://github.com/salute-developers/GigaAM) (MIT). Любой формат, который читает ffmpeg; длинная запись режется на части |
+| `POST /v1/audio/transcriptions` | Речь → текст: [GigaAM v3_e2e_rnnt](https://github.com/salute-developers/GigaAM) (MIT) — сразу с запятыми, точками, вопросами, заглавными, «ё» и числами цифрами. Любой формат, который читает ffmpeg; длинная запись режется на части |
 | `POST /v1/audio/speech` | Текст → речь: [Silero TTS v5.6 ru](https://github.com/snakers4/silero-models) (CC BY-NC 4.0, только некоммерческое использование). Голоса xenia (по умолчанию), baya, aidar, kseniya, eugene; WAV или MP3, 48 кГц; `speed` через ffmpeg |
 | `GET /health` | Готовность: обе модели загружены |
 
 Обе модели загружаются при старте службы и лежат в `voice/models/` (не в git):
-`.venv/bin/python download_models.py`. Нужны системные `ffmpeg` и `libflite1`.
+`.venv/bin/python download_models.py`. Модель распознавания задаёт `STT_MODEL` в `service.py`. Нужны системные `ffmpeg` и `libflite1`.
 Юниту задано `MemorySwapMax=0`: при загрузке большой модели служба не уходит в подкачку,
 и первая диктовка не ждёт секундами.
 

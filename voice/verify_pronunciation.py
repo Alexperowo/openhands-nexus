@@ -14,14 +14,14 @@ def offline(event, args):
 def main():
     parser = argparse.ArgumentParser(description="Offline Silero pronunciation proof; no running services")
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--stt", action="store_true", help="Also transcribe with cached GigaAM v3_ctc")
+    parser.add_argument("--stt", action="store_true", help="Also transcribe with the cached GigaAM model of the service")
     args = parser.parse_args()
     sys.addaudithook(offline)
 
     import soundfile as sf
     import torch
     from pronunciation import for_silero
-    from service import MODELS_DIR, SpeechRequest, get_tts_model, speech
+    from service import MODELS_DIR, STT_MODEL, SpeechRequest, get_tts_model, speech
 
     torch.set_num_threads(2)
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -75,7 +75,7 @@ def main():
             return path
 
         with patch("gigaam._download_file", side_effect=cached_file):
-            stt = gigaam.load_model("v3_ctc", download_root=str(MODELS_DIR), device="cpu")
+            stt = gigaam.load_model(STT_MODEL, download_root=str(MODELS_DIR), device="cpu")
         for name in records:
             audio, rate = sf.read(args.output_dir / f"{name}.wav", dtype="float32")
             audio = torchaudio.functional.resample(torch.from_numpy(audio), rate, 16000)

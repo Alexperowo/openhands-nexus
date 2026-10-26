@@ -29,6 +29,8 @@ tts_lock = threading.Lock()
 stt_lock = threading.Lock()
 
 # Глобальные переменные моделей
+# End-to-end GigaAM: punctuation, capitals, ё and digits in the text, not a lowercase word stream.
+STT_MODEL = "v3_e2e_rnnt"
 stt_model = None
 tts_model = None
 tts_sample_rate = 48000
@@ -38,9 +40,9 @@ def get_stt_model():
     global stt_model
     if stt_model is None:
         import gigaam
-        print("Загрузка GigaAM v3_ctc на CPU...")
-        stt_model = gigaam.load_model("v3_ctc", download_root=str(MODELS_DIR), device="cpu")
-        print("GigaAM v3_ctc успешно инициализирована.")
+        print(f"Загрузка GigaAM {STT_MODEL} на CPU...")
+        stt_model = gigaam.load_model(STT_MODEL, download_root=str(MODELS_DIR), device="cpu")
+        print(f"GigaAM {STT_MODEL} успешно инициализирована.")
     return stt_model
 
 
@@ -134,7 +136,7 @@ async def health():
         "status": "ok",
         "ready": (stt_model is not None and tts_model is not None),
         "service": "nexus-voice",
-        "stt": "GigaAM v3_ctc (MIT)",
+        "stt": f"GigaAM {STT_MODEL} (MIT)",
         "tts": "Silero TTS v5.6 ru (CC BY-NC 4.0)",
         "device": "cpu",
         "port": 18020
