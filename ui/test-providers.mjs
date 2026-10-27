@@ -179,6 +179,27 @@ test("files landmark adapter changes only the root tag and rejects upstream drif
   assert.equal(plugin.transform.call(context, source, "/another-module.js"), null);
 });
 
+test("only English Canvas strings are built in, all of them and unchanged", async () => {
+  const {canvasEnglishOnly} = await import("./vite.config.ts");
+  const plugin = canvasEnglishOnly();
+  const context = {error(message) { throw new Error(message); }};
+  const id = path.resolve(dist, "i18n/translation.js");
+  const source = readFileSync(id, "utf8");
+  assert.throws(() => plugin.generateBundle.call(context), /not applied/);
+  const original = (await import(`./${dist}/i18n/translation.js`)).default;
+  const kept = (await import(`data:text/javascript,${encodeURIComponent((await plugin.transform.call(context, source, id)).code)}`)).default;
+  plugin.generateBundle.call(context);
+  // Canvas builds translationResources from this file (i18n/resources.js); Nexus reads only .en.
+  assert.deepEqual(kept, Object.fromEntries(Object.entries(original).map(([key, text]) => [key, {en: text.en}])));
+  const [key, first] = Object.entries(original)[0];
+  await assert.rejects(plugin.transform.call(context, source.replace(`en: ${JSON.stringify(first.en)},`, ""), id), /layout changed/);
+  assert.equal(await plugin.transform.call(context, source, "/another-module.js"), null);
+  // The built bundle: English is there, the other languages are not.
+  const bundle = build.join("\n");
+  assert.ok(bundle.includes(JSON.stringify(first.en)), `English for ${key} is missing from the build`);
+  for (const language of ["ja", "ar", "de", "uk"]) assert.ok(!bundle.includes(first[language]), `${language} is still in the build`);
+});
+
 test("the build contains no npm registry update-check URL", () => {
   assert.ok(build.every((source) => !source.includes("registry.npmjs.org")), "the update check is back in dist");
 });

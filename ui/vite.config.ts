@@ -25,6 +25,27 @@ export function canvasFilesSemantics(): Plugin {
   };
 }
 
+// Canvas ships every string in 16 languages, Russian not among them (ours is src/locales/ru.json);
+// only English is read, as the fallback (i18n.ts). The other 15 were a quarter of the bundle.
+export function canvasEnglishOnly(): Plugin {
+  let seen = false;
+  return {
+    name: "nexus-canvas-english-only",
+    async transform(code, id) {
+      if (!id.endsWith("/@openhands/agent-canvas/dist/i18n/translation.js")) return null;
+      const strings = (await import(`data:text/javascript,${encodeURIComponent(code)}`)).default;
+      const entries = Object.entries(strings ?? {});
+      if (!entries.length || entries.some(([, text]: [string, any]) => typeof text?.en !== "string")) {
+        this.error("Canvas translation layout changed: review the English-only filter");
+      }
+      seen = true;
+      const english = Object.fromEntries(entries.map(([key, text]: [string, any]) => [key, { en: text.en }]));
+      return { code: `export default ${JSON.stringify(english)};`, map: null };
+    },
+    generateBundle() { if (!seen) this.error("Canvas English-only filter was not applied"); },
+  };
+}
+
 // Routes Canvas imports of a private module to a host module, matched by resolved path
 // (Canvas imports its siblings as "./name.js", which a specifier alias cannot tell apart).
 // Adapters wrap the original: EventMessage gets ▶ under answers, the list arrow a spoken name.
@@ -131,7 +152,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     // Vite 6 treats envDir:false as the project root; use an explicitly empty directory.
     envDir: path.join(directory, "dev/no-env"),
-    plugins: [canvasAdapters(mode === "fixture-upstream"), canvasFilesSemantics(), noRemoteCss(), react()],
+    plugins: [canvasAdapters(mode === "fixture-upstream"), canvasFilesSemantics(), canvasEnglishOnly(), noRemoteCss(), react()],
     resolve: {
       // Private Canvas contexts whose providers the published build drops;
       // pinned-version compatibility workaround (test-providers.mjs guards it).

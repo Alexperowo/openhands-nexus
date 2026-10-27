@@ -46,6 +46,9 @@
 В `models/llama-swap.yaml` указать путь к `llama-server` и к весам моделей.
 Шлюзу нужен корневой сертификат `gateway/ca/openhands-ca.{crt,key}`; планшет доверяет ему,
 файл для установки отдаётся по `http://<адрес ПК>:8081/ca.crt`.
+Файлы сборки интерфейса шлюз отдаёт с вечным кэшем (в имени хеш содержимого), а страницу
+браузер проверяет при каждом открытии: новая сборка видна сразу. Из строк Canvas в сборку попадает
+только английский — запасной язык (русский — `ui/src/locales/ru.json`).
 
 ```bash
 launcher/install.sh   # ключи сессии (один раз), юниты ohn-*, ярлыки на рабочем столе
@@ -116,6 +119,7 @@ python3 -I agent/config.py apply   # записать профили и наст
 (cd voice && .venv/bin/python test_pronunciation.py && .venv/bin/python test_service.py)
 (cd update && python3 test_update.py)
 (cd launcher && python3 test_watch.py)
+(cd gateway && python3 test_gateway.py)  # заголовки кэша страницы и файлов сборки
 update/nexus-update check
 python3 -I agent/config.py check
 ```
