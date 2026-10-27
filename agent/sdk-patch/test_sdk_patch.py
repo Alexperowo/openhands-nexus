@@ -326,12 +326,39 @@ class GoalTests(unittest.TestCase):
         self.assertNotIn("старая просьба", transcript)
         self.assertTrue(event_service.RESUME_PROMPT.startswith(goal.FOLLOWUP_MARK))
 
-    def test_unreadable_verdict_is_explained_in_russian(self):
-        from openhands.sdk.conversation.goal import judge
-        verdict = judge._parse_verdict(Message(role="assistant", content=[TextContent(text="не JSON")]))
-        self.assertFalse(verdict.complete)
-        self.assertIn("проверка не смогла", verdict.missing)
+    def test_verdict_is_complete_only_as_json_true_with_a_matching_score(self):
+        from openhands.sdk.conversation.goal import controller as sdk, judge
 
+        def verdict(text):
+            return judge._parse_verdict(Message(role="assistant", content=[TextContent(text=text)]))
+        for text in ['{"score": 0.95, "complete": true, "missing": ""}', '{"score": 1, "complete": true}',
+                     'Вот вердикт: {"score": 5, "complete": true}']:
+            self.assertTrue(verdict(text).complete, text)
+        for text, why in [('{"score": 0.9, "complete": "true"}', "не по форме"),
+                          ('{"score": 0.2, "complete": "false", "missing": "нет файла"}', "нет файла; проверка ответила не по форме"),
+                          ('{"score": 0.9}', "не по форме"),
+                          ('{"score": 0.9, "complete": 1}', "не по форме"),
+                          ('{"score": 0.3, "complete": true}', "противоречит себе: «готово», но уверенность 30%"),
+                          ('{"score": "0.9", "complete": true}', "уверенность 0%"),
+                          ('{"score": NaN, "complete": true}', "уверенность 0%"),
+                          ('{"score": true, "complete": true}', "уверенность 0%"),
+                          ('{"score": 0.9, "complete": false}', "проверка не назвала"),
+                          ('{"score": 0.9, "complete": tru', "не смогла прочитать"),
+                          ("не JSON", "не смогла прочитать"),
+                          ('{"score": 0.9, "complete": true, "needs_user": true, "missing": "выбрать папку"}',
+                           goal.NEEDS_USER + "выбрать папку")]:
+            result = verdict(text)
+            self.assertFalse(result.complete, text)
+            self.assertIn(why, result.missing, text)
+        # The acceptance case through the real controller: a "false" string with needs_user is no success.
+        step = sdk.GoalController(self.objective, self.judge_llm(
+            '{"score": 0.2, "complete": "false", "missing": "Файл результата не создан", "needs_user": true}'
+        )).on_run_finished(self.run_events("ok"))
+        self.assertIsInstance(step, sdk.GoalDone)
+        self.assertEqual(step.outcome.status, "capped")
+        self.assertFalse(step.outcome.verdict.complete)
+        step = sdk.GoalController(self.objective, self.judge_llm('{"score": 0.2, "complete": "false"}')).on_run_finished([])
+        self.assertIsInstance(step, sdk.GoalContinue)
 
 if __name__ == "__main__":
     unittest.main()

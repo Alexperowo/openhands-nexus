@@ -11,15 +11,21 @@ missing and the agent continues, at most a few rounds. The SDK loop is kept; thi
   "да") is judged against the request it answers.
 - The judge knows the setting (a personal PC, a user who is not a programmer), answers in Russian,
   and says when only the user can continue: the loop then stops instead of pushing the agent.
+- Its verdict is read strictly. The SDK takes `bool(data["complete"])`, so the string "false" was a
+  success. Here only the JSON value true with a score of at least COMPLETE_SCORE and no
+  "needs_user" is complete; a wrong type, a missing field or a verdict that contradicts itself
+  is not, and the agent gets another round with what was wrong.
 - Its follow-up and resume messages are Russian and start with FOLLOWUP_MARK, which the UI uses to
   tell them from the user's own messages.
 """
 import json
+import math
 import re
 
 FOLLOWUP_MARK = "Проверка Nexus:"
 NEEDS_USER = "Нужно ваше решение: "
-UNPARSED = "Judge verdict could not be parsed."
+COMPLETE_SCORE = 0.8
+UNREADABLE = "проверка не смогла прочитать свой ответ, нужен ещё один круг"
 TOOL_OUTPUT_CHARS = 3000
 CALL_CHARS = 600
 TRANSCRIPT_CHARS = 60000
@@ -41,7 +47,8 @@ name, "yes", a choice) continues the request it answers: judge whether that requ
 
 If the rest can only be done by the owner (a decision, a choice, permission, information only they
 have), add "needs_user": true to the JSON. Write "missing" in Russian, briefly and in plain words
-the owner understands."""
+the owner understands. "complete" is the JSON value true only when every requirement is proven
+and the score is at least 0.8; otherwise it is false."""
 
 FOLLOWUP_PROMPT = FOLLOWUP_MARK + """ задача ещё не выполнена (проверка {iteration}).
 Не хватает: {missing}
@@ -124,8 +131,8 @@ def render_transcript(events):
     return transcript
 
 
-def needs_user(message):
-    """The judge's "needs_user" flag, read from the same JSON the SDK parser takes."""
+def verdict_data(message):
+    """The judge's JSON object, found the way the SDK parser finds it, or None."""
     from openhands.sdk.llm import content_to_str
     raw = "\n".join(content_to_str(message.content)).strip()
     block = re.search(r"\{.*\}", raw, re.DOTALL)
@@ -135,24 +142,39 @@ def needs_user(message):
         except json.JSONDecodeError:
             continue
         if isinstance(data, dict):
-            return data.get("needs_user") is True
-    return False
+            return data
+    return None
+
+
+def parse_verdict(message, verdict_class):
+    data = verdict_data(message)
+    if data is None:
+        return verdict_class(score=0.0, complete=False, missing=UNREADABLE)
+    score, complete, missing = data.get("score"), data.get("complete"), data.get("missing")
+    missing = missing.strip() if isinstance(missing, str) else ""
+    # bool is an int in Python; NaN and infinity are no probability.
+    if not isinstance(score, (int, float)) or isinstance(score, bool) or not math.isfinite(score):
+        score = 0.0
+    score = max(0.0, min(1.0, float(score)))
+    if not isinstance(complete, bool):
+        problem = "проверка ответила не по форме, нужен ещё один круг"
+    elif complete and score < COMPLETE_SCORE:
+        problem = f"проверка противоречит себе: «готово», но уверенность {score:.0%}; нужен ещё один круг"
+    else:
+        problem = ""
+    if data.get("needs_user") is True:
+        missing = missing if missing.startswith(NEEDS_USER) else NEEDS_USER + (missing or "ответ пользователя")
+        return verdict_class(score=score, complete=False, missing=missing)
+    if complete is True and not problem:
+        return verdict_class(score=score, complete=True, missing=missing)
+    missing = "; ".join(part for part in [missing, problem] if part)
+    return verdict_class(score=score, complete=False, missing=missing or "проверка не назвала, чего не хватает: перепроверь результат")
 
 
 def patch_judge(module):
     module.JUDGE_SYSTEM_PROMPT = module.JUDGE_SYSTEM_PROMPT + JUDGE_CONTEXT
     module._render_transcript = render_transcript
-    parse = module._parse_verdict
-
-    def _parse_verdict(message):
-        verdict = parse(message)
-        if verdict.missing == UNPARSED:
-            return verdict.model_copy(update={"missing": "проверка не смогла прочитать свой ответ, нужен ещё один круг"})
-        if not verdict.complete and needs_user(message) and not verdict.missing.startswith(NEEDS_USER):
-            verdict = verdict.model_copy(update={"missing": NEEDS_USER + (verdict.missing or "ответ пользователя")})
-        return verdict
-
-    module._parse_verdict = _parse_verdict
+    module._parse_verdict = lambda message: parse_verdict(message, module.GoalVerdict)
 
 
 def patch_controller(module):
