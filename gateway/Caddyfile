@@ -65,7 +65,7 @@ https://{$LAN_IP}:8443, https://localhost:8443 {
 	handle /v1/* {
 		reverse_proxy 127.0.0.1:18020
 	}
-	# Только состояние llama-swap и модели; /slots и прочее llama-server содержат текст промптов.
+	# Только состояние llama-swap и модели (health, metrics — числа); /slots и прочее llama-server содержат текст промптов.
 	@llm_running {
 		method GET
 		path /llm/running
@@ -76,10 +76,10 @@ https://{$LAN_IP}:8443, https://localhost:8443 {
 	}
 	@llm_model_health {
 		method GET
-		path_regexp model ^/llm/model/([A-Za-z0-9._-]+)/health$
+		path_regexp model ^/llm/model/([A-Za-z0-9._-]+)/(health|metrics)$
 	}
 	handle @llm_model_health {
-		rewrite * /upstream/{re.model.1}/health
+		rewrite * /upstream/{re.model.1}/{re.model.2}
 		reverse_proxy 127.0.0.1:18030
 	}
 	# Имена файлов в /assets/ содержат хеш содержимого: кэш навсегда, без проверок.

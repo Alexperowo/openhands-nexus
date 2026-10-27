@@ -4,7 +4,7 @@ import { getPreferences } from "./preferences.ts";
 import { requestJson, errorMessage } from "./api.ts";
 import { SpeechEvents, type AgentEvent } from "./speech-events.ts";
 import { SessionEvents, openingCursor, type SessionFrame } from "./session-events.ts";
-import { AgentActivity, readModelState, type ActivitySnapshot, type ModelState } from "./agent-activity.ts";
+import { AgentActivity, ModelProgress, readModelState, type ActivitySnapshot, type ModelState } from "./agent-activity.ts";
 
 const NO_ACTIVITY: ActivitySnapshot = { actions: [], error: "" };
 const CONNECTION_LOST = "Нет связи с сервером";
@@ -58,6 +58,7 @@ export function useConversationSpeech(conversationId: string | null) {
     let behind = 0;
     let model: ModelState = "unknown";
     let modelAt = 0;
+    const progress = new ModelProgress();
     let modelTimer: ReturnType<typeof setTimeout> | undefined;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let checkTimer: ReturnType<typeof setTimeout> | undefined;
@@ -68,10 +69,10 @@ export function useConversationSpeech(conversationId: string | null) {
       activity.verifiedStatus(session!.status) === "running";
     const readModel = async () => {
       if (!modelWanted()) { modelTimer = undefined; return; }
-      const next = await readModelState(signal);
+      const reading = await readModelState(signal);
       modelTimer = undefined;
       if (signal.aborted) return;
-      model = next;
+      model = progress.update(reading, Date.now());
       modelAt = Date.now();
       publish();
     };
@@ -80,6 +81,7 @@ export function useConversationSpeech(conversationId: string | null) {
       if (!modelWanted()) {
         model = "unknown";
         modelAt = 0;
+        progress.reset();
       } else if (modelTimer === undefined) {
         modelTimer = setTimeout(readModel, modelAt ? MODEL_INTERVAL : 0);
       }
@@ -103,6 +105,7 @@ export function useConversationSpeech(conversationId: string | null) {
     const receive = (frame: SessionFrame) => {
       const taken = session!.take(frame);
       if (taken?.fresh) {
+        progress.settle();
         activity.apply([taken.event]);
         speak(taken.event);
       } else if (taken) {

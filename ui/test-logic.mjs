@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { SessionEvents, openingCursor } from "./src/session-events.ts";
 import { SpeechEvents, forSpeech, speechText, speechChunks, formatPlanCount, clipStepExplanation, actionSpeechPhrase } from "./src/speech-events.ts";
 import { getPreferences, setPreferences, stateCuesEnabled } from "./src/preferences.ts";
-import { AgentActivity, FOLLOWUP_MARK, NEEDS_USER, actionLabel, describeStatus } from "./src/agent-activity.ts";
+import { AgentActivity, FOLLOWUP_MARK, MODEL_STALLED, ModelProgress, NEEDS_USER, STALL_MS, actionLabel, describeStatus, readModelState } from "./src/agent-activity.ts";
 import { goalObjective } from "./src/goal-request.ts";
 import { tabBoundary } from "./src/focus.ts";
 import { shouldAnnounceStatus } from "./src/status-announcement.ts";
@@ -660,13 +660,76 @@ test("activity: an error names the cause without raw detail, stops actions, clea
   assert.equal(activity.snapshot().error, "");
 });
 
+test("model progress: an idle slot with a growing cache reads, a busy one writes, 2 minutes still is a stall", () => {
+  const progress = new ModelProgress();
+  const idle = tokens => ({ state: "idle", tokens }), busy = tokens => ({ state: "busy", tokens });
+  // Readings of a 45.6k prompt, 27.10: the slot stays idle while the prompt is read.
+  assert.equal(progress.update(idle(21), 0), "idle");
+  assert.equal(progress.update(idle(4096), 2600), "reading");
+  assert.equal(progress.update(idle(8192), 5050), "reading");
+  assert.equal(progress.update(idle(8192), 6500), "reading", "between batches");
+  assert.equal(progress.update(busy(45647), 34440), "writing");
+  assert.equal(progress.update(busy(45731), 35950), "writing");
+  assert.equal(progress.update(busy(45731), 35950 + STALL_MS - 1), "writing");
+  assert.equal(progress.update({ state: "busy", silent: true }, 35950 + STALL_MS), "stalled", "a hung server does not answer");
+  assert.equal(progress.update(busy(45732), 35950 + STALL_MS + 1500), "writing", "moving again");
+  assert.equal(progress.update(idle(45732), 200000), "idle", "the answer is written");
+  assert.equal(progress.update(idle(45732), 200000 + 10 * STALL_MS), "idle", "a long command of the agent is no stall");
+  assert.equal(progress.update(idle(30000), 900000), "reading", "a new request keeps the shared start of the cache");
+  assert.equal(progress.update(idle(30000), 900000 + STALL_MS), "stalled", "stuck while reading");
+  progress.settle();
+  assert.equal(progress.update(idle(30000), 900000 + STALL_MS + 1500), "idle", "an event came: the request is over");
+  assert.equal(progress.update({ state: "idle", silent: true }, 1000000), "reading", "a batch longer than 15 s");
+  assert.equal(progress.update({ state: "idle", silent: true }, 1000000 + STALL_MS), "stalled");
+  assert.equal(progress.update({ state: "loading" }, 1200000), "loading");
+  for (const at of [0, STALL_MS, 2 * STALL_MS]) {
+    assert.equal(progress.update({ state: "busy" }, at), "busy", "no metrics: no claim");
+    assert.equal(progress.update({ state: "idle" }, at + 1), "idle");
+  }
+});
+
+test("model reading: metrics give work and tokens; no metrics falls back to health; a silent server is busy", async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const metrics = (processing, tokens) => `# HELP llamacpp:kv_cache_tokens KV-cache tokens.\nllamacpp:kv_cache_tokens ${tokens}\n` +
+    `llamacpp:requests_processing ${processing}\nllamacpp:requests_deferred 0\n`;
+  const serve = routes => { const asked = []; globalThis.fetch = async url => {
+    asked.push(String(url));
+    const answer = routes[String(url)];
+    if (answer instanceof Error) throw answer;
+    return answer ?? new Response("", { status: 404 });
+  }; return asked; };
+  const running = () => new Response(JSON.stringify({ running: [{ model: "nex25", state: "ready" }] }));
+  const signal = new AbortController().signal;
+  serve({ "/llm/running": running(), "/llm/model/nex25/metrics": new Response(metrics(1, 51234)) });
+  assert.deepEqual(await readModelState(signal), { state: "busy", tokens: 51234 });
+  serve({ "/llm/running": running(), "/llm/model/nex25/metrics": new Response(metrics(0, 51234)) });
+  assert.deepEqual(await readModelState(signal), { state: "idle", tokens: 51234 });
+  const asked = serve({ "/llm/running": running(), "/llm/model/nex25/metrics": new Response("", { status: 501 }),
+    "/llm/model/nex25/health": new Response(JSON.stringify({ slots_processing: 1 })) });
+  assert.deepEqual(await readModelState(signal), { state: "busy" });
+  assert.deepEqual(asked, ["/llm/running", "/llm/model/nex25/metrics", "/llm/model/nex25/health"]);
+  serve({ "/llm/running": running(), "/llm/model/nex25/metrics": new DOMException("slow", "TimeoutError") });
+  assert.deepEqual(await readModelState(signal), { state: "busy", silent: true });
+  serve({ "/llm/running": running(), "/llm/model/nex25/metrics": new TypeError("network") });
+  assert.deepEqual(await readModelState(signal), { state: "unknown" });
+  serve({ "/llm/running": new Response(JSON.stringify({ running: [{ model: "nex25", state: "starting" }] })) });
+  assert.deepEqual(await readModelState(signal), { state: "loading" });
+  serve({ "/llm/running": new Response("", { status: 502 }) });
+  assert.deepEqual(await readModelState(signal), { state: "offline" });
+});
+
 test("status: only proven stages; a finish beats a stale action; model faults come first", () => {
   const none = { actions: [], error: "" };
   const busyTool = { actions: ["Чтение файла: a.txt"], error: "" };
   assert.equal(describeStatus("running", none, "offline").text, "Агент ждёт модель");
   assert.equal(describeStatus("running", busyTool, "loading").text, "Модель загружается");
-  assert.equal(describeStatus("running", none, "busy").text, "Модель генерирует ответ");
-  assert.match(describeStatus("running", none, "idle").text, /вероятно/);
+  assert.equal(describeStatus("running", none, "busy").text, "Модель пишет ответ");
+  assert.equal(describeStatus("running", none, "reading").text, "Модель читает контекст");
+  assert.equal(describeStatus("running", none, "writing").text, "Модель пишет ответ");
+  assert.equal(describeStatus("running", busyTool, "stalled").text, MODEL_STALLED);
+  assert.equal(describeStatus("running", none, "stalled").tone, "attention");
+  assert.match(describeStatus("running", none, "idle").text, /вероятно, модель читает контекст/);
   assert.equal(describeStatus("running", none, "unknown").text, "Агент работает");
   assert.equal(describeStatus("verified", busyTool, "idle").text, "Готово, проверено");
   assert.equal(describeStatus("unverified", busyTool, "idle").text, "Закончил, результат не проверен");

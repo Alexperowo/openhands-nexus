@@ -1,7 +1,17 @@
 import type { AgentEvent } from "./speech-events";
 
-/** What llama-swap says about the one loaded model; "busy" is global, not per conversation. */
-export type ModelState = "unknown" | "offline" | "loading" | "busy" | "idle";
+/**
+ * What llama-swap says about the one loaded model; global, not per conversation. ik_llama counts
+ * a slot as busy only once it writes: while it reads the prompt the slot is idle, and only its
+ * KV-cache tokens (metrics) grow.
+ */
+export type ModelReading = { state: "unknown" | "offline" | "loading" | "busy" | "idle"; tokens?: number; silent?: boolean };
+/** With metrics, a request in flight is "reading" or "writing", and "stalled" when it stops moving. */
+export type ModelState = ModelReading["state"] | "reading" | "writing" | "stalled";
+
+export const MODEL_STALLED = "Модель не продвигается больше 2 минут — возможно, зависла";
+// One batch of a long context takes seconds (2048 tokens of 45k in 1.5 s, 27.10); images as well.
+export const STALL_MS = 120_000;
 
 export interface ActivitySnapshot {
   actions: string[];
@@ -171,39 +181,103 @@ export function describeStatus(status: string, activity: ActivitySnapshot, model
   if (status !== "running") return null;
   if (model === "offline") return { text: "Агент ждёт модель", tone: "error" };
   if (model === "loading") return { text: "Модель загружается", tone: "work" };
+  if (model === "stalled") return { text: MODEL_STALLED, tone: "attention" };
   if (activity.error) return { text: `${activity.error}. Возможна повторная попытка`, tone: "error" };
   if (activity.actions.length > 1) return { text: `${first} и ещё ${activity.actions.length - 1}`, tone: "work" };
   if (first) return { text: first, tone: "work" };
-  if (model === "busy") return { text: "Модель генерирует ответ", tone: "work" };
+  if (model === "reading") return { text: "Модель читает контекст", tone: "work" };
+  if (model === "writing" || model === "busy") return { text: "Модель пишет ответ", tone: "work" };
+  // Without metrics the reading of a prompt looks idle too.
   if (model === "idle") return { text: "Агент работает: вероятно, модель читает контекст", tone: "work" };
   return { text: "Агент работает", tone: "work" };
 }
 
 /**
- * Reads llama-swap through the gateway: /llm/running names the loaded model and its state,
- * that model's own /health tells whether it generates. An unreachable gateway is "unknown"
- * (the page itself is offline), not a model fault.
+ * The stage of the model's request from readings 1.5 s apart: KV-cache tokens growing on an idle
+ * slot mean the prompt is being read, a busy slot that it writes. Without metrics (a server
+ * without --metrics) the reading is passed on as is: no progress is claimed and no stall either.
  */
-export async function readModelState(signal: AbortSignal): Promise<ModelState> {
+export class ModelProgress {
+  private tokens?: number;
+  private since = 0;
+  private stage?: "reading" | "writing";
+
+  reset() {
+    this.tokens = this.stage = undefined;
+  }
+
+  /** The agent got an answer (an event came): the model's request is over until the cache moves. */
+  settle() {
+    this.stage = undefined;
+  }
+
+  update(reading: ModelReading, now: number): ModelState {
+    if (reading.state !== "busy" && reading.state !== "idle") {
+      this.reset();
+      return reading.state;
+    }
+    if (reading.silent) {
+      // Metrics wait for the current batch: a long one or a hung server, a request either way.
+      if (!this.stage) [this.stage, this.since] = ["reading", now];
+    } else if (reading.tokens === undefined) {
+      return reading.state;
+    } else {
+      // Fewer tokens: a new request kept only the shared start of the cache.
+      const moved = this.tokens !== undefined && reading.tokens !== this.tokens;
+      this.tokens = reading.tokens;
+      if (reading.state === "busy" ? moved || this.stage !== "writing" : moved) {
+        [this.stage, this.since] = [reading.state === "busy" ? "writing" : "reading", now];
+      } else if (reading.state === "idle" && this.stage !== "reading") {
+        this.stage = undefined;
+        return "idle";
+      }
+    }
+    return now - this.since >= STALL_MS ? "stalled" : this.stage ?? reading.state;
+  }
+}
+
+const metric = (text: string, name: string) => {
+  const value = Number(text.match(new RegExp(`^llamacpp:${name}\\s+(\\S+)`, "m"))?.[1]);
+  return Number.isFinite(value) ? value : undefined;
+};
+
+/**
+ * Reads llama-swap through the gateway: /llm/running names the loaded model and its state,
+ * that model's own /metrics whether it works and how far (KV-cache tokens), /health whether
+ * it works when the server has no metrics. An unreachable gateway is "unknown" (the page
+ * itself is offline), not a model fault.
+ */
+export async function readModelState(signal: AbortSignal): Promise<ModelReading> {
   const options = { signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]) };
   let response: Response;
   try {
     response = await fetch("/llm/running", options);
   } catch {
-    return "unknown";
+    return { state: "unknown" };
   }
   // The proxy answers 502/500/504 itself when llama-swap is not running.
-  if ([500, 502, 504].includes(response.status)) return "offline";
-  if (!response.ok) return "unknown";
+  if ([500, 502, 504].includes(response.status)) return { state: "offline" };
+  if (!response.ok) return { state: "unknown" };
   const running: unknown = (await response.json().catch(() => ({})))?.running;
-  if (!Array.isArray(running)) return "unknown";
+  if (!Array.isArray(running)) return { state: "unknown" };
   // A swap stops the old model, then starts the chosen one.
-  if (running.some(item => item?.state === "starting" || item?.state === "stopping")) return "loading";
+  if (running.some(item => item?.state === "starting" || item?.state === "stopping")) return { state: "loading" };
   const ready = running.find(item => item?.state === "ready");
   // Nothing loaded: llama-swap starts the model on the next request.
-  if (typeof ready?.model !== "string") return "idle";
-  const health = await fetch(`/llm/model/${encodeURIComponent(ready.model)}/health`, options)
-    .then(answer => (answer.ok ? answer.json() : {}))
-    .catch(() => ({}));
-  return Number(health?.slots_processing) > 0 ? "busy" : "idle";
+  if (typeof ready?.model !== "string") return { state: "idle" };
+  const model = `/llm/model/${encodeURIComponent(ready.model)}`;
+  // llama-server answers both between batches of its work: a long batch delays the answer,
+  // a hung server never gives it. Silent for 15 s counts as no progress.
+  const patient = { signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) };
+  try {
+    const answer = await fetch(`${model}/metrics`, patient);
+    const text = answer.ok ? await answer.text() : "";
+    const processing = metric(text, "requests_processing");
+    const tokens = metric(text, "kv_cache_tokens");
+    if (processing !== undefined && tokens !== undefined) return { state: processing > 0 ? "busy" : "idle", tokens };
+    const health = await fetch(`${model}/health`, patient).then(reply => (reply.ok ? reply.json() : {})).catch(() => ({}));
+    return { state: Number(health?.slots_processing) > 0 ? "busy" : "idle" };
+  } catch (error) {
+    return (error as Error)?.name === "TimeoutError" ? { state: "busy", silent: true } : { state: "unknown" };
+  }
 }

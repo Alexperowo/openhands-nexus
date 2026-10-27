@@ -144,9 +144,9 @@ export default defineConfig(({ command, mode }) => {
     "/sockets": agentProxy,
     "^/(server_info|health|ready|alive)$": agentProxy,
     "/v1": { target: "http://127.0.0.1:18020", changeOrigin: true },
-    // Only the model health; /slots and the rest of llama-server hold prompt text.
+    // Only the model health and metrics (numbers); /slots and the rest of llama-server hold prompt text.
     "^/llm/running$": { target: "http://127.0.0.1:18030", changeOrigin: true, rewrite: () => "/running" },
-    "^/llm/model/[A-Za-z0-9._-]+/health$": { target: "http://127.0.0.1:18030", changeOrigin: true,
+    "^/llm/model/[A-Za-z0-9._-]+/(health|metrics)$": { target: "http://127.0.0.1:18030", changeOrigin: true,
       rewrite: (url: string) => url.replace(/^\/llm\/model\//, "/upstream/") },
   };
   const listener = { host: "127.0.0.1", port: 3020, strictPort: true,

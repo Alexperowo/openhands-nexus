@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { describeStatus, type ActivitySnapshot, type ModelState } from "./agent-activity";
+import { MODEL_STALLED, describeStatus, type ActivitySnapshot, type ModelState } from "./agent-activity";
 import { getPreferences, stateCuesEnabled } from "./preferences";
 import { cueForStatus, playConnectionCue, playCue } from "./status-cues";
 import { shouldAnnounceStatus } from "./status-announcement";
@@ -28,7 +28,7 @@ export function StatusBar({ status, activity, model, problems, connection = "onl
   const line = describeStatus(status, activity, model);
   const lineText = line?.text ?? "";
   const problem = connection === "lost" ? "Связь потеряна. Пробую подключиться." :
-    [model === "offline" ? "Нет связи с моделью" : "", ...problems].filter(Boolean).join(". ");
+    [model === "offline" ? "Нет связи с моделью" : model === "stalled" ? MODEL_STALLED : "", ...problems].filter(Boolean).join(". ");
 
   useEffect(() => {
     const notice = connectionNotices.current.update(connection);

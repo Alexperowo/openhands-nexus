@@ -21,6 +21,8 @@ hooks:
 macros:
   server: /home/user/backend/ik_llama-fresh/build/bin/llama-server
   nex_dir: /data/home/user/Models/Nex-N2.5-mini-OrcaRouter
+  # --metrics: numbers only (KV tokens, requests in progress), no prompt text. The status line of
+  # the interface reads them to tell reading the context from writing the answer and from a stall.
   # At the thinking budget (thinking_budget_tokens of the request) the server ends the thought with
   # this text and </think> instead of cutting it mid-word. The server takes it as is: the newlines
   # are real ones from this double-quoted YAML string, llama-swap keeps them inside the quotes.
@@ -30,7 +32,7 @@ macros:
     -fa on -ctk q8_0 -ctv q8_0 -b 2048 -ub 512 -np 1 -t 6
     --image-min-tokens 1024
     --reasoning-format deepseek --reasoning-budget -1 ${budget_message}
-    --jinja
+    --jinja --metrics
   nex_template: --chat-template-file nex-stock.jinja
   # Sampling by the model cards (Nex N2.5: 0.7/0.95/40; Qwen3.8 thinking, Tess, Holo4: 1.0/0.95/20,
   # min_p 0). The agent sends the same values from agent/config/profiles.json; these are for other clients.
