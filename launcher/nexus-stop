@@ -10,7 +10,7 @@ tablet() {
   done
 }
 
-systemctl --user stop ohn.target ohn-models ohn-voice ohn-agent ohn-gateway
+systemctl --user stop ohn.target ohn-watch ohn-models ohn-voice ohn-agent ohn-gateway
 status=$?
 if ((status == 0)); then
   notify-send -a Nexus "Nexus остановлен" "Модель выгружена, планшет отключён." 2>/dev/null

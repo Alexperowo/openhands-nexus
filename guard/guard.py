@@ -42,7 +42,7 @@ INFO_ONLY = {"--version", "--help", "-h", "-V"}
 
 # Command lines of the Nexus services (launcher/run.sh is the main process of ohn-agent).
 NEXUS = re.compile(r"llama-server|llama-swap|agent-server|agent-canvas|openhands[-.]automation|caddy|"
-                   r"service:app|launcher/run\.sh|^ohn[-.]", re.I)
+                   r"service:app|launcher/(run\.sh|watch\.py)|^ohn[-.]", re.I)
 # Canvas, agent-server, voice, llama-swap, gateway, CA, Canvas and Caddy internals; 18040+ — model servers.
 NEXUS_PORTS = {"18010", "18011", "18020", "18030", "3011", "8443", "8081", "2029", "8010"} | \
     {str(port) for port in range(18040, 18050)}

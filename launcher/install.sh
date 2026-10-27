@@ -41,10 +41,11 @@ unit models "модели (llama-swap)"
 unit voice "распознавание и синтез речи" "MemorySwapMax=0"
 unit agent "агент OpenHands" "MemorySwapMax=0"
 unit gateway "шлюз HTTPS для планшета"
+unit watch "смотритель служб"
 cat > "$UNIT_DIR/ohn.target" <<EOF
 [Unit]
 Description=Nexus: все службы (запуск ярлыком, не с системой)
-Wants=ohn-models.service ohn-voice.service ohn-agent.service ohn-gateway.service
+Wants=ohn-models.service ohn-voice.service ohn-agent.service ohn-gateway.service ohn-watch.service
 EOF
 systemctl --user daemon-reload
 

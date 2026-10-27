@@ -45,14 +45,16 @@ if ! flock -n 9; then
 fi
 
 if ready; then
+  # The watcher may have been stopped on its own; it only watches, so starting it is safe.
+  systemctl --user start ohn-watch.service 2>/dev/null
   notify "Nexus уже работает" "Все службы отвечают."
   say "Нексус уже работает" || sound complete
   exit 0
 fi
 
-systemctl --user reset-failed "${UNITS[@]/%/.service}" 2>/dev/null
+systemctl --user reset-failed "${UNITS[@]/%/.service}" ohn-watch.service 2>/dev/null
 # Starting an already active target does not pull in a member that was stopped separately.
-if ! systemctl --user start ohn.target "${UNITS[@]/%/.service}"; then
+if ! systemctl --user start ohn.target "${UNITS[@]/%/.service}" ohn-watch.service; then
   notify "Nexus не запустился" "systemctl --user start ohn.target: ошибка" critical
   sound dialog-error
   exit 1

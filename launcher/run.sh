@@ -66,5 +66,9 @@ case "${1:-}" in
     [ -f "$SHELL_DIST/index.html" ] || { echo "no ui/dist: run npm run build in ui" >&2; exit 1; }
     exec "$D/caddy" run --config "$D/Caddyfile" --adapter caddyfile
     ;;
-  *) echo "usage: run.sh models|voice|agent|gateway" >&2; exit 2 ;;
+  watch)
+    # Outside the agent: restarts a running service that stopped answering (launcher/watch.py).
+    exec python3 -I "$WORK/launcher/watch.py"
+    ;;
+  *) echo "usage: run.sh models|voice|agent|gateway|watch" >&2; exit 2 ;;
 esac
