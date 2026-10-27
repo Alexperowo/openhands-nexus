@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { SessionEvents, openingCursor } from "./src/session-events.ts";
 import { SpeechEvents, forSpeech, speechText, speechChunks, formatPlanCount, clipStepExplanation, actionSpeechPhrase } from "./src/speech-events.ts";
 import { getPreferences, setPreferences, stateCuesEnabled } from "./src/preferences.ts";
 import { AgentActivity, FOLLOWUP_MARK, NEEDS_USER, actionLabel, describeStatus } from "./src/agent-activity.ts";
@@ -156,16 +157,13 @@ const finish = (id, text) => ({
   id, source: "agent", kind: "ActionEvent", tool_name: "finish", action: { message: text },
 });
 
-function historyReader(history) {
-  return async (pageId, limit) => {
-    const descending = [...history].reverse();
-    const offset = pageId ? descending.findIndex((event) => event.id === pageId) : 0;
-    assert.ok(offset >= 0);
-    return {
-      items: descending.slice(offset, offset + limit),
-      next_page_id: descending[offset + limit]?.id ?? null,
-    };
-  };
+const durable = (events, first = 0) => events.map((event, index) => ({ type: "durable", seq: first + index, event }));
+// Opens a session as the hook does: cursor from the log length, sync, replay of the last events.
+function openSession(log) {
+  const session = new SessionEvents(openingCursor(log.length));
+  assert.equal(session.take({ type: "sync", from_seq: session.lastSeq, through_seq: log.length ? log.length - 1 : null }), null);
+  const replayed = durable(log).slice(session.lastSeq + 1).map((frame) => session.take(frame));
+  return { session, replayed };
 }
 
 test("MessageEvent and finish: visible text only, no observations or reasoning", () => {
@@ -179,18 +177,39 @@ test("MessageEvent and finish: visible text only, no observations or reasoning",
   assert.equal(speechText({ ...event, llm_message: { role: "assistant", content: [] } }), "");
 });
 
-test("old history stays silent; more than 100 new events arrive in server order exactly once", async () => {
-  const history = Array.from({ length: 240 }, (_, i) => message(`old-${i}`, "История"));
-  const cursor = new SpeechEvents();
-  const read = historyReader(history);
-  assert.deepEqual(await cursor.readNew(read), []);
+test("session: only the last 100 events replay as silent history; more than 100 new events arrive in order exactly once", () => {
+  const log = Array.from({ length: 240 }, (_, i) => message(`old-${i}`, "История"));
+  const { session, replayed } = openSession(log);
+  assert.equal(session.lastSeq, 239);
+  assert.equal(replayed.length, 100);
+  assert.ok(replayed.every((taken) => taken && !taken.fresh));
+  assert.equal(replayed[0].event.id, "old-140");
   const incoming = Array.from({ length: 235 }, (_, i) => message(`new-${i}`, `Ответ ${i}`));
-  history.push(...incoming);
-  assert.deepEqual(await cursor.readNew(read), incoming);
-  assert.deepEqual(await cursor.readNew(read), []);
-  const reloaded = new SpeechEvents();
-  assert.deepEqual(await reloaded.readNew(read), []);
-  assert.deepEqual(await reloaded.readNew(read), []);
+  const fresh = durable(incoming, 240).map((frame) => session.take(frame));
+  assert.deepEqual(fresh.map((taken) => taken.fresh && taken.event), incoming);
+  // A repeated frame (overlapping replay after a reconnect) is dropped.
+  assert.equal(session.take(durable(incoming, 240)[7]), null);
+  assert.equal(session.lastSeq, 474);
+});
+
+test("session: the status comes from the server snapshot; history status changes do not count as known", () => {
+  const session = new SessionEvents(-1);
+  session.take({ type: "sync", from_seq: -1, through_seq: 1 });
+  session.take(durable([{ id: "s0", kind: "ConversationStateUpdateEvent", source: "environment", key: "execution_status", value: "finished" }])[0]);
+  assert.equal(session.status, "finished");
+  assert.equal(session.statusKnown, false);
+  assert.equal(session.take({ type: "transient", event: { id: "snap", kind: "ConversationStateUpdateEvent", source: "environment",
+    key: "full_state", value: { execution_status: "running", stats: {} } } }), null, "the snapshot is not an event to apply");
+  assert.equal(session.status, "running");
+  assert.equal(session.statusKnown, true);
+  const live = session.take({ type: "durable", seq: 2, event: { id: "s2", kind: "ConversationStateUpdateEvent", source: "environment",
+    key: "execution_status", value: "idle" } });
+  assert.equal(live.fresh, true);
+  assert.equal(session.status, "idle");
+  for (const frame of [{ type: "delta", item_id: "x", order: 0, content: "текст" }, { type: "item_started", item_id: "x" },
+    { type: "error", code: "x", detail: "y" }, { type: "durable", event: message("noseq", "Без номера") }]) {
+    assert.equal(session.take(frame), null, frame.type);
+  }
 });
 
 test("deduplicate finish/message in either order, but allow the same answer in a new turn", () => {
@@ -206,28 +225,16 @@ test("deduplicate finish/message in either order, but allow the same answer in a
   }
 });
 
-test("failed pagination does not advance cursor; removed history is an error rather than old speech", async () => {
-  const history = [message("old", "История")];
-  const read = historyReader(history);
-  const cursor = new SpeechEvents();
-  await cursor.readNew(read);
-  history.push(...Array.from({ length: 110 }, (_, i) => message(`new-${i}`, `Ответ ${i}`)));
-  await assert.rejects(cursor.readNew(async (id, limit) => {
-    if (id) throw new Error("HTTP 503");
-    return read(id, limit);
-  }), /503/);
-  assert.equal((await cursor.readNew(read)).length, 110);
-  history.splice(0, history.length, message("replacement", "Старая чужая история"));
-  await assert.rejects(cursor.readNew(read), /История диалога изменилась/);
-});
-
-test("an initially empty conversation speaks its first new answer", async () => {
-  const history = [];
-  const cursor = new SpeechEvents();
-  const read = historyReader(history);
-  assert.deepEqual(await cursor.readNew(read), []);
-  history.push(message("first", "Первый ответ"));
-  assert.deepEqual(await cursor.readNew(read), history);
+test("session: a reconnect replays from the last seq as new events; the first answer of an empty conversation is new", () => {
+  const { session, replayed } = openSession([]);
+  assert.deepEqual(replayed, []);
+  assert.equal(session.lastSeq, -1);
+  assert.equal(session.take(durable([message("first", "Первый ответ")])[0]).fresh, true);
+  // Reconnect after seq 0: the server's new sync does not move the history boundary.
+  session.take({ type: "sync", from_seq: 0, through_seq: 2 });
+  const resumed = durable([message("first", "Первый ответ"), message("second", "Второй"), message("third", "Третий")])
+    .map((frame) => session.take(frame));
+  assert.deepEqual(resumed.map((taken) => taken && taken.fresh && taken.event.id), [null, "second", "third"]);
 });
 
 // Isolated lifecycle tests with fake browser audio/fetch; no services are started.
@@ -713,15 +720,16 @@ test("goal routing: only a plain request to an idle conversation becomes a goal"
   }
 });
 
-test("opening mid-action: recent history restores the step silently, speech stays at the head", async () => {
-  const history = [message("m1", "сделай", "user"), tool("a", "terminal", { command: "npm test" })];
-  const speech = new SpeechEvents();
+test("opening mid-action: recent history restores the step silently, the next event completes it", () => {
+  const log = [message("m1", "сделай", "user"), tool("a", "terminal", { command: "npm test" })];
   const activity = new AgentActivity();
-  const fresh = await speech.readNew(historyReader(history), (events) => activity.apply(events));
-  assert.deepEqual(fresh, []);
+  const { session, replayed } = openSession(log);
+  assert.ok(replayed.every((taken) => !taken.fresh));
+  activity.apply(replayed.map((taken) => taken.event));
   assert.deepEqual(activity.snapshot().actions, ["Выполнение команды: npm"]);
-  history.push(observed("o", "a"));
-  activity.apply(await speech.readNew(historyReader(history)));
+  const next = session.take(durable([observed("o", "a")], 2)[0]);
+  assert.equal(next.fresh, true);
+  activity.apply([next.event]);
   assert.deepEqual(activity.snapshot().actions, []);
 });
 
@@ -1061,8 +1069,8 @@ test("intermediate speech: TalkBack signals mode keeps intermediate steps silent
   assert.equal(playing(fixture), false);
 });
 
-test("intermediate speech: history on open remains silent and seeds plan state", async () => {
-  const history = [
+test("intermediate speech: history on open remains silent and seeds plan state", () => {
+  const log = [
     tool("h1", "terminal", { command: "pwd" }),
     tool("h2", "task_tracker", {
       command: "plan",
@@ -1073,21 +1081,20 @@ test("intermediate speech: history on open remains silent and seeds plan state",
     }),
   ];
   const cursor = new SpeechEvents();
-  const read = historyReader(history);
-  const initial = await cursor.readNew(read);
-  assert.deepEqual(initial, [], "history read returns empty array for speech");
+  const { session, replayed } = openSession(log);
+  assert.ok(replayed.every((taken) => !taken.fresh), "history is not spoken");
+  cursor.seedHistory(replayed.map((taken) => taken.event));
 
   // Now a new event arrives where Задача 2 becomes done
-  history.push(tool("new1", "task_tracker", {
+  const fresh = session.take(durable([tool("new1", "task_tracker", {
     command: "plan",
     task_list: [
       { title: "Задача 1", status: "done" },
       { title: "Задача 2", status: "done" },
     ],
-  }));
-  const fresh = await cursor.readNew(read);
-  assert.equal(fresh.length, 1);
-  const step = cursor.takeStep(fresh[0]);
+  })], 2)[0]);
+  assert.equal(fresh.fresh, true);
+  const step = cursor.takeStep(fresh.event);
   assert.equal(step, "Готово: Задача 2", "seeds history so Задача 1 is not re-announced as done");
 });
 

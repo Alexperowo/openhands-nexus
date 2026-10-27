@@ -51,6 +51,8 @@ try {
     await page.click("button[aria-label='К новым сообщениям']");
     await pause(250);
     assert.ok(await page.$eval(scroll, node => node.scrollHeight - node.clientHeight - node.scrollTop <= 3), "bottom must follow growth");
+    // The run ends paused; Canvas's own «Готово» fades out before that and fails contrast mid-fade.
+    await page.waitForFunction(() => document.querySelector(".nexus-status-text")?.textContent === "Пауза", {timeout: 10000});
     assert.equal(await page.evaluate(() => window.streamArticle?.isConnected), true, "delta -> final remounted article");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     assert.equal(await page.$$eval("main,[role='main']", nodes => nodes.filter(node => !["presentation", "none"].includes(node.getAttribute("role"))).length), 1, "one main at desktop and tablet widths");

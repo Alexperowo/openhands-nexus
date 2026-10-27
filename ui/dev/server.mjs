@@ -9,7 +9,7 @@ export const answer = "Проверка завершена. Звук работ�
 const message = (id, source, text) => ({ id, kind: "MessageEvent", source, timestamp, llm_message: { role: source === "agent" ? "assistant" : "user", content: [{type: "text", text}] } });
 const history = Array.from({length: 8}, (_, i) => message(`history-${i}`, i % 2 ? "agent" : "user", i % 2 ? "Предыдущая проверка выполнена. Настройки сохранены.\n\nМожно продолжать работу с компьютером." : "Проверь настройки компьютера и объясни результат."));
 export async function startFixture({ root, port = 0 } = {}) {
-  let sequence = history.length - 1, runCount = 0;
+  let sequence = history.length - 1, runCount = 0, snapshots = 0;
   let events = history.map((event, seq) => ({...event, seq})), status = "idle", offline = false, wsOffline = false, timers = [];
   const requests = [], sockets = new Set();
   const conversation = (id = "replay") => ({ id, title: id === "replay" ? "Проверка компьютера" : "Вторая беседа", created_at: timestamp, updated_at: timestamp, execution_status: status, workspace: {working_dir: "/tmp"}, agent: {kind: "Agent", llm: {model: "fixture"}}, stats: {usage_to_metrics: {}}, sub_conversation_ids: [], available_models: [], sandbox_status: "RUNNING" });
@@ -94,10 +94,13 @@ export async function startFixture({ root, port = 0 } = {}) {
   server.on("upgrade", (req, socket, head) => { if (wsOffline) return socket.destroy(); ws.handleUpgrade(req, socket, head, (client) => ws.emit("connection", client, req)); });
   ws.on("connection", (socket, req) => {
     sockets.add(socket);
-    const after = Number(new URL(req.url, "http://fixture.invalid").searchParams.get("after_seq") ?? -1);
-    for (const event of events) if (event.seq > after) socket.send(JSON.stringify({type: "durable", seq: event.seq, event}));
-    socket.send(JSON.stringify({type: "sync", last_seq: sequence}));
-    socket.send(JSON.stringify({type: "transient", event: statusEvent()}));
+    // As agent-server's session socket: sync, the replay after after_seq (none without it), the state snapshot.
+    const cursor = new URL(req.url, "http://fixture.invalid").searchParams.get("after_seq");
+    const after = cursor === null ? null : Number(cursor);
+    socket.send(JSON.stringify({type: "sync", from_seq: after, through_seq: sequence >= 0 ? sequence : null}));
+    if (after !== null) for (const event of events) if (event.seq > after) socket.send(JSON.stringify({type: "durable", seq: event.seq, event}));
+    socket.send(JSON.stringify({type: "transient", event: {id: `snapshot-${++snapshots}`, kind: "ConversationStateUpdateEvent",
+      source: "environment", timestamp, key: "full_state", value: {execution_status: status}}}));
     socket.on("close", () => sockets.delete(socket));
   });
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(port, "127.0.0.1", resolve); });

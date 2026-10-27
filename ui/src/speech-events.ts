@@ -20,11 +20,6 @@ export interface AgentEvent {
   message?: string;
 }
 
-export interface EventPage {
-  items: AgentEvent[];
-  next_page_id?: string | null;
-}
-
 export function speechText(event: AgentEvent): string {
   if (event.source !== "agent") return "";
   if (event.kind === "ActionEvent" &&
@@ -274,8 +269,6 @@ function extractTaskList(event: AgentEvent): Array<{ title: string; status: stri
 }
 
 export class SpeechEvents {
-  private initialized = false;
-  private head: string | null = null;
   private turnTexts = new Set<string>();
   private knownTasks = new Map<string, string>();
   private handledStepIds = new Set<string>();
@@ -292,38 +285,6 @@ export class SpeechEvents {
         }
       }
     }
-  }
-
-  /** The first call only marks the head; its recent page goes to onHistory, never to speech. */
-  async readNew(readPage: (pageId?: string, limit?: number) => Promise<EventPage>,
-    onHistory?: (events: AgentEvent[]) => void) {
-    if (!this.initialized) {
-      const page = await readPage(undefined, 100);
-      this.head = page.items[0]?.id ?? null;
-      this.initialized = true;
-      const history = [...page.items].reverse();
-      this.seedHistory(history);
-      onHistory?.(history);
-      return [];
-    }
-    const events: AgentEvent[] = [];
-    const pageIds = new Set<string>();
-    let pageId: string | undefined;
-    let newestId = this.head;
-    let foundHead = this.head === null;
-    do {
-      const page = await readPage(pageId, 100);
-      if (!pageId) newestId = page.items[0]?.id ?? this.head;
-      const boundary = page.items.findIndex((event) => event.id === this.head);
-      events.push(...(boundary < 0 ? page.items : page.items.slice(0, boundary)));
-      if (boundary >= 0) { foundHead = true; break; }
-      pageId = page.next_page_id || undefined;
-      if (pageId && pageIds.has(pageId)) throw new Error("Сервер повторил страницу событий");
-      if (pageId) pageIds.add(pageId);
-    } while (pageId);
-    if (!foundHead) throw new Error("История диалога изменилась. Откройте диалог заново");
-    this.head = newestId;
-    return events.reverse();
   }
 
   takeText(event: AgentEvent) {
