@@ -12,7 +12,7 @@
   "dependencies": {
     "@openhands/agent-canvas": "1.33.0",
     "@tanstack/react-query": "5.103.1",
-    "axios": "1.18.0",
+    "axios": "1.21.0",
     "i18next": "26.4.2",
     "lucide-react": "1.25.0",
     "react": "19.3.0",
@@ -24,7 +24,12 @@
     "@vitejs/plugin-react": "^4.3.4",
     "axe-core": "4.14.0",
     "puppeteer-core": "^24.40.0",
-    "vite": "6.2.1",
+    "vite": "6.4.5",
     "ws": "8.21.0"
+  },
+  "overrides": {
+    "axios": "$axios",
+    "dompurify": "3.4.17",
+    "shell-quote": "1.12.0"
   }
 }
