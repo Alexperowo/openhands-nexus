@@ -15,6 +15,7 @@ Rules are deliberately narrow: they are a net under recoverable mistakes, not a 
 Whole personal folders go to the trash instead of being removed; inline scripts
 (python -c, heredocs) are searched for the same removals and writes.
 """
+import itertools
 import json
 import os
 import re
@@ -83,6 +84,8 @@ MATCH_ALL = {"*": {"-name", "-iname", "-path", "-ipath", "-wholename", "-iwholen
 # $NAME, ${NAME} and ${NAME<op>word}: groups name, op, word for braces; name alone otherwise.
 VARIABLE = re.compile(r"\$(?:\{(\w+)(?:(:?[-=?+])([^}]*))?\}|(\w+))")
 DECLARERS = {"export", "declare", "local", "readonly", "typeset"}
+# Words that open a compound command: the command after them runs as usual.
+KEYWORDS = {"if", "then", "else", "elif", "while", "until", "do", "!", "{", "}"}
 SCRIPTERS = {"python", "python3", "perl", "ruby", "node", "php"}
 TREE_REMOVAL = re.compile(r"""\b(?:rmtree|remove_tree|rmSync|rimraf|fs\.(?:promises\.)?rm)\s*\(\s*"""
                           r"""(?:[\w.]+\(\s*)*[rbuf]?(['"])([^'"\n]+)\1""")
@@ -156,8 +159,10 @@ def unwrap(argv: list[str]):
     """The command behind prefix programs, VAR=value and their options."""
     while argv:
         program = os.path.basename(argv[0])
-        if re.match(r"^\w+=", argv[0]):
+        if re.match(r"^\w+=", argv[0]) or argv[0] in KEYWORDS:
             argv = argv[1:]
+        elif argv[0] == "function":
+            argv = argv[2:]  # `function f { ...`
         elif program in WRAPPERS:
             argv = argv[1:]
             while argv and argv[0].startswith("-"):
@@ -412,34 +417,133 @@ def removal(word: str, dirs: list[str]):
     return None
 
 
+# A variable the line does not set (the terminal's own, a loop's, read's): kept as written.
+UNKNOWN = object()
+VALUES = 8  # more values of one variable than this: one of them is UNKNOWN
+VARIANTS = 512  # expansions of one command checked
+
+
 def expand(word: str, known: dict):
-    """The word with the variables of `known` replaced; others stay as written."""
-    def value(m):
-        name = m[1] or m[4]
-        if name in known:
-            return m[3] if m[2] and m[2][-1] == "+" else known[name]
+    """What the word may become: each variable of `known` replaced by each value it may have there
+    (None: unset); a variable the line does not set stays as written, its default expanded."""
+    variants, end = [""], 0
+    for m in VARIABLE.finditer(word):
+        options = [text for value in known.get(m[1] or m[4], [UNKNOWN]) for text in substitute(m, value, known)]
+        variants = [v + word[end:m.start()] + option for v in variants for option in options]
+        end = m.end()
+    return list(dict.fromkeys(v + word[end:] for v in variants))
+
+
+def substitute(m, value, known):
+    """One variable reference with one value, as the shell has it (`${D:-w}`, `${D-w}`, `${D:+w}`…)."""
+    name, operator, rest = m[1] or m[4], m[2] or "", m[3] or ""
+    kind = operator[-1:]
+    if value is UNKNOWN:
         # `${OUT:-$HOME}`: the default is what an empty OUT gives, so it is expanded too.
-        return f"${{{name}{m[2]}{expand(m[3], known)}}}" if m[2] and m[2][-1] in "-=" else m[0]
-    return VARIABLE.sub(value, word)
+        return [f"${{{name}{operator}{d}}}" for d in expand(rest, known)] if kind in ("-", "=") else [m[0]]
+    missing = value is None or operator.startswith(":") and value == ""
+    if kind in ("-", "="):
+        return expand(rest, known) if missing else [value]
+    if kind == "+":
+        return [""] if missing else expand(rest, known)
+    if kind == "?":
+        return [m[0]] if missing else [value]  # the shell stops instead of running the command
+    return [value or ""]
 
 
-def assignments(command: str, dirs: list[str]):
-    """Variables the command line sets before using them (`D=~/x; rm -rf "$D"`), with HOME, USER, PWD."""
-    user = os.environ.get("USER") or os.path.basename(HOME)
-    known = {"HOME": HOME, "USER": user, "LOGNAME": user, "PWD": dirs[0]}
-    start = declaring = True
-    for token in tokens(command):
-        if token and set(token) <= set(";|&()"):
-            start, declaring = True, False
+def merged(*lists):
+    values = list(dict.fromkeys(v for values in lists for v in values))
+    return values if len(values) <= VALUES else values[-VALUES + 1:] + [UNKNOWN]
+
+
+def simple_commands(command: str, known: dict):
+    """Each simple command of the line in order, with its words as the shell may expand them, and the
+    folders it runs in (known["PWD"]). Assignments, export, unset, read, for and cd change `known`
+    as they come. What may not run (after || or in a pipeline, or after && once the chain is over)
+    adds its values to the earlier ones instead of replacing them. Subshells are not told apart."""
+    argv: list[str] = []
+    first, either, pending = True, False, {}
+
+    def assign(name, values):
+        before = known.get(name, [UNKNOWN])
+        if not first:
+            pending.setdefault(name, before)
+        known[name] = merged(before, values) if either else values
+
+    def settle():
+        for name, before in pending.items():
+            known[name] = merged(before, known[name])
+        pending.clear()
+
+    for token in tokens(command) + [";"]:
+        if token and not set(token) <= set(";|&()"):
+            # `$(` arrives as a lone "$" or glued to the word before it ("a=$"): a variable set to
+            # its output has an unknown value; elsewhere the worst case, an empty output, is checked.
+            if re.fullmatch(r"[A-Za-z_]\w*=\$", token):
+                argv.append(token + "(...)")
+            elif token != "$":
+                argv.append(token[:-1] if token.endswith("$") else token)
             continue
-        match = re.fullmatch(r"([A-Za-z_]\w*)=(.*)", token, re.S)
-        if start and match:
-            # `D=$(mktemp -d)`: set, value unknown; not an empty variable.
-            known[match[1]] = "$(...)" if match[2].endswith("$") else expand(match[2], known)
-            continue
-        declaring = token in DECLARERS or declaring and token.startswith("-")
-        start = declaring
-    return known
+        yield from command_effects(argv, known, assign)
+        argv = []
+        if token == "&&":
+            first = False
+        elif "|" in token:
+            first, either = False, True
+            settle()
+        else:
+            settle()
+            first, either = True, False
+
+
+def command_effects(argv: list[str], known: dict, assign):
+    """One simple command: what it changes in `known`, and its expanded words when it runs something."""
+    names = [re.fullmatch(r"([A-Za-z_]\w*)=(.*)", word, re.S) for word in argv]
+    leading = 0
+    while leading < len(argv) and names[leading]:
+        leading += 1
+    values = {m[1]: expand(m[2], known) for m in names[:leading]}
+    if leading == len(argv):  # `D=/x`: set for the rest of the line
+        for name, value in values.items():
+            assign(name, value)
+        return
+    # `D=/x cmd`: D only in cmd's environment; the shell expands cmd's words with the old D.
+    argv = unwrap(argv[leading:])
+    if not argv:
+        return
+    program = os.path.basename(argv[0])
+    shell_c = next((i for i, a in enumerate(argv[1:3], 1) if re.fullmatch(r"-\w*c\w*", a)), None)
+    if program in ("bash", "sh", "dash", "zsh") and shell_c and len(argv) > shell_c + 1:
+        inner = {**known, **values}
+        yield from simple_commands(argv[shell_c + 1], inner)
+        return
+    args = [a for a in argv[1:] if not a.startswith("-")]
+    if program in DECLARERS:
+        for m in filter(None, (re.fullmatch(r"([A-Za-z_]\w*)=(.*)", a, re.S) for a in args)):
+            assign(m[1], expand(m[2], known))
+    elif program == "unset" and "-f" not in argv:
+        for name in args:
+            assign(name, [None])
+    elif program == "read":
+        for name in args:
+            assign(name, [UNKNOWN])
+    elif program == "for" and len(argv) > 1:
+        words = argv[3:] if argv[2:3] == ["in"] else None
+        assign(argv[1], [v for w in words for v in expand(w, known)] if words is not None else [UNKNOWN])
+        return
+    elif program in ("cd", "pushd"):
+        if argv[1:2] != ["-"]:
+            targets = [v for w in args[:1] for v in expand(w, known)] or [HOME]
+            # an absolute target replaces the folder
+            assign("PWD", list(dict.fromkeys(os.path.normpath(os.path.join(d, normalized(t)))
+                                             for d in folders(known) for t in targets)))
+        return
+    for variant in itertools.islice(itertools.product(*(expand(word, known) for word in argv)), VARIANTS):
+        yield list(variant), folders(known)
+
+
+def folders(known: dict):
+    return [d for d in known["PWD"] if isinstance(d, str)]  # past VALUES folders one is UNKNOWN
 
 
 def empty_variable(word: str, dirs: list[str]):
@@ -670,14 +774,10 @@ def check_terminal(command: str, dirs: list[str]):
     # `find DIR | xargs rm -rf`: the paths come from find.
     fed_to_rm = any(os.path.basename(argv[0]) == "rm" and all(a.startswith("-") for a in argv[1:])
                     for argv in parts)
-    known = assignments(command, dirs)
-    for argv in parts:
-        argv = [expand(word, known) for word in argv]
-        if os.path.basename(argv[0]) in ("cd", "pushd") and argv[1:2] != ["-"]:
-            target = normalized(argv[1]) if len(argv) > 1 else HOME
-            dirs = [os.path.normpath(os.path.join(d, target)) for d in dirs]  # an absolute target replaces d
-            continue
-        reason = check_argv(argv, dirs, fed_to_rm)
+    user = os.environ.get("USER") or os.path.basename(HOME)
+    known = {"HOME": [HOME], "USER": [user], "LOGNAME": [user], "PWD": list(dirs)}
+    for argv, folders in simple_commands(command, known):
+        reason = check_argv(argv, folders, fed_to_rm)
         if reason:
             return reason
     return None

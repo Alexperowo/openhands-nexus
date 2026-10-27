@@ -98,6 +98,24 @@ DANGEROUS = {
     "rm -rf ~/$PROJECT": guard.REASON_EMPTY_VAR,
     'rm -rf "${OUT:-$HOME}"': guard.REASON_EMPTY_VAR,
     "find $ROOT/ -delete": guard.REASON_EMPTY_VAR,
+    # Variables as the shell has them, command by command (acceptance A4).
+    'D=; rm -rf "${D:-$HOME}"': guard.REASON_RM,  # empty: the default
+    'D=x; rm -rf "${D:+$HOME}"': guard.REASON_RM,
+    'D=~/Agents; rm -rf "$D"; D=/tmp/cache': guard.REASON_RM,  # a later value does not count
+    f'cd {HOME}/Documents; rm -rf "$PWD"': guard.REASON_TRASH,
+    'cd ~ && rm -rf "$PWD"/*': guard.REASON_RM,
+    'D=/tmp/x; unset D; rm -rf "$D"/*': guard.REASON_RM,
+    'read D; rm -rf "$D"/*': guard.REASON_EMPTY_VAR,
+    '[ -d /tmp/x ] && D=/tmp/x || D=~/Agents; rm -rf "$D"': guard.REASON_RM,  # either value
+    'D=~/Agents; true && D=/tmp/x; rm -rf "$D"': guard.REASON_RM,  # the && chain may stop before D=
+    'D=~/Agents; test -d /tmp/x || D=/tmp/x && rm -rf "$D"': guard.REASON_RM,
+    """D=~/Agents bash -c 'rm -rf "$D"'""": guard.REASON_RM,
+    'for d in /tmp/a ~/Documents; do rm -rf "$d"; done': guard.REASON_TRASH,
+    # Commands after shell keywords are commands too.
+    "for d in x; do rm -rf ~/Agents; done": guard.REASON_RM,
+    "if true; then rm -rf ~; fi": guard.REASON_RM,
+    "{ rm -rf ~/.config; }": guard.REASON_RM,
+    "f() { rm -rf ~/.local; }; f": guard.REASON_RM,
     "kill 0": guard.REASON_OWN_GROUP,
     "kill -9 0": guard.REASON_OWN_GROUP,
     "kill -s KILL 0": guard.REASON_OWN_GROUP,
@@ -160,6 +178,12 @@ ORDINARY = [
     "D=/tmp/x; rm -rf $D",
     "D=$(mktemp -d); rm -rf $D/*",
     'echo "D=/"; rm -rf $D/build',
+    'D=; rm -rf "${D-$HOME}"',  # set though empty: no default, rm -rf "" removes nothing
+    'D=/tmp/x; rm -rf "$D"; D=~/Agents',
+    'cd /tmp/x && D=build && rm -rf "$D"/*',  # the && chain ran up to rm
+    'D=$(mktemp -d) && cd "$D" && rm -rf ./*',
+    'for d in /tmp/a /tmp/b; do rm -rf "$d"; done',
+    "if [ -d /tmp/x ]; then rm -rf /tmp/x; fi",
     "kill -0 0",
     "kill 0123456",
     "pgrep -g 0",
