@@ -4,7 +4,7 @@ import { SessionEvents, openingCursor } from "./src/session-events.ts";
 import { SpeechEvents, forSpeech, speechText, speechChunks, formatPlanCount, clipStepExplanation, actionSpeechPhrase } from "./src/speech-events.ts";
 import { getPreferences, setPreferences, stateCuesEnabled } from "./src/preferences.ts";
 import { AgentActivity, FOLLOWUP_MARK, MODEL_STALLED, ModelProgress, NEEDS_USER, STALL_MS, actionLabel, describeStatus, readModelState } from "./src/agent-activity.ts";
-import { goalObjective } from "./src/goal-request.ts";
+import { deliverGoal, goalAttempt, goalObjective } from "./src/goal-request.ts";
 import { tabBoundary } from "./src/focus.ts";
 import { shouldAnnounceStatus } from "./src/status-announcement.ts";
 import { createElement } from "react";
@@ -1268,4 +1268,28 @@ test("reasoning: starts and model switches get the level, other requests pass un
   ]) assert.equal(reasonedBody(url, method, raw, origin, "off"), raw, `${method} ${url}`);
   const blob = new Blob(["{}"]);
   assert.equal(reasonedBody("/api/conversations", "POST", blob, origin, "off"), blob);
+});
+
+test("goal delivery: a lost answer repeats the same send, a refusal or used-up repeats end it", async () => {
+  const http = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+  const run = async (answers, delays = [1, 2, 3]) => {
+    const waits = [];
+    let posts = 0;
+    const delivery = await deliverGoal(async () => {
+      const answer = answers[posts++];
+      if (answer) throw answer;
+    }, async (ms) => { waits.push(ms); }, delays);
+    return { delivery, posts, waits };
+  };
+  assert.deepEqual(await run([]), { delivery: "started", posts: 1, waits: [] });
+  assert.deepEqual(await run([http(409)]), { delivery: "refused", posts: 1, waits: [] });
+  assert.deepEqual(await run([http(400)]), { delivery: "refused", posts: 1, waits: [] });
+  // Accepted, then the gateway lost the answer: the repeat gets the first one's outcome.
+  assert.deepEqual(await run([http(502), http(504)]), { delivery: "started", posts: 3, waits: [1, 2] });
+  assert.deepEqual(await run([new Error("Request timeout after 30000ms"), http(409)]),
+    { delivery: "refused", posts: 2, waits: [1] });
+  assert.deepEqual(await run([http(408)]), { delivery: "started", posts: 2, waits: [1] });
+  assert.deepEqual(await run([http(500), http(503), new Error("offline"), new Error("offline")]),
+    { delivery: "unknown", posts: 4, waits: [1, 2, 3] });
+  assert.notEqual(goalAttempt(), goalAttempt());
 });

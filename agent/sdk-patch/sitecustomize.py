@@ -189,6 +189,11 @@ def patch_goal_resume(module):
     nexus_goal.patch_event_service(module)
 
 
+def patch_goal_route(module):
+    import nexus_goal
+    nexus_goal.patch_goal_route(module)
+
+
 PATCHES = {
     "openhands.sdk.hooks.executor": (patch_hook_executor, "guard failure blocks execution"),
     "openhands.sdk.llm.llm": (patch_llm, "send_reasoning_content override"),
@@ -200,6 +205,7 @@ PATCHES = {
     "openhands.sdk.conversation.goal.judge": (patch_goal_judge, "goal judge for this PC, bounded transcript"),
     "openhands.sdk.conversation.goal.controller": (patch_goal_controller, "goal stops when the owner must answer"),
     "openhands.agent_server.event_service": (patch_goal_resume, "Russian goal resume message"),
+    "openhands.agent_server.conversation_router": (patch_goal_route, "a repeated goal send starts nothing"),
 }
 
 

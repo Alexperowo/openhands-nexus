@@ -409,5 +409,64 @@ class GoalTests(unittest.TestCase):
         step = sdk.GoalController(self.objective, self.judge_llm('{"score": 0.2, "complete": "false"}')).on_run_finished([])
         self.assertIsInstance(step, sdk.GoalContinue)
 
+
+class GoalSendTests(unittest.TestCase):
+    """POST /api/conversations/{id}/goal with the UI's attempt id, through the patched route of the
+    real router; only the conversation's event service is a fake."""
+
+    def setUp(self):
+        from fastapi import FastAPI
+        from openhands.agent_server import conversation_router as module
+        from openhands.agent_server.dependencies import get_conversation_service
+        self.started, self.busy, test = [], False, self
+
+        class Events:
+            async def start_goal_loop(self, objective, max_iterations=10):
+                await asyncio.sleep(0.05)
+                if test.busy:
+                    raise ValueError("goal_already_running")
+                test.busy = True
+                test.started.append(objective)
+
+        class Service:
+            async def get_event_service(self, conversation_id):
+                return Events()
+        self.app = FastAPI()
+        self.app.include_router(module.conversation_router, prefix="/api")
+        self.app.dependency_overrides[get_conversation_service] = lambda: Service()
+
+    def send(self, *bodies, conversation="7f6b8a4e-0000-4000-8000-000000000001"):
+        """The bodies sent at once; their answer codes."""
+        import httpx
+
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app), base_url="http://test") as client:
+                answers = await asyncio.gather(*(client.post(f"/api/conversations/{conversation}/goal", json=body)
+                                                 for body in bodies))
+            return [answer.status_code for answer in answers]
+        return asyncio.run(run())
+
+    def test_a_repeated_send_starts_the_goal_once(self):
+        body = {"objective": "Создай файл", "max_iterations": 3, "attempt": "a1"}
+        self.assertEqual(self.send(body, body), [200, 200])  # the repeat while the first one starts
+        self.assertEqual(self.send(body), [200])  # and after it
+        self.assertEqual(self.started, ["Создай файл"])
+        # Another send of the same text is a new request: the goal runs, so it is refused.
+        self.assertEqual(self.send({**body, "attempt": "a2"}), [409])
+        self.assertEqual(self.send({"objective": "Создай файл"}), [409])
+        # The same id in another conversation is another send.
+        self.busy = False
+        self.assertEqual(self.send(body, conversation="7f6b8a4e-0000-4000-8000-000000000002"), [200])
+        self.assertEqual(len(self.started), 2)
+
+    def test_a_refused_send_may_be_tried_again(self):
+        self.busy = True
+        body = {"objective": "Создай файл", "attempt": "b1"}
+        self.assertEqual(self.send(body), [409])
+        self.busy = False
+        self.assertEqual(self.send(body), [200])
+        self.assertEqual(self.started, ["Создай файл"])
+
+
 if __name__ == "__main__":
     unittest.main()

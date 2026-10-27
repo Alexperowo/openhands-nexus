@@ -17,6 +17,8 @@ missing and the agent continues, at most a few rounds. The SDK loop is kept; thi
   is not, and the agent gets another round with what was wrong.
 - Its follow-up and resume messages are Russian and start with FOLLOWUP_MARK, which the UI uses to
   tell them from the user's own messages.
+- The start takes the UI's id of that send ("attempt"). When the answer was lost, the UI sends the
+  same attempt again; a repeat gets the first one's outcome, so a request never runs twice.
 """
 import json
 import math
@@ -202,3 +204,46 @@ def patch_controller(module):
 
 def patch_event_service(module):
     module.RESUME_PROMPT = RESUME_PROMPT
+
+
+ATTEMPTS = 200  # goal sends remembered for their repeats
+
+
+def patch_goal_route(module):
+    """POST .../goal with "attempt": a repeat of a started or starting send gets its outcome and
+    starts nothing; a refused one may be tried again. In memory, for the last ATTEMPTS sends."""
+    import asyncio
+    from collections import OrderedDict
+    from uuid import UUID
+    from fastapi import Depends
+    from pydantic import Field
+
+    router, start = module.conversation_router, module.start_goal_in_conversation
+    route = next(route for route in router.routes
+                 if route.path == router.prefix + "/{conversation_id}/goal" and "POST" in route.methods)
+    sends = OrderedDict()
+
+    class StartGoalRequest(module.StartGoalRequest):
+        attempt: str | None = Field(default=None, max_length=100,
+                                    description="The client's id of this send; a repeat of it starts nothing.")
+
+    async def start_goal_in_conversation(conversation_id: UUID, request: StartGoalRequest,
+                                         conversation_service=Depends(module.get_conversation_service)
+                                         ) -> module.Success:
+        plain = module.StartGoalRequest(objective=request.objective, max_iterations=request.max_iterations)
+        if not request.attempt:
+            return await start(conversation_id, plain, conversation_service)
+        key = (conversation_id, request.attempt)
+        if key not in sends:
+            sends[key] = asyncio.ensure_future(start(conversation_id, plain, conversation_service))
+            sends[key].add_done_callback(lambda task: (task.cancelled() or task.exception()) and sends.pop(key, None))
+            while len(sends) > ATTEMPTS:
+                sends.popitem(last=False)
+        # A dropped connection does not cancel the start itself.
+        return await asyncio.shield(sends[key])
+
+    index = router.routes.index(route)
+    router.routes.remove(route)
+    router.add_api_route("/{conversation_id}/goal", start_goal_in_conversation, methods=["POST"], name=route.name,
+                         responses=route.responses, summary=route.summary, description=route.description)
+    router.routes.insert(index, router.routes.pop())
