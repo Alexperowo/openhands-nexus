@@ -136,6 +136,15 @@ export class AgentActivity {
     return { actions: [...this.pending.values()], error: this.error, ...(missing ? { missing } : {}) };
   }
 
+  /** The goal check still runs: the agent's answer may not be the last word. */
+  goalRunning(): boolean { return this.goal.status === "running"; }
+
+  /** For the voice: the check's word on a finished goal it did not confirm, else "". */
+  verdictSpeech(): string {
+    const status = this.verifiedStatus("finished");
+    return status === "needs_user" || status === "unconfirmed" ? describeStatus(status, this.snapshot(), "unknown")!.text : "";
+  }
+
   /** The execution status with the goal check folded in: a finish says whether it was confirmed. */
   verifiedStatus(status: string): string {
     if (this.goal.status === "running") {
@@ -147,6 +156,34 @@ export class AgentActivity {
     if (this.goal.status === "complete") return "verified";
     if (this.goal.status === "capped") return this.goal.missing.startsWith(NEEDS_USER) ? "needs_user" : "unconfirmed";
     return "unverified";
+  }
+}
+
+/**
+ * The voice agrees with the goal check: while a goal is checked, the agent's answer waits for the
+ * verdict. Confirmed: the answer. Not confirmed: the answer, then what is missing. Another round
+ * (the check's follow-up): that answer is dropped, the next one waits. An error releases it.
+ * Only fresh events come here, so a goal already running when the page opened counts from its
+ * first fresh event.
+ */
+export class CheckedSpeech {
+  private held: [string, string] | null = null;
+  private running = false;
+  private activity: AgentActivity;
+  constructor(activity: AgentActivity) { this.activity = activity; }
+
+  /** Called after activity.apply(event) with the event's spoken text; returns [id, text] to say now. */
+  take(event: AgentEvent, text: string): [string, string][] {
+    if (event.source === "user" && event.kind === "MessageEvent") this.held = null;
+    const failed = event.kind === "ConversationErrorEvent";
+    const running = this.activity.goalRunning(), ended = this.running && !running;
+    this.running = running;
+    if (text && running && !failed) { this.held = [event.id, text]; return []; }
+    const said: [string, string][] = text ? [[event.id, text]] : [];
+    if (this.held && (failed || ended)) { said.unshift(this.held); this.held = null; }
+    const verdict = ended ? this.activity.verdictSpeech() : "";
+    if (verdict) said.push([event.id, verdict]);
+    return said;
   }
 }
 

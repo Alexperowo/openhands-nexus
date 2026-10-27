@@ -4,7 +4,7 @@ import { getPreferences } from "./preferences.ts";
 import { requestJson, errorMessage } from "./api.ts";
 import { SpeechEvents, type AgentEvent } from "./speech-events.ts";
 import { SessionEvents, openingCursor, type SessionFrame } from "./session-events.ts";
-import { AgentActivity, ModelProgress, readModelState, type ActivitySnapshot, type ModelState } from "./agent-activity.ts";
+import { AgentActivity, CheckedSpeech, ModelProgress, readModelState, type ActivitySnapshot, type ModelState } from "./agent-activity.ts";
 
 const NO_ACTIVITY: ActivitySnapshot = { actions: [], error: "" };
 const CONNECTION_LOST = "Нет связи с сервером";
@@ -51,6 +51,7 @@ export function useConversationSpeech(conversationId: string | null) {
     const { signal } = controller;
     const speech = new SpeechEvents();
     const activity = new AgentActivity();
+    const checked = new CheckedSpeech(activity);
     const path = `/api/conversations/${encodeURIComponent(conversationId)}`;
     let session: SessionEvents | null = null;
     let socket: WebSocket | null = null;
@@ -92,9 +93,9 @@ export function useConversationSpeech(conversationId: string | null) {
     };
 
     const speak = (event: AgentEvent) => {
-      const text = speech.takeText(event);
-      if (text && getPreferences().autoSpeak) {
-        audioService.speak(event.id, text);
+      const said = checked.take(event, speech.takeText(event));
+      if (said.length && getPreferences().autoSpeak) {
+        for (const [id, text] of said) audioService.speak(id, text);
       } else {
         const step = speech.takeStep(event);
         if (step && getPreferences().autoSpeak && getPreferences().speakSteps) {

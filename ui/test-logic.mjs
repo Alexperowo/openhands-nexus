@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { SessionEvents, openingCursor } from "./src/session-events.ts";
 import { SpeechEvents, forSpeech, speechText, speechChunks, formatPlanCount, clipStepExplanation, actionSpeechPhrase } from "./src/speech-events.ts";
 import { getPreferences, setPreferences, stateCuesEnabled } from "./src/preferences.ts";
-import { AgentActivity, FOLLOWUP_MARK, MODEL_STALLED, ModelProgress, NEEDS_USER, STALL_MS, actionLabel, describeStatus, readModelState } from "./src/agent-activity.ts";
+import { AgentActivity, CheckedSpeech, FOLLOWUP_MARK, MODEL_STALLED, ModelProgress, NEEDS_USER, STALL_MS, actionLabel, describeStatus, readModelState } from "./src/agent-activity.ts";
 import { deliverGoal, goalAttempt, goalObjective } from "./src/goal-request.ts";
 import { tabBoundary } from "./src/focus.ts";
 import { shouldAnnounceStatus } from "./src/status-announcement.ts";
@@ -1292,4 +1292,43 @@ test("goal delivery: a lost answer repeats the same send, a refusal or used-up r
   assert.deepEqual(await run([http(500), http(503), new Error("offline"), new Error("offline")]),
     { delivery: "unknown", posts: 4, waits: [1, 2, 3] });
   assert.notEqual(goalAttempt(), goalAttempt());
+});
+
+test("goal speech: the answer is heard after the check's verdict, never «done» before it", () => {
+  const goal = (status, missing = "") => ({ id: `g-${status}-${missing}`, source: "environment",
+    kind: "ConversationStateUpdateEvent", key: "goal",
+    value: { active: status === "running", status, objective: "Создай файл", verdict: missing ? { missing } : null } });
+  const activity = new AgentActivity();
+  const checked = new CheckedSpeech(activity);
+  const hear = (event) => { activity.apply([event]); return checked.take(event, speechText(event)); };
+  assert.deepEqual(hear(message("a0", "Ответ без цели.")), [["a0", "Ответ без цели."]], "no goal: at once");
+  assert.deepEqual(hear(goal("running")), []);
+  assert.deepEqual(hear(message("u1", "Создай файл", "user")), []);
+  assert.deepEqual(hear(message("a1", "Готово, файл создан.")), [], "waits for the check");
+  assert.deepEqual(hear(goal("running", "нет проверки")), []);
+  assert.deepEqual(hear(message("u2", `${FOLLOWUP_MARK} задача ещё не выполнена`, "user")), [], "another round drops it");
+  assert.deepEqual(hear(message("a2", "Проверил: файл на месте.")), []);
+  assert.deepEqual(hear(goal("complete")), [["a2", "Проверил: файл на месте."]]);
+
+  hear(goal("running")); hear(message("u3", "Создай файл", "user"));
+  assert.deepEqual(hear(message("a3", "Всё сделано.")), []);
+  assert.deepEqual(hear(goal("capped", "файл count.txt не проверен")), [["a3", "Всё сделано."],
+    ["g-capped-файл count.txt не проверен", "Закончил, но не всё подтверждено: файл count.txt не проверен"]]);
+  assert.deepEqual(hear({ id: "s3", kind: "ConversationStateUpdateEvent", source: "environment",
+    key: "execution_status", value: "finished" }), [], "the verdict is said once");
+  hear(goal("running")); hear(message("u4", "Создай файл", "user"));
+  hear(message("a4", "Сделал."));
+  assert.deepEqual(hear(goal("capped", `${NEEDS_USER}в какую папку сохранить`)).map(([, text]) => text),
+    ["Сделал.", "Нужно ваше решение: в какую папку сохранить"]);
+  hear(goal("running")); hear(message("u5", "Создай файл", "user"));
+  hear(message("a5", "Сделал."));
+  assert.deepEqual(hear({ id: "e5", kind: "ConversationErrorEvent", source: "environment", code: "x", detail: "сбой" }),
+    [["a5", "Сделал."]], "an error releases the answer");
+  assert.deepEqual(hear(goal("interrupted")), []);
+  // A further round that ends without a new answer: only the verdict, not the dropped answer.
+  hear(goal("running")); hear(message("u6", "Создай файл", "user"));
+  hear(message("a6", "Готово."));
+  hear(goal("running", "нет проверки")); hear(message("u7", `${FOLLOWUP_MARK} задача ещё не выполнена`, "user"));
+  assert.deepEqual(hear(goal("capped", "файл не найден")).map(([, text]) => text),
+    ["Закончил, но не всё подтверждено: файл не найден"]);
 });
