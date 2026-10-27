@@ -107,10 +107,7 @@ export function installReasoningFetch(currentLevel: () => ReasoningLevel) {
 
 const newUsageId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
 
-/**
- * Switches the conversation to its own profile again, so the fetch wrapper adds the current
- * level; before the first message model-switch.ts opens a new conversation instead.
- */
+/** Switches the conversation to its own profile again, so the fetch wrapper adds the current level. */
 export async function switchReasoning(conversationId: string, profile: string) {
   const { config } = await requestJson<{ config?: Llm }>(`/api/profiles/${encodeURIComponent(profile)}`);
   if (!config || !isLocalModel(config.base_url)) throw new Error("Уровень рассуждений задаётся только локальной модели");

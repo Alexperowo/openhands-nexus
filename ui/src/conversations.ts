@@ -21,13 +21,12 @@ export const isLocalModel = (baseUrl: unknown) => {
 
 // Canvas keeps its "new chat" start page private, so the host creates the conversation;
 // installGuardFetch (init.ts) adds the guard hook to it like to every other start.
-// `model` replaces the default model (a profile chosen before the first message).
-export async function createConversation(signal: AbortSignal, model?: LlmConfig) {
+export async function createConversation(signal: AbortSignal) {
   const settings = await requestJson<{
     agent_settings?: { llm?: LlmConfig; [key: string]: unknown };
   }>("/api/settings", { signal });
   const agentSettings = settings.agent_settings;
-  const llm = model ?? agentSettings?.llm;
+  const llm = agentSettings?.llm;
   if (!agentSettings || !llm) throw new Error("Сначала настройте локальную модель");
   agentSettings.llm = llm;
   if (!llm.api_key || llm.api_key.includes("*")) {

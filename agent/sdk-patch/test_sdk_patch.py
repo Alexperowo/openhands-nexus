@@ -75,6 +75,34 @@ class GuardIntegrationTests(unittest.TestCase):
                 conversation.close()
 
 
+class SwitchTests(unittest.TestCase):
+    def llm(self, usage_id, model="openai/nex25"):
+        return LLM(model=model, base_url="http://127.0.0.1:1/v1", api_key="not-needed", usage_id=usage_id)
+
+    def test_quick_switches_before_and_after_the_first_run_keep_the_token_count(self):
+        with tempfile.TemporaryDirectory(prefix="nexus-switch-test.") as temp:
+            conversation = LocalConversation(agent=Agent(llm=self.llm("default")), workspace=temp,
+                                             persistence_dir=temp, visualizer=None)
+            try:
+                streamed = []
+                # As agent-server streams the stats of the LLMs present at start.
+                conversation.agent.llm.telemetry.set_stats_update_callback(lambda: streamed.append(1))
+                conversation.switch_llm(self.llm("profile:Nex-19G-2080:1", "openai/nex19"))
+                conversation.switch_llm(self.llm("profile:Nex-25G:2"))
+                stats = conversation._state.stats.usage_to_metrics
+                self.assertIn("profile:Nex-19G-2080:1", stats)
+                self.assertIs(stats["profile:Nex-25G:2"], conversation.agent.llm.metrics)
+                conversation.agent.llm.telemetry._stats_update_callback()
+                self.assertTrue(streamed)
+                conversation._ensure_agent_ready()
+                conversation.switch_llm(self.llm("profile:Tess-27B:3", "openai/tess"))
+                self.assertIs(conversation._state.stats.usage_to_metrics["profile:Tess-27B:3"],
+                              conversation.agent.llm.metrics)
+                self.assertIsNotNone(conversation.agent.llm.telemetry._stats_update_callback)
+            finally:
+                conversation.close()
+
+
 class MemoryTests(unittest.TestCase):
     def user(self, text):
         return MessageEvent(source="user", llm_message=Message(role="user", content=[TextContent(text=text)]))

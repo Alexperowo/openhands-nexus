@@ -4,10 +4,8 @@ import { getActiveBackend, getActiveSelection, getRegisteredBackends, setActiveS
 import { SEEDED_DEFAULT_BACKEND_ID } from "../node_modules/@openhands/agent-canvas/dist/api/backend-registry/default-backend.js";
 import { isOriginSelection, originBackends } from "./backend-origin.ts";
 import { installGuardFetch } from "./guard-hooks.ts";
-import { installEarlySwitch, REPLACED_EVENT } from "./model-switch.ts";
 import { installReasoningFetch } from "./reasoning.ts";
 import { getPreferences } from "./preferences.ts";
-import { stampActiveLlmProfile } from "../node_modules/@openhands/agent-canvas/dist/hooks/chat/record-model-switch-message.js";
 
 // The guard path is resolved at build time on this machine, which also runs agent-server.
 declare const __NEXUS_GUARD__: string; // vite.config.ts `define`
@@ -15,11 +13,6 @@ declare const __NEXUS_GUARD__: string; // vite.config.ts `define`
 if (typeof window !== "undefined") {
   installGuardFetch(`/usr/bin/python3 -I '${__NEXUS_GUARD__}'`);
   installReasoningFetch(() => getPreferences().reasoning);
-  // On top of both, so the replacement conversation gets the guard and the level too.
-  installEarlySwitch((from, to, profile) => {
-    stampActiveLlmProfile(to, profile);
-    window.dispatchEvent(new CustomEvent(REPLACED_EVENT, { detail: { from, to } }));
-  });
 
   // Host requests always use this origin; Canvas must use the same backend, including after a switch.
   let syncing = false;

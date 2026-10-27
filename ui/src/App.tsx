@@ -12,9 +12,8 @@ import {
 import { NavigationProvider } from "./navigation-context";
 import { SidebarMobileNavProvider } from "./sidebar-mobile-nav-context";
 import { audioService, useAudioStatus } from "./audio-service";
-import { errorMessage, requestJson } from "./api";
+import { errorMessage } from "./api";
 import { createConversation, latestConversationId } from "./conversations";
-import { hasMessages, REPLACED_EVENT } from "./model-switch";
 import { usePreferences } from "./preferences";
 import { AccessibilitySettings, VoiceSettings } from "./settings-pages";
 import { SettingsShell } from "./settings-shell";
@@ -134,20 +133,6 @@ export default function App() {
         setAttempt((value) => value + 1);
       });
   }, [currentPath, routerNavigate, attempt]);
-
-  // A model chosen before the first message got a fresh conversation (model-switch.ts).
-  useEffect(() => {
-    const replaced = (event: Event) => {
-      const { from, to } = (event as CustomEvent<{ from: string; to: string }>).detail;
-      if (conversationIdOf(latestPath.current) === from) routerNavigate(`/conversations/${to}`, { replace: true });
-      // Re-checked: a message sent meanwhile keeps the old conversation.
-      void hasMessages(from)
-        .then((used) => used ? undefined : requestJson(`/api/conversations/${encodeURIComponent(from)}`, { method: "DELETE" }))
-        .catch((error) => console.warn("[model-switch] empty conversation kept", error));
-    };
-    window.addEventListener(REPLACED_EVENT, replaced);
-    return () => window.removeEventListener(REPLACED_EVENT, replaced);
-  }, [routerNavigate]);
 
   const styleOverrides = useMemo(() => {
     const highContrast = preferences.highContrast;
