@@ -117,6 +117,22 @@ class PronunciationTests(unittest.TestCase):
         self.assertEqual(load.return_value.apply_tts.call_args.kwargs["text"],
                          "Оупен Хэндс и Гитхаб через эй-пи-ай.")
 
+    def test_speech_says_which_part_was_not_read(self):
+        import torch
+        from fastapi import HTTPException
+        from service import TTS_SKIPPED, SpeechRequest, speech
+        with patch("service.tts_chunks", return_value=["Первое.", "Важное предупреждение.", "Конец."]), \
+                patch("service.get_tts_model") as load:
+            load.return_value.apply_tts.side_effect = [torch.zeros(480), RuntimeError("failed"),
+                                                       torch.zeros(480), torch.zeros(480)]
+            speech(SpeechRequest(input="Проверка полного ответа."))
+            spoken = [call.kwargs["text"] for call in load.return_value.apply_tts.call_args_list]
+            self.assertEqual(spoken, ["Первое.", "Важное предупреждение.", TTS_SKIPPED, "Конец."])
+            # The notice itself failing leaves no honest audio: an error, not a shorter answer.
+            load.return_value.apply_tts.side_effect = [torch.zeros(480), RuntimeError("failed"), RuntimeError("failed")]
+            with self.assertRaises(HTTPException) as caught:
+                speech(SpeechRequest(input="Проверка полного ответа."))
+        self.assertEqual(caught.exception.status_code, 422)
 
 if __name__ == "__main__":
     unittest.main()

@@ -22,11 +22,10 @@ class UpdateTests(unittest.TestCase):
             self.set_version(project, "1.30.1")
         (self.root / "ui/dist").mkdir()
         (self.root / "ui/dist/index.html").write_text("working assets")
-        source = self.root / "ui/src"
+        source = self.root / "agent/sdk-patch"
         source.mkdir()
-        (source / "conversations.ts").write_text('hook_config: guardHooks; __NEXUS_GUARD__; '
-                                                'matcher: "terminal|file_editor|planning_file_editor", '
-                                                'hooks: [{type: "command", timeout: 10}]')
+        (source / "sitecustomize.py").write_text(
+            (Path(update.__file__).resolve().parent.parent / "agent/sdk-patch/sitecustomize.py").read_text())
         guard = self.root / "guard"
         guard.mkdir()
         (guard / "guard.py").write_text("# frozen fixture, never executed\n")
@@ -116,6 +115,40 @@ class UpdateTests(unittest.TestCase):
         with self.assertRaises(update.UpdateError):
             self.u.canvas()
         self.assertFalse(self.u.backups.exists())
+
+    def test_guard_contract_uses_real_server_source_without_importing_it(self):
+        hooks = self.u.guard_hooks()["pre_tool_use"]
+        self.assertEqual(hooks[0]["matcher"], "terminal|file_editor|planning_file_editor")
+        self.assertEqual(hooks[0]["hooks"][0]["timeout"], 10)
+        self.assertIn(str(self.root / "guard/guard.py"), hooks[0]["hooks"][0]["command"])
+
+    def test_invalid_guard_contract_refuses_before_install(self):
+        (self.root / "agent/sdk-patch/sitecustomize.py").write_text('GUARD_TOOLS = "other"\n')
+        self.u.run = Mock()
+        with self.assertRaisesRegex(update.UpdateError, "GUARD_TOOLS"):
+            self.u.canvas()
+        self.u.run.assert_not_called()
+        self.assertFalse(self.u.backups.exists())
+
+    def test_canvas_stops_database_writer_before_snapshot(self):
+        self.u.args.sandbox = None
+        order = []
+        def run(command, **kwargs):
+            order.append(command[2])
+            return "active" if command[2] == "show" else ""
+        self.u.run = Mock(side_effect=run)
+        self.u.snapshot = Mock(side_effect=lambda *args: order.append("snapshot") or self.root)
+        self.assertEqual(self.u.canvas_snapshot([]), self.root)
+        self.assertEqual(order, ["show", "stop", "snapshot"])
+
+    def test_failed_canvas_snapshot_restores_running_service(self):
+        self.u.args.sandbox = None
+        self.u.run = Mock(side_effect=["active", ""])
+        self.u.snapshot = Mock(side_effect=OSError("disk full"))
+        self.u.restart = Mock()
+        with self.assertRaises(OSError):
+            self.u.canvas_snapshot([])
+        self.u.restart.assert_called_once_with("ohn-agent")
 
     def test_sandbox_refuses_project_symlink(self):
         original = self.root / "ui"

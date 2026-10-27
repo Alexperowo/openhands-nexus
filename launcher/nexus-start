@@ -51,7 +51,8 @@ if ready; then
 fi
 
 systemctl --user reset-failed "${UNITS[@]/%/.service}" 2>/dev/null
-if ! systemctl --user start ohn.target; then
+# Starting an already active target does not pull in a member that was stopped separately.
+if ! systemctl --user start ohn.target "${UNITS[@]/%/.service}"; then
   notify "Nexus не запустился" "systemctl --user start ohn.target: ошибка" critical
   sound dialog-error
   exit 1

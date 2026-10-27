@@ -59,6 +59,9 @@ DANGEROUS = {
     "systemctl --user restart llama-server": guard.REASON_NEXUS,
     "systemctl --user stop ohn.target": guard.REASON_NEXUS,
     "systemctl --user restart ohn-models.service": guard.REASON_NEXUS,
+    "systemctl --user reload-or-try-restart ohn-models": guard.REASON_NEXUS,
+    "pkexec systemctl --user stop ohn-models": guard.REASON_NEXUS,
+    "pkexec --user root systemctl restart NetworkManager": guard.REASON_NETWORK,
     "kill $(lsof -t -i:18011)": guard.REASON_NEXUS,
     "kill -9 $(lsof -t -i:18043)": guard.REASON_NEXUS,
     "fuser -k 18041/tcp": guard.REASON_NEXUS,
@@ -173,7 +176,8 @@ class GuardRules(unittest.TestCase):
                                 cgroup="/user.slice/user-1000.slice/user@1000.service/app.slice/ohn-voice.service",
                                 pgrp="4343", unit="ohn-voice.service")
         with mock.patch.object(guard, "processes", return_value=(server, voice)):
-            for command in ("sudo pkill -f llama-server", "killall llama-server", "kill -9 4242", "pkill python"):
+            for command in ("sudo pkill -f llama-server", "killall llama-server", "kill -9 4242", "pkill python",
+                            "pkill -n llama-server", "pkill -o llama-server", "pkill -nf llama-server"):
                 with self.subTest(command=command):
                     self.assertEqual(guard.decide(terminal(command)), guard.REASON_NEXUS)
             self.assertIsNone(guard.decide(terminal("pkill -f some-other-tool")))
@@ -183,6 +187,15 @@ class GuardRules(unittest.TestCase):
         for command in ORDINARY:
             with self.subTest(command=command):
                 self.assertIsNone(decide(command))
+
+    def test_editor_relative_protected_paths(self):
+        for tool in ("file_editor", "planning_file_editor"):
+            for directory, path, reason in ((str(GUARD.parent), "guard.py", guard.REASON_SELF),
+                                             ("/etc", "resolv.conf", guard.REASON_NETWORK),
+                                             ("/etc", "NetworkManager/new.conf", guard.REASON_NETWORK)):
+                with self.subTest(tool=tool, path=path):
+                    self.assertEqual(guard.decide({"tool_name": tool, "working_dir": directory,
+                        "tool_input": {"command": "create", "path": path}}), reason)
 
     def test_session_components_found_by_systemd_not_by_name(self):
         found = session_process()

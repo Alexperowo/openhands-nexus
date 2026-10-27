@@ -96,7 +96,7 @@ python3 -I agent/config.py apply   # записать профили и наст
 ## Проверки
 
 ```bash
-(cd ui && for t in test-logic test-providers test-stream test-smooth test-backend-origin test-stream-ui test-smooth-ui; do node $t.mjs || break; done)  # *-ui: Firefox, Chrome
+(cd ui && npm test)  # сборка ui/dist должна существовать; браузерные проверки: Firefox, Chrome
 (cd guard && python3 test_guard.py)
 (cd voice && .venv/bin/python test_pronunciation.py)
 (cd update && python3 test_update.py)
@@ -105,3 +105,8 @@ python3 -I agent/config.py check
 ```
 
 Стенд интерфейса без настоящих служб — `ui/dev/README.md`.
+
+Проверка SDK-патчей без модели: интерпретатором установленного agent-server выполнить
+`PYTHONPATH="$PWD/agent/sdk-patch" <python-agent-server> agent/sdk-patch/test_sdk_patch.py`
+из корня проекта. Она проверяет стража в прямой SDK-беседе, блокировку при сбое хука,
+сохранение ограничений пользователя при сжатии и передачу изображения в модель.

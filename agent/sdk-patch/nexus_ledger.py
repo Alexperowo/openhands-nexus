@@ -124,8 +124,8 @@ def _outcome(tool, args, result, limit):
         return " → no result", []
     if isinstance(result, UserRejectObservation):
         reason = result.rejection_reason.strip()
-        return (f" → REJECTED by {result.rejection_source}: {_short(reason, 400)}",
-                [reason] if len(reason) > 400 else [])
+        # Safety guidance is durable state, not optional detail dropped on the next fold.
+        return f" → REJECTED by {result.rejection_source}: " + reason.replace("\n", "\n   "), []
     if isinstance(result, AgentErrorEvent):
         return f" → ERROR: {_short(result.error, limit)}", [_cut(result.error, 1500)] if len(result.error) > limit else []
     observation = result.observation
@@ -177,7 +177,8 @@ def _ledger(events, detail_chars, user_limit, line_limit):
             if event.summary.startswith(HEADER):
                 lines, last, old_tasks = _fold(event.summary)
                 # Its user messages stay whole; other steps get shorter when the ledger is squeezed.
-                entries.append(([_short(line, line_limit * 3) if re.match(r"#\d+ (?!USER: )", line) else line
+                entries.append(([_short(line, line_limit * 3)
+                                 if re.match(r"#\d+ (?!USER: )", line) and " → REJECTED by " not in line else line
                                  for line in lines], []))
                 number, tasks = max(number, last), old_tasks
             else:  # the model's own summary from an earlier hard reset: kept as it is
@@ -185,7 +186,9 @@ def _ledger(events, detail_chars, user_limit, line_limit):
         elif isinstance(event, MessageEvent):
             text = _text(event.llm_message.content)
             if event.source == "user":
-                step("USER: " + _cut(text, user_limit).replace("\n", "\n   "))
+                # Never silently cut a constraint out of the middle of the user's request.
+                # If these messages alone exceed CAP, build() falls back to the SDK summary.
+                step("USER: " + text.replace("\n", "\n   "))
             else:  # the agent's answers carry its conclusions: more room than a tool step
                 step("assistant: " + _short(text, user_limit // 4), [_cut(text, 3000)] if len(text) > user_limit // 4 else [])
         elif isinstance(event, ActionEvent) and event.tool_name in ("finish", "think"):

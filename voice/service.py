@@ -5,16 +5,15 @@ import shutil
 import subprocess
 import tempfile
 import threading
-import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
 import soundfile as sf
 import torch
-from fastapi import FastAPI, File, Form, Header, HTTPException, Request, Response, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from pronunciation import for_silero, spoken_numbers
@@ -155,6 +154,9 @@ class SpeechRequest(BaseModel):
 # one call also fails beyond roughly 900 characters, so long text goes in parts.
 TTS_CHUNK_CHARS = 700
 TTS_PAUSE_SECONDS = 0.25
+# Said in place of a part the model rejects: the listener learns that something went unread,
+# and the rest of the answer still plays.
+TTS_SKIPPED = "Этот фрагмент не озвучен, он есть на экране."
 
 
 def tts_chunks(text: str) -> list[str]:
@@ -210,9 +212,13 @@ def speech(req: SpeechRequest):
             try:
                 audio = model.apply_tts(text=chunk, speaker=speaker, sample_rate=tts_sample_rate)
             except Exception as error:
-                # Keep the remaining chunks if the model rejects an individual part.
-                print(f"TTS skipped a part of {len(chunk)} characters: {error!r}", flush=True)
-                continue
+                # A silently dropped part would pass for a complete answer to a listener
+                # who cannot compare it with the text on screen.
+                print(f"TTS failed on a part of {len(chunk)} characters ({type(error).__name__})", flush=True)
+                try:
+                    audio = model.apply_tts(text=TTS_SKIPPED, speaker=speaker, sample_rate=tts_sample_rate)
+                except Exception:
+                    raise HTTPException(status_code=422, detail="Не удалось озвучить ответ полностью") from error
             if parts:
                 parts.append(pause)
             parts.append(audio)

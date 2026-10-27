@@ -69,7 +69,7 @@ WRAPPERS = {"sudo": {"-u", "-g", "-C", "-D", "-h", "-p", "-r", "-t", "-U"},
             "timeout": {"-s", "-k", "--signal", "--kill-after"},
             "xargs": {"-n", "-I", "-P", "-L", "-d", "-s", "-a", "-E"},
             "nohup": set(), "setsid": set(), "exec": set(), "command": set(), "stdbuf": set(),
-            "time": set(), "doas": {"-u"}}
+            "time": set(), "doas": {"-u"}, "pkexec": {"-u", "--user"}}
 SYSTEMD_RUN_VALUED = {"-u", "--unit", "-p", "--property", "--description", "--slice", "-E", "--setenv",
                       "-M", "--machine", "-H", "--host", "--working-directory", "--uid", "--gid", "--nice"}
 KILLERS = {"kill", "pkill", "killall"}
@@ -249,7 +249,7 @@ def matching(program: str, args: list[str]):
             return None
         return [p for p in processes() if p.pid in pids or p.pgrp in groups] if pids | groups else []
     flags, patterns, i = set(), [], 0
-    valued = {"-u", "-U", "-g", "-G", "-P", "-s", "-t", "-F", "--signal", "-n", "-o"} \
+    valued = {"-u", "-U", "-g", "-G", "-P", "-s", "-t", "-F", "--signal"} \
         if program in ("pkill", "pgrep") else {"-u", "-s", "--signal", "-o", "-y"}
     while i < len(args):
         arg = args[i]
@@ -429,7 +429,7 @@ def changes_guard(words: list[str], dirs: list[str]):
 
 def check_systemctl(args: list[str]):
     stopping = {"stop", "kill", "disable", "mask", "freeze"}
-    restarting = {"restart", "try-restart", "reload-or-restart", "condrestart"}
+    restarting = {"restart", "try-restart", "reload-or-restart", "reload-or-try-restart", "condrestart"}
     if set(args) & {"isolate", "poweroff", "reboot", "halt", "suspend", "hibernate", "kexec",
                     "soft-reboot", "rescue", "emergency"}:
         return REASON_SESSION
@@ -619,9 +619,10 @@ def decide(event: dict):
         return check_terminal(tool_input.get("command") or "", dirs)
     if tool in ("file_editor", "planning_file_editor") and tool_input.get("command") != "view":
         path = str(tool_input.get("path") or "")
-        if path.startswith("/") and inside(path, GUARD_DIR):
+        path = os.path.normpath(os.path.join(dirs[0], normalized(path)))
+        if inside(path, GUARD_DIR):
             return REASON_SELF
-        if path.startswith("/") and network_file(normalized(path)):
+        if network_file(path):
             return REASON_NETWORK
     if tool == "apply_patch" and str(GUARD_DIR) in str(tool_input.get("patch") or ""):
         return REASON_SELF

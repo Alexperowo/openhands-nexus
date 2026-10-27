@@ -62,8 +62,30 @@ def patch_llm(module):
 
 
 # The same hook the UI adds (ui/src/guard-hooks.ts, ui/vite.config.ts).
-GUARD = "/usr/bin/python3 -I '%s'" % os.path.join(os.path.dirname(os.path.dirname(HERE)), "guard", "guard.py")
+GUARD = "/usr/bin/python3 -I " + shlex.quote(os.path.join(os.path.dirname(os.path.dirname(HERE)), "guard", "guard.py"))
 GUARD_TOOLS = "terminal|file_editor|planning_file_editor"
+
+
+def is_guard(command):
+    try:
+        return shlex.split(command or "") == shlex.split(GUARD)
+    except ValueError:
+        return False
+
+
+def patch_hook_executor(module):
+    """SDK hooks normally fail open; failure of the Nexus safety hook must block."""
+    original = module.HookExecutor.execute
+
+    def execute(self, hook, event, env=None):
+        result = original(self, hook, event, env=env)
+        if is_guard(hook.command) and not result.success and result.should_continue:
+            return result.model_copy(update={"blocked": True,
+                "reason": "Страж Nexus: проверка команды не завершилась. Действие не выполнено; "
+                          "разбей команду на простые шаги. Если ошибка повторится, сообщи о сбое стража."})
+        return result
+
+    module.HookExecutor.execute = execute
 
 
 def with_guard(config):
@@ -72,9 +94,8 @@ def with_guard(config):
     guard = HookMatcher(matcher=GUARD_TOOLS, hooks=[HookDefinition(command=GUARD, timeout=10)])
     if config is None:
         return HookConfig(pre_tool_use=[guard])
-    words = shlex.split(GUARD)
     others = [matcher for matcher in config.pre_tool_use
-              if not (matcher.hooks and all(shlex.split(hook.command) == words for hook in matcher.hooks))]
+              if not (matcher.hooks and all(is_guard(hook.command) for hook in matcher.hooks))]
     return config.model_copy(update={"pre_tool_use": [guard, *others]})
 
 
@@ -154,6 +175,7 @@ def patch_terminal_observation(module):
 
 
 PATCHES = {
+    "openhands.sdk.hooks.executor": (patch_hook_executor, "guard failure blocks execution"),
     "openhands.sdk.llm.llm": (patch_llm, "send_reasoning_content override"),
     "openhands.sdk.conversation.impl.local_conversation": (patch_conversation, "guard hook, switch_llm stats fix"),
     "openhands.sdk.llm.message": (patch_message, "looped reasoning cleanup"),
@@ -185,7 +207,10 @@ class AfterImport:
             load(module)
             try:
                 patch(module)
-            except Exception as error:  # a changed SDK must still start, only without the fix
+            except Exception as error:
+                # Optional model/UI fixes may degrade; mandatory safety patches may not.
+                if name in {"openhands.sdk.hooks.executor", "openhands.sdk.conversation.impl.local_conversation"}:
+                    raise RuntimeError(f"Nexus mandatory SDK patch failed: {what}") from error
                 print(f"[sdk-patch] {what} not applied: {error!r}", file=sys.stderr)
 
         spec.loader.exec_module = exec_module

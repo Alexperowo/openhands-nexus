@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "node --test test-logic.mjs test-providers.mjs test-stream.mjs test-smooth.mjs test-backend-origin.mjs && node test-stream-ui.mjs && node test-pending-resend.mjs && node test-smooth-ui.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

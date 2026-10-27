@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Component updates; no LLM requests, model downloads or secret-file reads."""
 import argparse
+import ast
 import concurrent.futures
 import contextlib
 import fcntl
@@ -386,16 +387,20 @@ class Updater:
             self.emit(f"Health OK: {url}")
 
     def guard_hooks(self):
-        source = (self.root / "ui/src/conversations.ts").read_text()
-        require("hook_config: guardHooks" in source and "__NEXUS_GUARD__" in source,
-                "Контракт hook_config в UI изменён; нужна проверка smoke")
-        matcher = re.search(r'matcher:\s*"([^"]+)"', source)
-        timeout = re.search(r'timeout:\s*(\d+)', source)
-        require(matcher and timeout and "type: \"command\"" in source, "Не удалось прочитать guardHooks UI")
+        # The server owns the guard; the UI no longer embeds hooks in conversations.ts.
+        # Read the declaration without importing sitecustomize (which patches Python imports).
+        source = self.root / "agent/sdk-patch/sitecustomize.py"
+        tree = ast.parse(source.read_text())
+        matcher = next((ast.literal_eval(node.value) for node in tree.body
+                        if isinstance(node, ast.Assign) and any(
+                            isinstance(target, ast.Name) and target.id == "GUARD_TOOLS"
+                            for target in node.targets)), None)
+        require(isinstance(matcher, str) and "terminal" in matcher.split("|"),
+                "Контракт GUARD_TOOLS сервера изменён; нужна проверка smoke")
         guard = self.root / "guard/guard.py"
-        require(guard.is_file(), "Нет замороженного guard.py")
-        return {"pre_tool_use": [{"matcher": matcher[1], "hooks": [{"type": "command",
-                "command": "/usr/bin/python3 -I " + shlex.quote(str(guard)), "timeout": int(timeout[1])}]}]}
+        require(guard.is_file(), "Нет guard.py")
+        return {"pre_tool_use": [{"matcher": matcher, "hooks": [{"type": "command",
+                "command": "/usr/bin/python3 -I " + shlex.quote(str(guard)), "timeout": 10}]}]}
 
     def canvas_smoke(self):
         if self.args.sandbox:
@@ -467,6 +472,7 @@ class Updater:
     def canvas(self):
         self.canvas_paths()
         self.installed_canvas()
+        self.guard_hooks()  # Fail before installing anything if the local contract is broken.
         version = self.npm_metadata(self.args.target or "latest")["version"]
         items = []
         for project in ("agent", "ui"):
@@ -475,7 +481,7 @@ class Updater:
         items.append((self.root / "ui/dist", "ui-dist"))
         # automation migrates its SQLite schema on start; the old version refuses the new schema.
         items.append((self.root / "agent/state/automation", "state-automation"))
-        backup = self.snapshot("canvas", items)
+        backup = self.canvas_snapshot(items)
 
         def action():
             for project in ("agent", "ui"):
@@ -489,6 +495,23 @@ class Updater:
             self.canvas_smoke()
 
         self.transaction("canvas", backup, action, self.canvas_restore)
+
+    def canvas_snapshot(self, items):
+        # Copying a live SQLite DB and its WAL separately can produce an invalid rollback.
+        # Stop the writer before the snapshot, not only before restoring it.
+        was_active = False
+        if not self.args.sandbox:
+            state = self.run(["systemctl", "--user", "show", "--property=ActiveState", "--value", "ohn-agent"],
+                             capture=True, timeout=10)
+            require(state in {"active", "inactive", "failed"}, "ohn-agent меняет состояние; повторите обновление позже")
+            was_active = state == "active"
+            self.run(["systemctl", "--user", "stop", "ohn-agent"], timeout=120)
+        try:
+            return self.snapshot("canvas", items)
+        except BaseException:
+            if was_active:
+                self.restart("ohn-agent")
+            raise
 
     def canvas_paths(self):
         for name in ("agent", "ui"):
