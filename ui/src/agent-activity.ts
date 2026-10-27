@@ -25,8 +25,10 @@ export interface ActivitySnapshot {
 export const FOLLOWUP_MARK = "Проверка Nexus:";
 export const NEEDS_USER = "Нужно ваше решение: ";
 // worked: the agent acted since the loop's last update, so a finish now waits for the judge.
-interface Goal { status: string; objective: string; missing: string; worked: boolean }
-const NO_GOAL: Goal = { status: "", objective: "", missing: "", worked: false };
+// request: the loop just started, so the next user message is its request (the owner's words,
+// which differ from the goal as the server understood it).
+interface Goal { status: string; missing: string; worked: boolean; request: boolean }
+const NO_GOAL: Goal = { status: "", missing: "", worked: false, request: false };
 
 export type Tone = "work" | "done" | "attention" | "error";
 
@@ -99,6 +101,8 @@ export class AgentActivity {
   private byToolCall = new Map<string, string>();
   private error = "";
   private goal = NO_GOAL;
+  // The agent did something since the owner's last message: a plain reply has no result to check.
+  private acted = false;
 
   apply(events: AgentEvent[]) {
     for (const event of events) {
@@ -107,6 +111,7 @@ export class AgentActivity {
       if (event.kind === "ActionEvent" && event.source === "agent") {
         this.error = "";
         if (INSTANT.has(event.tool_name ?? "")) continue;
+        this.acted = true;
         this.pending.set(event.id, actionLabel(event));
         if (raw.tool_call_id) this.byToolCall.set(raw.tool_call_id, event.id);
       } else if (raw.action_id || (event.kind === "AgentErrorEvent" && raw.tool_call_id)) {
@@ -120,13 +125,15 @@ export class AgentActivity {
         this.pending.clear();
         this.byToolCall.clear();
       } else if (event.kind === "ConversationStateUpdateEvent" && raw.key === "goal") {
-        this.goal = { status: String(raw.value?.status ?? ""), objective: String(raw.value?.objective ?? "").trim(),
-          missing: String(raw.value?.verdict?.missing ?? ""), worked: false };
+        this.goal = { status: String(raw.value?.status ?? ""), missing: String(raw.value?.verdict?.missing ?? ""), worked: false,
+          request: Boolean(raw.value?.active) && !raw.value?.verdict };
       } else if (event.kind === "MessageEvent") {
         this.error = "";
-        // A request outside the loop (sent while the agent worked, or with files) is not checked.
+        // A request outside the loop (talk, a message while the agent worked, files) is not checked.
         const text = event.source === "user" ? messageText(event) : "";
-        if (text && text !== this.goal.objective && !text.startsWith(FOLLOWUP_MARK)) this.goal = NO_GOAL;
+        if (!text || text.startsWith(FOLLOWUP_MARK)) continue;
+        this.acted = false;
+        this.goal = this.goal.request ? { ...this.goal, request: false } : NO_GOAL;
       }
     }
   }
@@ -155,7 +162,8 @@ export class AgentActivity {
     if (status !== "finished") return status;
     if (this.goal.status === "complete") return "verified";
     if (this.goal.status === "capped") return this.goal.missing.startsWith(NEEDS_USER) ? "needs_user" : "unconfirmed";
-    return "unverified";
+    // A reply in words (no goal, no action) is just an answer: no «not checked» for it.
+    return this.goal.status || this.acted ? "unverified" : status;
   }
 }
 

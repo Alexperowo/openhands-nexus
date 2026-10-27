@@ -1,4 +1,6 @@
-// Which sent text becomes a goal (use-goal-by-default.ts); kept free of Canvas imports for the logic tests.
+// Which sent text becomes a goal (use-goal-by-default.ts) and how a goal shows in the chat;
+// kept free of Canvas imports for the logic tests.
+import { NEEDS_USER } from "./agent-activity.ts";
 
 // Checks of «done?» before the loop stops and says what stays unconfirmed.
 export const GOAL_ROUNDS = 3;
@@ -41,4 +43,22 @@ export async function deliverGoal(post: () => Promise<unknown>, wait = sleep, de
     }
     await wait(delays[tries]);
   }
+}
+
+export interface GoalStatus {
+  active: boolean; status: string; iteration: number; max_iterations: number; objective: string;
+  verdict?: { score: number; complete: boolean; missing: string } | null;
+}
+
+/** The goal block's one line and what it shows when opened (goal-status-compact.tsx). */
+export function goalLine(goal: GoalStatus) {
+  const missing = goal.verdict?.missing?.trim() ?? "";
+  let line = `Цель: ${goal.objective}`;
+  if (goal.status === "complete") line = `Готово: ${goal.objective}`;
+  else if (goal.status === "interrupted") line = `Прервано: ${goal.objective}`;
+  else if (goal.status === "capped") line = missing.startsWith(NEEDS_USER) ? missing : `Не подтверждено: ${missing || goal.objective}`;
+  else if (goal.active && missing) line = `Проверка ${goal.iteration}/${goal.max_iterations}: не хватает — ${missing}`;
+  const details = [`Цель: ${goal.objective}`, missing && !missing.startsWith(NEEDS_USER) ? `Не хватает: ${missing}` : missing,
+    `Проверок: ${goal.iteration} из ${goal.max_iterations}`].filter(Boolean).join("\n");
+  return { line, details };
 }

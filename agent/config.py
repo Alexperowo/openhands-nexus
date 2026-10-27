@@ -32,7 +32,8 @@ def call(method, path, body=None):
         SERVER + path, method=method,
         data=None if body is None else json.dumps(body).encode(),
         headers={"X-Session-API-Key": session_key(), "Content-Type": "application/json"})
-    with urllib.request.urlopen(request, timeout=30) as response:
+    # agent-server is on this PC: never through the system proxy (Happ answered 503 for it).
+    with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request, timeout=30) as response:
         return json.load(response)
 
 

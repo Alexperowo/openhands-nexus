@@ -46,9 +46,12 @@ def agent_server_python(script):
     return [*command, script]
 
 
+LOCAL = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # this PC, never the system proxy
+
+
 def agent_answers():
     try:
-        urllib.request.urlopen("http://127.0.0.1:18010/ready", timeout=3)
+        LOCAL.open("http://127.0.0.1:18010/ready", timeout=3)
         return True
     except OSError:
         return False
@@ -91,6 +94,10 @@ def run(command, folder, env, seconds):
 
 def main():
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "OPENHANDS_SUPPRESS_BANNER": "1"}
+    # The tests talk only to this PC; a system proxy (Happ) answered for 127.0.0.1 with 503.
+    for name in ("http_proxy", "https_proxy", "all_proxy"):
+        env.pop(name, None)
+        env.pop(name.upper(), None)
     summary, failures = [], []
     LOGS.mkdir(parents=True, exist_ok=True)
     for old in LOGS.glob("*.log"):

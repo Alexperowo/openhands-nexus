@@ -64,6 +64,17 @@ label:has([data-testid="enable-sound-notifications-switch"]) {
 }
 .nexus-context-content p { margin: 0 0 0.4rem; }
 .nexus-context-content button { width: 100%; margin-top: 0.4rem; }
+
+/* The goal block: one line (the goal, a check's gap or the outcome), opened on a click. */
+.nexus-goal-row { display: flex; align-items: center; gap: 0.5rem; width: 100%; margin: 0.25rem 0; }
+.nexus-goal { flex: 1; min-width: 0; }
+.nexus-goal > summary { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; list-style: none; }
+.nexus-goal > summary::-webkit-details-marker { display: none; }
+.nexus-goal-mark { flex-shrink: 0; }
+.nexus-goal-chevron { flex-shrink: 0; transition: transform 0.15s; }
+.nexus-goal[open] .nexus-goal-chevron { transform: rotate(90deg); }
+.nexus-goal-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nexus-goal-details { margin: 0.25rem 0 0 1.3rem; white-space: pre-wrap; }
 .nexus-reasoning { margin: 0.5rem 0; }
 .nexus-reasoning > summary { min-height: 48px; cursor: pointer; }
 .nexus-reasoning > div { white-space: pre-wrap; overflow-wrap: anywhere; }

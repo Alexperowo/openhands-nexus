@@ -154,7 +154,7 @@ test("socket: history silent, each answer spoken once across reconnects, notices
     // Live: spoken once; a finished run stops the model reads.
     send(durable(3, say("a3", "Готово")), durable(3, say("a3", "Готово")), durable(4, status("s4", "finished")));
     assert.deepEqual(harness.spoken, ["a3"]);
-    assert.equal(harness.state.status, "unverified"); assert.equal(harness.state.model, "unknown");
+    assert.equal(harness.state.status, "finished", "a reply in words: no «not checked»"); assert.equal(harness.state.model, "unknown");
     const reads = harness.requests.filter(path => path.endsWith("/running")).length;
     await fire(1500);
     assert.equal(harness.requests.filter(path => path.endsWith("/running")).length, reads, "no model read after the run");
@@ -176,7 +176,7 @@ test("socket: history silent, each answer spoken once across reconnects, notices
     await fire(1000);
     assert.equal(socket().url.searchParams.get("after_seq"), "6");
     send({type: "sync", from_seq: 6, through_seq: 6}, snapshot("finished"));
-    assert.equal(harness.state.error, ""); assert.equal(harness.state.status, "unverified");
+    assert.equal(harness.state.error, ""); assert.equal(harness.state.status, "finished");
 
     // A silently dead socket: the log grows past it twice in a row and it is replaced.
     harness.count = () => Promise.resolve(9);

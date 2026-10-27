@@ -69,6 +69,8 @@ export const ADAPTERS = {
   "hooks/use-scroll-to-bottom.js": "src/use-scroll-to-bottom.ts",
   // A plain request between runs goes as a goal: the agent's «done» is checked (nexus_goal.py).
   "hooks/chat/use-goal-interceptor.js": "src/use-goal-by-default.ts",
+  // The goal block as one line that opens on a click: the request in its title took half the screen.
+  "components/features/chat/goal-status-content.js": "src/goal-status-compact.tsx",
 };
 
 function canvasAdapters(upstreamFixture = false): Plugin {

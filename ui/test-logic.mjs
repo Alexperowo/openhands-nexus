@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { SessionEvents, openingCursor } from "./src/session-events.ts";
-import { SpeechEvents, forSpeech, speechText, speechChunks, formatPlanCount, clipStepExplanation, actionSpeechPhrase } from "./src/speech-events.ts";
+import { SpeechEvents, forSpeech, speechText, speechChunks, formatPlanCount, clipStepExplanation, actionSpeechPhrase, STEP_CHARS } from "./src/speech-events.ts";
 import { getPreferences, setPreferences, stateCuesEnabled } from "./src/preferences.ts";
 import { AgentActivity, CheckedSpeech, FOLLOWUP_MARK, MODEL_STALLED, ModelProgress, NEEDS_USER, STALL_MS, actionLabel, describeStatus, readModelState } from "./src/agent-activity.ts";
-import { deliverGoal, goalAttempt, goalObjective } from "./src/goal-request.ts";
+import { deliverGoal, goalAttempt, goalLine, goalObjective } from "./src/goal-request.ts";
 import { tabBoundary } from "./src/focus.ts";
 import { shouldAnnounceStatus } from "./src/status-announcement.ts";
 import { createElement } from "react";
@@ -738,10 +738,10 @@ test("status: only proven stages; a finish beats a stale action; model faults co
   assert.equal(describeStatus("idle", busyTool, "idle"), null);
 });
 
-test("goal check: «Готово» only after the judge confirms; other finishes say what is known", () => {
+test("goal check: «Готово» only after the judge confirms; other finishes say what is known; the owner's words differ from the goal", () => {
   const goal = (status, missing = "") => ({ id: `g-${status}-${missing}`, source: "environment",
     kind: "ConversationStateUpdateEvent", key: "goal",
-    value: { active: status === "running", status, objective: "Создай файл", verdict: missing ? { missing } : null } });
+    value: { active: status === "running", status, objective: "Создать файл в домашней папке", verdict: missing ? { missing } : null } });
   const activity = new AgentActivity();
   activity.apply([goal("running"), message("u1", "Создай файл", "user")]);
   assert.equal(activity.verifiedStatus("idle"), "running");
@@ -756,8 +756,10 @@ test("goal check: «Готово» only after the judge confirms; other finishes
   assert.equal(activity.verifiedStatus("finished"), "checking", "the loop's own message keeps the goal");
   activity.apply([goal("complete")]);
   assert.equal(activity.verifiedStatus("finished"), "verified");
-  activity.apply([message("u3", "А ещё удали старый", "user")]);
-  assert.equal(activity.verifiedStatus("finished"), "unverified", "a request outside the loop was not checked");
+  activity.apply([message("u3", "Спасибо", "user"), message("a3", "Пожалуйста.")]);
+  assert.equal(activity.verifiedStatus("finished"), "finished", "a reply in words is just an answer, nothing to check");
+  activity.apply([message("u4", "А ещё удали старый", "user"), tool("t4", "terminal", { command: "rm old.txt" })]);
+  assert.equal(activity.verifiedStatus("finished"), "unverified", "work outside the loop was not checked");
 
   activity.apply([goal("capped", "файл count.txt не проверен")]);
   assert.equal(activity.verifiedStatus("finished"), "unconfirmed");
@@ -770,6 +772,10 @@ test("goal check: «Готово» only after the judge confirms; other finishes
   activity.apply([goal("interrupted")]);
   assert.equal(activity.verifiedStatus("finished"), "unverified");
   assert.equal(activity.snapshot().missing, undefined);
+  activity.apply([goal("running"), message("u5", "Resuming a goal that was paused or interrupted.", "user")]);
+  assert.equal(activity.verifiedStatus("idle"), "running", "the loop's resume prompt keeps the goal");
+  activity.apply([message("u6", "Остановись пока", "user")]);
+  assert.equal(activity.verifiedStatus("idle"), "idle", "the owner's own message leaves the loop");
   assert.equal(activity.verifiedStatus("error"), "error");
 });
 
@@ -962,19 +968,24 @@ test("step phrases: plan updates track task tracker and announce count or comple
   assert.equal(phrase2, "Готово: Найти скрипт в app.py");
 });
 
-test("step phrases: explanation is clipped to first sentence under 150 chars with speech filters", () => {
+test("step phrases: the model's words are read whole, by sentences up to the limit, with speech filters", () => {
   const cursor = new SpeechEvents();
   const event = {
     ...tool("step-1", "terminal", { command: "ls" }),
     thought: [
-      { type: "text", text: "Проверяю конфиг в /etc/app/config.json на `{port: 8080}`. Второе предложение не должно звучать." }
+      { type: "text", text: "Понимаю: это уже не «мелочь». Проверяю конфиг в /etc/app/config.json на `{port: 8080}`. Потом перезапущу." }
     ],
   };
-  assert.equal(cursor.takeStep(event), "Проверяю конфиг в config.json на код.");
+  assert.equal(cursor.takeStep(event), "Понимаю: это уже не «мелочь». Проверяю конфиг в config.json на код. Потом перезапущу.");
 
-  const longSentence = "Это невероятно длинное предложение, которое содержит огромное количество подробных пояснений по поводу каждого отдельного шага работы агента, чтобы превысить лимит.";
+  const sentence = "Это предложение с пояснением шага работы агента, оно нужно, чтобы набрать длину.";
+  const many = Array(12).fill(sentence).join(" ");
+  const read = clipStepExplanation(many);
+  assert.ok(read.length <= STEP_CHARS && read.length > STEP_CHARS - sentence.length - 1, "whole sentences up to the limit");
+  assert.ok(many.startsWith(read) && read.endsWith("длину."));
+  const longSentence = Array(12).fill("очень длинная часть, без точки").join(" ");
   const clipped = clipStepExplanation(longSentence);
-  assert.ok(clipped.length <= 150);
+  assert.ok(clipped.length <= STEP_CHARS);
   assert.ok(longSentence.startsWith(clipped));
 });
 
@@ -989,7 +1000,7 @@ test("step phrases: step title is spoken when the model wrote no explanation", (
   const titled = (id, summary, thought = []) => ({ ...tool(id, "terminal", { command: "ls" }), summary, thought });
   assert.equal(cursor.takeStep(titled("1", "Проверить наличие файла иконки Antigravity")), "Проверить наличие файла иконки Antigravity");
   assert.equal(cursor.takeStep(titled("2", "Найти встроенные изображения", [{ type: "text", text: "Ищу картинки внутри программы. Потом проверю." }])),
-    "Ищу картинки внутри программы.", "the model's own words win over the title");
+    "Ищу картинки внутри программы. Потом проверю.", "the model's own words win over the title");
   assert.equal(cursor.takeStep(titled("3", null)), "", "no title, no words: silence");
 });
 
@@ -1297,7 +1308,7 @@ test("goal delivery: a lost answer repeats the same send, a refusal or used-up r
 test("goal speech: the answer is heard after the check's verdict, never «done» before it", () => {
   const goal = (status, missing = "") => ({ id: `g-${status}-${missing}`, source: "environment",
     kind: "ConversationStateUpdateEvent", key: "goal",
-    value: { active: status === "running", status, objective: "Создай файл", verdict: missing ? { missing } : null } });
+    value: { active: status === "running", status, objective: "Создать файл в домашней папке", verdict: missing ? { missing } : null } });
   const activity = new AgentActivity();
   const checked = new CheckedSpeech(activity);
   const hear = (event) => { activity.apply([event]); return checked.take(event, speechText(event)); };
@@ -1331,4 +1342,19 @@ test("goal speech: the answer is heard after the check's verdict, never «done»
   hear(goal("running", "нет проверки")); hear(message("u7", `${FOLLOWUP_MARK} задача ещё не выполнена`, "user"));
   assert.deepEqual(hear(goal("capped", "файл не найден")).map(([, text]) => text),
     ["Закончил, но не всё подтверждено: файл не найден"]);
+});
+
+test("goal block: one line for the goal, a check's gap or the outcome; the rest when opened", () => {
+  const base = { active: true, status: "running", iteration: 0, max_iterations: 3, objective: "Звук в наушниках работает", verdict: null };
+  assert.equal(goalLine(base).line, "Цель: Звук в наушниках работает");
+  const gap = { ...base, iteration: 1, verdict: { score: 0.4, complete: false, missing: "нет проверки звука" } };
+  assert.equal(goalLine(gap).line, "Проверка 1/3: не хватает — нет проверки звука");
+  assert.equal(goalLine(gap).details, "Цель: Звук в наушниках работает\nНе хватает: нет проверки звука\nПроверок: 1 из 3");
+  assert.equal(goalLine({ ...gap, active: false, status: "complete", verdict: { score: 0.9, complete: true, missing: "" } }).line,
+    "Готово: Звук в наушниках работает");
+  const decision = { ...gap, active: false, status: "capped", verdict: { score: 0.3, complete: false, missing: NEEDS_USER + "выбрать наушники" } };
+  assert.equal(goalLine(decision).line, NEEDS_USER + "выбрать наушники");
+  assert.equal(goalLine(decision).details, "Цель: Звук в наушниках работает\n" + NEEDS_USER + "выбрать наушники\nПроверок: 1 из 3");
+  assert.equal(goalLine({ ...gap, active: false, status: "capped" }).line, "Не подтверждено: нет проверки звука");
+  assert.equal(goalLine({ ...base, active: false, status: "interrupted" }).line, "Прервано: Звук в наушниках работает");
 });

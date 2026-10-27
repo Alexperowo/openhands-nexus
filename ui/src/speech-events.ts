@@ -196,25 +196,34 @@ export function extractFileName(path: unknown): string {
   return base.length > 40 ? `${base.slice(0, 39)}…` : base;
 }
 
-export function clipStepExplanation(text: string): string {
+// A step's own words are read whole, sentence by sentence up to this length: the first sentence
+// alone cut the thought off («Понимаю: это уже не «мелочь»…» and nothing after it).
+export const STEP_CHARS = 500;
+
+export function clipStepExplanation(text: string, limit = STEP_CHARS): string {
   const cleaned = forSpeech(stripThinking(text));
   if (!cleaned) return "";
   const segmenter = new Intl.Segmenter("ru", { granularity: "sentence" });
   const sentences = [...segmenter.segment(cleaned)]
     .map((s) => s.segment.trim())
     .filter(Boolean);
-  let first = sentences[0] || cleaned;
-  if (first.length > 150) {
-    let splitIdx = findClauseBoundary(first, 150);
-    if (splitIdx <= 0) {
-      splitIdx = first.lastIndexOf(" ", 150);
-      if (splitIdx <= 0) {
-        splitIdx = 150;
-      }
-    }
-    first = first.slice(0, splitIdx).trim().replace(/[,;:—–\s]+$/, "");
+  let spoken = "";
+  for (const sentence of sentences) {
+    const next = spoken ? `${spoken} ${sentence}` : sentence;
+    if (next.length > limit) break;
+    spoken = next;
   }
-  return first;
+  if (spoken) return spoken;
+  // One sentence longer than the limit: up to a clause boundary.
+  const first = sentences[0] || cleaned;
+  let splitIdx = findClauseBoundary(first, limit);
+  if (splitIdx <= 0) {
+    splitIdx = first.lastIndexOf(" ", limit);
+    if (splitIdx <= 0) {
+      splitIdx = limit;
+    }
+  }
+  return first.slice(0, splitIdx).trim().replace(/[,;:—–\s]+$/, "");
 }
 
 export function extractStepExplanation(event: AgentEvent): string {

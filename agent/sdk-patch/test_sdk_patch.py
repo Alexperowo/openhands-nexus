@@ -4,6 +4,7 @@ No model requests, service restarts or user conversations are needed.
 """
 import asyncio
 import base64
+import contextlib
 import io
 import subprocess
 import tempfile
@@ -24,6 +25,7 @@ from openhands.tools.terminal.definition import TerminalObservation
 import openhands.tools.terminal.impl  # Apply the executor patch as on the server.
 
 import nexus_goal as goal
+import nexus_interject as interject
 import nexus_ledger as ledger
 import nexus_screen as screen
 
@@ -410,6 +412,122 @@ class GoalTests(unittest.TestCase):
         self.assertIsInstance(step, sdk.GoalContinue)
 
 
+    def status(self, objective, iteration=0):
+        from openhands.sdk.event import ConversationStateUpdateEvent
+        return ConversationStateUpdateEvent(key="goal", value={
+            "active": True, "status": "running", "iteration": iteration, "max_iterations": 3, "objective": objective})
+
+    def test_understood_goal_is_judged_with_the_owners_words_which_the_agent_gets(self):
+        from openhands.sdk.conversation.goal import controller as sdk
+        words, understood = "сделай файлик с приветом", "Файл hello.txt с текстом «привет» создан"
+        events = self.run_events("ok")
+        events[1:2] = [self.status(understood), self.user(words)]
+        llm = self.judge_llm('{"score": 0.5, "complete": false, "missing": "нет проверки"}')
+        controller = sdk.GoalController(goal.Goal(understood, words), llm)
+        self.assertEqual(controller.start(), words)
+        controller.on_run_finished(events)
+        # After a restart the goal is a plain string again (from its status) and finds the same words.
+        sdk.GoalController(understood, llm).on_run_finished(events + [self.status(understood, 1),
+                                                                       self.user(goal.FOLLOWUP_MARK + " ещё")])
+        for _, user in (prompt for prompt in llm.prompts):
+            request, transcript = user.content[0].text.split("<transcript>")
+            self.assertIn(words, request)
+            self.assertIn(understood, request)
+            self.assertIn(goal.CONTEXT_HEADER + "\nuser: старая просьба", request)
+            self.assertNotIn("старая просьба", transcript)
+        self.assertIn("not requirements", llm.prompts[0][0].content[0].text)
+        self.assertEqual(sdk.GoalController(self.objective, llm).start(), self.objective)
+
+    def test_understanding_answer_is_read_strictly(self):
+        read = goal.read_understanding
+        self.assertEqual(read({"content": '{"kind": "task", "goal": " Звук\n работает "}'}), ("task", "Звук работает"))
+        self.assertEqual(read({"content": "", "reasoning_content": 'ответ: {"kind": "talk", "goal": ""}'}), ("talk", ""))
+        self.assertEqual(read({"content": '{"kind": "task", "goal": ""}'}), ("talk", ""))
+        for message in [{"content": "не JSON"}, {"content": '{"kind": "maybe"}'}, {}]:
+            with self.assertRaises(ValueError):
+                read(message)
+
+    def test_understanding_failure_sends_the_message_as_usual(self):
+        self.assertEqual(asyncio.run(goal.understand(SimpleNamespace(), "Почини звук")), ("talk", ""))
+
+
+class InterjectTests(unittest.TestCase):
+    """nexus_interject on stand-ins of the conversation and the agent with the same method contracts."""
+
+    def setUp(self):
+        test = self
+        self.calls, self.release = [], None
+
+        class Conversation:
+            def __init__(self):
+                self._state = SimpleNamespace(_lock=SimpleNamespace(owned=lambda: True), execution_status="running")
+                self.messages = []
+
+            @contextlib.asynccontextmanager
+            async def _released_state_lock_during_io(self):
+                yield
+
+            def send_message(self, message, sender=None):
+                self.messages.append(message)
+
+        class Agent:
+            async def astep(self, conversation, on_event, on_token=None):
+                test.calls.append(list(conversation.messages))
+                if test.spoke_first:
+                    on_event(test.event)
+                async with conversation._released_state_lock_during_io():
+                    test.release = asyncio.Event()
+                    await test.release.wait()
+                on_event(test.event)
+
+        interject.patch_conversation(SimpleNamespace(LocalConversation=Conversation))
+        interject.patch_agent(SimpleNamespace(Agent=Agent))
+        self.conversation, self.agent, self.spoke_first = Conversation(), Agent(), False
+        self.event = MessageEvent(source="agent", llm_message=Message(role="assistant", content=[TextContent(text="шаг")]))
+
+    def step(self, during):
+        """One step; `during` runs while it waits for the model."""
+        events = []
+
+        async def run():
+            task = asyncio.create_task(self.agent.astep(self.conversation, events.append))
+            while self.release is None:
+                await asyncio.sleep(0.01)
+            first, self.release = self.release, None
+            await during(task)
+            await asyncio.sleep(0.05)
+            (self.release or first).set()
+            await task
+        asyncio.run(run())
+        return events
+
+    def message_from_another_thread(self, text):
+        async def during(task):
+            await asyncio.get_running_loop().run_in_executor(None, self.conversation.send_message, text)
+        return during
+
+    def test_a_message_during_the_answer_starts_the_step_again_with_it(self):
+        events = self.step(self.message_from_another_thread("Остановись"))
+        self.assertEqual(self.calls, [[], ["Остановись"]])
+        self.assertEqual(events, [self.event])
+
+    def test_after_the_step_recorded_something_it_ends_as_usual(self):
+        self.spoke_first = True
+        events = self.step(self.message_from_another_thread("Остановись"))
+        self.assertEqual(self.calls, [[]])
+        self.assertEqual(len(events), 2)
+
+    def test_the_stop_button_still_stops_the_run(self):
+        async def stop(task):
+            self.conversation._cancel_token = SimpleNamespace(is_cancelled=True)
+            self.conversation.send_message("и ещё")
+            await asyncio.sleep(0.02)
+            task.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            self.step(stop)
+        self.assertEqual(len(self.calls), 1)
+
+
 class GoalSendTests(unittest.TestCase):
     """POST /api/conversations/{id}/goal with the UI's attempt id, through the patched route of the
     real router; only the conversation's event service is a fake."""
@@ -418,9 +536,19 @@ class GoalSendTests(unittest.TestCase):
         from fastapi import FastAPI
         from openhands.agent_server import conversation_router as module
         from openhands.agent_server.dependencies import get_conversation_service
-        self.started, self.busy, test = [], False, self
+        self.started, self.sent, self.busy, test = [], [], False, self
+        self.kind = "task"
+
+        async def understand(event_service, text):
+            return (test.kind, f"Цель: {text}" if test.kind == "task" else "")
+        understanding = patch.object(goal, "understand", understand)
+        understanding.start()
+        self.addCleanup(understanding.stop)
 
         class Events:
+            async def send_message(self, message, run=False):
+                test.sent.append((message.content[0].text, run))
+
             async def start_goal_loop(self, objective, max_iterations=10):
                 await asyncio.sleep(0.05)
                 if test.busy:
@@ -450,7 +578,8 @@ class GoalSendTests(unittest.TestCase):
         body = {"objective": "Создай файл", "max_iterations": 3, "attempt": "a1"}
         self.assertEqual(self.send(body, body), [200, 200])  # the repeat while the first one starts
         self.assertEqual(self.send(body), [200])  # and after it
-        self.assertEqual(self.started, ["Создай файл"])
+        self.assertEqual(self.started, ["Цель: Создай файл"])
+        self.assertEqual(self.started[0].request, "Создай файл")
         # Another send of the same text is a new request: the goal runs, so it is refused.
         self.assertEqual(self.send({**body, "attempt": "a2"}), [409])
         self.assertEqual(self.send({"objective": "Создай файл"}), [409])
@@ -465,7 +594,14 @@ class GoalSendTests(unittest.TestCase):
         self.assertEqual(self.send(body), [409])
         self.busy = False
         self.assertEqual(self.send(body), [200])
-        self.assertEqual(self.started, ["Создай файл"])
+        self.assertEqual(self.started, ["Цель: Создай файл"])
+
+    def test_talk_goes_as_a_usual_message_without_a_goal(self):
+        self.kind = "talk"
+        body = {"objective": "Спасибо, всё работает", "attempt": "c1"}
+        self.assertEqual(self.send(body, body), [200, 200])
+        self.assertEqual(self.sent, [("Спасибо, всё работает", True)])
+        self.assertEqual(self.started, [])
 
 
 if __name__ == "__main__":

@@ -27,6 +27,9 @@ Every conversation gets the guard (guard/guard.py) as its first PreToolUse hook.
 each start request it sends, but scheduled tasks (automation) and scripts start conversations
 through the API with hook configs of their own, and their agent ran unguarded. Ours, not an
 upstream bug.
+
+A message the owner sends while the model answers is heard at once instead of after the answer it
+came during: nexus_interject.py.
 """
 import dataclasses
 import os
@@ -122,6 +125,16 @@ def patch_conversation(module):
             new_llm.telemetry.set_stats_update_callback(streaming)
 
     module.LocalConversation.switch_llm = switch_llm
+    try:
+        import nexus_interject
+        nexus_interject.patch_conversation(module)
+    except Exception as error:  # not a safety fix: the server starts without it
+        print(f"[sdk-patch] new message during an answer not applied: {error!r}", file=sys.stderr)
+
+
+def patch_agent(module):
+    import nexus_interject
+    nexus_interject.patch_agent(module)
 
 
 # Sentences and lines with what separates them; split() keeps the separators at odd places.
@@ -198,6 +211,7 @@ PATCHES = {
     "openhands.sdk.hooks.executor": (patch_hook_executor, "guard failure blocks execution"),
     "openhands.sdk.llm.llm": (patch_llm, "send_reasoning_content override"),
     "openhands.sdk.conversation.impl.local_conversation": (patch_conversation, "guard hook, switch_llm stats fix"),
+    "openhands.sdk.agent.agent": (patch_agent, "a new message during an answer starts the step again"),
     "openhands.sdk.llm.message": (patch_message, "looped reasoning cleanup"),
     "openhands.sdk.context.condenser.llm_summarizing_condenser": (patch_condenser, "step ledger condenser"),
     "openhands.tools.terminal.impl": (patch_terminal_executor, "desktop images from @@attach"),
