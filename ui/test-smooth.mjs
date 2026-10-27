@@ -157,6 +157,28 @@ test("dictation: successful STT inserts only text and does not classify completi
   session.toggle(endpoint); await until(() => session.status === "recording"); session.toggle(endpoint);
   await until(() => text.length); assert.deepEqual(text, ["Проверить звук"]); assert.deepEqual(ended, [false]);
 });
+test("dictation: a microphone left on stops by itself and what was said is still inserted", async t => {
+  recorderFixture(t, async () => new Response(JSON.stringify({text: "Длинная диктовка"})));
+  const text = [], ended = [], statuses = [];
+  const session = new DictationSession({onStatus: value => statuses.push(value), onTranscript: value => text.push(value),
+    onError() {assert.fail("the limit is not an error");}, onEnd: value => ended.push(value), maxRecording: 20});
+  session.toggle(endpoint);
+  await until(() => text.length);
+  assert.deepEqual(text, ["Длинная диктовка"]); assert.deepEqual(ended, [false]);
+  assert.ok(statuses.indexOf("recording") < statuses.indexOf("transcribing"));
+});
+test("dictation: the recognition wait grows with the length of the recording", async t => {
+  recorderFixture(t, () => new Promise(() => {}));
+  const errors = [], ended = [];
+  const session = new DictationSession({onStatus() {}, onTranscript() {}, onError: e => errors.push(e.message),
+    onEnd: value => ended.push(value), requestTimeout: 15});
+  session.toggle(endpoint); await until(() => session.status === "recording");
+  await new Promise(resolve => setTimeout(resolve, 500));
+  session.toggle(endpoint);
+  await new Promise(resolve => setTimeout(resolve, 60));
+  assert.deepEqual(ended, [], "15 ms plus 0.3 of half a second of speech is about 165 ms");
+  await until(() => ended.length); assert.match(errors[0], /вовремя/);
+});
 test("speech: answer arriving during dictation is read once after Cancel, not after ordinary completion", async t => {
   const originalAudio = globalThis.Audio, originalFetch = globalThis.fetch, prefs = {...getPreferences()}; const requests = [];
   class Audio extends EventTarget { src = ""; play() {return Promise.resolve();} pause() {} load() {} removeAttribute() {this.src = "";} }

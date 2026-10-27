@@ -107,32 +107,35 @@ class PronunciationTests(unittest.TestCase):
         self.assertEqual(" ".join(tts_chunks("Свободно 34 ГБ. SSH закрыт.")),
                          "Свободно тридцать четыре гигабайта. Эс-эс-эйч закрыт.")
 
-    def test_speech_passes_normalized_text_to_model(self):
-        import torch
-        from service import SpeechRequest, speech
-        with patch("service.get_tts_model") as load:
-            load.return_value.apply_tts.return_value = torch.ones(4800) * 0.1
-            response = speech(SpeechRequest(input="OpenHands и GitHub через API."))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(load.return_value.apply_tts.call_args.kwargs["text"],
-                         "Оупен Хэндс и Гитхаб через эй-пи-ай.")
+    def test_full_reading_names_nothing_and_reads_every_sign(self):
+        cases = [
+            ("Открой https://github.com/OpenHands/OpenHands?tab=readme, затем продолжим.",
+             "Открой Гитхаб точка кам слэш Оупен Хэндс слэш Оупен Хэндс вопрос тэб равно ридми, затем продолжим."),
+            ("Открой ./README.md и ~/project/src/service.py.",
+             "Открой точка слэш ридми точка эм-ди и тильда слэш праджэкт слэш срк слэш сервис точка пай."),
+            ("Коммит a1b2c3d готов.", "Коммит эй 1 би 2 си 3 ди готов."),
+            ("UUID 550e8400-e29b-41d4-a716-446655440000.",
+             "Ю-ю-ай-ди 5 5 0 и 8 4 0 0, и 2 9 би, 4 1 ди 4, эй 7 1 6, 4 4 6 6 5 5 4 4 0 0 0 0."),
+            ("QWERTYUIOPASDFGHJKL", "Кью-дабл-ю-и-ар-ти-уай-ю-ай-оу-пи-эй-эс-ди-эф-джи-эйч-джей-кей-эл"),
+            ("Скачай ftp://example.org/file.zip!", "Скачай фтп двоеточие слэш слэш игзэмпэл точка орг слэш файл точка зип!"),
+        ]
+        for original, expected in cases:
+            with self.subTest(text=original):
+                self.assertEqual(for_silero(original, full=True), expected)
+                self.assertEqual(for_silero(expected, full=True), expected)
+        # Whatever the agent wrote, nothing is replaced by a generic word.
+        for original, _ in EXAMPLES + [("ID " + "x1" * 40, "")]:
+            with self.subTest(text=original):
+                spoken = for_silero(original, full=True)
+                self.assertNotRegex(spoken, r"[A-Za-z]|ссылка|путь к файлу|хэш|идентификатор")
+        self.assertEqual(for_silero("ID " + "ab1" * 22, full=True).count("эй"), 22)
 
-    def test_speech_says_which_part_was_not_read(self):
-        import torch
-        from fastapi import HTTPException
-        from service import TTS_SKIPPED, SpeechRequest, speech
-        with patch("service.tts_chunks", return_value=["Первое.", "Важное предупреждение.", "Конец."]), \
-                patch("service.get_tts_model") as load:
-            load.return_value.apply_tts.side_effect = [torch.zeros(480), RuntimeError("failed"),
-                                                       torch.zeros(480), torch.zeros(480)]
-            speech(SpeechRequest(input="Проверка полного ответа."))
-            spoken = [call.kwargs["text"] for call in load.return_value.apply_tts.call_args_list]
-            self.assertEqual(spoken, ["Первое.", "Важное предупреждение.", TTS_SKIPPED, "Конец."])
-            # The notice itself failing leaves no honest audio: an error, not a shorter answer.
-            load.return_value.apply_tts.side_effect = [torch.zeros(480), RuntimeError("failed"), RuntimeError("failed")]
-            with self.assertRaises(HTTPException) as caught:
-                speech(SpeechRequest(input="Проверка полного ответа."))
-        self.assertEqual(caught.exception.status_code, 422)
+    def test_full_reading_reaches_the_voice_text(self):
+        from service import tts_chunks
+        self.assertEqual(tts_chunks("Файл /tmp/service.py."), ["Файл сервис точка пай."])
+        self.assertEqual(tts_chunks("Файл /tmp/service.py, коммит f4227b0.", full=True),
+                         ["Файл слэш тмп слэш сервис точка пай, коммит эф четыре два два семь би ноль."])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,7 @@ interface Options {
   onError: (error: Error) => void;
   onEnd: (cancelled: boolean) => void;
   requestTimeout?: number;
+  maxRecording?: number;
 }
 interface Session {
   controller: AbortController;
@@ -13,7 +14,13 @@ interface Session {
   tracks?: MediaStream;
   recorder?: MediaRecorder;
   recognition?: any;
+  started?: number;
 }
+
+/** A forgotten microphone stops by itself; what was said is still recognized. The service takes up to 6 minutes. */
+const MAX_RECORDING = 5 * 60_000;
+/** The PC recognizes a second of speech in about 0.16 s (5 minutes in 47 s); the wait allows about twice that. */
+const RECOGNITION_PER_SECOND = 0.3;
 
 /** Own cancellable lifecycle: Canvas's hook exposes no abort or timeout for STT. */
 export class DictationSession {
@@ -46,15 +53,21 @@ export class DictationSession {
     if (error) this.options.onError(error);
     if (!cancelled && text?.trim()) this.options.onTranscript(text.trim());
   }
+  /** A long dictation takes longer to recognize: a fixed wait would cut off a three-minute one. */
+  private recognitionWait(session: Session) {
+    return (this.options.requestTimeout ?? 30000) + (Date.now() - (session.started ?? Date.now())) * RECOGNITION_PER_SECOND;
+  }
+  private stopRecording(session: Session) {
+    if (this.current !== session || this.status !== "recording") return;
+    this.statusChanged("transcribing");
+    this.deadline(session, this.recognitionWait(session));
+    try { session.recorder?.stop(); session.recognition?.stop(); }
+    catch { this.end(true, new Error("Не удалось остановить запись. Попробуйте ещё раз.")); }
+  }
   cancel = () => this.end(true);
   toggle(endpoint: TranscriptionEndpoint) {
-    if (this.status === "recording") {
-      const session = this.current!;
-      this.statusChanged("transcribing");
-      this.deadline(session, this.options.requestTimeout ?? 30000);
-      try { session.recorder?.stop(); session.recognition?.stop(); }
-      catch { this.end(true, new Error("Не удалось остановить запись. Попробуйте ещё раз.")); }
-    } else if (this.status !== "idle") this.cancel();
+    if (this.status === "recording") this.stopRecording(this.current!);
+    else if (this.status !== "idle") this.cancel();
     else void this.start(endpoint);
   }
   private async start(endpoint: TranscriptionEndpoint) {
@@ -92,7 +105,7 @@ export class DictationSession {
           if (this.current !== session) return;
           stream.getTracks().forEach(track => track.stop());
           this.statusChanged("transcribing");
-          this.deadline(session, this.options.requestTimeout ?? 30000);
+          this.deadline(session, this.recognitionWait(session));
           try {
             const blob = new Blob(chunks, {type: recorder.mimeType});
             const data = new FormData();
@@ -113,8 +126,10 @@ export class DictationSession {
         recorder.start();
       }
       if (this.current === session) {
-        // Recording is intentional until Stop/Cancel; only permission and STT waits are bounded.
+        // Recording lasts until Stop/Cancel, or the limit for a microphone left on.
         clearTimeout(session.timer);
+        session.started = Date.now();
+        session.timer = setTimeout(() => this.stopRecording(session), this.options.maxRecording ?? MAX_RECORDING);
         this.statusChanged("recording");
       }
     } catch {

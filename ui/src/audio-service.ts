@@ -12,7 +12,8 @@ export interface AudioStatus {
   isDictating: boolean;
 }
 
-interface Item { id: string; chunks: string[] }
+/** full: «Полностью» — the voice service then reads links, paths and hashes out too. */
+interface Item { id: string; chunks: string[]; full?: boolean }
 
 /** Status id of an answer being read in full; ▶ and «полностью» show ■ separately. */
 export const fullReadingId = (id: string) => `${id}:full`;
@@ -186,17 +187,17 @@ class AudioService {
     const chunks = speechChunks(forSpeech(text, full));
     if (!chunks.length) return;
     this.handled.add(id);
-    this.queue.push({ id: full ? fullReadingId(id) : id, chunks });
+    this.queue.push({ id: full ? fullReadingId(id) : id, chunks, full });
     void this.processQueue();
   }
 
-  private async synthesize(text: string, signal: AbortSignal) {
+  private async synthesize(text: string, full: boolean, signal: AbortSignal) {
     const { voice, speed } = getPreferences();
     const response = await fetch("/v1/audio/speech", {
       method: "POST",
       signal: AbortSignal.any([signal, AbortSignal.timeout(30000)]),
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input: text, model: "tts-1", voice, speed, response_format: "wav" }),
+      body: JSON.stringify({ input: text, model: "tts-1", voice, speed, response_format: "wav", full }),
     });
     if (!response.ok) throw new Error(`Синтез речи: HTTP ${response.status}`);
     return response.blob();
@@ -247,11 +248,11 @@ class AudioService {
     const controller = new AbortController();
     this.controller = controller;
     const players = [this.audio!, this.spare!];
-    const { id, chunks } = nextItem;
+    const { id, chunks, full = false } = nextItem;
     this.notify({ currentId: id, error: "" });
     const urls = new Set<string>();
     const load = async (index: number) => {
-      const url = this.prepare(players[index % 2], await this.synthesize(chunks[index], controller.signal), controller.signal);
+      const url = this.prepare(players[index % 2], await this.synthesize(chunks[index], full, controller.signal), controller.signal);
       urls.add(url);
       return url;
     };

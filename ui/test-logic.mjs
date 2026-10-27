@@ -574,9 +574,14 @@ test("audio: volume and speed come from the settings, full reading keeps code an
   assert.equal(fixture.elements[0].volume, 0.5);
   assert.equal(bodies[0].speed, 1.25);
   assert.equal(bodies[0].input, "Правка в /home/user/app/main.py");
+  // The voice service shortens paths and links unless told the reading is full.
+  assert.equal(bodies[0].full, true);
+  fixture.audioService.playNow("b", "Правка в /home/user/app/main.py");
+  await waitFor(() => bodies.length === 2);
+  assert.equal(bodies[1].full, false);
 });
 
-test("audio: an answer read in full is not read again by the poll", async (t) => {
+test("audio: an answer read in full is not read again automatically", async (t) => {
   const inputs = [];
   const fixture = await audioFixture(t, async (_url, options) => {
     inputs.push(JSON.parse(options.body).input);

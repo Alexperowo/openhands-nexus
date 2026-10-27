@@ -101,9 +101,12 @@ def _word(word: str) -> str:
         return "-".join(LETTERS[c] for c in word.upper())
 
 
-def _identifier(match: re.Match) -> str:
+def _identifier(match: re.Match, full: bool = False) -> str:
     token = match.group()
-    if len(token) > 64 or (token.isupper() and len(token) > 16):
+    if len(token) > 64 and full:
+        # A key or code this long is no word: Flite would make up a sound for it.
+        return " ".join(c if c.isdigit() else LETTERS[c.upper()] for c in token if c != "_")
+    if len(token) > 64 or (token.isupper() and len(token) > 16 and not full):
         return "идентификатор"
     # HTTPServer -> HTTP Server; camelCase -> camel Case; snake_case -> snake case.
     token = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", token)
@@ -135,11 +138,29 @@ def _path(match: re.Match) -> str:
     return _shorten(match, replacement)
 
 
+# «Полностью»: a link or a path is read sign by sign instead of being named.
+_SIGNS = {"/": "слэш", "\\": "обратный слэш", ".": "точка", "?": "вопрос", "=": "равно", "&": "и",
+          "#": "решётка", "~": "тильда", "@": "собака", ":": "двоеточие", "%": "процент"}
+
+
+def _spelled(match: re.Match) -> str:
+    raw = match.group()
+    body = re.sub(r"^(?:https?://)?(?:www\.)?", "", raw.rstrip(_TRAIL), flags=re.I)
+    body = re.sub(r"[/\\.?=&#~@:%]", lambda m: f" {_SIGNS[m.group()]} ", body)
+    return re.sub(r"\s+", " ", body).strip() + raw[len(raw.rstrip(_TRAIL)):]
+
+
+def _characters(match: re.Match) -> str:
+    """A hash or UUID read character by character: digits stay for the number normalizer."""
+    return ", ".join(" ".join(c if c.isdigit() else LETTERS[c.upper()] for c in group)
+                     for group in match.group().split("-"))
+
+
 _SENTENCE_END = re.compile(r"(?:[.!?…][ \t]+|\n[ \t]*)\Z")
 
 
-def _latin(match: re.Match) -> str:
-    spoken = TERMS.get(match.group().lower()) or _identifier(match)
+def _latin(match: re.Match, full: bool = False) -> str:
+    spoken = TERMS.get(match.group().lower()) or _identifier(match, full)
     # "34 ГБ. SSH открыт": a lowercase "эс-эс-эйч" would make the number normalizer
     # take the period for an abbreviation dot and join the two sentences.
     start = match.start()
@@ -148,14 +169,22 @@ def _latin(match: re.Match) -> str:
     return spoken
 
 
-def for_silero(text: str) -> str:
-    text = _URL.sub(lambda m: _shorten(m, "ссылка"), text)
-    text = _DOMAIN.sub(lambda m: _shorten(m, "ссылка"), text)
-    text = _PATH.sub(_path, text)
-    text = _HASH.sub("хэш", text)
+def for_silero(text: str, full: bool = False) -> str:
+    """Latin into Russian sounds. Briefly, links, paths, hashes and long identifiers are only
+    named; in full (the «Полностью» button) every one of them is read out."""
+    if full:
+        text = _URL.sub(_spelled, text)
+        text = _DOMAIN.sub(_spelled, text)
+        text = _PATH.sub(_spelled, text)
+        text = _HASH.sub(_characters, text)
+    else:
+        text = _URL.sub(lambda m: _shorten(m, "ссылка"), text)
+        text = _DOMAIN.sub(lambda m: _shorten(m, "ссылка"), text)
+        text = _PATH.sub(_path, text)
+        text = _HASH.sub("хэш", text)
     text = re.sub(r"(?<=[A-Za-z0-9])\.(?=[A-Za-z])", " точка ", text)
     # Protect conventional names before splitting their internal capital letters.
-    text = re.sub(r"[A-Za-z][A-Za-z0-9_]*", _latin, text)
+    text = re.sub(r"[A-Za-z][A-Za-z0-9_]*", lambda m: _latin(m, full), text)
     text = text.replace("`", "")
     return text
 

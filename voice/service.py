@@ -5,15 +5,16 @@ import shutil
 import subprocess
 import tempfile
 import threading
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Optional
 
+import anyio.from_thread
 import soundfile as sf
 import torch
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
 from pronunciation import for_silero, spoken_numbers
@@ -24,8 +25,44 @@ FFMPEG_BIN = "/usr/bin/ffmpeg"
 FFMPEG_TIMEOUT = 30
 # Handlers are plain functions, so FastAPI runs them in its thread pool and a slow
 # request never stalls the event loop; the models themselves take one request at a time.
-tts_lock = threading.Lock()
-stt_lock = threading.Lock()
+
+
+class Gate:
+    """One request at a time on a model; a few more may wait, the rest are refused at once
+    instead of piling up behind it."""
+
+    def __init__(self, waiting: int):
+        self.lock = threading.Lock()
+        self.places = threading.BoundedSemaphore(waiting + 1)
+
+    @contextmanager
+    def __call__(self):
+        if not self.places.acquire(blocking=False):
+            raise HTTPException(status_code=503, detail="Голосовая служба занята, попробуйте ещё раз")
+        try:
+            with self.lock:
+                yield
+        finally:
+            self.places.release()
+
+
+# A tab asks for the part it plays and the next one; two tabs may speak at once.
+tts_gate = Gate(waiting=4)
+stt_gate = Gate(waiting=1)
+
+
+def gone(request: Optional[Request]) -> bool:
+    """The client gave up (■, a new answer, its timeout): the rest of the work would reach no one.
+    Checked between parts, since a part already started cannot be interrupted."""
+    if request is None:
+        return False
+    return anyio.from_thread.run(request.is_disconnected)
+
+
+def stop_if_gone(request: Optional[Request], what: str) -> None:
+    if gone(request):
+        print(f"{what}: the client left, the rest is not computed", flush=True)
+        raise HTTPException(status_code=499, detail="Client closed request")
 
 # Глобальные переменные моделей
 # End-to-end GigaAM: punctuation, capitals, ё and digits in the text, not a lowercase word stream.
@@ -77,6 +114,27 @@ ALLOWED_ORIGINS = [
     "http://localhost:18020",
 ]
 
+# The size of OpenAI's own limit for an uploaded recording; a dictation is far smaller.
+UPLOAD_MAX_BYTES = 25 * 1024 * 1024
+TOO_LARGE = "Запись больше 25 МБ: так много служба не принимает"
+
+
+class LimitBody:
+    """Refuses an oversized upload before it is parsed and spooled to disk. Plain ASGI: an
+    @app.middleware wrapper would change what request.is_disconnected() sees."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        length = dict(scope.get("headers") or []).get(b"content-length", b"")
+        if scope["type"] == "http" and length.isdigit() and int(length) > UPLOAD_MAX_BYTES + 64 * 1024:
+            await JSONResponse({"detail": TOO_LARGE}, status_code=413)(scope, receive, send)
+            return
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(LimitBody)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -86,12 +144,19 @@ app.add_middleware(
 )
 
 
+# The interface stops a recording at 5 minutes; 6 minutes take about a minute to recognize.
+STT_MAX_AUDIO_SECONDS = 360
+TOO_LONG = "Запись длиннее 6 минут: столько за один раз служба не распознаёт"
+
+
 def convert_to_wav(input_path: str, output_path: str) -> None:
     """Конвертация любого браузерного формата (webm/opus, ogg, mp4/aac, wav) в 16kHz mono 16-bit PCM WAV"""
     cmd = [
         FFMPEG_BIN,
         "-y",
         "-i", input_path,
+        # Decoding stops just past the limit: an hour-long recording costs no more than that.
+        "-t", str(STT_MAX_AUDIO_SECONDS + 1),
         "-ar", "16000",
         "-ac", "1",
         "-c:a", "pcm_s16le",
@@ -148,6 +213,12 @@ class SpeechRequest(BaseModel):
     voice: Optional[str] = "xenia"
     response_format: Optional[str] = "wav"
     speed: Optional[float] = 1.0
+    # Nexus extension: «Полностью» reads links, paths and hashes out instead of naming them.
+    full: bool = False
+
+
+# The size of OpenAI's own limit; the interface sends parts of at most 400 characters.
+TTS_MAX_CHARS = 4096
 
 
 # Silero reads **word** as emphasis markup and fails on any other asterisks;
@@ -159,8 +230,8 @@ TTS_PAUSE_SECONDS = 0.25
 TTS_SKIPPED = "Этот фрагмент не озвучен, он есть на экране."
 
 
-def tts_chunks(text: str) -> list[str]:
-    text = spoken_numbers(for_silero(text))
+def tts_chunks(text: str, full: bool = False) -> list[str]:
+    text = spoken_numbers(for_silero(text, full))
     text = text.replace("*", "")
     # A line without its own punctuation (list item, heading) still ends a phrase.
     text = re.sub(r"(?<![.!?…:;,])[ \t]*\n\s*", ". ", text)
@@ -187,12 +258,54 @@ def tts_chunks(text: str) -> list[str]:
     return [chunk for chunk in chunks if re.search(r"\w", chunk)]
 
 
+def say(model, text: str, speaker: str):
+    return model.apply_tts(text=text, speaker=speaker, sample_rate=tts_sample_rate)
+
+
+def synthesize(model, chunk: str, speaker: str) -> list:
+    """A part the model rejects is tried once more in two halves, in order. What still fails is
+    replaced by the notice: a silently dropped part would pass for a complete answer to a
+    listener who cannot compare it with the text on screen."""
+    try:
+        return [say(model, chunk, speaker)]
+    except Exception as error:
+        print(f"TTS failed on a part of {len(chunk)} characters ({type(error).__name__}), "
+              "retrying in halves", flush=True)
+        failure = error
+    spaces = [i for i, c in enumerate(chunk) if c == " "]
+    cut = min(spaces, key=lambda i: abs(i - len(chunk) // 2), default=0)
+    halves = [half for half in (chunk[:cut], chunk[cut + 1:]) if cut and re.search(r"\w", half)]
+    audio, skipped = [], False
+    for half in halves:
+        try:
+            audio.append(say(model, half, speaker))
+            skipped = False
+            continue
+        except Exception as error:
+            print(f"TTS failed on a half of {len(half)} characters ({type(error).__name__})", flush=True)
+            failure = error
+        if not skipped:
+            audio.append(None)
+            skipped = True
+    if not halves:
+        audio = [None]
+    if None in audio:
+        try:
+            notice = say(model, TTS_SKIPPED, speaker)
+        except Exception:
+            raise HTTPException(status_code=422, detail="Не удалось озвучить ответ полностью") from failure
+        audio = [notice if part is None else part for part in audio]
+    return audio
+
+
 @app.post("/v1/audio/speech")
 @app.post("/audio/speech")
-def speech(req: SpeechRequest):
+def speech(req: SpeechRequest, request: Request = None):
     text = req.input.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Empty input text")
+    if len(text) > TTS_MAX_CHARS:
+        raise HTTPException(status_code=413, detail=f"Текст длиннее {TTS_MAX_CHARS} знаков: озвучивайте частями")
 
     # Допустимые голоса Silero ru: xenia, baya, aidar, kseniya, eugene
     speaker = req.voice.lower() if req.voice else "xenia"
@@ -200,28 +313,19 @@ def speech(req: SpeechRequest):
     if speaker not in valid_speakers:
         speaker = "xenia"
 
-    chunks = tts_chunks(text)
+    chunks = tts_chunks(text, req.full)
     if not chunks:
         raise HTTPException(status_code=400, detail="Nothing to speak in input text")
 
     model = get_tts_model()
     pause = torch.zeros(int(tts_sample_rate * TTS_PAUSE_SECONDS))
     parts = []
-    with tts_lock, torch.no_grad():
+    with tts_gate(), torch.no_grad():
         for chunk in chunks:
-            try:
-                audio = model.apply_tts(text=chunk, speaker=speaker, sample_rate=tts_sample_rate)
-            except Exception as error:
-                # A silently dropped part would pass for a complete answer to a listener
-                # who cannot compare it with the text on screen.
-                print(f"TTS failed on a part of {len(chunk)} characters ({type(error).__name__})", flush=True)
-                try:
-                    audio = model.apply_tts(text=TTS_SKIPPED, speaker=speaker, sample_rate=tts_sample_rate)
-                except Exception:
-                    raise HTTPException(status_code=422, detail="Не удалось озвучить ответ полностью") from error
+            stop_if_gone(request, "TTS")
             if parts:
                 parts.append(pause)
-            parts.append(audio)
+            parts.extend(synthesize(model, chunk, speaker))
     if not parts:
         raise HTTPException(status_code=422, detail="The voice model cannot read this text")
 
@@ -266,6 +370,7 @@ def speech(req: SpeechRequest):
 @app.post("/v1/audio/transcriptions")
 @app.post("/audio/transcriptions")
 def transcriptions(
+    request: Request,
     file: UploadFile = File(...),
     model: Optional[str] = Form(None),
     authorization: Optional[str] = Header(None)
@@ -279,6 +384,9 @@ def transcriptions(
         input_path = os.path.join(tmpdir, f"input{suffix}")
         with open(input_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+        # A chunked upload has no length header for the middleware to check.
+        if os.path.getsize(input_path) > UPLOAD_MAX_BYTES:
+            raise HTTPException(status_code=413, detail=TOO_LARGE)
 
         wav_path = os.path.join(tmpdir, "converted.wav")
         try:
@@ -286,17 +394,18 @@ def transcriptions(
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Audio decoding error: {e}")
 
-        try:
+        if sf.info(wav_path).duration > STT_MAX_AUDIO_SECONDS:
+            raise HTTPException(status_code=413, detail=TOO_LONG)
+
+        with stt_gate():
             texts = []
-            with stt_lock:
-                for part_path in split_long_wav(wav_path, tmpdir):
+            for part_path in split_long_wav(wav_path, tmpdir):
+                stop_if_gone(request, "STT")
+                try:
                     transcription = stt.transcribe(part_path)
-                    if isinstance(transcription, dict):
-                        texts.append(transcription.get("text", ""))
-                    else:
-                        texts.append(str(transcription))
-            text_result = " ".join(t.strip() for t in texts if t.strip())
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"ASR transcription error: {e}")
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"ASR transcription error: {e}")
+                texts.append(transcription.get("text", "") if isinstance(transcription, dict) else str(transcription))
+        text_result = " ".join(t.strip() for t in texts if t.strip())
 
     return {"text": text_result}

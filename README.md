@@ -98,7 +98,7 @@ python3 -I agent/config.py apply   # записать профили и наст
 ```bash
 (cd ui && npm test)  # сборка ui/dist должна существовать; браузерные проверки: Firefox, Chrome
 (cd guard && python3 test_guard.py)
-(cd voice && .venv/bin/python test_pronunciation.py)
+(cd voice && .venv/bin/python test_pronunciation.py && .venv/bin/python test_service.py)
 (cd update && python3 test_update.py)
 update/nexus-update check
 python3 -I agent/config.py check
