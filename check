@@ -5,10 +5,14 @@ updater, launcher, gateway, SDK patches and the agent's settings against git.
   ./check            # exit 1 if any layer failed; a skipped layer says why
 
 Builds nothing and starts no service: the interface tests need an existing ui/dist, the
-settings check a running agent. The log of a failed layer is printed after the summary.
+settings check a running agent. The end of a failed layer's log is printed after the summary;
+every layer's whole log, passed ones too, stays in LOGS until the next run. A layer that runs
+longer than LAYER_SECONDS (a hung test) is stopped with all its processes and counts as failed.
 """
 import json
 import os
+import re
+import signal
 import subprocess
 import sys
 import time
@@ -17,6 +21,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 VOICE = str(ROOT / "voice/.venv/bin/python")
+LOGS = Path.home() / ".cache/openhands-nexus/check"
+LAYER_SECONDS = int(os.environ.get("OHN_CHECK_LAYER_SECONDS", 900))  # the interface takes about 150 s
 
 
 class Skip(Exception):
@@ -70,31 +76,48 @@ def layers():
         None if agent_answers() else "агент не запущен"
 
 
+def run(command, folder, env, seconds):
+    """(passed, output). Its own process group, so a timeout stops the test's children too."""
+    with subprocess.Popen(command, cwd=ROOT / folder, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          text=True, errors="replace", start_new_session=True) as process:
+        try:
+            output = process.communicate(timeout=max(seconds, 1))[0]
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
+            output = process.communicate()[0] + f"\n… остановлено: слой дольше {LAYER_SECONDS} с\n"
+            return False, output
+    return process.returncode == 0, output
+
+
 def main():
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "OPENHANDS_SUPPRESS_BANNER": "1"}
     summary, failures = [], []
-    for name, folder, commands, reason in layers():
+    LOGS.mkdir(parents=True, exist_ok=True)
+    for old in LOGS.glob("*.log"):
+        old.unlink()
+    for number, (name, folder, commands, reason) in enumerate(layers(), 1):
         if reason:
             summary.append(f"ПРОПУЩЕНО  {name}: {reason}")
             continue
         start, log, ok = time.monotonic(), [], True
         for command in commands:
             shown = command[-2:] if len(command) > 4 else command  # the long uv line: just the script
-            print(f"… {name}: {' '.join(Path(c).name if c == VOICE else c for c in shown)}", flush=True)
-            done = subprocess.run(command, cwd=ROOT / folder, env=env, stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT, text=True, errors="replace")
-            log.append(done.stdout)
-            if done.returncode:
-                ok = False
+            line = " ".join(Path(c).name if c == VOICE else c for c in shown)
+            print(f"… {name}: {line}", flush=True)
+            ok, output = run(command, folder, env, start + LAYER_SECONDS - time.monotonic())
+            log.append(f"$ {line}\n{output}")
+            if not ok:
                 break
         seconds = round(time.monotonic() - start)
         summary.append(f"{'ОК' if ok else 'ОШИБКА':<10} {name} ({seconds} с)")
+        (LOGS / f"{number:02}-{re.sub(r'[^\w]+', '-', name).strip('-')}.log").write_text("".join(log))
         if not ok:
             failures.append((name, "".join(log)))
     for name, log in failures:
         print(f"\n===== {name}: конец журнала =====")
         print("\n".join(log.rstrip().splitlines()[-40:]))
     print("\n" + "\n".join(summary))
+    print(f"Журналы всех слоёв: {LOGS}")
     return 1 if failures else 0
 
 
