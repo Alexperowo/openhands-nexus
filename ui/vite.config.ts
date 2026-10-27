@@ -93,6 +93,32 @@ function canvasAdapters(upstreamFixture = false): Plugin {
   };
 }
 
+// Canvas ships its own copy of axios (dist/node_modules/axios, 1.18.0, GHSA-vh66-26gq-q6x8), which the
+// npm override cannot reach. Its imports go to our axios (package.json) as if made from our own code,
+// and the build fails if a module of the old copy is still in it.
+export function canvasAxios(): Plugin {
+  const copy = fs.realpathSync(path.resolve(directory, "node_modules/@openhands/agent-canvas/dist/node_modules/axios"));
+  const ours = fs.realpathSync(path.resolve(directory, "node_modules/axios"));
+  let routed = 0;
+  return {
+    name: "nexus-canvas-axios",
+    enforce: "pre",
+    async resolveId(source, importer, options) {
+      if (!importer || !/(^|\/)axios\/(index|lib\/axios)\.js$/.test(source)) return null;
+      const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
+      if (!resolved?.id.startsWith(copy + path.sep)) return null;
+      routed++;
+      return this.resolve("axios", path.join(directory, "src/main.tsx"), { ...options, skipSelf: true });
+    },
+    generateBundle() {
+      const ids = [...this.getModuleIds()];
+      const old = ids.filter((id) => id.startsWith(copy + path.sep));
+      if (old.length) this.error(`Canvas's own axios is still in the build: ${old.join(", ")}`);
+      if (!routed || !ids.some((id) => id.startsWith(ours + path.sep))) this.error("Canvas axios was not routed to ours");
+    },
+  };
+}
+
 // Canvas pulls Outfit and IBM Plex Mono from Google Fonts but never uses them (its text is
 // the system stack: Roboto on the tablet, Noto Sans on the PC, both with full Cyrillic).
 // The imports are dropped, and the bundle check fails the build if any remote @import or
@@ -155,7 +181,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     // Vite 6 treats envDir:false as the project root; use an explicitly empty directory.
     envDir: path.join(directory, "dev/no-env"),
-    plugins: [canvasAdapters(mode === "fixture-upstream"), canvasFilesSemantics(), canvasEnglishOnly(), noRemoteCss(), react()],
+    plugins: [canvasAdapters(mode === "fixture-upstream"), canvasFilesSemantics(), canvasEnglishOnly(), canvasAxios(), noRemoteCss(), react()],
     resolve: {
       // Private Canvas contexts whose providers the published build drops;
       // pinned-version compatibility workaround (test-providers.mjs guards it).

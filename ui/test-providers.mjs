@@ -239,3 +239,33 @@ test("Russian strings keep the placeholders and plural forms of the original", (
   const missing = [...plurals].flatMap((base) => forms.filter((form) => !ru[`${base}_${form}`]).map((form) => `${base}_${form}`));
   assert.deepEqual(missing, []);
 });
+
+test("Canvas's own axios is replaced by ours, in the plugin and in the build (GHSA-vh66-26gq-q6x8)", async () => {
+  const {canvasAxios} = await import("./vite.config.ts");
+  const plugin = canvasAxios();
+  const copy = fs.realpathSync(path.join(dist, "node_modules/axios"));
+  const ours = fs.realpathSync("node_modules/axios");
+  let ids = [];
+  const context = {
+    error(message) { throw new Error(message); },
+    getModuleIds: () => ids.values(),
+    resolve: async (source, importer) => ({id: source === "axios" ? path.join(ours, "index.js") : path.resolve(path.dirname(importer), source)}),
+  };
+  assert.throws(() => plugin.generateBundle.call(context), /not routed/);
+  const importer = fs.realpathSync(path.join(dist, "hooks/query/use-settings.js"));
+  for (const source of ["../../node_modules/axios/lib/axios.js", "../../node_modules/axios/index.js"]) {
+    assert.deepEqual(await plugin.resolveId.call(context, source, importer, {}), {id: path.join(ours, "index.js")}, source);
+  }
+  assert.equal(await plugin.resolveId.call(context, "./lib/axios.js", path.join(ours, "index.js"), {}), null);
+  ids = [path.join(ours, "lib/axios.js")];
+  plugin.generateBundle.call(context);
+  ids.push(path.join(copy, "lib/env/data.js"));
+  assert.throws(() => plugin.generateBundle.call(context), /still in the build/);
+  // The built bundle carries our version and not the old one.
+  const old = readFileSync(path.join(copy, "lib/env/data.js"), "utf8").match(/"(\d+\.\d+\.\d+)"/)[1];
+  const version = JSON.parse(readFileSync("node_modules/axios/package.json", "utf8")).version;
+  assert.notEqual(old, version);
+  const bundle = build.join("\n");
+  assert.ok(bundle.includes(`"${version}"`), `axios ${version} is not in the build`);
+  assert.ok(!bundle.includes(`"${old}"`), `Canvas's axios ${old} is still in the build`);
+});
