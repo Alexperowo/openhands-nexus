@@ -79,6 +79,10 @@ TRASHERS = {"gio", "trash-put", "trash", "gvfs-trash"}
 FIND_TESTS = {"-name", "-iname", "-path", "-ipath", "-wholename", "-iwholename", "-regex", "-iregex",
               "-mtime", "-mmin", "-atime", "-amin", "-ctime", "-cmin", "-newer", "-size", "-empty",
               "-user", "-inum", "-samefile"}
+MATCH_ALL = {"*": {"-name", "-iname", "-path", "-ipath", "-wholename", "-iwholename"}, ".*": {"-regex", "-iregex"}}
+# $NAME, ${NAME} and ${NAME<op>word}: groups name, op, word for braces; name alone otherwise.
+VARIABLE = re.compile(r"\$(?:\{(\w+)(?:(:?[-=?+])([^}]*))?\}|(\w+))")
+DECLARERS = {"export", "declare", "local", "readonly", "typeset"}
 SCRIPTERS = {"python", "python3", "perl", "ruby", "node", "php"}
 TREE_REMOVAL = re.compile(r"""\b(?:rmtree|remove_tree|rmSync|rimraf|fs\.(?:promises\.)?rm)\s*\(\s*"""
                           r"""(?:[\w.]+\(\s*)*[rbuf]?(['"])([^'"\n]+)\1""")
@@ -107,6 +111,9 @@ REASON_REPLACE = (
     " Если оболочка не работает совсем — запусти её без --replace отдельно от агента: " + DETACHED + ".")
 REASON_ALL = ("Страж Nexus: эта команда убьёт все процессы пользователя — весь сеанс и сам ассистент. "
               "Называй конкретный процесс.")
+REASON_OWN_GROUP = ("Страж Nexus: kill 0 шлёт сигнал всей группе процессов этого терминала — оборвётся всё, "
+                    "что в нём запущено, а то и сам терминал беседы. Останавливай процесс по номеру: kill PID "
+                    "(номер — из pgrep -a имя).")
 REASON_NEXUS = (
     "Страж Nexus: это службы, на которых работает сам ассистент (модель, голос, агент, шлюз, "
     "интерфейс). Их остановка оборвёт текущую работу. Не останавливай их. Если служба мешает "
@@ -115,6 +122,9 @@ REASON_NEXUS = (
 REASON_RM = ("Страж Nexus: рекурсивное удаление системного или домашнего каталога, каталога настроек, "
              "целого диска, самого Nexus или его моделей запрещено. Удаляй конкретные файлы или подкаталоги "
              "по полному пути.")
+REASON_EMPTY_VAR = (
+    "Страж Nexus: если переменная {name} в этом терминале пуста или не задана, команда удалит {path}. "
+    "Пиши ${{{name}:?}} — тогда при пустой переменной оболочка остановится, — или полный путь.")
 REASON_TRASH = (
     "Страж Nexus: {path} — личные данные пользователя (папка в домашнем каталоге, проект, каталог на диске); "
     "удаление необратимо. Если их действительно нужно убрать — перемести в корзину: gio trash {path} "
@@ -230,21 +240,36 @@ def probe_only(program: str, args: list[str]):
     return False
 
 
+def kill_targets(args: list[str]):
+    """The PIDs and process groups a kill call names."""
+    rest = args[:]
+    if rest and rest[0] in ("-s", "-n"):
+        rest = rest[2:]
+    elif rest and rest[0] in ("-l", "-L"):
+        return set(), set()  # lists signals
+    elif rest and re.fullmatch(r"-\w+", rest[0]) and not re.fullmatch(r"-\d+", rest[0]) or \
+            len(rest) > 1 and re.fullmatch(r"-\d+", rest[0]):
+        rest = rest[1:]  # the signal
+    if rest and rest[0] == "--":
+        rest = rest[1:]
+    return {a for a in rest if a.isdigit()}, {a[1:] for a in rest if re.fullmatch(r"-\d+", a)}
+
+
+def own_group(program: str, args: list[str]):
+    """`kill 0` and `pkill -g 0` signal the caller's process group: the agent's own terminal."""
+    if program == "kill":
+        return "0" in set.union(*kill_targets(args))
+    if program != "pkill":
+        return False
+    groups = [args[i + 1] for i, a in enumerate(args[:-1]) if a in ("-g", "--pgroup")] + \
+        [a.split("=", 1)[1] for a in args if a.startswith("--pgroup=")]
+    return any("0" in value.split(",") for value in groups)
+
+
 def matching(program: str, args: list[str]):
     """Processes a kill/pkill/killall/pgrep/pidof call would reach, or None for "all of them"."""
     if program == "kill":
-        rest = args[:]
-        if rest and rest[0] in ("-s", "-n"):
-            rest = rest[2:]
-        elif rest and rest[0] in ("-l", "-L"):
-            return []
-        elif rest and re.fullmatch(r"-\w+", rest[0]) and not re.fullmatch(r"-\d+", rest[0]) or \
-                len(rest) > 1 and re.fullmatch(r"-\d+", rest[0]):
-            rest = rest[1:]  # the signal
-        if rest and rest[0] == "--":
-            rest = rest[1:]
-        pids = {a for a in rest if a.isdigit()}
-        groups = {a[1:] for a in rest if re.fullmatch(r"-\d+", a)}
+        pids, groups = kill_targets(args)
         if "1" in groups:
             return None
         return [p for p in processes() if p.pid in pids or p.pgrp in groups] if pids | groups else []
@@ -387,12 +412,57 @@ def removal(word: str, dirs: list[str]):
     return None
 
 
+def expand(word: str, known: dict):
+    """The word with the variables of `known` replaced; others stay as written."""
+    def value(m):
+        name = m[1] or m[4]
+        if name in known:
+            return m[3] if m[2] and m[2][-1] == "+" else known[name]
+        # `${OUT:-$HOME}`: the default is what an empty OUT gives, so it is expanded too.
+        return f"${{{name}{m[2]}{expand(m[3], known)}}}" if m[2] and m[2][-1] in "-=" else m[0]
+    return VARIABLE.sub(value, word)
+
+
+def assignments(command: str, dirs: list[str]):
+    """Variables the command line sets before using them (`D=~/x; rm -rf "$D"`), with HOME, USER, PWD."""
+    user = os.environ.get("USER") or os.path.basename(HOME)
+    known = {"HOME": HOME, "USER": user, "LOGNAME": user, "PWD": dirs[0]}
+    start = declaring = True
+    for token in tokens(command):
+        if token and set(token) <= set(";|&()"):
+            start, declaring = True, False
+            continue
+        match = re.fullmatch(r"([A-Za-z_]\w*)=(.*)", token, re.S)
+        if start and match:
+            # `D=$(mktemp -d)`: set, value unknown; not an empty variable.
+            known[match[1]] = "$(...)" if match[2].endswith("$") else expand(match[2], known)
+            continue
+        declaring = token in DECLARERS or declaring and token.startswith("-")
+        start = declaring
+    return known
+
+
+def empty_variable(word: str, dirs: list[str]):
+    """`rm -rf "$DIR/"*` with DIR empty or unset removes /*: the reason, or None (shellcheck SC2115)."""
+    names = [m[1] or m[4] for m in VARIABLE.finditer(word) if not (m[2] and m[2][-1] == "?")]
+    if not names:
+        return None
+    # As the shell has it with these variables unset; `${X:?}` stops the shell, `${X:-w}` gives w.
+    worst = VARIABLE.sub(lambda m: m[0] if m[2] and m[2][-1] == "?" else
+                         m[3] if m[2] and m[2][-1] in "-=" else "", word)
+    if "$" in worst or not removal(worst, dirs):
+        return None
+    return REASON_EMPTY_VAR.format(name=names[0], path=(absolute(worst, dirs) or [worst])[0])
+
+
 def check_find(args: list[str], dirs: list[str], fed_to_rm: bool):
     """`find DIR -delete`, `-exec rm` or `| xargs rm -r` without a test removes the whole tree."""
     deletes = fed_to_rm or "-delete" in args or any(
         a in ("-exec", "-execdir", "-ok", "-okdir") and os.path.basename(args[i + 1]) in ("rm", "shred")
         for i, a in enumerate(args[:-1]))
-    if not deletes or set(args) & FIND_TESTS:
+    narrows = any(a in FIND_TESTS and a not in MATCH_ALL.get(args[i + 1] if i + 1 < len(args) else "", ())
+                  for i, a in enumerate(args))
+    if not deletes or narrows:
         return None
     starts = []
     for arg in args:
@@ -400,7 +470,7 @@ def check_find(args: list[str], dirs: list[str], fed_to_rm: bool):
             break
         starts.append(arg)
     for start in starts or ["."]:
-        reason = removal(start, dirs)
+        reason = empty_variable(start, dirs) or removal(start, dirs)
         if reason:
             return reason
     return None
@@ -513,12 +583,14 @@ def check_argv(argv: list[str], dirs: list[str], fed_to_rm=False):
     args = argv[1:]
     words = " ".join(argv)
     if program in KILLERS:
-        return None if probe_only(program, args) else check_targets(matching(program, args))
+        if probe_only(program, args):
+            return None
+        return REASON_OWN_GROUP if own_group(program, args) else check_targets(matching(program, args))
     if program == "fuser" and any(re.fullmatch(r"-\w*k\w*", a) for a in args) and nexus_port(words):
         return REASON_NEXUS
     if program == "rm" and any(re.fullmatch(r"-\w*[rR]\w*|--recursive", a) for a in args):
         for arg in args:
-            reason = removal(arg, dirs)
+            reason = empty_variable(arg, dirs) or removal(arg, dirs)
             if reason:
                 return reason
     if program == "find":
@@ -598,7 +670,9 @@ def check_terminal(command: str, dirs: list[str]):
     # `find DIR | xargs rm -rf`: the paths come from find.
     fed_to_rm = any(os.path.basename(argv[0]) == "rm" and all(a.startswith("-") for a in argv[1:])
                     for argv in parts)
+    known = assignments(command, dirs)
     for argv in parts:
+        argv = [expand(word, known) for word in argv]
         if os.path.basename(argv[0]) in ("cd", "pushd") and argv[1:2] != ["-"]:
             target = normalized(argv[1]) if len(argv) > 1 else HOME
             dirs = [os.path.normpath(os.path.join(d, target)) for d in dirs]  # an absolute target replaces d
