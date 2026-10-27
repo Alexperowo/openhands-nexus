@@ -4,7 +4,7 @@ export interface AnnouncedStatus { status: string; error: string }
 export function shouldAnnounceStatus(before: AnnouncedStatus, current: AnnouncedStatus): boolean {
   if (!current.status) return false;
   if (!before.status) {
-    return Boolean(current.error) || ["error", "stuck", "awaiting_user_input", "awaiting_user_confirmation"].includes(current.status);
+    return Boolean(current.error) || ["error", "stuck", "awaiting_user_input", "awaiting_user_confirmation", "needs_user"].includes(current.status);
   }
   return current.status !== before.status || Boolean(current.error && current.error !== before.error);
 }

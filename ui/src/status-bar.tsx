@@ -5,7 +5,9 @@ import { cueForStatus, playConnectionCue, playCue } from "./status-cues";
 import { shouldAnnounceStatus } from "./status-announcement";
 import { ConnectionAnnouncements, type ConnectionPhase } from "./connection-state";
 
-const TRANSIENT = new Set(["finished", "paused"]);
+// Shown for a few seconds after the change; a request for the owner stays.
+const TRANSIENT = new Set(["verified", "unverified", "paused"]);
+const WORKING = new Set(["running", "checking"]);
 interface Props {
   status: string;
   activity: ActivitySnapshot;
@@ -74,7 +76,7 @@ export function StatusBar({ status, activity, model, problems, connection = "onl
   return <section className="nexus-status-slot" aria-label="Состояние агента">
     <p className={`status-bar${problem ? " status-problem" : ""}`} data-tone={problem ? "error" : line?.tone}
       data-empty={!visual || undefined}>
-      <span className={status === "running" && !problem ? "nexus-working" : undefined} aria-hidden="true" />
+      <span className={WORKING.has(status) && !problem ? "nexus-working" : undefined} aria-hidden="true" />
       <span className="nexus-status-text" key={visual}>{visual || "\u00a0"}</span>
     </p>
     <p className="visually-hidden" role="status" aria-atomic="true">{announcement}</p>

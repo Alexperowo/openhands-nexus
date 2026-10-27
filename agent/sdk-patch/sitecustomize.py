@@ -174,6 +174,21 @@ def patch_terminal_observation(module):
     nexus_screen.patch_observation(module)
 
 
+def patch_goal_judge(module):
+    import nexus_goal
+    nexus_goal.patch_judge(module)
+
+
+def patch_goal_controller(module):
+    import nexus_goal
+    nexus_goal.patch_controller(module)
+
+
+def patch_goal_resume(module):
+    import nexus_goal
+    nexus_goal.patch_event_service(module)
+
+
 PATCHES = {
     "openhands.sdk.hooks.executor": (patch_hook_executor, "guard failure blocks execution"),
     "openhands.sdk.llm.llm": (patch_llm, "send_reasoning_content override"),
@@ -182,6 +197,9 @@ PATCHES = {
     "openhands.sdk.context.condenser.llm_summarizing_condenser": (patch_condenser, "step ledger condenser"),
     "openhands.tools.terminal.impl": (patch_terminal_executor, "desktop images from @@attach"),
     "openhands.tools.terminal.definition": (patch_terminal_observation, "desktop images to the model"),
+    "openhands.sdk.conversation.goal.judge": (patch_goal_judge, "goal judge for this PC, bounded transcript"),
+    "openhands.sdk.conversation.goal.controller": (patch_goal_controller, "goal stops when the owner must answer"),
+    "openhands.agent_server.event_service": (patch_goal_resume, "Russian goal resume message"),
 }
 
 

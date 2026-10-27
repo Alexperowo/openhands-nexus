@@ -17,6 +17,7 @@ export function snapshotForConversation(state: SpeechSnapshot, id: string | null
 export function mergeSpeechSnapshot(previous: SpeechSnapshot, patch: Partial<SpeechSnapshot>): SpeechSnapshot {
   const next = { ...previous, ...patch };
   const sameActivity = previous.activity.error === next.activity.error &&
+    previous.activity.missing === next.activity.missing &&
     previous.activity.actions.length === next.activity.actions.length &&
     previous.activity.actions.every((action, index) => action === next.activity.actions[index]);
   if (sameActivity) next.activity = previous.activity;
@@ -79,7 +80,7 @@ export function useConversationSpeech(conversationId: string | null) {
         ]);
         if (signal.aborted) return;
         setState(previous => mergeSpeechSnapshot(previous, {
-          status: conversation.execution_status, error: "", ready: true, id: conversationId,
+          status: activity.verifiedStatus(conversation.execution_status), error: "", ready: true, id: conversationId,
           activity: activity.snapshot(), model,
         }));
       } catch (error) {

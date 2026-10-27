@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { SpeechEvents, forSpeech, speechText, speechChunks, formatPlanCount, clipStepExplanation, actionSpeechPhrase } from "./src/speech-events.ts";
 import { getPreferences, setPreferences, stateCuesEnabled } from "./src/preferences.ts";
-import { AgentActivity, actionLabel, describeStatus } from "./src/agent-activity.ts";
+import { AgentActivity, FOLLOWUP_MARK, NEEDS_USER, actionLabel, describeStatus } from "./src/agent-activity.ts";
+import { goalObjective } from "./src/goal-request.ts";
 import { tabBoundary } from "./src/focus.ts";
 import { shouldAnnounceStatus } from "./src/status-announcement.ts";
 import { createElement } from "react";
@@ -124,10 +125,10 @@ test("keyboard: a dialog wraps Tab in both directions, including an empty or esc
 
 test("announcements: opening history is silent, a current confirmation or error is not", () => {
   const empty = { status: "", error: "" };
-  for (const status of ["running", "finished", "paused"]) {
+  for (const status of ["running", "checking", "verified", "unverified", "unconfirmed", "paused"]) {
     assert.equal(shouldAnnounceStatus(empty, { status, error: "" }), false);
   }
-  for (const status of ["awaiting_user_confirmation", "awaiting_user_input", "error", "stuck"]) {
+  for (const status of ["awaiting_user_confirmation", "awaiting_user_input", "error", "stuck", "needs_user"]) {
     assert.equal(shouldAnnounceStatus(empty, { status, error: "" }), true);
   }
   assert.equal(shouldAnnounceStatus(empty, { status: "running", error: "Ошибка модели" }), true);
@@ -140,7 +141,7 @@ test("announcements: unchanged states and cleared errors are silent; new errors 
   assert.equal(shouldAnnounceStatus(running, failed), true);
   assert.equal(shouldAnnounceStatus(failed, failed), false);
   assert.equal(shouldAnnounceStatus(failed, running), false);
-  assert.equal(shouldAnnounceStatus(running, { status: "finished", error: "" }), true);
+  assert.equal(shouldAnnounceStatus(running, { status: "verified", error: "" }), true);
   assert.equal(shouldAnnounceStatus(running, { status: "", error: "" }), false);
 });
 
@@ -306,7 +307,8 @@ test("TalkBack keeps status cues and live announcements independent of automatic
   assert.equal(stateCuesEnabled({ autoSpeak: false, cues: true }), true);
   assert.equal(stateCuesEnabled({ autoSpeak: true, cues: false }), false);
   assert.equal(stateCuesEnabled({ autoSpeak: true, cues: true }), true);
-  for (const status of ["finished", "awaiting_user_confirmation", "error"]) {
+  assert.equal(cueForStatus("checking"), undefined, "the check is still work: no «done» tone before the verdict");
+  for (const status of ["verified", "unverified", "needs_user", "unconfirmed", "awaiting_user_confirmation", "error"]) {
     assert.ok(cueForStatus(status));
     assert.equal(shouldAnnounceStatus({ status: "running", error: "" }, { status, error: "" }), true);
   }
@@ -647,7 +649,7 @@ test("activity: an error names the cause without raw detail, stops actions, clea
   assert.equal(activity.snapshot().error, "");
 });
 
-test("status: only proven stages; finished beats a stale action; model faults come first", () => {
+test("status: only proven stages; a finish beats a stale action; model faults come first", () => {
   const none = { actions: [], error: "" };
   const busyTool = { actions: ["Чтение файла: a.txt"], error: "" };
   assert.equal(describeStatus("running", none, "offline").text, "Агент ждёт модель");
@@ -655,10 +657,61 @@ test("status: only proven stages; finished beats a stale action; model faults co
   assert.equal(describeStatus("running", none, "busy").text, "Модель генерирует ответ");
   assert.match(describeStatus("running", none, "idle").text, /вероятно/);
   assert.equal(describeStatus("running", none, "unknown").text, "Агент работает");
-  assert.equal(describeStatus("finished", busyTool, "idle").text, "Готово");
+  assert.equal(describeStatus("verified", busyTool, "idle").text, "Готово, проверено");
+  assert.equal(describeStatus("unverified", busyTool, "idle").text, "Закончил, результат не проверен");
   assert.equal(describeStatus("awaiting_user_confirmation", { actions: ["Выполнение команды: rm"], error: "" }, "idle").text,
     "Нужно ваше подтверждение: Выполнение команды: rm");
   assert.equal(describeStatus("idle", busyTool, "idle"), null);
+});
+
+test("goal check: «Готово» only after the judge confirms; other finishes say what is known", () => {
+  const goal = (status, missing = "") => ({ id: `g-${status}-${missing}`, source: "environment",
+    kind: "ConversationStateUpdateEvent", key: "goal",
+    value: { active: status === "running", status, objective: "Создай файл", verdict: missing ? { missing } : null } });
+  const activity = new AgentActivity();
+  activity.apply([goal("running"), message("u1", "Создай файл", "user")]);
+  assert.equal(activity.verifiedStatus("idle"), "running");
+  assert.equal(activity.verifiedStatus("running"), "running");
+  assert.equal(activity.verifiedStatus("finished"), "running", "the previous run's finish, before the agent's first step");
+  activity.apply([message("a1", "Создал файл.", "agent")]);
+  assert.equal(activity.verifiedStatus("finished"), "checking", "the agent's own finish is not «Готово»");
+  assert.equal(describeStatus("checking", activity.snapshot(), "busy").text, "Проверяю результат");
+  activity.apply([goal("running", "нет проверки"), message("u2", `${FOLLOWUP_MARK} задача ещё не выполнена`, "user")]);
+  assert.equal(activity.verifiedStatus("finished"), "running", "the judge sent the agent back to work");
+  activity.apply([message("a2", "Проверил файл.", "agent")]);
+  assert.equal(activity.verifiedStatus("finished"), "checking", "the loop's own message keeps the goal");
+  activity.apply([goal("complete")]);
+  assert.equal(activity.verifiedStatus("finished"), "verified");
+  activity.apply([message("u3", "А ещё удали старый", "user")]);
+  assert.equal(activity.verifiedStatus("finished"), "unverified", "a request outside the loop was not checked");
+
+  activity.apply([goal("capped", "файл count.txt не проверен")]);
+  assert.equal(activity.verifiedStatus("finished"), "unconfirmed");
+  assert.equal(describeStatus("unconfirmed", activity.snapshot(), "idle").text,
+    "Закончил, но не всё подтверждено: файл count.txt не проверен");
+  activity.apply([goal("capped", `${NEEDS_USER}в какую папку сохранить`)]);
+  assert.equal(activity.verifiedStatus("finished"), "needs_user");
+  assert.equal(describeStatus("needs_user", activity.snapshot(), "idle").text, "Нужно ваше решение: в какую папку сохранить");
+  assert.equal(describeStatus("needs_user", activity.snapshot(), "idle").tone, "attention");
+  activity.apply([goal("interrupted")]);
+  assert.equal(activity.verifiedStatus("finished"), "unverified");
+  assert.equal(activity.snapshot().missing, undefined);
+  assert.equal(activity.verifiedStatus("error"), "error");
+});
+
+test("goal routing: only a plain request to an idle conversation becomes a goal", () => {
+  const idle = { conversationId: "c", agentState: "finished", attachments: 0, mode: "code" };
+  assert.equal(goalObjective("  Создай файл \n", idle), "Создай файл");
+  for (const agentState of ["awaiting_user_input", "error"]) assert.equal(goalObjective("x", { ...idle, agentState }), "x");
+  assert.equal(goalObjective("/goal x", idle), "");
+  assert.equal(goalObjective("/btw x", idle), "");
+  assert.equal(goalObjective("   ", idle), "");
+  assert.equal(goalObjective("x", { ...idle, attachments: 1 }), "");
+  assert.equal(goalObjective("x", { ...idle, mode: "plan" }), "");
+  assert.equal(goalObjective("x", { ...idle, conversationId: null }), "");
+  for (const agentState of ["running", "paused", "loading", "awaiting_user_confirmation"]) {
+    assert.equal(goalObjective("x", { ...idle, agentState }), "", agentState);
+  }
 });
 
 test("opening mid-action: recent history restores the step silently, speech stays at the head", async () => {

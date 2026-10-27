@@ -46,6 +46,8 @@ export const ADAPTERS = {
   "themes/syntax-highlighter-themes.js": "src/syntax-theme.ts",
   // Observe actual content sizes; Canvas only follows its private text reveal flag.
   "hooks/use-scroll-to-bottom.js": "src/use-scroll-to-bottom.ts",
+  // A plain request between runs goes as a goal: the agent's «done» is checked (nexus_goal.py).
+  "hooks/chat/use-goal-interceptor.js": "src/use-goal-by-default.ts",
 };
 
 function canvasAdapters(upstreamFixture = false): Plugin {

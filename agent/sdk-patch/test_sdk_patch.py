@@ -21,6 +21,7 @@ from openhands.sdk.llm import ImageContent, Message, TextContent
 from openhands.tools.terminal.definition import TerminalObservation
 import openhands.tools.terminal.impl  # Apply the executor patch as on the server.
 
+import nexus_goal as goal
 import nexus_ledger as ledger
 import nexus_screen as screen
 
@@ -116,6 +117,74 @@ class ScreenTests(unittest.TestCase):
             raw = base64.b64decode(images[0].image_urls[0].split(",", 1)[1])
             with Image.open(io.BytesIO(raw)) as image:
                 self.assertEqual(image.size, (1920, 960))
+
+
+class GoalTests(unittest.TestCase):
+    objective = "Создай файл hello.txt"
+
+    def user(self, text):
+        return MessageEvent(source="user", llm_message=Message(role="user", content=[TextContent(text=text)]))
+
+    def run_events(self, output):
+        from openhands.sdk.event import ActionEvent, ObservationEvent
+        from openhands.sdk.llm import MessageToolCall
+        from openhands.tools.terminal.definition import TerminalAction
+        call = MessageToolCall(id="call-1", name="terminal", arguments='{"command": "echo привет > hello.txt"}',
+                               origin="completion")
+        action = ActionEvent(thought=[TextContent(text="Создаю файл.")], action=TerminalAction(command="echo привет > hello.txt"),
+                             tool_name="terminal", tool_call_id="call-1", tool_call=call, llm_response_id="r1")
+        observation = ObservationEvent(observation=TerminalObservation(command="echo", content=[TextContent(text=output)]),
+                                       action_id=action.id, tool_name="terminal", tool_call_id="call-1")
+        return [self.user("старая просьба"), self.user(self.objective), action, observation]
+
+    def judge_llm(self, reply):
+        class Response:
+            message = Message(role="assistant", content=[TextContent(text=reply)])
+
+        class FakeLLM:
+            stream = False
+            prompts = []
+
+            def completion(self, messages):
+                self.prompts.append(messages)
+                return Response()
+        return FakeLLM()
+
+    def test_transcript_has_commands_clipped_outputs_and_starts_at_the_goal(self):
+        events = goal.since_objective(self.run_events("Х" * 10000), self.objective)
+        text = goal.render_transcript(events)
+        self.assertNotIn("старая просьба", text)
+        self.assertIn("echo привет > hello.txt", text)
+        self.assertIn("пропущено 7000 символов", text)
+        self.assertLess(len(goal.render_transcript(self.run_events("Х" * 10000) * 100)), goal.TRANSCRIPT_CHARS + 200)
+
+    def test_owner_decision_stops_the_loop_and_plain_gap_continues_in_russian(self):
+        from openhands.sdk.conversation.goal import controller as sdk
+        from openhands.agent_server import event_service
+        stop = sdk.GoalController(self.objective, self.judge_llm(
+            '{"score": 0.3, "complete": false, "missing": "выбрать папку", "needs_user": true}'))
+        step = stop.on_run_finished(self.run_events("ok"))
+        self.assertIsInstance(step, sdk.GoalDone)
+        self.assertEqual(step.outcome.status, "capped")
+        self.assertEqual(step.outcome.verdict.missing, goal.NEEDS_USER + "выбрать папку")
+        llm = self.judge_llm('{"score": 0.5, "complete": false, "missing": "нет проверки файла"}')
+        step = sdk.GoalController(self.objective, llm).on_run_finished(self.run_events("ok"))
+        self.assertIsInstance(step, sdk.GoalContinue)
+        self.assertTrue(step.followup.startswith(goal.FOLLOWUP_MARK))
+        self.assertIn("нет проверки файла", step.followup)
+        system, user = (message.content[0].text for message in llm.prompts[0])
+        self.assertIn("not a programmer", system)
+        # The earlier request comes as context with the objective, not as part of the judged run.
+        request, transcript = user.split("<transcript>")
+        self.assertIn(goal.CONTEXT_HEADER + "\nuser: старая просьба", request)
+        self.assertNotIn("старая просьба", transcript)
+        self.assertTrue(event_service.RESUME_PROMPT.startswith(goal.FOLLOWUP_MARK))
+
+    def test_unreadable_verdict_is_explained_in_russian(self):
+        from openhands.sdk.conversation.goal import judge
+        verdict = judge._parse_verdict(Message(role="assistant", content=[TextContent(text="не JSON")]))
+        self.assertFalse(verdict.complete)
+        self.assertIn("проверка не смогла", verdict.missing)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,10 @@ const PATTERNS: Record<Cue, [number, number][]> = {
 
 const CUE_BY_STATUS: Record<string, Cue> = {
   running: "working",
-  finished: "done",
+  verified: "done",
+  unverified: "done",
+  unconfirmed: "attention",
+  needs_user: "attention",
   stuck: "attention",
   awaiting_user_input: "attention",
   awaiting_user_confirmation: "attention",

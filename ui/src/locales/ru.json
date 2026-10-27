@@ -546,7 +546,7 @@
   "GOAL$ROUND": "Раунд {{iteration}}/{{max}}",
   "GOAL$STATUS_RUNNING": "выполняется",
   "GOAL$STATUS_COMPLETE": "завершено",
-  "GOAL$STATUS_CAPPED": "превышен лимит",
+  "GOAL$STATUS_CAPPED": "остановлено без подтверждения",
   "GOAL$STATUS_INTERRUPTED": "прервано",
   "GOAL$SCORE": "оценка {{score}}%",
   "GOAL$MISSING": "Не хватает: {{missing}}",

@@ -6,7 +6,17 @@ export type ModelState = "unknown" | "offline" | "loading" | "busy" | "idle";
 export interface ActivitySnapshot {
   actions: string[];
   error: string;
+  /** What the goal check found missing, when it stopped without confirming the result. */
+  missing?: string;
 }
+
+// The server's goal loop (agent/sdk-patch/nexus_goal.py): its own messages and the judge's
+// marker for a step only the owner can take.
+export const FOLLOWUP_MARK = "Проверка Nexus:";
+export const NEEDS_USER = "Нужно ваше решение: ";
+// worked: the agent acted since the loop's last update, so a finish now waits for the judge.
+interface Goal { status: string; objective: string; missing: string; worked: boolean }
+const NO_GOAL: Goal = { status: "", objective: "", missing: "", worked: false };
 
 export type Tone = "work" | "done" | "attention" | "error";
 
@@ -62,6 +72,9 @@ export function actionLabel(event: AgentEvent): string {
   return withName("Инструмент", shorten(tool, 30));
 }
 
+const messageText = (event: AgentEvent) =>
+  (event.llm_message?.content ?? []).filter((part) => part.type === "text").map((part) => part.text ?? "").join("").trim();
+
 export function errorLabel(event: { code?: string; classification?: { kind?: string } | null }) {
   return ERROR_BY_CODE[event.code ?? ""] ?? ERROR_BY_KIND[event.classification?.kind ?? ""] ?? "Неизвестный сбой";
 }
@@ -75,10 +88,12 @@ export class AgentActivity {
   private pending = new Map<string, string>();
   private byToolCall = new Map<string, string>();
   private error = "";
+  private goal = NO_GOAL;
 
   apply(events: AgentEvent[]) {
     for (const event of events) {
-      const raw = event as AgentEvent & { action_id?: string; tool_call_id?: string; code?: string };
+      const raw = event as AgentEvent & { action_id?: string; tool_call_id?: string; code?: string; key?: string; value?: any };
+      if (event.source === "agent") this.goal = { ...this.goal, worked: true };
       if (event.kind === "ActionEvent" && event.source === "agent") {
         this.error = "";
         if (INSTANT.has(event.tool_name ?? "")) continue;
@@ -94,19 +109,41 @@ export class AgentActivity {
         this.error = errorLabel(raw as Parameters<typeof errorLabel>[0]);
         this.pending.clear();
         this.byToolCall.clear();
+      } else if (event.kind === "ConversationStateUpdateEvent" && raw.key === "goal") {
+        this.goal = { status: String(raw.value?.status ?? ""), objective: String(raw.value?.objective ?? "").trim(),
+          missing: String(raw.value?.verdict?.missing ?? ""), worked: false };
       } else if (event.kind === "MessageEvent") {
         this.error = "";
+        // A request outside the loop (sent while the agent worked, or with files) is not checked.
+        const text = event.source === "user" ? messageText(event) : "";
+        if (text && text !== this.goal.objective && !text.startsWith(FOLLOWUP_MARK)) this.goal = NO_GOAL;
       }
     }
   }
 
   snapshot(): ActivitySnapshot {
-    return { actions: [...this.pending.values()], error: this.error };
+    const missing = this.goal.status === "capped" ? this.goal.missing : "";
+    return { actions: [...this.pending.values()], error: this.error, ...(missing ? { missing } : {}) };
+  }
+
+  /** The execution status with the goal check folded in: a finish says whether it was confirmed. */
+  verifiedStatus(status: string): string {
+    if (this.goal.status === "running") {
+      // Before the agent's first step the finish is the previous run's.
+      if (status === "finished") return this.goal.worked ? "checking" : "running";
+      return status === "idle" ? "running" : status;
+    }
+    if (status !== "finished") return status;
+    if (this.goal.status === "complete") return "verified";
+    if (this.goal.status === "capped") return this.goal.missing.startsWith(NEEDS_USER) ? "needs_user" : "unconfirmed";
+    return "unverified";
   }
 }
 
 const STATUS_TEXT: Record<string, [string, Tone]> = {
-  finished: ["Готово", "done"],
+  checking: ["Проверяю результат", "work"],
+  verified: ["Готово, проверено", "done"],
+  unverified: ["Закончил, результат не проверен", "done"],
   paused: ["Пауза", "done"],
   stuck: ["Агент застрял, нужна помощь", "attention"],
   awaiting_user_input: ["Агент ждёт вашего ответа", "attention"],
@@ -123,6 +160,10 @@ export function describeStatus(status: string, activity: ActivitySnapshot, model
     return { text: withName("Нужно ваше подтверждение", first ?? ""), tone: "attention" };
   }
   if (status === "error") return { text: activity.error ? `Ошибка: ${activity.error}` : "Ошибка агента", tone: "error" };
+  if (status === "needs_user") return { text: shorten(activity.missing ?? NEEDS_USER, 160), tone: "attention" };
+  if (status === "unconfirmed") {
+    return { text: `Закончил, но не всё подтверждено: ${shorten(activity.missing ?? "", 120)}`, tone: "attention" };
+  }
   if (status in STATUS_TEXT) {
     const [text, tone] = STATUS_TEXT[status];
     return { text, tone };

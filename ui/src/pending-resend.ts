@@ -12,7 +12,7 @@ import { parseDateAsUTC } from "../node_modules/@openhands/agent-canvas/dist/uti
 // The socket replays missed events right after reopening; wait for that before deciding a message was lost.
 const REPLAY_GRACE_MS = 3000;
 // History is read from shortly before the oldest lost message: the tablet's clock may differ from the PC's.
-const CLOCK_SLACK_MS = 5 * 60_000;
+export const CLOCK_SLACK_MS = 5 * 60_000;
 // A long outage of a busy agent can bury the message under many events; past this, delivery stays unknown.
 const HISTORY_PAGES = 10;
 
@@ -29,7 +29,7 @@ export function lostPending(pending: Pending[], conversationId: string, reopened
 
 /** User messages since the given time. Absence from an incomplete history is not proof of non-delivery:
  *  resending then could run an already accepted task twice, so an incomplete read throws. */
-async function userMessagesSince(conversationId: string, conversation: any, since: number, cancelled: () => boolean) {
+export async function userMessagesSince(conversationId: string, conversation: any, since: number, cancelled: () => boolean) {
   const found: ServerMessage[] = [];
   let pageId: string | undefined;
   for (let pages = 0; pages < HISTORY_PAGES && !cancelled(); pages++) {
