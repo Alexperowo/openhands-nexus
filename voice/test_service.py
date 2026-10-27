@@ -15,9 +15,16 @@ import service
 from service import TTS_SKIPPED, SpeechRequest, speech
 
 
-def call(path, body, content_type, headers=(), leave_after=None):
-    """One HTTP request into the app. The client leaves (http.disconnect) once leave_after() is true."""
-    messages = [{"type": "http.request", "body": body, "more_body": False}]
+UNREAD = []  # body parts the app did not read, per call
+
+
+def call(path, body, content_type, headers=(), leave_after=None, chunk=None):
+    """One HTTP request into the app. The client leaves (http.disconnect) once leave_after() is true.
+    With chunk, the body comes in parts of that size and without a length header (chunked)."""
+    parts = [body[start:start + chunk] for start in range(0, len(body), chunk)] if chunk else [body]
+    messages = [{"type": "http.request", "body": part, "more_body": index < len(parts) - 1}
+                for index, part in enumerate(parts)]
+    length = [] if chunk else [(b"content-length", str(len(body)).encode())]
     sent = []
 
     async def receive():
@@ -32,10 +39,10 @@ def call(path, body, content_type, headers=(), leave_after=None):
 
     scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": "POST",
              "scheme": "http", "path": path, "raw_path": path.encode(), "query_string": b"", "root_path": "",
-             "headers": [(b"content-type", content_type.encode()),
-                         (b"content-length", str(len(body)).encode()), *headers],
+             "headers": [(b"content-type", content_type.encode()), *length, *headers],
              "client": ("127.0.0.1", 1), "server": ("127.0.0.1", 18020)}
     anyio.run(service.app, scope, receive, send)
+    UNREAD.append(len(messages))
     status = next(m["status"] for m in sent if m["type"] == "http.response.start")
     return status, b"".join(m.get("body", b"") for m in sent if m["type"] == "http.response.body")
 
@@ -44,13 +51,15 @@ def say(text, **fields):
     return call("/v1/audio/speech", json.dumps({"input": text, **fields}).encode(), "application/json")
 
 
-def upload(audio, rate=16000, leave_after=None):
+def upload(audio, rate=16000, leave_after=None, chunk=None, raw=None):
     buffer = io.BytesIO()
-    sf.write(buffer, audio, rate, subtype="PCM_16", format="WAV")
+    if raw is None:
+        sf.write(buffer, audio, rate, subtype="PCM_16", format="WAV")
     boundary = "nexus-test-boundary"
     body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"dictation.wav\"\r\n"
-            "Content-Type: audio/wav\r\n\r\n").encode() + buffer.getvalue() + f"\r\n--{boundary}--\r\n".encode()
-    return call("/v1/audio/transcriptions", body, f"multipart/form-data; boundary={boundary}", leave_after=leave_after)
+            "Content-Type: audio/wav\r\n\r\n").encode() + (raw or buffer.getvalue()) + f"\r\n--{boundary}--\r\n".encode()
+    return call("/v1/audio/transcriptions", body, f"multipart/form-data; boundary={boundary}",
+                leave_after=leave_after, chunk=chunk)
 
 
 def speech_audio(seconds, rate=16000):
@@ -166,6 +175,41 @@ class TranscriptionTests(unittest.TestCase):
         self.assertEqual(status, 413)
         self.assertIn("6 минут", json.loads(body)["detail"])
         self.model.transcribe.assert_not_called()
+
+    def test_chunked_upload_over_the_limit_is_refused_while_it_arrives(self):
+        with patch("service.convert_to_wav") as convert:
+            status, body = upload(None, raw=b"\0" * (service.BODY_MAX_BYTES + 1024 * 1024), chunk=1024 * 1024)
+        self.assertEqual(status, 413)
+        self.assertIn("25 МБ", json.loads(body)["detail"])
+        self.assertGreater(UNREAD[-1], 0, "the rest of the body was not read")
+        convert.assert_not_called()
+        status, _ = upload(speech_audio(5), chunk=64 * 1024)
+        self.assertEqual(status, 200, "a chunked dictation within the limit is read")
+
+    def test_busy_recognition_refuses_before_decoding(self):
+        release, holding = threading.Event(), threading.Semaphore(0)
+
+        def hold():
+            with service.stt_gate():
+                holding.release()
+                release.wait(5)
+        threads = [threading.Thread(target=hold) for _ in range(2)]
+        threads[0].start()
+        holding.acquire(timeout=5)
+        threads[1].start()
+        for _ in range(100):
+            if service.stt_gate.places._value == 0:
+                break
+            threading.Event().wait(0.01)
+        try:
+            with patch("service.convert_to_wav") as convert:
+                status, _ = upload(speech_audio(2))
+        finally:
+            release.set()
+            for thread in threads:
+                thread.join(5)
+        self.assertEqual(status, 503)
+        convert.assert_not_called()
 
     def test_client_that_left_stops_recognition_between_parts(self):
         status, _ = upload(speech_audio(70), leave_after=lambda: len(self.parts) >= 1)

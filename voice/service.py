@@ -117,21 +117,38 @@ ALLOWED_ORIGINS = [
 # The size of OpenAI's own limit for an uploaded recording; a dictation is far smaller.
 UPLOAD_MAX_BYTES = 25 * 1024 * 1024
 TOO_LARGE = "Запись больше 25 МБ: так много служба не принимает"
+BODY_MAX_BYTES = UPLOAD_MAX_BYTES + 64 * 1024  # the recording and its multipart framing
 
 
 class LimitBody:
-    """Refuses an oversized upload before it is parsed and spooled to disk. Plain ASGI: an
-    @app.middleware wrapper would change what request.is_disconnected() sees."""
+    """Refuses an oversized request body before it is parsed and spooled to disk: by its length
+    header at once, and a body without one (chunked) by counting its bytes as they arrive. Plain
+    ASGI: an @app.middleware wrapper would change what request.is_disconnected() sees."""
 
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
         length = dict(scope.get("headers") or []).get(b"content-length", b"")
-        if scope["type"] == "http" and length.isdigit() and int(length) > UPLOAD_MAX_BYTES + 64 * 1024:
+        if length.isdigit() and int(length) > BODY_MAX_BYTES:
             await JSONResponse({"detail": TOO_LARGE}, status_code=413)(scope, receive, send)
             return
-        await self.app(scope, receive, send)
+        seen = 0
+
+        async def counted():
+            nonlocal seen
+            message = await receive()
+            if message["type"] == "http.request":
+                seen += len(message.get("body", b""))
+                if seen > BODY_MAX_BYTES:
+                    # FastAPI passes an HTTPException from reading the body on as the answer.
+                    raise HTTPException(status_code=413, detail=TOO_LARGE)
+            return message
+
+        await self.app(scope, counted, send)
 
 
 app.add_middleware(LimitBody)
@@ -384,20 +401,21 @@ def transcriptions(
         input_path = os.path.join(tmpdir, f"input{suffix}")
         with open(input_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-        # A chunked upload has no length header for the middleware to check.
+        # The middleware's bound includes the multipart framing; this one is the recording's own.
         if os.path.getsize(input_path) > UPLOAD_MAX_BYTES:
             raise HTTPException(status_code=413, detail=TOO_LARGE)
 
-        wav_path = os.path.join(tmpdir, "converted.wav")
-        try:
-            convert_to_wav(input_path, wav_path)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Audio decoding error: {e}")
-
-        if sf.info(wav_path).duration > STT_MAX_AUDIO_SECONDS:
-            raise HTTPException(status_code=413, detail=TOO_LONG)
-
+        # Decoding is part of the work the gate bounds: a refused request costs no ffmpeg run.
         with stt_gate():
+            wav_path = os.path.join(tmpdir, "converted.wav")
+            try:
+                convert_to_wav(input_path, wav_path)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Audio decoding error: {e}")
+
+            if sf.info(wav_path).duration > STT_MAX_AUDIO_SECONDS:
+                raise HTTPException(status_code=413, detail=TOO_LONG)
+
             texts = []
             for part_path in split_long_wav(wav_path, tmpdir):
                 stop_if_gone(request, "STT")
