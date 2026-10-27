@@ -12,6 +12,13 @@ A ledger from an earlier condensation is folded in: its detailed steps shrink to
 the numbering goes on. The model's own summary stays where the context is really out of room
 (hard_context_reset) and takes over when the ledger fails or outgrows its share.
 
+The model's retelling may drop a ban or the current request, so it always comes under the
+user's own words from the forgotten steps: their messages verbatim, up to PIN of the threshold,
+and the agent's last reply. When they do not fit, the first message and the newest ones stay
+whole and the left-out ones are counted, never cut out of the middle of a message. A later
+ledger takes these words back as its USER steps. Nothing keeps a whole endless conversation:
+the steps between the user's messages are compressed, and very old messages can be left out.
+
 Condensation starts at 70% of the model's window instead of at the window itself (Nex 19G with
 its 112K window at ~80K); agent/config/settings.json caps it at 160000 for the 224K models. Ours, not an upstream feature: the idea comes from Antigravity-Nexus.
 """
@@ -31,11 +38,17 @@ SHARE = 0.7          # condense at this part of the model's window
 DETAILED = 0.15      # the newest steps with details: up to this part of the threshold
 CAP = 0.25           # the whole ledger; a bigger one gives way to the model's summary
 CHARS_PER_TOKEN = 3  # cautious: Russian ~3.2, code ~4
+PIN = 0.1            # the user's own words above the model's summary: up to this part of the threshold
 HEADER = ("[STEP LEDGER — earlier steps of this session, compressed to save context. Every step is "
           "listed in order; user messages are verbatim; the newest steps have details. Treat these "
           "steps as already done; re-read a file or rerun a check if you need its exact content.]")
 DETAIL = "    ¦ "    # detail lines; folding an old ledger drops them
 TASKS = "[Task list at that point]"
+PINNED = ("[USER'S OWN WORDS — the user's messages from the earlier part of this session, verbatim and "
+          "in order. The goal, bans and decisions in them outrank the summary below.]")
+REPLY = "[The agent's last reply to the user]"
+SUMMARY = "[SUMMARY OF THE EARLIER WORK]"
+LEFT_OUT = re.compile(r"…\[(\d+) earlier user messages left out to save room\]…")
 BIG_ARGS = {"file_text", "old_str", "new_str"}
 ANSI = re.compile(r"\x1b\[[0-9;:?]*[A-Za-z]|\x1b\][^\x07]*\x07")  # ":" — journalctl colors (38:5:185)
 # The terminal appends these to every output; the exit code goes into the step's line instead.
@@ -45,6 +58,8 @@ TERMINAL_NOISE = re.compile(r"^\[(The command completed with exit code|Command f
 # Set while get_condensation runs: the threshold of that check. hard_context_reset runs outside
 # it, so it keeps the model's own summary.
 threshold = contextvars.ContextVar("nexus_ledger_threshold", default=None)
+# Set while hard_context_reset runs: the room for the user's words there.
+reset_threshold = contextvars.ContextVar("nexus_reset_threshold", default=None)
 
 
 def _text(content):
@@ -161,6 +176,94 @@ def _fold(ledger):
     return lines, max(numbers, default=0), tasks.strip() or None
 
 
+def _quote(text):
+    return "USER: " + text.replace("\n", "\n   ")
+
+
+def _left_out(count):
+    return f"…[{count} earlier user messages left out to save room]…"
+
+
+def _quoted(summary):
+    """The user's words in an earlier ledger or pinned block: their messages (str) and counts of
+    left-out ones (int) in order, and the agent's last reply in a pinned block."""
+    if summary.startswith(HEADER):
+        start, reply = r"#\d+ USER: ", None
+    elif summary.startswith(PINNED):
+        summary = summary.partition("\n" + SUMMARY + "\n")[0]
+        summary, _, reply = summary.partition("\n" + REPLY + "\n")
+        start, reply = "USER: ", "\n".join(line[3:] for line in reply.splitlines()) or None
+    else:
+        return [], None
+    items, current = [], None
+    for line in summary.splitlines()[1:]:
+        if current is not None and line.startswith("   ") and not line.startswith(DETAIL):
+            current.append(line[3:])
+            continue
+        current = None
+        if found := re.match(start, line):
+            current = [line[found.end():]]
+            items.append(current)
+        elif found := LEFT_OUT.search(line):
+            items.append(int(found.group(1)))
+    return [item if isinstance(item, int) else "\n".join(item) for item in items], reply
+
+
+def _pinned(events, limit):
+    """The user's own words from these events in PIN of the threshold, or None without any."""
+    items, reply = [], None
+    for event in events:
+        if isinstance(event, MessageEvent):
+            if event.source == "user":
+                items.append(_text(event.llm_message.content))
+            elif event.source == "agent":
+                reply = _text(event.llm_message.content) or reply
+        elif isinstance(event, ActionEvent) and event.tool_name == "finish":
+            reply = str(_args(event).get("message") or "") or reply
+        elif isinstance(event, CondensationSummaryEvent):
+            found, earlier_reply = _quoted(event.summary)
+            items += found
+            reply = earlier_reply or reply
+    words = [item for item in items if isinstance(item, str)]
+    if not words and not reply:
+        return None
+    room = int(limit * PIN * CHARS_PER_TOKEN)
+    if reply:
+        reply = _cut(reply, min(2000, room // 4))
+        room -= len(reply)
+    out = [PINNED] + [_quote(item) if isinstance(item, str) else _left_out(item) for item in items]
+    if sum(len(line) + 1 for line in out) > room + len(PINNED):
+        # The first message usually sets the task; then the newest ones, each whole.
+        kept = [_quote(text) for text in words]
+        first = _quote(_cut(words[0], max(room // 2, 300)))
+        room -= len(first) + 100
+        newest = []
+        for text in reversed(kept[1:]):
+            if len(text) + 1 > room:
+                break
+            room -= len(text) + 1
+            newest.append(text)
+        left_out = sum(item for item in items if isinstance(item, int)) + len(kept) - 1 - len(newest)
+        out = [PINNED, first] + ([_left_out(left_out)] if left_out else []) + newest[::-1]
+    if reply:
+        out += [REPLY, "   " + reply.replace("\n", "\n   ")]
+    return "\n".join(out)
+
+
+def _pin(condensation, events, limit):
+    """The model's summary under the user's own words from the forgotten events."""
+    try:
+        block = _pinned(events, limit or 80000)  # no limit known: as for a 112K window
+    except Exception:  # an event shape this code does not know: the summary alone
+        logger.exception("Nexus: the user's words were not pinned above the summary")
+        return condensation
+    if block is None:
+        return condensation
+    logger.info("Nexus: %d chars of the user's words above the model's summary", len(block))
+    summary = f"{block}\n{SUMMARY}\n{(condensation.summary or '').strip()}"
+    return condensation.model_copy(update={"summary": summary})
+
+
 def _ledger(events, detail_chars, user_limit, line_limit):
     attached = {event.tool_call_id: event for event in events
                 if isinstance(event, (ObservationEvent, UserRejectObservation, AgentErrorEvent))}
@@ -181,14 +284,21 @@ def _ledger(events, detail_chars, user_limit, line_limit):
                                  if re.match(r"#\d+ (?!USER: )", line) and " → REJECTED by " not in line else line
                                  for line in lines], []))
                 number, tasks = max(number, last), old_tasks
-            else:  # the model's own summary from an earlier hard reset: kept as it is
-                step("earlier summary:\n" + _cut(event.summary.strip(), user_limit * 2))
+            else:  # the model's own summary: the user's words above it stay whole
+                found, reply = _quoted(event.summary)
+                for item in found:
+                    step(_left_out(item) if isinstance(item, int) else _quote(item))
+                summary = event.summary.partition("\n" + SUMMARY + "\n")[2] if found or reply else event.summary
+                step("earlier summary:\n" + _cut(summary.strip(), user_limit * 2))
+                if reply:
+                    step("assistant (last reply before that summary): " + _short(reply, user_limit // 4),
+                         [_cut(reply, 3000)] if len(reply) > user_limit // 4 else [])
         elif isinstance(event, MessageEvent):
             text = _text(event.llm_message.content)
             if event.source == "user":
                 # Never silently cut a constraint out of the middle of the user's request.
                 # If these messages alone exceed CAP, build() falls back to the SDK summary.
-                step("USER: " + text.replace("\n", "\n   "))
+                step(_quote(text))
             else:  # the agent's answers carry its conclusions: more room than a tool step
                 step("assistant: " + _short(text, user_limit // 4), [_cut(text, 3000)] if len(text) > user_limit // 4 else [])
         elif isinstance(event, ActionEvent) and event.tool_name in ("finish", "think"):
@@ -270,6 +380,7 @@ def install(module):
     original_limit = condenser._effective_max_tokens
     original_get, original_aget = condenser.get_condensation, condenser.aget_condensation
     original_generate, original_agenerate = condenser._generate_condensation, condenser._agenerate_condensation
+    original_reset, original_areset = condenser.hard_context_reset, condenser.ahard_context_reset
 
     def _effective_max_tokens(self, agent_llm):
         limit = original_limit(self, agent_llm)
@@ -292,14 +403,31 @@ def install(module):
         finally:
             threshold.reset(token)
 
+    def hard_context_reset(self, view, agent_llm=None):
+        token = reset_threshold.set(self._effective_max_tokens(agent_llm))
+        try:
+            return original_reset(self, view, agent_llm=agent_llm)
+        finally:
+            reset_threshold.reset(token)
+
+    async def ahard_context_reset(self, view, agent_llm=None):
+        token = reset_threshold.set(self._effective_max_tokens(agent_llm))
+        try:
+            return await original_areset(self, view, agent_llm=agent_llm)
+        finally:
+            reset_threshold.reset(token)
+
     def _generate_condensation(self, forgotten_events, summary_offset, max_event_str_length=None):
         return (_condensation(forgotten_events, summary_offset)
-                or original_generate(self, forgotten_events, summary_offset, max_event_str_length))
+                or _pin(original_generate(self, forgotten_events, summary_offset, max_event_str_length),
+                        forgotten_events, threshold.get() or reset_threshold.get() or self.max_tokens))
 
     async def _agenerate_condensation(self, forgotten_events, summary_offset, max_event_str_length=None):
         return (_condensation(forgotten_events, summary_offset)
-                or await original_agenerate(self, forgotten_events, summary_offset, max_event_str_length))
+                or _pin(await original_agenerate(self, forgotten_events, summary_offset, max_event_str_length),
+                        forgotten_events, threshold.get() or reset_threshold.get() or self.max_tokens))
 
     condenser._effective_max_tokens = _effective_max_tokens
     condenser.get_condensation, condenser.aget_condensation = get_condensation, aget_condensation
     condenser._generate_condensation, condenser._agenerate_condensation = _generate_condensation, _agenerate_condensation
+    condenser.hard_context_reset, condenser.ahard_context_reset = hard_context_reset, ahard_context_reset

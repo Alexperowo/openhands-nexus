@@ -2,12 +2,14 @@
 
 No model requests, service restarts or user conversations are needed.
 """
+import asyncio
 import base64
 import io
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import sitecustomize as shim
@@ -125,11 +127,127 @@ class MemoryTests(unittest.TestCase):
     def test_oversized_user_message_uses_fallback_instead_of_truncation(self):
         self.assertIsNone(ledger.build([self.user("А" * 10000)], 1000))
 
+    def test_left_out_user_messages_are_whole_counted_and_carried(self):
+        words = [f"Сообщение {number}: " + "слово " * (300 if number == 18 else 30) + f"конец {number}."
+                 for number in range(1, 21)]
+        block = ledger._pinned([self.user(text) for text in words], 6000)
+        kept = [text for text in words if text in block]
+        # The first one and the newest in a row: an older one never stands in for a too long newer one.
+        self.assertEqual(kept, words[:1] + words[18:])
+        for number in range(1, 21):  # each message either whole or absent
+            self.assertEqual(f"Сообщение {number}:" in block, words[number - 1] in block)
+        self.assertIn(ledger._left_out(len(words) - len(kept)), block)
+        # A ledger takes the words back; the next pinned block still counts the left-out ones.
+        folded = ledger.build([CondensationSummaryEvent(summary=block + "\n" + ledger.SUMMARY + "\nСводка.")], 20000)
+        again = ledger._pinned([CondensationSummaryEvent(summary=folded), self.user("Ещё.")], 2000)
+        self.assertIn(words[0], again)
+        self.assertIn("Ещё.", again)
+        self.assertEqual(sum(map(int, ledger.LEFT_OUT.findall(again))), len(words) - len(kept) + sum(
+            text not in again for text in kept[1:]))
+
     def test_reasoning_cleanup_only_changes_repeated_long_sentences(self):
         normal = "Проверяю доступное место. Затем изучу журнал ошибок."
         self.assertEqual(shim.unloop(normal), normal)
         sentence = "Сначала необходимо проверить содержимое конкретного файла перед изменением. "
         self.assertEqual(shim.unloop(sentence * 4).count(sentence.strip()), 1)
+
+
+class PinnedWordsTests(unittest.TestCase):
+    """A ban and the current request through condensations of the real patched condenser, with model
+    switches; the summarizing model forgets everything the user said."""
+    BAN = "Ничего не удаляй в папке Документы, только переноси, и спрашивай меня перед каждым переносом."
+
+    def setUp(self):
+        from openhands.sdk.context.condenser import llm_summarizing_condenser as module
+        from openhands.sdk.event import SystemPromptEvent
+        self.big, self.small = (LLM(model="openai/nex", base_url="http://127.0.0.1:1/v1", api_key="not-needed",
+                                    usage_id=usage, max_input_tokens=window)
+                                for usage, window in (("big", 224000), ("small", 20000)))
+        self.condenser = module.LLMSummarizingCondenser(
+            llm=LLM(model="openai/nex", base_url="http://127.0.0.1:1/v1", api_key="not-needed", usage_id="condenser"),
+            max_size=12, keep_first=2, max_tokens=160000)
+        self.retold = 0
+
+        def generate(llm, messages, **_):
+            self.retold += 1
+            return SimpleNamespace(id=f"summary-{self.retold}",
+                                   message=SimpleNamespace(content=[TextContent(text="Сделано: файлы разобраны.")]))
+        async def agenerate(llm, messages, **kwargs):
+            return generate(llm, messages, **kwargs)
+        self.addCleanup(patch.stopall)
+        patch.object(LLM, "generate", generate).start()
+        patch.object(LLM, "agenerate", agenerate).start()
+        patch.object(module, "get_total_token_count", lambda *_: 0).start()
+        self.events = [SystemPromptEvent(system_prompt=TextContent(text="Ты агент."), tools=[]),
+                       MemoryTests.user(None, "Разбери папку Загрузки по типам файлов.")]
+
+    def say(self, *texts):
+        self.events += [MemoryTests.user(None, text) for text in texts]
+
+    def work(self, steps, answer="Перенесла"):
+        self.events += [MessageEvent(source="agent", llm_message=Message(
+            role="assistant", content=[TextContent(text=f"{answer} файл {number}.")])) for number in range(steps)]
+
+    def condense(self, llm, hard=False, run_async=False):
+        from openhands.sdk.context.view import View
+        view = View.from_events(self.events)
+        if run_async:  # as the agent's own step calls it
+            condensation = asyncio.run(self.condenser.ahard_context_reset(view, agent_llm=llm) if hard
+                                       else self.condenser.aget_condensation(view, agent_llm=llm))
+        else:
+            condensation = (self.condenser.hard_context_reset(view, agent_llm=llm) if hard
+                            else self.condenser.get_condensation(view, agent_llm=llm))
+        self.events.append(condensation)
+        return condensation.summary
+
+    def test_ban_survives_ledgers_model_summaries_and_model_switches(self):
+        log = "строка журнала\n" * 800
+        self.say(self.BAN)
+        self.work(12)
+        first = self.condense(self.big)  # a ledger
+        self.assertTrue(first.startswith(ledger.HEADER))
+        # The small model: a pasted log does not fit its ledger; the model retells.
+        self.say(log, "Продолжай.")
+        self.work(12, "Перенесла последний")
+        second = self.condense(self.small)
+        self.assertEqual(self.retold, 1)
+        self.assertTrue(second.startswith(ledger.PINNED))
+        self.assertIn(self.BAN, second)
+        self.assertIn("Продолжай.", second)
+        self.assertNotIn(log, second)
+        self.assertIn(ledger._left_out(1), second)
+        self.assertIn("Перенесла последний файл", second.partition(ledger.REPLY)[2].partition(ledger.SUMMARY)[0])
+        self.assertTrue(second.endswith("Сделано: файлы разобраны."))
+        # Back to the big model: its ledger takes the words back as USER steps.
+        self.say("Теперь картинки.")
+        self.work(12)
+        third = self.condense(self.big)
+        self.assertEqual(self.retold, 1)
+        self.assertIn("USER: " + self.BAN, third)
+        self.assertIn(ledger._left_out(1), third)
+        # Out of room on the small model: everything after the system prompt is retold.
+        self.say("Стоп, сначала покажи список.")
+        self.work(12)
+        fourth = self.condense(self.small, hard=True)
+        self.assertEqual(self.retold, 2)
+        for words in ("Разбери папку Загрузки по типам файлов.", self.BAN, "Стоп, сначала покажи список."):
+            self.assertIn("USER: " + words, fourth)
+        from openhands.sdk.context.view import View
+        view = View.from_events(self.events)
+        self.assertEqual(len(view.events), 2)
+        self.assertIn(self.BAN, view.events[1].summary)
+
+    def test_async_condensations_pin_the_words_too(self):
+        self.say(self.BAN, "строка журнала\n" * 800, "Продолжай.")
+        self.work(12)
+        second = self.condense(self.small, run_async=True)
+        self.assertTrue(second.startswith(ledger.PINNED))
+        self.assertIn("USER: " + self.BAN, second)
+        self.work(12)
+        third = self.condense(self.small, hard=True, run_async=True)
+        self.assertEqual(self.retold, 2)
+        self.assertIn("USER: " + self.BAN, third)
+        self.assertIn(ledger._left_out(1), third)
 
 
 class ScreenTests(unittest.TestCase):
