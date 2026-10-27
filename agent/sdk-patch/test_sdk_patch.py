@@ -27,6 +27,9 @@ import nexus_goal as goal
 import nexus_ledger as ledger
 import nexus_screen as screen
 
+WORDS = tempfile.TemporaryDirectory(prefix="nexus-words-test.")
+ledger.WORDS_DIR = Path(WORDS.name)  # never the real state folder
+
 
 class GuardIntegrationTests(unittest.TestCase):
     def setUp(self):
@@ -127,8 +130,14 @@ class MemoryTests(unittest.TestCase):
     def test_oversized_user_message_uses_fallback_instead_of_truncation(self):
         self.assertIsNone(ledger.build([self.user("А" * 10000)], 1000))
 
-    def test_left_out_user_messages_are_whole_counted_and_carried(self):
-        words = [f"Сообщение {number}: " + "слово " * (300 if number == 18 else 30) + f"конец {number}."
+    def saved(self, block):
+        """The words in the file a pinned block points to."""
+        path = next(filter(None, map(ledger.SAVED_PATH.match, block.splitlines())))[1]
+        self.assertEqual(Path(path).parent, ledger.WORDS_DIR)
+        return ledger._quoted(Path(path).read_text(encoding="utf-8"))[0]
+
+    def test_left_out_user_messages_are_whole_counted_saved_and_carried(self):
+        words = [f"Сообщение {number}: " + "слово " * (150 if number == 18 else 30) + f"конец {number}."
                  for number in range(1, 21)]
         block = ledger._pinned([self.user(text) for text in words], 6000)
         kept = [text for text in words if text in block]
@@ -137,13 +146,36 @@ class MemoryTests(unittest.TestCase):
         for number in range(1, 21):  # each message either whole or absent
             self.assertEqual(f"Сообщение {number}:" in block, words[number - 1] in block)
         self.assertIn(ledger._left_out(len(words) - len(kept)), block)
-        # A ledger takes the words back; the next pinned block still counts the left-out ones.
+        self.assertEqual(self.saved(block), words)
+        self.assertEqual(ledger._quoted(block)[0], words)
+        # A ledger takes all the words back from the file; the next block saves them again with the new one.
         folded = ledger.build([CondensationSummaryEvent(summary=block + "\n" + ledger.SUMMARY + "\nСводка.")], 20000)
-        again = ledger._pinned([CondensationSummaryEvent(summary=folded), self.user("Ещё.")], 2000)
+        for text in words:
+            self.assertIn(ledger._quote(text), folded)
+        again = ledger._pinned([CondensationSummaryEvent(summary=folded), self.user("Ещё.")], 3000)
         self.assertIn(words[0], again)
         self.assertIn("Ещё.", again)
-        self.assertEqual(sum(map(int, ledger.LEFT_OUT.findall(again))), len(words) - len(kept) + sum(
-            text not in again for text in kept[1:]))
+        self.assertEqual(self.saved(again), words + ["Ещё."])
+        shown = [text for text in words + ["Ещё."] if text in again]
+        self.assertEqual(sum(map(int, ledger.LEFT_OUT.findall(again))), len(words) + 1 - len(shown))
+
+    def test_a_message_too_long_for_the_block_is_counted_in_its_place(self):
+        words = ["Разбери Загрузки.", "Ничего не удаляй.", "\n".join(["строка журнала"] * 800), "Продолжай."]
+        block = ledger._pinned([self.user(text) for text in words], 6000)
+        lines = block.splitlines()
+        self.assertEqual(lines[2:], [ledger._quote(words[0]), ledger._quote(words[1]), ledger._left_out(1),
+                                     ledger._quote(words[3])])
+        self.assertEqual(ledger._quoted(block)[0], words)
+
+    def test_without_its_file_a_block_carries_what_it_shows_and_counts_the_rest(self):
+        words = ["Сообщение 1.", "слово " * 400, "Последнее сообщение."]
+        block = ledger._pinned([self.user(text) for text in words], 2000)
+        with patch.object(Path, "read_text", side_effect=FileNotFoundError):
+            self.assertEqual(ledger._quoted(block)[0], [words[0], 1, words[2]])
+        with patch.object(ledger, "WORDS_DIR", Path("/proc/nexus-no-such-folder")):
+            block = ledger._pinned([self.user(text) for text in words], 2000)
+        self.assertIn(ledger.NOT_SAVED, block)
+        self.assertEqual(ledger._quoted(block)[0], [words[0], 1, words[2]])
 
     def test_reasoning_cleanup_only_changes_repeated_long_sentences(self):
         normal = "Проверяю доступное место. Затем изучу журнал ошибок."
@@ -218,13 +250,14 @@ class PinnedWordsTests(unittest.TestCase):
         self.assertIn(ledger._left_out(1), second)
         self.assertIn("Перенесла последний файл", second.partition(ledger.REPLY)[2].partition(ledger.SUMMARY)[0])
         self.assertTrue(second.endswith("Сделано: файлы разобраны."))
-        # Back to the big model: its ledger takes the words back as USER steps.
+        # Back to the big model: its ledger takes all the words back as USER steps, the log from the file.
         self.say("Теперь картинки.")
         self.work(12)
         third = self.condense(self.big)
         self.assertEqual(self.retold, 1)
         self.assertIn("USER: " + self.BAN, third)
-        self.assertIn(ledger._left_out(1), third)
+        self.assertIn(ledger._quote(log.strip()), third)
+        self.assertNotIn(ledger._left_out(1), third)
         # Out of room on the small model: everything after the system prompt is retold.
         self.say("Стоп, сначала покажи список.")
         self.work(12)
@@ -236,6 +269,22 @@ class PinnedWordsTests(unittest.TestCase):
         view = View.from_events(self.events)
         self.assertEqual(len(view.events), 2)
         self.assertIn(self.BAN, view.events[1].summary)
+
+    def test_long_first_request_is_never_cut_and_its_ban_stays_reachable(self):
+        # The acceptance case: a 50 061-character first request with a ban in its middle, a 224K model.
+        ban = "НИКОГДА НЕ УДАЛЯЙ МОИ ФОТОГРАФИИ."
+        request = "План работы. " + "А" * 25000 + ban + "Б" * 25000 + " Конец просьбы."
+        self.events[1:] = [MemoryTests.user(None, request)]
+        self.work(3)
+        tess = LLM(model="openai/tess", base_url="http://127.0.0.1:1/v1", api_key="not-needed", usage_id="tess",
+                   max_input_tokens=229376)
+        summary = self.condense(tess, hard=True, run_async=True)
+        words = summary.partition(ledger.REPLY)[0]
+        self.assertNotIn("План работы", words)  # whole or not at all
+        self.assertIn(ledger._left_out(1), words)
+        self.assertEqual(MemoryTests.saved(self, summary), [request])
+        # When the block itself is condensed, the ledger takes the request back whole.
+        self.assertIn(ledger._quote(request), ledger.build([CondensationSummaryEvent(summary=summary)], 160000))
 
     def test_async_condensations_pin_the_words_too(self):
         self.say(self.BAN, "строка журнала\n" * 800, "Продолжай.")

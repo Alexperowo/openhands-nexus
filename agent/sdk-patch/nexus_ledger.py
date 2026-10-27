@@ -14,18 +14,23 @@ the numbering goes on. The model's own summary stays where the context is really
 
 The model's retelling may drop a ban or the current request, so it always comes under the
 user's own words from the forgotten steps: their messages verbatim, up to PIN of the threshold,
-and the agent's last reply. When they do not fit, the first message and the newest ones stay
-whole and the left-out ones are counted, never cut out of the middle of a message. A later
-ledger takes these words back as its USER steps. Nothing keeps a whole endless conversation:
-the steps between the user's messages are compressed, and very old messages can be left out.
+and the agent's last reply. Each message is shown whole or not at all, never cut. When they do
+not fit, all of them go verbatim to a file in OH_PERSISTENCE_DIR/nexus-user-words; the block
+shows the first message and the newest ones that fit, counts the rest and tells the agent to
+read that file before its next step. A later ledger or block takes the words back from that
+file. Nothing keeps a whole endless conversation in the context: the steps between the user's
+messages are compressed.
 
 Condensation starts at 70% of the model's window instead of at the window itself (Nex 19G with
 its 112K window at ~80K); agent/config/settings.json caps it at 160000 for the 224K models. Ours, not an upstream feature: the idea comes from Antigravity-Nexus.
 """
 import contextvars
+import hashlib
 import json
+import os
 import re
 import uuid
+from pathlib import Path
 
 from openhands.sdk.event import (ActionEvent, AgentErrorEvent, Condensation, CondensationSummaryEvent,
                                  MessageEvent, ObservationEvent, UserRejectObservation)
@@ -49,6 +54,17 @@ PINNED = ("[USER'S OWN WORDS — the user's messages from the earlier part of th
 REPLY = "[The agent's last reply to the user]"
 SUMMARY = "[SUMMARY OF THE EARLIER WORK]"
 LEFT_OUT = re.compile(r"…\[(\d+) earlier user messages left out to save room\]…")
+# The user's messages that do not fit the pinned block, all of them, verbatim.
+WORDS_DIR = Path(os.environ.get("OH_PERSISTENCE_DIR") or Path.home() / ".openhands") / "nexus-user-words"
+WORDS_FILE = ("[USER'S OWN WORDS — every message of the user from the earlier part of this session, "
+              "verbatim and in order.]")
+SAVED = ("[Not every user message fits here. All of them, verbatim and in order, are in the file {path}. "
+         "Read that whole file before your next step (in parts if the viewer shortens it): the goal, bans "
+         "and decisions in the messages not shown here still hold.]")
+SAVED_PATH = re.compile(r"^\[Not every user message fits here\. All of them, verbatim and in order, "
+                        r"are in the file (.+?\.txt)\. ")
+NOT_SAVED = ("[Not every user message fits here, and saving them to a file failed. Before anything risky, "
+             "ask the user to repeat the goal and bans you may be missing.]")
 BIG_ARGS = {"file_text", "old_str", "new_str"}
 ANSI = re.compile(r"\x1b\[[0-9;:?]*[A-Za-z]|\x1b\][^\x07]*\x07")  # ":" — journalctl colors (38:5:185)
 # The terminal appends these to every output; the exit code goes into the step's line instead.
@@ -185,17 +201,19 @@ def _left_out(count):
 
 
 def _quoted(summary):
-    """The user's words in an earlier ledger or pinned block: their messages (str) and counts of
-    left-out ones (int) in order, and the agent's last reply in a pinned block."""
+    """The user's words in an earlier ledger, pinned block or its file: their messages (str) and
+    counts of left-out ones (int) in order, and the agent's last reply in a pinned block."""
     if summary.startswith(HEADER):
         start, reply = r"#\d+ USER: ", None
+    elif summary.startswith(WORDS_FILE):
+        start, reply = "USER: ", None
     elif summary.startswith(PINNED):
         summary = summary.partition("\n" + SUMMARY + "\n")[0]
         summary, _, reply = summary.partition("\n" + REPLY + "\n")
         start, reply = "USER: ", "\n".join(line[3:] for line in reply.splitlines()) or None
     else:
         return [], None
-    items, current = [], None
+    items, current, saved = [], None, None
     for line in summary.splitlines()[1:]:
         if current is not None and line.startswith("   ") and not line.startswith(DETAIL):
             current.append(line[3:])
@@ -206,7 +224,31 @@ def _quoted(summary):
             items.append(current)
         elif found := LEFT_OUT.search(line):
             items.append(int(found.group(1)))
+        elif found := SAVED_PATH.match(line):
+            saved = found.group(1)
+    if saved:  # the file has them all; without it the block's own words and count
+        try:
+            return _quoted(Path(saved).read_text(encoding="utf-8"))[0], reply
+        except OSError:
+            logger.warning("Nexus: the user's words file %s is gone; only the pinned ones are carried", saved)
     return [item if isinstance(item, int) else "\n".join(item) for item in items], reply
+
+
+def _save(items):
+    """All the user's words in a file named by its content; its path, or None when it failed."""
+    text = "\n".join([WORDS_FILE] + [_quote(item) if isinstance(item, str) else _left_out(item)
+                                     for item in items]) + "\n"
+    path = WORDS_DIR / (hashlib.sha256(text.encode()).hexdigest()[:16] + ".txt")
+    try:
+        WORDS_DIR.mkdir(parents=True, exist_ok=True)
+        if not path.exists():
+            temp = path.with_suffix(".part")
+            temp.write_text(text, encoding="utf-8")
+            os.replace(temp, path)
+        return path
+    except OSError:
+        logger.exception("Nexus: the user's words were not saved to a file")
+        return None
 
 
 def _pinned(events, limit):
@@ -233,18 +275,30 @@ def _pinned(events, limit):
         room -= len(reply)
     out = [PINNED] + [_quote(item) if isinstance(item, str) else _left_out(item) for item in items]
     if sum(len(line) + 1 for line in out) > room + len(PINNED):
-        # The first message usually sets the task; then the newest ones, each whole.
+        # All of them go to a file. Here the first message, which usually sets the task, and then
+        # the newest ones; each whole or not at all.
+        path = _save(items)
+        note = SAVED.format(path=path) if path else NOT_SAVED
         kept = [_quote(text) for text in words]
-        first = _quote(_cut(words[0], max(room // 2, 300)))
-        room -= len(first) + 100
-        newest = []
+        room -= len(note) + 100
+        first = [text for text in kept[:1] if len(text) <= max(room // 2, 300)]
+        room -= sum(len(text) + 1 for text in first)
+        # Going back from the newest one: out of room, the older ones stay out too, so an older
+        # message never stands in for a newer one. One too long for this block on its own (a pasted
+        # log, a document) is only counted in its place.
+        whole, newest, skipped, placed = room, [], 0, 0
         for text in reversed(kept[1:]):
-            if len(text) + 1 > room:
+            if len(text) + 1 > whole:
+                skipped += 1
+                continue
+            lines = ([_left_out(skipped)] if skipped else []) + [text]  # newest first
+            if sum(len(line) + 1 for line in lines) > room:
                 break
-            room -= len(text) + 1
-            newest.append(text)
-        left_out = sum(item for item in items if isinstance(item, int)) + len(kept) - 1 - len(newest)
-        out = [PINNED, first] + ([_left_out(left_out)] if left_out else []) + newest[::-1]
+            room -= sum(len(line) + 1 for line in lines)
+            newest += lines
+            placed, skipped = placed + 1 + skipped, 0
+        left_out = sum(item for item in items if isinstance(item, int)) + len(kept) - len(first) - placed
+        out = [PINNED, note] + first + ([_left_out(left_out)] if left_out else []) + newest[::-1]
     if reply:
         out += [REPLY, "   " + reply.replace("\n", "\n   ")]
     return "\n".join(out)
