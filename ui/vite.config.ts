@@ -137,9 +137,12 @@ export default defineConfig(({ command, mode }) => {
     ws: true,
     headers: sessionApiKey ? { "X-Session-API-Key": sessionApiKey } : {},
   };
+  // Same routes as gateway/Caddyfile, first match wins (test-providers.mjs compares them).
   const proxy = {
+    "/api/automation/": { ...agentProxy, target: "http://127.0.0.1:18011", ws: false },
     "/api": agentProxy,
     "/sockets": agentProxy,
+    "^/(server_info|health|ready|alive)$": agentProxy,
     "/v1": { target: "http://127.0.0.1:18020", changeOrigin: true },
     // Only the model health; /slots and the rest of llama-server hold prompt text.
     "^/llm/running$": { target: "http://127.0.0.1:18030", changeOrigin: true, rewrite: () => "/running" },

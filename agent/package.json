@@ -1,14 +1,8 @@
 {
   "name": "nexus-agent",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "private": true,
+  "description": "Agent Canvas точной версии: agent-server и automation (launcher/run.sh agent)",
   "type": "module",
   "dependencies": {
     "@openhands/agent-canvas": "1.33.0"

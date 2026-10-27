@@ -70,3 +70,5 @@ chmod +x "$WORK/launcher/nexus-start" "$WORK/launcher/nexus-stop"
 shortcut ohn-start.desktop "Запустить Nexus" "Модель, голос, агент и шлюз для планшета" nexus-start media-playback-start
 shortcut ohn-stop.desktop "Остановить Nexus" "Остановить все службы Nexus и выгрузить модель" nexus-stop media-playback-stop
 echo "Готово: ярлыки «Запустить Nexus» и «Остановить Nexus» на рабочем столе и в меню."
+# Not a reason to stop: units and shortcuts do not depend on builds and weights.
+python3 -I "$WORK/launcher/preflight.py" || echo "Перед запуском доустановить перечисленное (README: «Установка», «Восстановление»)."

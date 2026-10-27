@@ -1,0 +1,102 @@
+#!/usr/bin/env -S python3 -I
+"""All checks of the project in one run, with a line per layer: readiness, interface, guard, voice,
+updater, launcher, gateway, SDK patches and the agent's settings against git.
+
+  ./check            # exit 1 if any layer failed; a skipped layer says why
+
+Builds nothing and starts no service: the interface tests need an existing ui/dist, the
+settings check a running agent. The log of a failed layer is printed after the summary.
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+VOICE = str(ROOT / "voice/.venv/bin/python")
+
+
+class Skip(Exception):
+    pass
+
+
+def agent_server_python(script):
+    """The command Canvas starts agent-server with (same uv environment), running a script instead."""
+    canvas = ROOT / "agent/node_modules/@openhands/agent-canvas/scripts/dev-safe.mjs"
+    if not canvas.exists():
+        raise Skip("нет agent/node_modules")
+    code = (f"const m = await import({json.dumps(str(canvas))});"
+            "console.log(JSON.stringify(m.buildAgentServerCommand({PATH: process.env.PATH, HOME: process.env.HOME})));")
+    built = json.loads(subprocess.run(["node", "--input-type=module", "-e", code], capture_output=True,
+                                      text=True, check=True, timeout=30).stdout)
+    args = built["args"]
+    command = ["env", f"PYTHONPATH={ROOT / 'agent/sdk-patch'}", "uv", "tool", "run", "--offline",
+               *args[:args.index("agent-server")], "python"]
+    if subprocess.run([*command, "-c", "pass"], capture_output=True, timeout=120).returncode:
+        raise Skip("окружение agent-server ещё не скачано: запустить Nexus один раз")
+    return [*command, script]
+
+
+def agent_answers():
+    try:
+        urllib.request.urlopen("http://127.0.0.1:18010/ready", timeout=3)
+        return True
+    except OSError:
+        return False
+
+
+def layers():
+    """(name, folder, commands, reason to skip or None)"""
+    venv = Path(VOICE).exists()
+    dist = (ROOT / "ui/dist/index.html").exists()
+    yield "готовность к запуску", ".", [["python3", "-I", "launcher/preflight.py"]], None
+    yield "интерфейс", "ui", [["npm", "test"]], None if dist else "нет ui/dist: (cd ui && npm run build)"
+    yield "страж", "guard", [["python3", "test_guard.py"]], None
+    yield "голос", "voice", [[VOICE, name] for name in ("test_pronunciation.py", "test_service.py", "test_download.py")], \
+        None if venv else "нет voice/.venv: (cd voice && uv sync --frozen)"
+    yield "обновления", "update", [["python3", "test_update.py"]], None
+    yield "запуск и смотритель", "launcher", [["python3", "test_watch.py"], ["python3", "test_preflight.py"]], None
+    yield "шлюз", "gateway", [["python3", "test_gateway.py"]], None
+    try:
+        sdk = [agent_server_python("agent/sdk-patch/test_sdk_patch.py")]
+        reason = None
+    except Skip as error:
+        sdk, reason = [], str(error)
+    yield "SDK-патчи", ".", sdk, reason
+    yield "настройки агента = git", ".", [["python3", "-I", "agent/config.py", "check"]], \
+        None if agent_answers() else "агент не запущен"
+
+
+def main():
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "OPENHANDS_SUPPRESS_BANNER": "1"}
+    summary, failures = [], []
+    for name, folder, commands, reason in layers():
+        if reason:
+            summary.append(f"ПРОПУЩЕНО  {name}: {reason}")
+            continue
+        start, log, ok = time.monotonic(), [], True
+        for command in commands:
+            shown = command[-2:] if len(command) > 4 else command  # the long uv line: just the script
+            print(f"… {name}: {' '.join(Path(c).name if c == VOICE else c for c in shown)}", flush=True)
+            done = subprocess.run(command, cwd=ROOT / folder, env=env, stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT, text=True, errors="replace")
+            log.append(done.stdout)
+            if done.returncode:
+                ok = False
+                break
+        seconds = round(time.monotonic() - start)
+        summary.append(f"{'ОК' if ok else 'ОШИБКА':<10} {name} ({seconds} с)")
+        if not ok:
+            failures.append((name, "".join(log)))
+    for name, log in failures:
+        print(f"\n===== {name}: конец журнала =====")
+        print("\n".join(log.rstrip().splitlines()[-40:]))
+    print("\n" + "\n".join(summary))
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

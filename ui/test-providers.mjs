@@ -165,6 +165,23 @@ test("production config never reads session.env and has no proxy key", async () 
   } finally { fs.readFileSync = original; }
 });
 
+test("the dev proxy sends each request where the gateway does (gateway/routes.json)", async () => {
+  const {config} = await loadConfigFromFile({command: "build", mode: "production"}, "vite.config.ts", undefined, "silent", undefined, "native");
+  const {ports, routes} = JSON.parse(readFileSync("../gateway/routes.json", "utf8"));
+  const proxy = Object.entries(config.server.proxy);
+  for (const route of routes) {
+    // Vite's own rule: the first key that matches; a "^" key is a regular expression.
+    const match = proxy.find(([context]) => context[0] === "^" && new RegExp(context).test(route.path) || route.path.startsWith(context));
+    if (route.upstream === null) { assert.equal(match, undefined, `${route.path} must not be proxied`); continue; }
+    assert.ok(match, `${route.path} is not proxied`);
+    const [, options] = match;
+    assert.equal(new URL(options.target).port, String(ports[route.upstream]), route.path);
+    assert.equal(options.rewrite ? options.rewrite(route.path) : route.path, route.to ?? route.path, route.path);
+    // The session key header (empty in a build, filled by `npm run dev`) goes where the gateway adds it.
+    assert.equal("headers" in options, route.key, route.path);
+  }
+});
+
 test("files landmark adapter changes only the root tag and rejects upstream drift", async () => {
   const {canvasFilesSemantics} = await import("./vite.config.ts");
   const plugin = canvasFilesSemantics();

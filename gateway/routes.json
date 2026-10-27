@@ -1,0 +1,22 @@
+{
+  "_comment": "Where the gateway (Caddyfile) and the UI dev proxy (vite.config.ts) send a request. upstream null = the page itself: not proxied. key = the gateway adds the session key.",
+  "ports": {"agent": 18010, "automation": 18011, "voice": 18020, "models": 18030},
+  "routes": [
+    {"path": "/api/automation/v1/runs", "upstream": "automation", "key": true},
+    {"path": "/api/conversations/search", "upstream": "agent", "key": true},
+    {"path": "/sockets/events/abc", "upstream": "agent", "key": true},
+    {"path": "/server_info", "upstream": "agent", "key": true},
+    {"path": "/health", "upstream": "agent", "key": true},
+    {"path": "/ready", "upstream": "agent", "key": true},
+    {"path": "/alive", "upstream": "agent", "key": true},
+    {"path": "/v1/audio/speech", "upstream": "voice", "key": false},
+    {"path": "/llm/running", "upstream": "models", "to": "/running", "key": false},
+    {"path": "/llm/model/qwen3.5-27b_q4/health", "upstream": "models", "to": "/upstream/qwen3.5-27b_q4/health", "key": false},
+    {"path": "/llm/slots", "upstream": null},
+    {"path": "/llm/model/qwen/slots", "upstream": null},
+    {"path": "/llm/model/a/b/health", "upstream": null},
+    {"path": "/upstream/qwen/health", "upstream": null},
+    {"path": "/server_info/extra", "upstream": null},
+    {"path": "/conversations/abc", "upstream": null}
+  ]
+}

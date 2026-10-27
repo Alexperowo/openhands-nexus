@@ -54,6 +54,11 @@
 launcher/install.sh   # ключи сессии (один раз), юниты ohn-*, ярлыки на рабочем столе
 ```
 
+В конце установщик перечисляет, чего ещё не хватает для запуска (то же отдельно:
+`python3 -I launcher/preflight.py`): программы, сборки, бинарники, сертификат, голосовые модели,
+`llama-server` и веса из `models/llama-swap.yaml`. Голосовые модели сверяются по SHA-256
+(`voice/download_models.py`): их читает pickle, подменённый файл выполнил бы свой код.
+
 ## Запуск
 
 Ярлык «Запустить Nexus» (или `systemctl --user start ohn.target`) поднимает модель, голос, агента
@@ -114,19 +119,65 @@ python3 -I agent/config.py apply   # записать профили и наст
 ## Проверки
 
 ```bash
-(cd ui && npm test)  # сборка ui/dist должна существовать; браузерные проверки: Firefox, Chrome
-(cd guard && python3 test_guard.py)
-(cd voice && .venv/bin/python test_pronunciation.py && .venv/bin/python test_service.py)
-(cd update && python3 test_update.py)
-(cd launcher && python3 test_watch.py)
-(cd gateway && python3 test_gateway.py)  # заголовки кэша страницы и файлов сборки
-update/nexus-update check
-python3 -I agent/config.py check
+./check   # все слои по очереди и итог строкой на слой; код 1, если что-то не прошло
 ```
+
+`./check` ничего не собирает и не запускает: тестам интерфейса нужна готовая `ui/dist` (браузерные
+проверки: Firefox, Chrome), сверке настроек — запущенный агент; без них слой пропускается с причиной.
+Слои: готовность к запуску, интерфейс (`ui`: `npm test`, в том числе одинаковость маршрутов
+стенда разработки и шлюза по `gateway/routes.json`), страж, голос (произношение, служба, сверка
+моделей), обновления, запуск и смотритель, шлюз (настоящий Caddy на свободном порту: маршруты,
+заголовки кэша), SDK-патчи, настройки агента против git (`agent/config.py check`).
+Отдельно, с сетью: `update/nexus-update check` — что можно обновить.
+
+Проверку SDK-патчей `./check` запускает тем же окружением uv, что Canvas даёт agent-server
+(без сети; до первого запуска Nexus окружения нет, и слой пропускается). Она проверяет стража
+в прямой SDK-беседе, блокировку при сбое хука, сохранение запретов пользователя через несколько
+сжатий и смену модели, передачу изображения в модель.
+
+TypeScript-проверки типов нет намеренно: надстройка подменяет внутренние модули Canvas, у которых
+нет описаний типов, а поведение держат тесты и сборка.
 
 Стенд интерфейса без настоящих служб — `ui/dev/README.md`.
 
-Проверка SDK-патчей без модели: интерпретатором установленного agent-server выполнить
-`PYTHONPATH="$PWD/agent/sdk-patch" <python-agent-server> agent/sdk-patch/test_sdk_patch.py`
-из корня проекта. Она проверяет стража в прямой SDK-беседе, блокировку при сбое хука,
-сохранение запретов пользователя через несколько сжатий и смену модели, передачу изображения в модель.
+## Восстановление
+
+Что нужно, чтобы поднять Nexus на чистой системе, кроме этого репозитория. Проверено 27.10.2026;
+`./check` и `python3 -I launcher/preflight.py` показывают, чего не хватает.
+
+| Что | Версия | Откуда |
+|---|---|---|
+| Agent Canvas, agent-server, automation | 1.33.0, 1.58.1, 1.25.1 | `npm ci` в `agent/` и `ui/`; agent-server и automation Canvas сам ставит через uv при первом запуске |
+| Caddy → `gateway/caddy` | v2.11.7 | caddyserver.com, linux-amd64 |
+| llama-swap → `models/llama-swap` | v266 | github.com/mostlygeek/llama-swap, релиз linux-amd64 |
+| ik_llama.cpp `llama-server` | a61ad78 (26.10.2026) | github.com/ikawrakow/ik_llama.cpp; `cmake -DGGML_CUDA=ON -DGGML_CUDA_FA_ALL_QUANTS=ON -DGGML_NATIVE=ON -DCMAKE_CUDA_ARCHITECTURES="75;120" -DCMAKE_BUILD_TYPE=Release` |
+| Голос: Silero v5.6 ru, GigaAM v3_e2e_rnnt | SHA-256 в `voice/download_models.py` | `download_models.py` скачивает и сверяет |
+| Node, uv, Python | 24.21, 0.12, 3.12 (голос) | системные |
+| hai-drivers (`screen/`) | 0.1.14 | `uv sync --frozen` |
+
+Веса моделей (пути — в `models/llama-swap.yaml`; размер для сверки, хеши не считаются):
+
+| Файл | МиБ |
+|---|---|
+| Nex-N2.5-mini-OrcaRouter-Sangreal-25G-ICEv2.gguf | 23394 |
+| Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf | 17616 |
+| mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf | 586 |
+| migtissera_Tess-4.5-27B-Q5_K_M.gguf | 19955 |
+| mmproj-Tess-4.5-27B-F16.gguf | 885 |
+| Holo4-27B-q4_k_m.gguf | 16094 |
+| Holo4-27B-mmproj.f16.gguf | 885 |
+
+Вне git и только в личной резервной копии: `~/.config/openhands-nexus/session.env` (ключ
+сессии и ключ шифрования `agent/state/secrets.json`; без него сохранённые в агенте ключи
+не читаются), корневой сертификат `gateway/ca/openhands-ca.{crt,key}` («OpenHands Local Root CA»,
+до 2036 г., уже установлен на планшете) и `agent/state/` (беседы). Потерян сертификат — выпустить
+новый корневой, положить в `gateway/ca/` и заново установить на планшет с `http://<адрес ПК>:8081/ca.crt`:
+
+```bash
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -subj "/CN=OpenHands Local Root CA" \
+  -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" \
+  -keyout gateway/ca/openhands-ca.key -out gateway/ca/openhands-ca.crt
+```
+
+Порядок: «Установка» выше → `launcher/install.sh` → `python3 -I agent/config.py apply` после
+первого запуска (профили и настройки из git) → `./check`.
