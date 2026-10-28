@@ -1209,7 +1209,7 @@
   "CONVERSATION$LOAD_MORE": "Загрузить ещё",
   "LANDING$SELECT_GIT_REPO": "Выберите Git-проект",
   "STATUS$BUILDING_RUNTIME": "Сборка среды выполнения...",
-  "SUGGESTIONS$WHAT_TO_BUILD": "Что вы хотите создать?",
+  "SUGGESTIONS$WHAT_TO_BUILD": "Что хотите сделать или исправить?",
   "SETTINGS_FORM$ENABLE_DEFAULT_CONDENSER_SWITCH_LABEL": "Включить конденсатор памяти",
   "BUTTON$MARK_HELPFUL": "Отметить это решение как полезное",
   "BUTTON$MARK_NOT_HELPFUL": "Отметить это решение как бесполезное",
