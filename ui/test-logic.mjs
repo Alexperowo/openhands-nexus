@@ -1502,13 +1502,45 @@ test("audio: a part whose end never comes (frozen page, system pause) is let go 
   const fixture = await audioFixture(t, async () => new Response(new Blob(["audio"])));
   await fixture.audioService.unlockAudio();
   t.mock.timers.enable({ apis: ["setTimeout"] });
-  fixture.audioService.speak("first", "Первый ответ.");
+  fixture.audioService.speak("first", "Первое предложение ответа. Второе предложение ответа.");
   fixture.audioService.speak("second", "Второй ответ.");
   await waitFor(() => fixture.played.length === 1);
   assert.equal(fixture.status.currentId, "first");
-  t.mock.timers.tick(60000);
+  Object.assign(fixture.played[0], { duration: 10, currentTime: 3 });
+  t.mock.timers.tick(10000);
+  fixture.played[0].currentTime = 8;
+  t.mock.timers.tick(10000);
+  await settle();
+  assert.equal(fixture.played.length, 1, "a part whose sound moves is not cut");
+  t.mock.timers.tick(10000);
   await waitFor(() => fixture.played.length === 2);
   assert.equal(fixture.status.currentId, "second", "the queue moved on instead of waiting forever");
+  assert.ok(fixture.audioService.resumes("first"), "the stalled answer is not counted as heard: ▶ goes on with it");
+
+  // A part played to its end whose end event was lost counts as read.
+  Object.assign(fixture.played[1], { duration: 2, currentTime: 2 });
+  t.mock.timers.tick(10000);
+  t.mock.timers.tick(10000);
+  await waitFor(() => fixture.status.currentId === null);
+  assert.equal(fixture.audioService.resumes("second"), false);
+  assert.equal(fixture.status.error, "");
+});
+
+test("audio: a stalled answer with nothing else queued says the reading broke off", async (t) => {
+  const saved = { ...getPreferences() };
+  t.after(() => setPreferences(saved));
+  setPreferences({ autoSpeak: true, cues: false });
+  const fixture = await audioFixture(t, async () => new Response(new Blob(["audio"])));
+  await fixture.audioService.unlockAudio();
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  fixture.audioService.speak("first", "Первое предложение ответа. Второе предложение ответа.");
+  await waitFor(() => fixture.played.length === 1);
+  Object.assign(fixture.played[0], { duration: 10, currentTime: 8 });
+  t.mock.timers.tick(10000);
+  t.mock.timers.tick(10000);
+  await waitFor(() => fixture.status.currentId === null);
+  assert.match(fixture.status.error, /Чтение прервалось/);
+  assert.ok(fixture.audioService.resumes("first"));
 });
 
 test("screen: kept on while the agent works, asked again after the page was hidden, let go at the end", async (t) => {

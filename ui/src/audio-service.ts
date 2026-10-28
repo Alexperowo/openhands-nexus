@@ -20,14 +20,15 @@ interface Item { id: string; chunks: string[]; full?: boolean; text?: string; re
 export const fullReadingId = (id: string) => `${id}:full`;
 
 const SILENT_WAV = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAAA";
-// A frozen page or a system pause may never report a part's end: it is let go after its own
-// length plus a margin (or a minute before the length is known), so one lost part does not
-// silence the rest of the run.
-const PLAY_MARGIN = 5000;
-const PLAY_UNKNOWN = 60000;
+// A frozen page or a system pause may never report a part's end. A part whose sound has not moved
+// for this long is let go, so one lost part does not silence the rest of the run: played to its end
+// it counts as read, stopped half-way it is a stall, which keeps the rest of an answer for its ▶.
+const PLAY_STALL = 10000;
 // A stopped answer goes on from the sentence that was sounding; this much earlier, as its share of a
 // part is only estimated from the time played.
 const RESUME_BACK = 1.5;
+
+class PlaybackStalled extends Error {}
 
 class AudioService {
   private audio: HTMLAudioElement | null = null;
@@ -257,11 +258,22 @@ class AudioService {
   private async play(audio: HTMLAudioElement, signal: AbortSignal) {
     audio.volume = getPreferences().volume;
     await new Promise<void>((resolve, reject) => {
-      let done = false;
-      const giveUp = () => { audio.pause(); ended(); };
-      let limit = setTimeout(giveUp, PLAY_UNKNOWN);
+      let heard = audio.currentTime;
+      const watch = () => {
+        const { currentTime, duration } = audio;
+        if (currentTime !== heard) {
+          heard = currentTime;
+          limit = setTimeout(watch, PLAY_STALL);
+        } else if (audio.ended || duration > 0 && currentTime >= duration - 0.25) {
+          ended(); // only the end event was lost
+        } else {
+          cleanup();
+          audio.pause();
+          reject(new PlaybackStalled());
+        }
+      };
+      let limit = setTimeout(watch, PLAY_STALL);
       const cleanup = () => {
-        done = true;
         clearTimeout(limit);
         audio.removeEventListener("ended", ended);
         audio.removeEventListener("error", failed);
@@ -273,11 +285,7 @@ class AudioService {
       audio.addEventListener("ended", ended);
       audio.addEventListener("error", failed);
       signal.addEventListener("abort", aborted, { once: true });
-      audio.play().then(() => {
-        if (done || !Number.isFinite(audio.duration)) return;
-        clearTimeout(limit);
-        limit = setTimeout(giveUp, audio.duration * 1000 / (audio.playbackRate || 1) + PLAY_MARGIN);
-      }, (error) => { cleanup(); reject(error); });
+      audio.play().catch((error) => { cleanup(); reject(error); });
     });
   }
 
@@ -324,6 +332,14 @@ class AudioService {
       }
     } catch (error) {
       if (generation !== this.generation) return;
+      if (error instanceof PlaybackStalled) {
+        // The rest of the run still sounds; a step simply gives way to a fresher one.
+        if (!this.currentIsStep) {
+          this.keepUnread();
+          this.notify({ error: "Чтение прервалось. Нажмите ▶ у ответа, чтобы продолжить." });
+        }
+        return;
+      }
       this.queue = [];
       this.pendingStep = null;
       this.currentIsStep = false;
