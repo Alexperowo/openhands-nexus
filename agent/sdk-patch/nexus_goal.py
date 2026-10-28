@@ -60,8 +60,9 @@ reported honestly with the remaining options, is not something the agent can fin
 
 The objective may give the owner's request in their own words and the goal as the assistant
 understood it: judge against the owner's words. Extras the agent itself offered or suggested
-(monitoring, further improvements) are not requirements. A symptom removed by switching off a
-useful function the owner did not agree to give up is not a repair.
+(monitoring, further improvements) are not requirements, and a general wish does not ask for new
+services or lasting duties. A symptom removed by switching off a useful function the owner did not
+agree to give up is not a repair.
 
 A later "user" message in the transcript is the owner correcting or adding to the request: judge
 the request as corrected. "check" lines are this check's own reminders, not the owner's words. If
