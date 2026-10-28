@@ -106,7 +106,8 @@ test("socket: history silent, each answer spoken once across reconnects, notices
           }];
         };`, api: `
         export const requestJson = path => { globalThis.__socketHarness.requests.push(path);
-          return path.endsWith("/events/count") ? globalThis.__socketHarness.count() : Promise.reject(new Error("unexpected " + path)); };
+          return path.endsWith("/events/count") ? globalThis.__socketHarness.count()
+            : path.includes("/events/search?") ? Promise.resolve({items: [], next_page_id: null}) : Promise.reject(new Error("unexpected " + path)); };
         export const errorMessage = error => error.message;`,
         preferences: "export const getPreferences = () => ({autoSpeak: true, speakSteps: true});",
         audio: "export const audioService = {stop() {}, speak(id) {globalThis.__socketHarness.spoken.push(id);}, speakStep(id) {globalThis.__socketHarness.spoken.push(id);}};",
