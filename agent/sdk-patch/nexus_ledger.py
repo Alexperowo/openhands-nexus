@@ -7,6 +7,8 @@ ledger built from the events themselves, without a model call:
   the newest of them: each call with its arguments and a digest of the result (first and last
     lines; rejections and errors in full);
   the older ones: one line per step. The user's messages stay verbatim, rejections stay.
+The goal check's follow-ups come as user messages but are not the user's words: a NEXUS CHECK step,
+never in the pinned block below.
 
 A ledger from an earlier condensation is folded in: its detailed steps shrink to their line and
 the numbering goes on. The model's own summary stays where the context is really out of room
@@ -37,6 +39,8 @@ from openhands.sdk.event import (ActionEvent, AgentErrorEvent, Condensation, Con
 from openhands.sdk.llm import TextContent
 from openhands.sdk.logger import get_logger
 
+from nexus_goal import FOLLOWUP_MARK
+
 logger = get_logger(__name__)
 
 SHARE = 0.7          # condense at this part of the model's window
@@ -52,6 +56,7 @@ TASKS = "[Task list at that point]"
 PINNED = ("[USER'S OWN WORDS — the user's messages from the earlier part of this session, verbatim and "
           "in order. The goal, bans and decisions in them outrank the summary below.]")
 REPLY = "[The agent's last reply to the user]"
+CHECK = "NEXUS CHECK: "  # the goal check's follow-up: a user message by its source, not the user's words
 SUMMARY = "[SUMMARY OF THE EARLIER WORK]"
 LEFT_OUT = re.compile(r"…\[(\d+) earlier user messages left out to save room\]…")
 # The user's messages that do not fit the pinned block, all of them, verbatim.
@@ -192,6 +197,12 @@ def _fold(ledger):
     return lines, max(numbers, default=0), tasks.strip() or None
 
 
+def _from_check(text):
+    """The goal check (nexus_goal.py) sends its follow-up as a user message; kept as the user's own
+    words it outranked the summary like a demand of theirs."""
+    return text.startswith(FOLLOWUP_MARK)
+
+
 def _quote(text):
     return "USER: " + text.replace("\n", "\n   ")
 
@@ -231,7 +242,9 @@ def _quoted(summary):
             return _quoted(Path(saved).read_text(encoding="utf-8"))[0], reply
         except OSError:
             logger.warning("Nexus: the user's words file %s is gone; only the pinned ones are carried", saved)
-    return [item if isinstance(item, int) else "\n".join(item) for item in items], reply
+    # Blocks written before the check's follow-ups were told apart carry them as the user's words.
+    items = [item if isinstance(item, int) else "\n".join(item) for item in items]
+    return [item for item in items if isinstance(item, int) or not _from_check(item)], reply
 
 
 def _save(items):
@@ -257,7 +270,9 @@ def _pinned(events, limit):
     for event in events:
         if isinstance(event, MessageEvent):
             if event.source == "user":
-                items.append(_text(event.llm_message.content))
+                text = _text(event.llm_message.content)
+                if not _from_check(text):
+                    items.append(text)
             elif event.source == "agent":
                 reply = _text(event.llm_message.content) or reply
         elif isinstance(event, ActionEvent) and event.tool_name == "finish":
@@ -334,6 +349,7 @@ def _ledger(events, detail_chars, user_limit, line_limit):
             if event.summary.startswith(HEADER):
                 lines, last, old_tasks = _fold(event.summary)
                 # Its user messages stay whole; other steps get shorter when the ledger is squeezed.
+                lines = [re.sub(rf"^(#\d+ )USER: (?={re.escape(FOLLOWUP_MARK)})", rf"\1{CHECK}", line) for line in lines]
                 entries.append(([_short(line, line_limit * 3)
                                  if re.match(r"#\d+ (?!USER: )", line) and " → REJECTED by " not in line else line
                                  for line in lines], []))
@@ -349,7 +365,9 @@ def _ledger(events, detail_chars, user_limit, line_limit):
                          [_cut(reply, 3000)] if len(reply) > user_limit // 4 else [])
         elif isinstance(event, MessageEvent):
             text = _text(event.llm_message.content)
-            if event.source == "user":
+            if event.source == "user" and _from_check(text):
+                step(CHECK + _short(text, user_limit // 4))
+            elif event.source == "user":
                 # Never silently cut a constraint out of the middle of the user's request.
                 # If these messages alone exceed CAP, build() falls back to the SDK summary.
                 step(_quote(text))

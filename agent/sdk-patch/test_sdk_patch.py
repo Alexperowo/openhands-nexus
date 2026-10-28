@@ -272,6 +272,24 @@ class PinnedWordsTests(unittest.TestCase):
         self.assertEqual(len(view.events), 2)
         self.assertIn(self.BAN, view.events[1].summary)
 
+    def test_the_checks_follow_up_is_no_word_of_the_user(self):
+        followup = goal.FOLLOWUP_PROMPT.format(iteration=1, missing="Не настроен постоянный фоновый мониторинг")
+        self.say(self.BAN, followup)
+        self.work(12)
+        first = self.condense(self.big)
+        self.assertIn(ledger.CHECK + "Проверка Nexus: задача ещё не выполнена", first)
+        self.assertNotIn("USER: " + goal.FOLLOWUP_MARK, first)
+        pinned = ledger._pinned([MemoryTests.user(None, self.BAN), MemoryTests.user(None, followup)], 20000)
+        self.assertIn(self.BAN, pinned)
+        self.assertNotIn("мониторинг", pinned)
+        # A block written before keeps it as the user's words: taken back, it is not one any more.
+        old = "\n".join([ledger.PINNED, ledger._quote(self.BAN), ledger._quote(followup)])
+        self.assertEqual(ledger._quoted(old)[0], [self.BAN])
+        old_ledger = "\n".join([ledger.HEADER, "#1 " + ledger._quote(self.BAN), "#2 " + ledger._quote(followup)])
+        rebuilt = ledger.build([CondensationSummaryEvent(summary=old_ledger), MemoryTests.user(None, "Дальше.")], 160000)
+        self.assertIn("#2 " + ledger.CHECK + goal.FOLLOWUP_MARK, rebuilt)
+        self.assertIn("#1 USER: " + self.BAN, rebuilt)
+
     def test_long_first_request_is_never_cut_and_its_ban_stays_reachable(self):
         # The acceptance case: a 50 061-character first request with a ban in its middle, a 224K model.
         ban = "НИКОГДА НЕ УДАЛЯЙ МОИ ФОТОГРАФИИ."
