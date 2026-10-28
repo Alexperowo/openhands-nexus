@@ -4,8 +4,9 @@ import { NEEDS_USER } from "./agent-activity.ts";
 
 // Checks of «done?» before the loop stops and says what stays unconfirmed.
 export const GOAL_ROUNDS = 3;
-// Between runs only: a message to a working agent joins its run, as in Canvas.
-const IDLE = new Set(["awaiting_user_input", "finished", "error"]);
+// Between runs only: a message to a working agent joins its run, as in Canvas. A run the owner
+// stopped is over too: the next morning's request after yesterday's «Стоп» went without a goal.
+const IDLE = new Set(["awaiting_user_input", "finished", "error", "paused", "stopped"]);
 
 export interface Composer { conversationId: string | null; agentState: string; attachments: number; mode: string }
 
@@ -53,11 +54,13 @@ export interface GoalStatus {
 /** The goal block's one line and what it shows when opened (goal-status-compact.tsx). */
 export function goalLine(goal: GoalStatus) {
   const missing = goal.verdict?.missing?.trim() ?? "";
+  // While it works, the round under way: the checks done so far plus the current one.
+  const round = `Раунд ${Math.min(goal.iteration + 1, goal.max_iterations)}/${goal.max_iterations}`;
   let line = `Цель: ${goal.objective}`;
   if (goal.status === "complete") line = `Готово: ${goal.objective}`;
   else if (goal.status === "interrupted") line = `Прервано: ${goal.objective}`;
   else if (goal.status === "capped") line = missing.startsWith(NEEDS_USER) ? missing : `Не подтверждено: ${missing || goal.objective}`;
-  else if (goal.active && missing) line = `Проверка ${goal.iteration}/${goal.max_iterations}: не хватает — ${missing}`;
+  else if (goal.active) line = missing ? `${round}: не хватает — ${missing}` : `${round}: ${goal.objective}`;
   const details = [`Цель: ${goal.objective}`, missing && !missing.startsWith(NEEDS_USER) ? `Не хватает: ${missing}` : missing,
     `Проверок: ${goal.iteration} из ${goal.max_iterations}`].filter(Boolean).join("\n");
   return { line, details };

@@ -5,6 +5,7 @@ import { requestJson, errorMessage } from "./api.ts";
 import { SpeechEvents, type AgentEvent } from "./speech-events.ts";
 import { SessionEvents, openingCursor, type SessionFrame } from "./session-events.ts";
 import { AgentActivity, CheckedSpeech, ModelProgress, readModelState, type ActivitySnapshot, type ModelState } from "./agent-activity.ts";
+import { screenAwake } from "./screen-awake.ts";
 
 const NO_ACTIVITY: ActivitySnapshot = { actions: [], error: "" };
 const CONNECTION_LOST = "Нет связи с сервером";
@@ -86,8 +87,10 @@ export function useConversationSpeech(conversationId: string | null) {
       } else if (modelTimer === undefined) {
         modelTimer = setTimeout(readModel, modelAt ? MODEL_INTERVAL : 0);
       }
+      const status = activity.verifiedStatus(session!.status);
+      screenAwake.set(status === "running" || status === "checking");
       setState(previous => mergeSpeechSnapshot(previous, {
-        status: activity.verifiedStatus(session!.status), error: "", ready: true, id: conversationId,
+        status, error: "", ready: true, id: conversationId,
         activity: activity.snapshot(), model,
       }));
     };
@@ -206,6 +209,7 @@ export function useConversationSpeech(conversationId: string | null) {
     return () => {
       controller.abort();
       document.removeEventListener("visibilitychange", resume);
+      screenAwake.set(false);
       audioService.stop();
     };
   }, [conversationId]);

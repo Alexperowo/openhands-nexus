@@ -19,6 +19,11 @@ interface Item { id: string; chunks: string[]; full?: boolean }
 export const fullReadingId = (id: string) => `${id}:full`;
 
 const SILENT_WAV = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAAA";
+// A frozen page or a system pause may never report a part's end: it is let go after its own
+// length plus a margin (or a minute before the length is known), so one lost part does not
+// silence the rest of the run.
+const PLAY_MARGIN = 5000;
+const PLAY_UNKNOWN = 60000;
 
 class AudioService {
   private audio: HTMLAudioElement | null = null;
@@ -216,7 +221,12 @@ class AudioService {
   private async play(audio: HTMLAudioElement, signal: AbortSignal) {
     audio.volume = getPreferences().volume;
     await new Promise<void>((resolve, reject) => {
+      let done = false;
+      const giveUp = () => { audio.pause(); ended(); };
+      let limit = setTimeout(giveUp, PLAY_UNKNOWN);
       const cleanup = () => {
+        done = true;
+        clearTimeout(limit);
         audio.removeEventListener("ended", ended);
         audio.removeEventListener("error", failed);
         signal.removeEventListener("abort", aborted);
@@ -227,7 +237,11 @@ class AudioService {
       audio.addEventListener("ended", ended);
       audio.addEventListener("error", failed);
       signal.addEventListener("abort", aborted, { once: true });
-      audio.play().catch((error) => { cleanup(); reject(error); });
+      audio.play().then(() => {
+        if (done || !Number.isFinite(audio.duration)) return;
+        clearTimeout(limit);
+        limit = setTimeout(giveUp, audio.duration * 1000 / (audio.playbackRate || 1) + PLAY_MARGIN);
+      }, (error) => { cleanup(); reject(error); });
     });
   }
 

@@ -782,14 +782,14 @@ test("goal check: «Готово» only after the judge confirms; other finishes
 test("goal routing: only a plain request to an idle conversation becomes a goal", () => {
   const idle = { conversationId: "c", agentState: "finished", attachments: 0, mode: "code" };
   assert.equal(goalObjective("  Создай файл \n", idle), "Создай файл");
-  for (const agentState of ["awaiting_user_input", "error"]) assert.equal(goalObjective("x", { ...idle, agentState }), "x");
+  for (const agentState of ["awaiting_user_input", "error", "paused", "stopped"]) assert.equal(goalObjective("x", { ...idle, agentState }), "x");
   assert.equal(goalObjective("/goal x", idle), "");
   assert.equal(goalObjective("/btw x", idle), "");
   assert.equal(goalObjective("   ", idle), "");
   assert.equal(goalObjective("x", { ...idle, attachments: 1 }), "");
   assert.equal(goalObjective("x", { ...idle, mode: "plan" }), "");
   assert.equal(goalObjective("x", { ...idle, conversationId: null }), "");
-  for (const agentState of ["running", "paused", "loading", "awaiting_user_confirmation"]) {
+  for (const agentState of ["running", "loading", "awaiting_user_confirmation"]) {
     assert.equal(goalObjective("x", { ...idle, agentState }), "", agentState);
   }
 });
@@ -1346,9 +1346,10 @@ test("goal speech: the answer is heard after the check's verdict, never «done»
 
 test("goal block: one line for the goal, a check's gap or the outcome; the rest when opened", () => {
   const base = { active: true, status: "running", iteration: 0, max_iterations: 3, objective: "Звук в наушниках работает", verdict: null };
-  assert.equal(goalLine(base).line, "Цель: Звук в наушниках работает");
+  assert.equal(goalLine(base).line, "Раунд 1/3: Звук в наушниках работает");
+  assert.equal(goalLine({ ...base, active: false, status: "" }).line, "Цель: Звук в наушниках работает");
   const gap = { ...base, iteration: 1, verdict: { score: 0.4, complete: false, missing: "нет проверки звука" } };
-  assert.equal(goalLine(gap).line, "Проверка 1/3: не хватает — нет проверки звука");
+  assert.equal(goalLine(gap).line, "Раунд 2/3: не хватает — нет проверки звука");
   assert.equal(goalLine(gap).details, "Цель: Звук в наушниках работает\nНе хватает: нет проверки звука\nПроверок: 1 из 3");
   assert.equal(goalLine({ ...gap, active: false, status: "complete", verdict: { score: 0.9, complete: true, missing: "" } }).line,
     "Готово: Звук в наушниках работает");
@@ -1357,4 +1358,54 @@ test("goal block: one line for the goal, a check's gap or the outcome; the rest 
   assert.equal(goalLine(decision).details, "Цель: Звук в наушниках работает\n" + NEEDS_USER + "выбрать наушники\nПроверок: 1 из 3");
   assert.equal(goalLine({ ...gap, active: false, status: "capped" }).line, "Не подтверждено: нет проверки звука");
   assert.equal(goalLine({ ...base, active: false, status: "interrupted" }).line, "Прервано: Звук в наушниках работает");
+});
+
+test("audio: a part whose end never comes (frozen page, system pause) is let go and the next answer plays", async (t) => {
+  const saved = { ...getPreferences() };
+  t.after(() => setPreferences(saved));
+  setPreferences({ autoSpeak: true, cues: false });
+  const fixture = await audioFixture(t, async () => new Response(new Blob(["audio"])));
+  await fixture.audioService.unlockAudio();
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  fixture.audioService.speak("first", "Первый ответ.");
+  fixture.audioService.speak("second", "Второй ответ.");
+  await waitFor(() => fixture.played.length === 1);
+  assert.equal(fixture.status.currentId, "first");
+  t.mock.timers.tick(60000);
+  await waitFor(() => fixture.played.length === 2);
+  assert.equal(fixture.status.currentId, "second", "the queue moved on instead of waiting forever");
+});
+
+test("screen: kept on while the agent works, asked again after the page was hidden, let go at the end", async (t) => {
+  const page = new EventTarget();
+  page.visibilityState = "visible";
+  const locks = [];
+  const wakeLock = { async request(type) { const lock = { type, released: false, async release() { lock.released = true; } }; locks.push(lock); return lock; } };
+  const originalDocument = globalThis.document;
+  const originalWakeLock = Object.getOwnPropertyDescriptor(navigator, "wakeLock");
+  globalThis.document = page;
+  Object.defineProperty(navigator, "wakeLock", { value: wakeLock, configurable: true });
+  t.after(() => {
+    globalThis.document = originalDocument;
+    if (originalWakeLock) Object.defineProperty(navigator, "wakeLock", originalWakeLock);
+    else delete navigator.wakeLock;
+  });
+  const { screenAwake } = await import("./src/screen-awake.ts?case=screen");
+  screenAwake.set(true);
+  screenAwake.set(true);
+  await settle();
+  assert.deepEqual(locks.map((lock) => lock.type), ["screen"], "one lock for the whole run");
+  // The browser drops the lock when the page hides; on return it is asked again.
+  locks[0].released = true;
+  page.visibilityState = "hidden";
+  page.dispatchEvent(new Event("visibilitychange"));
+  await settle();
+  assert.equal(locks.length, 1, "a hidden page cannot hold the screen");
+  page.visibilityState = "visible";
+  page.dispatchEvent(new Event("visibilitychange"));
+  await settle();
+  assert.equal(locks.length, 2);
+  screenAwake.set(false);
+  await settle();
+  assert.equal(locks[1].released, true, "the screen may sleep again when the work ends");
 });
