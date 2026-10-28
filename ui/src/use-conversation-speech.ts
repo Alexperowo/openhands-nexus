@@ -3,7 +3,7 @@ import { audioService } from "./audio-service.ts";
 import { getPreferences } from "./preferences.ts";
 import { requestJson, errorMessage } from "./api.ts";
 import { SpeechEvents, type AgentEvent } from "./speech-events.ts";
-import { SessionEvents, openingCursor, type SessionFrame } from "./session-events.ts";
+import { SessionEvents, openingCursor, runningGoal, type SessionFrame } from "./session-events.ts";
 import { AgentActivity, CheckedSpeech, ModelProgress, readModelState, type ActivitySnapshot, type ModelState } from "./agent-activity.ts";
 import { screenAwake } from "./screen-awake.ts";
 
@@ -132,7 +132,10 @@ export function useConversationSpeech(conversationId: string | null) {
       retryTimer = undefined;
       if (!session) {
         try {
-          session = new SessionEvents(openingCursor(await requestJson<number>(`${path}/events/count`, { signal })));
+          const count = await requestJson<number>(`${path}/events/count`, { signal });
+          const goal = await runningGoal(query => requestJson(`${path}/events/search?${query}`, { signal }));
+          if (goal) activity.apply([goal]);
+          session = new SessionEvents(openingCursor(count));
         } catch (error) {
           fail(error);
           return;

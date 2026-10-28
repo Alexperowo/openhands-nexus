@@ -16,6 +16,27 @@ export const HISTORY_EVENTS = 100;
 /** The resume cursor for opening: the last HISTORY_EVENTS of a log with `count` events. */
 export const openingCursor = (count: number) => Math.max(Number(count) - HISTORY_EVENTS - 1, -1);
 
+/** Pages of state updates searched for the goal on opening: usage stats fill most of them. */
+const GOAL_PAGES = 5;
+
+/**
+ * A goal check still running when the page opens, though it began before the history read: the
+ * voice must hold the agent's answer until the verdict. The server marks a goal it no longer runs
+ * as interrupted, so the latest goal event tells.
+ */
+export async function runningGoal(search: (query: string) => Promise<{ items: StateEvent[]; next_page_id?: string | null }>) {
+  let pageId = "";
+  for (let pages = 0; pages < GOAL_PAGES; pages++) {
+    const page = await search("kind=ConversationStateUpdateEvent&sort_order=TIMESTAMP_DESC&limit=100" +
+      (pageId && `&page_id=${encodeURIComponent(pageId)}`));
+    const goal = page.items.find(event => event.key === "goal");
+    if (goal) return (goal.value as { active?: unknown } | null)?.active ? goal : null;
+    if (!page.next_page_id) return null;
+    pageId = page.next_page_id;
+  }
+  return null;
+}
+
 /**
  * Reads the session socket (/sockets/session/{id}). A durable event carries its index in the
  * conversation log (seq), so reconnecting after the last seq loses and repeats nothing. Events up

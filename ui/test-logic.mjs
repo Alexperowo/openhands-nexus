@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { SessionEvents, openingCursor } from "./src/session-events.ts";
+import { SessionEvents, openingCursor, runningGoal } from "./src/session-events.ts";
 import { SpeechEvents, forSpeech, speechText, speechChunks, formatPlanCount, clipStepExplanation, actionSpeechPhrase, STEP_CHARS } from "./src/speech-events.ts";
 import { getPreferences, setPreferences, stateCuesEnabled } from "./src/preferences.ts";
 import { AgentActivity, CheckedSpeech, FOLLOWUP_MARK, MODEL_STALLED, ModelProgress, NEEDS_USER, STALL_MS, actionLabel, describeStatus, readModelState } from "./src/agent-activity.ts";
@@ -1441,6 +1441,42 @@ test("goal speech: the answer is heard after the check's verdict, never «done»
   hear(goal("running", "нет проверки")); hear(message("u7", `${FOLLOWUP_MARK} задача ещё не выполнена`, "user"));
   assert.deepEqual(hear(goal("capped", "файл не найден")).map(([, text]) => text),
     ["Закончил, но не всё подтверждено: файл не найден"]);
+  hear(goal("running")); hear(message("u8", "Почини звук", "user"));
+  assert.deepEqual(hear(message("a8", "Готово, всё работает.")), []);
+  assert.deepEqual(hear(goal("interrupted")), [], "a stopped check drops the unchecked answer");
+  assert.deepEqual(hear(message("a9", "Остановился.")), [["a9", "Остановился."]]);
+
+  // Opened again while a check runs that began before the read history: the opening seed holds it.
+  const reopened = new AgentActivity();
+  const late = new CheckedSpeech(reopened);
+  const hearLate = (event) => { reopened.apply([event]); return late.take(event, speechText(event)); };
+  reopened.apply([goal("running")]);
+  assert.deepEqual(hearLate(message("b1", "Готово, всё работает.")), [], "waits for the verdict");
+  assert.deepEqual(hearLate(goal("complete")), [["b1", "Готово, всё работает."]]);
+});
+
+test("goal speech on opening: the latest goal event tells whether a check still runs", async () => {
+  const state = (key, value) => ({ id: `${key}-${JSON.stringify(value)}`, kind: "ConversationStateUpdateEvent", source: "environment", key, value });
+  const stats = Array.from({ length: 100 }, (_, i) => state("stats", i));
+  const search = (pages) => {
+    const queries = [];
+    const read = async (query) => {
+      queries.push(query);
+      const page = pages[queries.length - 1];
+      return { items: page, next_page_id: queries.length < pages.length ? `p${queries.length}` : null };
+    };
+    return { queries, read };
+  };
+  const running = state("goal", { active: true, status: "running" });
+  let reader = search([stats, [state("execution_status", "running"), running, state("goal", { active: false, status: "complete" })]]);
+  assert.equal(await runningGoal(reader.read), running);
+  assert.deepEqual(reader.queries, ["kind=ConversationStateUpdateEvent&sort_order=TIMESTAMP_DESC&limit=100",
+    "kind=ConversationStateUpdateEvent&sort_order=TIMESTAMP_DESC&limit=100&page_id=p1"]);
+  reader = search([[state("goal", { active: false, status: "interrupted" }), running]]);
+  assert.equal(await runningGoal(reader.read), null, "the latest goal ended");
+  reader = search([stats, stats, stats, stats, stats, [running]]);
+  assert.equal(await runningGoal(reader.read), null, "not searched without end");
+  assert.equal(reader.queries.length, 5);
 });
 
 test("goal block: one line for the goal, a check's gap or the outcome; the rest when opened", () => {

@@ -171,8 +171,7 @@ export class AgentActivity {
  * The voice agrees with the goal check: while a goal is checked, the agent's answer waits for the
  * verdict. Confirmed: the answer. Not confirmed: the answer, then what is missing. Another round
  * (the check's follow-up): that answer is dropped, the next one waits. An error releases it.
- * Only fresh events come here, so a goal already running when the page opened counts from its
- * first fresh event.
+ * A stopped check drops it: unchecked, it must not sound like a result (▶ still reads it).
  */
 export class CheckedSpeech {
   private held: [string, string] | null = null;
@@ -182,7 +181,9 @@ export class CheckedSpeech {
 
   /** Called after activity.apply(event) with the event's spoken text; returns [id, text] to say now. */
   take(event: AgentEvent, text: string): [string, string][] {
-    if (event.source === "user" && event.kind === "MessageEvent") this.held = null;
+    const raw = event as AgentEvent & { key?: string; value?: any };
+    if (event.source === "user" && event.kind === "MessageEvent" ||
+      event.kind === "ConversationStateUpdateEvent" && raw.key === "goal" && raw.value?.status === "interrupted") this.held = null;
     const failed = event.kind === "ConversationErrorEvent";
     const running = this.activity.goalRunning(), ended = this.running && !running;
     this.running = running;
