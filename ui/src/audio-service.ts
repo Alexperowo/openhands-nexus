@@ -12,8 +12,9 @@ export interface AudioStatus {
   isDictating: boolean;
 }
 
-/** full: «Полностью» — the voice service then reads links, paths and hashes out too. */
-interface Item { id: string; chunks: string[]; full?: boolean }
+/** full: «Полностью» — the voice service then reads links, paths and hashes out too.
+ *  text: an answer (not a step), which a stop lets ▶ continue later. */
+interface Item { id: string; chunks: string[]; full?: boolean; text?: string }
 
 /** Status id of an answer being read in full; ▶ and «полностью» show ■ separately. */
 export const fullReadingId = (id: string) => `${id}:full`;
@@ -24,6 +25,9 @@ const SILENT_WAV = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAI
 // silence the rest of the run.
 const PLAY_MARGIN = 5000;
 const PLAY_UNKNOWN = 60000;
+// A stopped answer goes on from the sentence that was sounding; this much earlier, as its share of a
+// part is only estimated from the time played.
+const RESUME_BACK = 1.5;
 
 class AudioService {
   private audio: HTMLAudioElement | null = null;
@@ -39,6 +43,10 @@ class AudioService {
   private unlocking = false;
   private dictations = new Map<symbol, (() => void) | undefined>();
   private deferredAnswers = new Map<string, string>();
+  /** The answer part sounding (or loading) now: a stop keeps the rest of the answer from there. */
+  private reading: { item: Item; index: number; audio: HTMLAudioElement } | null = null;
+  /** Answers stopped half-way: their ▶ goes on with the rest instead of starting over. */
+  private stoppedAt = new Map<string, { text: string; chunks: string[] }>();
   private status: AudioStatus = { currentId: null, isUnlocked: false, error: "", isDictating: false };
   private listeners = new Set<() => void>();
 
@@ -124,7 +132,7 @@ class AudioService {
     const chunks = speechChunks(forSpeech(text, false));
     if (!chunks.length) return;
     this.handled.add(id);
-    const item: Item = { id, chunks };
+    const item: Item = { id, chunks, text };
     if (this.currentIsStep) {
       this.interruptStep();
       this.queue.unshift(item);
@@ -176,7 +184,13 @@ class AudioService {
     this.push(id, text, full);
   }
 
+  /** ▶ of this answer goes on where its reading was stopped. */
+  resumes(id: string) {
+    return this.stoppedAt.has(id);
+  }
+
   stop() {
+    this.keepUnread();
     this.generation++;
     this.controller?.abort();
     this.controller = null;
@@ -189,11 +203,32 @@ class AudioService {
   }
 
   private push(id: string, text: string, full: boolean) {
-    const chunks = speechChunks(forSpeech(text, full));
+    const itemId = full ? fullReadingId(id) : id;
+    const stopped = this.stoppedAt.get(itemId);
+    this.stoppedAt.delete(itemId);
+    const chunks = stopped?.text === text ? stopped.chunks : speechChunks(forSpeech(text, full));
     if (!chunks.length) return;
     this.handled.add(id);
-    this.queue.push({ id: full ? fullReadingId(id) : id, chunks, full });
+    this.queue.push({ id: itemId, chunks, full, text });
     void this.processQueue();
+  }
+
+  /** What a stop leaves unread of an answer, for its ▶: from the sentence sounding then to the end. */
+  private keepUnread() {
+    const reading = this.reading;
+    this.reading = null;
+    if (!reading?.item.text || this.currentIsStep) return;
+    const { item, index, audio } = reading;
+    const part = item.chunks[index];
+    const { duration, currentTime } = audio;
+    const heard = duration > 0 && Number.isFinite(duration) ? Math.max(0, currentTime - RESUME_BACK) / duration : 0;
+    let from = 0;
+    for (const sentence of new Intl.Segmenter("ru", { granularity: "sentence" }).segment(part)) {
+      if (sentence.index <= heard * part.length) from = sentence.index;
+    }
+    if (!index && !from) return; // Nothing heard yet: ▶ simply starts it again.
+    const chunks = [part.slice(from).trim(), ...item.chunks.slice(index + 1)].filter(Boolean);
+    this.stoppedAt.set(item.id, { text: item.text, chunks });
   }
 
   private async synthesize(text: string, full: boolean, signal: AbortSignal) {
@@ -273,6 +308,7 @@ class AudioService {
     try {
       let next = load(0);
       for (let index = 0; index < chunks.length; index++) {
+        this.reading = { item: nextItem, index, audio: players[index % 2] };
         const url = await next;
         if (generation !== this.generation) return;
         // The next part is synthesized and loaded into the other element while this one plays.
@@ -296,6 +332,7 @@ class AudioService {
       controller.abort(); // A part still being prefetched is not needed any more.
       for (const url of urls) URL.revokeObjectURL(url);
       if (generation === this.generation) {
+        this.reading = null;
         for (const player of players) player.removeAttribute("src");
         this.controller = null;
         this.currentIsStep = false;

@@ -27,7 +27,7 @@ function ReadButton({ id, current, label, icon, caption, onPlay }:
   { id: string; current: string | null; label: string; icon: ReactNode; caption?: string; onPlay: () => void }) {
   const isCurrent = current === id;
   const { isDictating } = useAudioStatus();
-  const name = isCurrent ? "Остановить чтение" : label;
+  const name = isCurrent ? "Остановить чтение" : audioService.resumes(id) ? "Продолжить чтение" : label;
   return (
     <button type="button" className="speak-button" data-testid="speak-button"
       aria-label={name} title={name} aria-pressed={isCurrent}
