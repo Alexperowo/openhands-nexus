@@ -104,12 +104,15 @@ models:
     name: "Tess 4.5 27B — обе карты"
     description: "Агентная модель migtissera, Q5_K_M"
     env: *env_cuda1_vision
+    # -ts 16,20 ran out of memory on the 2080 Ti with a screenshot over a ~226K prompt (peak 22.0 GB);
+    # 17,19 passes it at 15.6/21.6 GB. MTP n_max=3: 31.5 -> 35.7 tok/s, answers at temp 0 unchanged;
+    # n_max=4 failed the full window. Measured 28.10 (OpenHands-Nexus-work/speed-2026-10-28).
     cmd: |
       ${server}
       -m /data/home/user/Models/Tess-4.5-27B/migtissera_Tess-4.5-27B-Q5_K_M.gguf
       --mmproj /data/home/user/Models/Tess-4.5-27B/mmproj-Tess-4.5-27B-F16.gguf
-      -dev CUDA0,CUDA1 -sm layer -ts 16,20 -ngl 999 -c 262144
-      --spec-type mtp:n_max=2
+      -dev CUDA0,CUDA1 -sm layer -ts 17,19 -ngl 999 -c 262144
+      --spec-type mtp:n_max=3
       ${qwen_sampling} ${common}
     metadata: {ctx: 262144}
     disableKeepAlives: true
@@ -118,11 +121,13 @@ models:
     name: "Holo4 27B — обе карты"
     description: "Управление экраном (H Company), Q4_K_M"
     env: *env_cuda1_vision
+    # -ub 2048 (the later -ub overrides common): a ~226K prompt with a screenshot 742 -> 694 s, peak
+    # 14.1/18.8 GB, answers at temp 0 unchanged. Measured 28.10 (OpenHands-Nexus-work/speed-2026-10-28).
     cmd: |
       ${server}
       -m /data/home/user/Models/Holo4-27B/Holo4-27B-q4_k_m.gguf
       --mmproj /data/home/user/Models/Holo4-27B/Holo4-27B-mmproj.f16.gguf
       -dev CUDA0,CUDA1 -sm layer -ts 16,20 -ngl 999 -c 262144
-      ${qwen_sampling} ${common}
+      ${qwen_sampling} ${common} -ub 2048
     metadata: {ctx: 262144}
     disableKeepAlives: true
