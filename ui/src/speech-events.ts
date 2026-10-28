@@ -178,6 +178,9 @@ export function speechChunks(text: string, first = 150, rest = 400): string[] {
   return chunks;
 }
 
+// A longer plan is read up to this many tasks, then how many more there are.
+const PLAN_READ = 6;
+
 export function formatPlanCount(count: number): string {
   const rem10 = count % 10;
   const rem100 = count % 100;
@@ -333,22 +336,25 @@ export class SpeechEvents {
     return phrase;
   }
 
+  /** What changed in the plan, in words: a new plan reads its tasks (the count alone said nothing of
+   *  what the agent was about to do), later ones what got done and what comes next. */
   private processPlanUpdate(tasks: Array<{ title: string; status: string }>): string {
-    let newlyDoneTitle = "";
-    for (const task of tasks) {
-      const prev = this.knownTasks.get(task.title);
-      if (task.status === "done" && prev !== "done") {
-        newlyDoneTitle = task.title;
-        break;
-      }
-    }
-    for (const task of tasks) {
-      this.knownTasks.set(task.title, task.status);
-    }
-    if (newlyDoneTitle) {
-      const clean = forSpeech(newlyDoneTitle, false);
-      return `Готово: ${clean}`;
-    }
-    return formatPlanCount(tasks.length);
+    const known = this.knownTasks;
+    const added = tasks.filter(task => !known.has(task.title));
+    const done = tasks.filter(task => task.status === "done" && known.has(task.title) && known.get(task.title) !== "done");
+    const next = tasks.find(task => task.status === "in_progress" && known.get(task.title) !== "in_progress");
+    for (const task of tasks) known.set(task.title, task.status);
+    const said = (task: { title: string }) => forSpeech(task.title, false).replace(/[\s.;:!]+$/, "");
+    const listed = (list: typeof tasks) => {
+      const read = list.slice(0, PLAN_READ).map(said).join(". ");
+      return list.length > PLAN_READ ? `${read}. И ещё ${list.length - PLAN_READ}` : read;
+    };
+    if (added.length && added.length === tasks.length) return `${formatPlanCount(tasks.length)}. ${listed(added)}.`;
+    const parts = [];
+    if (added.length) parts.push(`В план добавлено: ${listed(added)}`);
+    if (done.length) parts.push(`Готово: ${done.map(said).join(". ")}`);
+    if (next && !added.includes(next)) parts.push(`Дальше: ${said(next)}`);
+    return parts.length ? `${parts.join(". ")}.` : "";
   }
+
 }

@@ -938,7 +938,7 @@ test("step phrases: without explanation or title only phrases that name somethin
   assert.equal(cursor.takeStep(tool("8", "think", {})), "");
 });
 
-test("step phrases: plan updates track task tracker and announce count or completed task", () => {
+test("step phrases: a new plan reads its tasks, later updates what got done and what is next", () => {
   const cursor = new SpeechEvents();
   assert.equal(formatPlanCount(1), "План: 1 задача");
   assert.equal(formatPlanCount(3), "План: 3 задачи");
@@ -954,7 +954,7 @@ test("step phrases: plan updates track task tracker and announce count or comple
     ],
   };
   const phrase1 = cursor.takeStep(tool("plan-1", "task_tracker", initialPlan));
-  assert.equal(phrase1, "План: 3 задачи");
+  assert.equal(phrase1, "План: 3 задачи. Найти скрипт в app.py. Исправить задержку. Запустить тесты.");
 
   const updatedPlan = {
     command: "plan",
@@ -965,7 +965,13 @@ test("step phrases: plan updates track task tracker and announce count or comple
     ],
   };
   const phrase2 = cursor.takeStep(tool("plan-2", "task_tracker", updatedPlan));
-  assert.equal(phrase2, "Готово: Найти скрипт в app.py");
+  assert.equal(phrase2, "Готово: Найти скрипт в app.py. Дальше: Исправить задержку.");
+  assert.equal(cursor.takeStep(tool("plan-3", "task_tracker", updatedPlan)), "", "an unchanged plan says nothing");
+  const grown = { command: "plan", task_list: [...updatedPlan.task_list, { title: "Проверить звук.", status: "todo" }] };
+  assert.equal(cursor.takeStep(tool("plan-4", "task_tracker", grown)), "В план добавлено: Проверить звук.");
+  const long = { command: "plan", task_list: Array.from({ length: 8 }, (_, i) => ({ title: `Шаг ${i + 1}`, status: "todo" })) };
+  assert.equal(new SpeechEvents().takeStep(tool("plan-5", "task_tracker", long)),
+    "План: 8 задач. Шаг 1. Шаг 2. Шаг 3. Шаг 4. Шаг 5. Шаг 6. И ещё 2.");
 });
 
 test("step phrases: the model's words are read whole, by sentences up to the limit, with speech filters", () => {
@@ -1174,7 +1180,7 @@ test("intermediate speech: history on open remains silent and seeds plan state",
   })], 2)[0]);
   assert.equal(fresh.fresh, true);
   const step = cursor.takeStep(fresh.event);
-  assert.equal(step, "Готово: Задача 2", "seeds history so Задача 1 is not re-announced as done");
+  assert.equal(step, "Готово: Задача 2.", "seeds history so Задача 1 is not re-announced as done");
 });
 
 test("intermediate speech: service stop aborts playing and waiting intermediate phrases", async (t) => {
