@@ -331,9 +331,14 @@ def patch_goal_route(module):
     """POST .../goal understands the message first (understand()): a task starts the goal loop with
     the understood goal, talk is sent as a usual message. With "attempt": a repeat of a started or
     starting send gets its outcome and starts nothing; a refused one may be tried again. In memory,
-    for the last ATTEMPTS sends."""
+    for the last ATTEMPTS sends.
+
+    Sends to one conversation are understood and delivered in their order: a quick «Остановись»
+    understood before a slower request it came after was delivered first, and the old task started
+    after the stop. Now the stop comes second and is heard by the running task (nexus_interject.py);
+    an addition («и шрифт крупнее») is understood with the request before it in the history."""
     import asyncio
-    from collections import OrderedDict
+    from collections import OrderedDict, defaultdict
     from uuid import UUID
     from fastapi import Depends, HTTPException, status
     from pydantic import Field
@@ -343,6 +348,7 @@ def patch_goal_route(module):
     route = next(route for route in router.routes
                  if route.path == router.prefix + "/{conversation_id}/goal" and "POST" in route.methods)
     sends = OrderedDict()
+    order = defaultdict(asyncio.Lock)  # by conversation; waiters get it first come, first served
 
     class StartGoalRequest(module.StartGoalRequest):
         attempt: str | None = Field(default=None, max_length=100,
@@ -352,17 +358,18 @@ def patch_goal_route(module):
         event_service = await conversation_service.get_event_service(conversation_id)
         if event_service is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND)
-        kind, goal = await understand(event_service, request.objective)
-        try:
-            if kind == "talk":
-                message = Message(role="user", content=[TextContent(text=request.objective)])
-                await event_service.send_message(message, run=True)
-            else:
-                await event_service.start_goal_loop(Goal(goal, request.objective), max_iterations=request.max_iterations)
-        except ValueError as error:
-            if str(error) in ("conversation_already_running", "goal_already_running"):
-                raise HTTPException(status.HTTP_409_CONFLICT, detail="Conversation run or goal loop already running.")
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(error))
+        async with order[conversation_id]:
+            kind, goal = await understand(event_service, request.objective)
+            try:
+                if kind == "talk":
+                    message = Message(role="user", content=[TextContent(text=request.objective)])
+                    await event_service.send_message(message, run=True)
+                else:
+                    await event_service.start_goal_loop(Goal(goal, request.objective), max_iterations=request.max_iterations)
+            except ValueError as error:
+                if str(error) in ("conversation_already_running", "goal_already_running"):
+                    raise HTTPException(status.HTTP_409_CONFLICT, detail="Conversation run or goal loop already running.")
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(error))
         return module.Success()
 
     async def start_goal_in_conversation(conversation_id: UUID, request: StartGoalRequest,

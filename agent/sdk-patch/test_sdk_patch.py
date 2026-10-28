@@ -562,7 +562,7 @@ class GoalSendTests(unittest.TestCase):
         from fastapi import FastAPI
         from openhands.agent_server import conversation_router as module
         from openhands.agent_server.dependencies import get_conversation_service
-        self.started, self.sent, self.busy, test = [], [], False, self
+        self.started, self.sent, self.log, self.busy, test = [], [], [], False, self
         self.kind = "task"
 
         async def understand(event_service, text):
@@ -574,6 +574,7 @@ class GoalSendTests(unittest.TestCase):
         class Events:
             async def send_message(self, message, run=False):
                 test.sent.append((message.content[0].text, run))
+                test.log.append(message.content[0].text)
 
             async def start_goal_loop(self, objective, max_iterations=10):
                 await asyncio.sleep(0.05)
@@ -581,6 +582,7 @@ class GoalSendTests(unittest.TestCase):
                     raise ValueError("goal_already_running")
                 test.busy = True
                 test.started.append(objective)
+                test.log.append(objective)
 
         class Service:
             async def get_event_service(self, conversation_id):
@@ -621,6 +623,24 @@ class GoalSendTests(unittest.TestCase):
         self.busy = False
         self.assertEqual(self.send(body), [200])
         self.assertEqual(self.started, ["Цель: Создай файл"])
+
+    def test_a_later_message_waits_for_the_earlier_one_to_be_understood(self):
+        # «Почини звук» is understood slowly, «Остановись» at once: the stop must still come after it.
+        async def understand(event_service, text):
+            await asyncio.sleep(0.3 if text == "Почини звук" else 0)
+            return ("task", f"Цель: {text}") if text == "Почини звук" else ("talk", "")
+        with patch.object(goal, "understand", understand):
+            import httpx
+
+            async def run():
+                async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app), base_url="http://test") as client:
+                    url = "/api/conversations/7f6b8a4e-0000-4000-8000-000000000001/goal"
+                    first = asyncio.ensure_future(client.post(url, json={"objective": "Почини звук", "attempt": "d1"}))
+                    await asyncio.sleep(0.05)
+                    second = await client.post(url, json={"objective": "Остановись", "attempt": "d2"})
+                    return [(await first).status_code, second.status_code]
+            self.assertEqual(asyncio.run(run()), [200, 200])
+        self.assertEqual(self.log, ["Цель: Почини звук", "Остановись"])
 
     def test_talk_goes_as_a_usual_message_without_a_goal(self):
         self.kind = "talk"
