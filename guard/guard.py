@@ -583,9 +583,12 @@ def check_find(args: list[str], dirs: list[str], fed_to_rm: bool):
 def written(argv: list[str]):
     """Words of a command that name what it changes."""
     program = os.path.basename(argv[0])
+    # sed only prints unless told to edit in place (-i, -ni, --in-place).
+    reader = program in READERS or program == "sed" and \
+        not any(re.match(r"-[a-zA-Z]*i|--in-place", a) for a in argv[1:])
     words = []
     for i, word in enumerate(argv[1:], 1):
-        if argv[i - 1] in REDIRECTS or program not in READERS | COPIERS or \
+        if argv[i - 1] in REDIRECTS or not reader and program not in COPIERS or \
                 program in COPIERS and i == len(argv) - 1:
             words.append(word[3:] if word.startswith("of=") else word)  # dd of=
     return words
