@@ -485,6 +485,58 @@ test("audio: ▶ after a stop goes on from the sentence that was sounding; after
   assert.equal(fixture.audioService.resumes("a"), false, "stopped before anything was heard: nothing to go on with");
 });
 
+test("audio: a second stop right after ▶ keeps the place; a stop while a part loads does not skip it", async (t) => {
+  const inputs = [];
+  let hold = 0;
+  const fixture = await audioFixture(t, (_url, options) => {
+    inputs.push(JSON.parse(options.body).input);
+    if (inputs.length !== hold) return Promise.resolve(new Response(new Blob(["audio"])));
+    return new Promise((_resolve, reject) => options.signal.addEventListener("abort", () => reject(options.signal.reason)));
+  });
+  const text = Array.from({ length: 12 }, (_, i) => `Предложение номер ${i + 1}, в нём немного слов для длины.`).join(" ");
+  const parts = speechChunks(forSpeech(text, false));
+  assert.ok(parts.length >= 3);
+  await fixture.audioService.unlockAudio();
+  fixture.audioService.speak("a", text);
+  await waitFor(() => fixture.played.length === 1);
+  fixture.elements[0].dispatchEvent(new Event("ended"));
+  await waitFor(() => fixture.played.length === 2);
+  Object.assign(fixture.elements[1], { duration: 10, currentTime: 6.5 });
+  fixture.audioService.stop();
+  inputs.length = 0;
+  fixture.audioService.playNow("a", text);
+  await waitFor(() => fixture.played.length === 3);
+  const rest = inputs[0];
+  assert.notEqual(rest, parts[1]);
+  Object.assign(fixture.elements[0], { duration: 10, currentTime: 0.5 });
+  fixture.audioService.stop();
+  assert.equal(fixture.audioService.resumes("a"), true, "nothing heard after ▶, but the place before it stays");
+  inputs.length = 0;
+  fixture.audioService.playNow("a", text);
+  await waitFor(() => inputs.length >= 1);
+  assert.equal(inputs[0], rest);
+  fixture.audioService.stop();
+
+  // The third part is still synthesized when the second ends; its element holds the first, played out.
+  inputs.length = 0;
+  hold = 3;
+  fixture.played.length = 0;
+  fixture.audioService.playNow("b", text);
+  await waitFor(() => fixture.played.length === 1);
+  const [first] = fixture.played;
+  Object.assign(first, { duration: 10, currentTime: 10 });
+  first.dispatchEvent(new Event("ended"));
+  await waitFor(() => fixture.played.length === 2 && inputs.length === 3);
+  fixture.played[1].dispatchEvent(new Event("ended"));
+  await settle();
+  fixture.audioService.stop();
+  hold = 0;
+  inputs.length = 0;
+  fixture.audioService.playNow("b", text);
+  await waitFor(() => inputs.length >= 1);
+  assert.equal(inputs[0], parts[2], "the loading part is read whole");
+});
+
 test("audio: Stop aborts synthesis and a late response cannot resume speech", async (t) => {
   let resolveFetch;
   let signal;

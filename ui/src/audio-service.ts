@@ -14,7 +14,7 @@ export interface AudioStatus {
 
 /** full: «Полностью» — the voice service then reads links, paths and hashes out too.
  *  text: an answer (not a step), which a stop lets ▶ continue later. */
-interface Item { id: string; chunks: string[]; full?: boolean; text?: string }
+interface Item { id: string; chunks: string[]; full?: boolean; text?: string; resumed?: boolean }
 
 /** Status id of an answer being read in full; ▶ and «полностью» show ■ separately. */
 export const fullReadingId = (id: string) => `${id}:full`;
@@ -44,7 +44,7 @@ class AudioService {
   private dictations = new Map<symbol, (() => void) | undefined>();
   private deferredAnswers = new Map<string, string>();
   /** The answer part sounding (or loading) now: a stop keeps the rest of the answer from there. */
-  private reading: { item: Item; index: number; audio: HTMLAudioElement } | null = null;
+  private reading: { item: Item; index: number; audio?: HTMLAudioElement } | null = null;
   /** Answers stopped half-way: their ▶ goes on with the rest instead of starting over. */
   private stoppedAt = new Map<string, { text: string; chunks: string[] }>();
   private status: AudioStatus = { currentId: null, isUnlocked: false, error: "", isDictating: false };
@@ -209,7 +209,7 @@ class AudioService {
     const chunks = stopped?.text === text ? stopped.chunks : speechChunks(forSpeech(text, full));
     if (!chunks.length) return;
     this.handled.add(id);
-    this.queue.push({ id: itemId, chunks, full, text });
+    this.queue.push({ id: itemId, chunks, full, text, resumed: stopped?.text === text });
     void this.processQueue();
   }
 
@@ -220,13 +220,14 @@ class AudioService {
     if (!reading?.item.text || this.currentIsStep) return;
     const { item, index, audio } = reading;
     const part = item.chunks[index];
-    const { duration, currentTime } = audio;
+    // Until its part is loaded the element still holds an older part: nothing of this one heard.
+    const { duration, currentTime } = audio ?? { duration: 0, currentTime: 0 };
     const heard = duration > 0 && Number.isFinite(duration) ? Math.max(0, currentTime - RESUME_BACK) / duration : 0;
     let from = 0;
     for (const sentence of new Intl.Segmenter("ru", { granularity: "sentence" }).segment(part)) {
       if (sentence.index <= heard * part.length) from = sentence.index;
     }
-    if (!index && !from) return; // Nothing heard yet: ▶ simply starts it again.
+    if (!index && !from && !item.resumed) return; // Nothing heard yet: ▶ simply starts it again.
     const chunks = [part.slice(from).trim(), ...item.chunks.slice(index + 1)].filter(Boolean);
     this.stoppedAt.set(item.id, { text: item.text, chunks });
   }
@@ -308,9 +309,10 @@ class AudioService {
     try {
       let next = load(0);
       for (let index = 0; index < chunks.length; index++) {
-        this.reading = { item: nextItem, index, audio: players[index % 2] };
+        this.reading = { item: nextItem, index };
         const url = await next;
         if (generation !== this.generation) return;
+        this.reading = { item: nextItem, index, audio: players[index % 2] };
         // The next part is synthesized and loaded into the other element while this one plays.
         if (index + 1 < chunks.length) {
           next = load(index + 1);
