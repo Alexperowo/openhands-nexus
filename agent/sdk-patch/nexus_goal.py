@@ -52,7 +52,8 @@ reported honestly with the remaining options, is not something the agent can fin
 
 The objective may give the owner's request in their own words and the goal as the assistant
 understood it: judge against the owner's words. Extras the agent itself offered or suggested
-(monitoring, further improvements) are not requirements.
+(monitoring, further improvements) are not requirements. A symptom removed by switching off a
+useful function the owner did not agree to give up is not a repair.
 
 The objective may be followed by earlier messages of the conversation. A short reply there (a
 name, "yes", a choice) continues the request it answers: judge whether that request is now done.
