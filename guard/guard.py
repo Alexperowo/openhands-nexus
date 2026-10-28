@@ -180,10 +180,10 @@ def segments(command: str):
     """Simple commands of a shell line; `bash -c '...'` bodies are opened recursively."""
     argv: list[str] = []
     for token in tokens(command) + [";"]:
-        if token and not set(token) <= set(";|&()"):
+        if not token or not set(token) <= set(";|&()"):  # "" is an empty word, not an operator
             # `$(` arrives as a lone "$" or glued to the word before it ("a=$").
             word = token[:-1] if token.endswith("$") else token
-            if word:
+            if word or not token:
                 argv.append(word)
             continue
         argv = unwrap(argv)
@@ -476,7 +476,7 @@ def simple_commands(command: str, known: dict):
         pending.clear()
 
     for token in tokens(command) + [";"]:
-        if token and not set(token) <= set(";|&()"):
+        if not token or not set(token) <= set(";|&()"):  # "" is an empty word, not an operator
             # `$(` arrives as a lone "$" or glued to the word before it ("a=$"): a variable set to
             # its output has an unknown value; elsewhere the worst case, an empty output, is checked.
             if re.fullmatch(r"[A-Za-z_]\w*=\$", token):
@@ -580,10 +580,32 @@ def check_find(args: list[str], dirs: list[str], fed_to_rm: bool):
     return None
 
 
+SED_WRITE = re.compile(r"(?:^|[^A-Za-z])[gpiImMe\d]*[wW]\s*(\S[^\n]*)")
+RESOLVECTL_SETTINGS = {"dns", "domain", "default-route", "llmnr", "mdns", "dnssec", "dnsovertls", "nta"}
+
+
+def resolvectl_changes(args: list[str]):
+    """Only a link after dns, domain and the like shows its settings; values after it set them."""
+    positional, link, value = [], False, False
+    for arg in args:
+        if value:
+            value = False
+        elif arg in ("-i", "--interface", "-p", "--protocol", "-t", "--type", "-c", "--class"):
+            value = True
+            link = link or arg in ("-i", "--interface")
+        elif arg.startswith("-"):
+            link = link or bool(re.match(r"-i.|--interface=", arg))
+        else:
+            positional.append(arg)
+    verb, rest = positional[0] if positional else "", positional[1:]
+    return verb == "revert" or verb in RESOLVECTL_SETTINGS and len(rest) > (0 if link else 1)
+
+
 def written(argv: list[str]):
     """Words of a command that name what it changes."""
     program = os.path.basename(argv[0])
-    # sed only prints unless told to edit in place (-i, -ni, --in-place).
+    # sed only prints unless told to edit in place (-i, -ni, --in-place) or its script writes a file
+    # (w, W, the s///w flag). A script read from a file (-f) and the e command are not looked into.
     reader = program in READERS or program == "sed" and \
         not any(re.match(r"-[a-zA-Z]*i|--in-place", a) for a in argv[1:])
     words = []
@@ -591,6 +613,9 @@ def written(argv: list[str]):
         if argv[i - 1] in REDIRECTS or not reader and program not in COPIERS or \
                 program in COPIERS and i == len(argv) - 1:
             words.append(word[3:] if word.startswith("of=") else word)  # dd of=
+        if program == "sed":
+            # The file name runs to the end of the line. A stray match in a plain word names no network file.
+            words += [name.rstrip() for name in SED_WRITE.findall(word)]
     return words
 
 
@@ -716,7 +741,7 @@ def check_argv(argv: list[str], dirs: list[str], fed_to_rm=False):
                                                        "kill-user", "poweroff", "reboot"} \
             or program in ("init", "telinit") and set(args) & {"0", "1", "2", "3", "6"}:
         return REASON_SESSION
-    if program == "resolvectl" and set(args) & {"dns", "domain", "revert", "default-route", "dnsovertls"}:
+    if program == "resolvectl" and resolvectl_changes(args):
         return REASON_NETWORK
     if program == "nmcli" and (re.search(r"\b(dns|vpn)\b", words) and
                                set(args) & {"modify", "mod", "m", "add", "a", "delete", "del", "edit",
