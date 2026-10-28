@@ -511,6 +511,14 @@ class InterjectTests(unittest.TestCase):
         self.assertEqual(self.calls, [[], ["Остановись"]])
         self.assertEqual(events, [self.event])
 
+    def test_two_quick_corrections_start_the_step_again_once_with_both(self):
+        async def during(task):  # both are heard before the step sees the first cancel
+            self.conversation.send_message("Сделай шрифт крупнее")
+            self.conversation.send_message("И оставь тёмную тему")
+        events = self.step(during)
+        self.assertEqual(self.calls, [[], ["Сделай шрифт крупнее", "И оставь тёмную тему"]])
+        self.assertEqual(events, [self.event])
+
     def test_after_the_step_recorded_something_it_ends_as_usual(self):
         self.spoke_first = True
         events = self.step(self.message_from_another_thread("Остановись"))

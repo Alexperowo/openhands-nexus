@@ -44,8 +44,11 @@ def patch_conversation(module):
 
 
 def hear(conversation, task):
-    """Runs on the run's loop, so the step cannot move on between the check and the cancel."""
-    if conversation._nexus_waiting is task and not task.done() and not conversation._nexus_spoke:
+    """Runs on the run's loop, so the step cannot move on between the check and the cancel.
+    One redo per answer: a second quick message is already in the history the redone step reads,
+    and a second cancel would look like the stop button."""
+    if conversation._nexus_waiting is task and not task.done() and not conversation._nexus_spoke \
+            and not conversation._nexus_redo:
         conversation._nexus_redo = True
         task.cancel()
 
@@ -62,7 +65,7 @@ def patch_agent(module):
             on_event(event)
 
         while True:
-            conversation._nexus_spoke = False
+            conversation._nexus_spoke = conversation._nexus_redo = False
             try:
                 return await astep(self, conversation, record, on_token)
             except asyncio.CancelledError:
