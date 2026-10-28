@@ -218,7 +218,7 @@ PATCHES = {
     "openhands.tools.terminal.definition": (patch_terminal_observation, "desktop images to the model"),
     "openhands.sdk.conversation.goal.judge": (patch_goal_judge, "goal judge for this PC, bounded transcript"),
     "openhands.sdk.conversation.goal.controller": (patch_goal_controller, "goal stops when the owner must answer"),
-    "openhands.agent_server.event_service": (patch_goal_resume, "Russian goal resume message"),
+    "openhands.agent_server.event_service": (patch_goal_resume, "Russian goal resume message, a correction keeps the goal"),
     "openhands.agent_server.conversation_router": (patch_goal_route, "a repeated goal send starts nothing"),
 }
 

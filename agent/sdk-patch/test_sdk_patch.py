@@ -554,6 +554,44 @@ class InterjectTests(unittest.TestCase):
         self.assertEqual(len(self.calls), 1)
 
 
+class GoalCorrectionTests(unittest.TestCase):
+    """A message during a goal: a correction keeps the goal and its judge, a stop ends it as in the SDK."""
+
+    def deliver(self, text):
+        """(the goal was stopped, the message reached the conversation)"""
+        from openhands.agent_server.event_service import EventService
+        stopped, received = [], []
+
+        async def run():
+            loop = asyncio.create_task(asyncio.sleep(10))
+
+            async def stop_goal_loop():
+                stopped.append(text)
+                loop.cancel()
+                return True
+            service = SimpleNamespace(_conversation=SimpleNamespace(send_message=received.append), _goal_loop_task=loop,
+                                      stop_goal_loop=stop_goal_loop, _explicit_interrupt_generation=0)
+            await EventService.send_message(service, Message(role="user", content=[TextContent(text=text)]))
+            loop.cancel()
+        asyncio.run(run())
+        return bool(stopped), len(received)
+
+    def test_a_correction_keeps_the_goal_a_stop_ends_it(self):
+        for text in ["И шрифт покрупнее", "И оставь тёмную тему", "Спасибо, продолжай"]:
+            self.assertEqual(self.deliver(text), (False, 1), text)
+        for text in ["Стоп", "Остановись, пожалуйста", "Подожди минутку", "Хватит", "Не надо больше ничего делать"]:
+            self.assertEqual(self.deliver(text), (True, 1), text)
+
+    def test_the_judge_reads_the_correction_as_the_owners_and_the_follow_up_as_its_own(self):
+        events = [GoalTests.user(None, "Сделай тёмную тему"), GoalTests.user(None, "И шрифт покрупнее"),
+                  GoalTests.user(None, goal.FOLLOWUP_PROMPT.format(iteration=1, missing="нет проверки"))]
+        transcript = goal.render_transcript(events)
+        self.assertIn("user: И шрифт покрупнее", transcript)
+        self.assertIn(f"{goal.CHECK_ROLE}: {goal.FOLLOWUP_MARK}", transcript)
+        self.assertNotIn(f"user: {goal.FOLLOWUP_MARK}", transcript)
+        self.assertIn("correcting or adding to the request", goal.JUDGE_CONTEXT)
+
+
 class GoalSendTests(unittest.TestCase):
     """POST /api/conversations/{id}/goal with the UI's attempt id, through the patched route of the
     real router; only the conversation's event service is a fake."""

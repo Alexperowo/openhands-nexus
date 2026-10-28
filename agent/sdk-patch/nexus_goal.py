@@ -24,6 +24,11 @@ continues, at most a few rounds. The SDK loop is kept; this adapts it:
   tell them from the user's own messages.
 - The start takes the UI's id of that send ("attempt"). When the answer was lost, the UI sends the
   same attempt again; a repeat gets the first one's outcome, so a request never runs twice.
+- A message during a goal corrects or adds to it, unless it asks to stop, wait or drop the task
+  (STOP_WORDS). The SDK ended the goal on any message: a correction went on unchecked, shown as
+  «Прервано». Now the goal goes on and its judge reads the correction in the run; the follow-ups
+  appear there as the check's own lines, not as the owner's. A stop ends the goal as before, and a
+  stop said in other words is caught by the judge, which then hands the task back to the owner.
 """
 import json
 import math
@@ -41,6 +46,9 @@ TRANSCRIPT_HEAD = 12000
 CONTEXT_MESSAGES = 6
 CONTEXT_MESSAGE_CHARS = 1500
 CONTEXT_HEADER = "Earlier in this conversation (context for the request above, not part of it):"
+CHECK_ROLE = "check"
+STOP_WORDS = re.compile(r"\b(стоп|хватит|останов\w*|прекрат\w*|отмен\w*|подожди\w*|погоди\w*|пауз\w*|"
+                        r"не надо|не нужно|брось|забудь)\b", re.IGNORECASE)
 
 JUDGE_CONTEXT = """
 
@@ -54,6 +62,11 @@ The objective may give the owner's request in their own words and the goal as th
 understood it: judge against the owner's words. Extras the agent itself offered or suggested
 (monitoring, further improvements) are not requirements. A symptom removed by switching off a
 useful function the owner did not agree to give up is not a repair.
+
+A later "user" message in the transcript is the owner correcting or adding to the request: judge
+the request as corrected. "check" lines are this check's own reminders, not the owner's words. If
+the owner later asked to stop, wait or leave the task, ask for no more work: add "needs_user": true
+and say in "missing" that the owner stopped it.
 
 The objective may be followed by earlier messages of the conversation. A short reply there (a
 name, "yes", a choice) continues the request it answers: judge whether that request is now done.
@@ -180,6 +193,12 @@ def render_transcript(events):
     for message in LLMConvertibleEvent.events_to_messages(list(events)):
         if message.role == "system":
             continue
+        if message.role == "user":
+            # Messages in a row arrive as one; each part keeps its speaker.
+            for part in content_to_str(message.content):
+                if part.strip():
+                    turns.append(f"{CHECK_ROLE if part.startswith(FOLLOWUP_MARK) else 'user'}: {part.strip()}")
+            continue
         text = "\n".join(content_to_str(message.content)).strip()
         if message.role == "tool":
             text = clip(text, TOOL_OUTPUT_CHARS)
@@ -270,8 +289,21 @@ def patch_controller(module):
     module.GoalController.on_run_finished = on_run_finished
 
 
+def stops(message):
+    return any(STOP_WORDS.search(getattr(content, "text", "")) for content in message.content)
+
+
 def patch_event_service(module):
     module.RESUME_PROMPT = RESUME_PROMPT
+    send = module.EventService.send_message
+
+    async def send_message(self, message, run=False, _from_goal_loop=False, **kwargs):
+        loop = self._goal_loop_task
+        if not _from_goal_loop and loop is not None and not loop.done() and not stops(message):
+            _from_goal_loop = True  # a correction: the goal goes on and its judge reads it
+        return await send(self, message, run, _from_goal_loop, **kwargs)
+
+    module.EventService.send_message = send_message
 
 
 def read_understanding(message):
