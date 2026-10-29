@@ -11,6 +11,9 @@ models/llama-swap
 gateway/caddy
 gateway/caddy.prev
 models/llama-swap.prev
+# Links the installer makes: the ik_llama build and the folder with the weights.
+models/llama-server
+models/weights
 voice/models/
 *.gguf
 *.pt

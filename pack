@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Archives of OpenHands-Nexus, in ~/Nexus-архивы (another folder: NEXUS_ARCHIVES=...).
+#   ./pack                 clean archive of the last commit: the project without keys, settings,
+#                          conversations, model weights or builds; checked file by file before it is kept
+#   ./pack personal        private copy of this PC: keys, tablet certificate, conversations, ~/Nexus
+#   ./pack restore FILE    put a private copy back (./install does it); existing files stay untouched
+set -euo pipefail
+ROOT=$(cd "$(dirname "$0")" && pwd)
+OUT=${NEXUS_ARCHIVES:-$HOME/Nexus-архивы}
+cd "$ROOT"
+
+clean() {
+    if ! git rev-parse --verify -q HEAD >/dev/null 2>&1; then
+        echo "Чистый архив собирается из git-копии проекта, а это распакованный архив."; exit 1
+    fi
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "Есть несохранённые в git изменения: архив должен совпадать с проектом. Сначала коммит:"
+        git status --short; exit 1
+    fi
+    local commit date name tmp
+    commit=$(git rev-parse --short HEAD)
+    date=$(git log -1 --format=%cd --date=format:%Y-%m-%d)
+    name="OpenHands-Nexus-linux-$date-$commit"
+    mkdir -p "$OUT"
+    tmp=$(mktemp "$OUT/.pack-XXXXXX")
+    trap 'rm -f "$tmp"' EXIT
+    git archive --format=tar --prefix=OpenHands-Nexus/ \
+        --add-virtual-file="OpenHands-Nexus/VERSION:OpenHands-Nexus linux, коммит $commit от $date"$'\n' \
+        HEAD > "$tmp"
+    echo "Проверка файлов архива…"
+    if ! python3 -I launcher/archive.py scan "$tmp"; then
+        echo "Архив не сохранён: исправьте файлы выше."; exit 1
+    fi
+    gzip -9 -n < "$tmp" > "$OUT/$name.tar.gz"
+    (cd "$OUT" && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256")
+    # The five newest stay.
+    ls -1t "$OUT"/OpenHands-Nexus-linux-*.tar.gz | tail -n +6 | while read -r stale; do
+        rm -f "$stale" "$stale.sha256"
+    done
+    echo "Готово: $OUT/$name.tar.gz ($(du -h "$OUT/$name.tar.gz" | cut -f1))"
+    echo "Установка на чистой системе: распаковать, затем ./install (подробно: docs/first-run.md)."
+}
+
+case "${1:-}" in
+    "") clean ;;
+    personal)
+        if systemctl --user is-active --quiet ohn-agent 2>/dev/null; then
+            echo "Агент запущен: беседа, идущая сейчас, может попасть в копию не целиком."
+        fi
+        python3 -I launcher/archive.py backup "$OUT/личное" ;;
+    restore)
+        [ -n "${2:-}" ] || { echo "Укажите файл: ./pack restore ФАЙЛ"; exit 2; }
+        python3 -I launcher/archive.py restore "$2" ;;
+    *) sed -n '2,6s/^# \{0,1\}//p' "$0"; exit 2 ;;
+esac

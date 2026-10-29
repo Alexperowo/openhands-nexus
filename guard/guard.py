@@ -403,6 +403,14 @@ def nexus_paths():
         menu = ""
     for line in menu.splitlines():
         paths.update(re.findall(r"(?<![\w}$])(/[\w.+-]+(?:/[\w.+-]+)+)", line.split("#", 1)[0]))
+    # The menu names llama-server and the weights relative to models/, through links the installer
+    # makes (models/llama-server, models/weights): what counts is where they lead.
+    macros = dict(re.findall(r"^  (\w+): (\S[^\n]*)$", menu.split("\nmodels:", 1)[0], re.M))
+    for _ in range(3):  # a macro may use another one
+        menu = re.sub(r"\$\{(\w+)\}", lambda m: macros.get(m[1], m[0]), menu)
+    for name in {macros.get("server", "")} | set(re.findall(r"(?:^|\s)(?:-m|--mmproj)\s+(\S+)", menu)):
+        if name and not name.startswith("/"):
+            paths.add(os.path.realpath(REPO / "models" / name))
     return frozenset(paths)
 
 

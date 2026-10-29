@@ -1,0 +1,74 @@
+{
+  "_": "Weights of models/llama-swap.yaml, relative to models/weights. URLs name the repository revision.",
+  "files": {
+    "Nex-N2.5-mini-OrcaRouter/Nex-N2.5-mini-OrcaRouter-Sangreal-25G-ICEv2.gguf": {
+      "url": "https://huggingface.co/gbuzhf/Nex-N2.5-mini-OrcaRouter-Sangreal-ICE/resolve/c5b1ab69184cdf2ee9c471a16600713bfa84fc99/Nex-N2.5-mini-OrcaRouter-Sangreal-25G-ICEv2.gguf",
+      "size": 24530347360,
+      "sha256": "2945ec2c74dae15bc12d862824e93dd57ab426832b44dd7fe71be90d44fe16e9"
+    },
+    "Nex-N2.5-mini-OrcaRouter/Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf": {
+      "url": "https://huggingface.co/gbuzhf/Nex-N2.5-mini-OrcaRouter-Sangreal-ICE/resolve/c5b1ab69184cdf2ee9c471a16600713bfa84fc99/Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf",
+      "size": 18471675232,
+      "sha256": "788a0cd9f818f54488e59a2bdb447aefe3a27a5afec6dc37828884b8ff0a3085"
+    },
+    "Nex-N2.5-mini-OrcaRouter/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf": {
+      "url": "https://huggingface.co/gbuzhf/Nex-N2.5-mini-OrcaRouter-Sangreal-ICE/resolve/c5b1ab69184cdf2ee9c471a16600713bfa84fc99/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf",
+      "size": 614194720,
+      "sha256": "dab66e630f441cba8bb731abb6357a0b78bcb307470b1ce7194d352dba2beb9c"
+    },
+    "Tess-4.5-27B/migtissera_Tess-4.5-27B-Q5_K_M.gguf": {
+      "url": "https://huggingface.co/bartowski/migtissera_Tess-4.5-27B-GGUF/resolve/f4a96f1f94febb0763c422273c451291e071ba9c/migtissera_Tess-4.5-27B-Q5_K_M.gguf",
+      "size": 20923877568,
+      "sha256": "f0c6698b079fe14b6da4adf48eecb000b1aec0ef59dd2aaa27d04b8002de35f1"
+    },
+    "Tess-4.5-27B/mmproj-Tess-4.5-27B-F16.gguf": {
+      "url": "https://huggingface.co/migtissera/Tess-4.5-27B-GGUF/resolve/af17a3f0de2b8557849c1b6fcc303d3160052450/mmproj-Tess-4.5-27B-F16.gguf",
+      "size": 927606816,
+      "sha256": "ae93dc35b2bf3a7730fa518db6f1e8d7c624363643f61d85eef8655b671257bb"
+    },
+    "Holo4-27B/Holo4-27B-q4_k_m.gguf": {
+      "url": "https://huggingface.co/Hcompany/Holo4-27B-GGUF/resolve/045834b6864fb5cee8e9c72e47ef4c19140ce932/q4_k_m.gguf",
+      "size": 16875182592,
+      "sha256": "8071d3ed5f59c88282e6466add0b344b51d49c8c630ae8f93d673ac0911ab962"
+    },
+    "Holo4-27B/Holo4-27B-mmproj.f16.gguf": {
+      "url": "https://huggingface.co/Hcompany/Holo4-27B-GGUF/resolve/045834b6864fb5cee8e9c72e47ef4c19140ce932/mmproj.f16.gguf",
+      "size": 927606816,
+      "sha256": "b4038c228fcf84b0528e327c314204d165f6fa97ebb74d766424f49d2eba0d9c"
+    }
+  },
+  "groups": [
+    {
+      "id": "nex25",
+      "name": "Nex 25G — основная модель, обе карты",
+      "files": [
+        "Nex-N2.5-mini-OrcaRouter/Nex-N2.5-mini-OrcaRouter-Sangreal-25G-ICEv2.gguf",
+        "Nex-N2.5-mini-OrcaRouter/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf"
+      ]
+    },
+    {
+      "id": "nex19",
+      "name": "Nex 19G — на одной карте, запасная при отказе другой",
+      "files": [
+        "Nex-N2.5-mini-OrcaRouter/Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf",
+        "Nex-N2.5-mini-OrcaRouter/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf"
+      ]
+    },
+    {
+      "id": "tess",
+      "name": "Tess 4.5 27B — агентная модель, обе карты",
+      "files": [
+        "Tess-4.5-27B/migtissera_Tess-4.5-27B-Q5_K_M.gguf",
+        "Tess-4.5-27B/mmproj-Tess-4.5-27B-F16.gguf"
+      ]
+    },
+    {
+      "id": "holo",
+      "name": "Holo4 27B — управление экраном, обе карты (лицензия только некоммерческая)",
+      "files": [
+        "Holo4-27B/Holo4-27B-q4_k_m.gguf",
+        "Holo4-27B/Holo4-27B-mmproj.f16.gguf"
+      ]
+    }
+  ]
+}

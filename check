@@ -68,6 +68,8 @@ def layers():
         None if venv else "нет voice/.venv: (cd voice && uv sync --frozen)"
     yield "обновления", "update", [["python3", "test_update.py"]], None
     yield "запуск и смотритель", "launcher", [["python3", "test_watch.py"], ["python3", "test_preflight.py"]], None
+    yield "установка и архив", ".", [["bash", "-n", "install"], ["bash", "-n", "pack"],
+                                     ["python3", "launcher/test_archive.py"], ["python3", "models/test_weights.py"]], None
     yield "шлюз", "gateway", [["python3", "test_gateway.py"]], None
     try:
         sdk = [agent_server_python("agent/sdk-patch/test_sdk_patch.py")]

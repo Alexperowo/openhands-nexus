@@ -1,0 +1,305 @@
+#!/usr/bin/env bash
+# Установка Nexus на чистую Ubuntu (проверено: 26.04 Cinnamon, RTX 5060 Ti + RTX 2080 Ti).
+# Идёт по шагам и перед каждым спрашивает; сделанный шаг при повторном запуске пропускается,
+# прерванный — продолжается. В автозапуск ничего не ставит: Nexus запускается ярлыком.
+#
+#   ./install                   по шагам с вопросами
+#   ./install --yes             все шаги без вопросов (модели не скачиваются, только проверяются)
+#   ./install --skip driver,wifi  пропустить шаги (имена — в списке STEPS ниже)
+#   ./install --personal FILE   личная копия (./pack personal) для шага keys
+set -Eeuo pipefail
+WORK=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+LOCAL="$HOME/.local"
+BACKEND="$HOME/backend/ik_llama-fresh"
+export PATH="$LOCAL/bin:$PATH"
+
+# Проверенные версии и их SHA-256 (README «Восстановление»).
+NODE_VERSION=24.21.0
+NODE_SHA=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6
+UV_VERSION=0.12.23
+UV_SHA=9167d72b3319674b6303c4cbe071854bba13ebdf3d76b1a7cbdc175471fb66d6
+SWAP_VERSION=266
+SWAP_SHA=7daa0170f997c1e60ebc749e8cb13f4ae9966fd73e9d5fca334770dcce5c4ab5
+CADDY_VERSION=2.11.7
+CADDY_SHA512=a7a433a1b133efc3c8d10eb0b99d52a24b5ef5c322dc77f5282182b1c0402139ab83f3a99f0c52409df77d20123fb0b523edad8a66d8f5e49136197bf61ef0e7
+IK_REPO=https://github.com/ikawrakow/ik_llama.cpp.git
+IK_COMMIT=a61ad7873c8306fe18123eea9659705cb5cf945d
+DRIVER=615-open
+CUDA=13.1
+APT_PACKAGES=(git curl ca-certificates openssl xz-utils build-essential cmake python3 python3-yaml
+  libflite1 xdotool wmctrl xclip libnotify-bin pulseaudio-utils sound-theme-freedesktop kdeconnect)
+
+STEPS=(system driver cuda tools engine binaries apps keys models cards wifi services agent)
+declare -A TITLE=(
+  [system]="Системные программы"
+  [driver]="Драйвер NVIDIA"
+  [cuda]="CUDA $CUDA для сборки движка моделей"
+  [tools]="Node $NODE_VERSION и uv $UV_VERSION"
+  [engine]="Движок моделей ik_llama (сборка 30–60 минут)"
+  [binaries]="llama-swap и Caddy"
+  [apps]="Агент, интерфейс, голос, команды экрана"
+  [keys]="Ключи и сертификат для планшета"
+  [models]="Модели"
+  [cards]="Видеокарты в настройках моделей"
+  [wifi]="Wi-Fi: обрывы связи с планшетом (MediaTek mt7921e)"
+  [services]="Службы и ярлыки"
+  [agent]="Настройки агента"
+)
+
+YES=0 PERSONAL="" SKIP=","
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --yes) YES=1 ;;
+    --skip) SKIP=",$2,"; shift ;;
+    --personal) PERSONAL=$2; shift ;;
+    -h|--help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "Неизвестный параметр: $1 (./install --help)"; exit 2 ;;
+  esac
+  shift
+done
+
+mkdir -p "$HOME/.local/state/openhands-nexus"
+LOG="$HOME/.local/state/openhands-nexus/install-$(date +%F-%H%M).log"
+exec > >(tee -a "$LOG") 2>&1
+
+say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
+fail() { printf '\n\033[1;31mОшибка: %s\033[0m\nЖурнал: %s\n' "$*" "$LOG"; exit 1; }
+ask() { # вопрос, ответ по умолчанию (y|n)
+  local answer hint="[Д/н]"
+  [ "$2" = n ] && hint="[д/Н]"
+  if [ "$YES" = 1 ]; then [ "$2" = y ]; return; fi
+  read -r -p "$1 $hint " answer </dev/tty || answer=""
+  case "${answer,,}" in д|да|y|yes) return 0 ;; н|нет|n|no) return 1 ;; *) [ "$2" = y ] ;; esac
+}
+ask_text() { # вопрос, значение по умолчанию
+  local answer
+  if [ "$YES" = 1 ]; then printf '%s' "$2"; return; fi
+  read -r -p "$1 [$2] " answer </dev/tty || answer=""
+  printf '%s' "${answer:-$2}"
+}
+download() { # url файл sha256|sha512 сумма
+  curl -fL --retry 3 --progress-bar -o "$2" "$1" || fail "не скачалось: $1"
+  echo "$4  $2" | "${3}sum" -c --quiet - || { rm -f "$2"; fail "контрольная сумма не совпала: $1"; }
+}
+gpus() { nvidia-smi --query-gpu=uuid,name,compute_cap --format=csv,noheader 2>/dev/null; }
+
+# --- Шаги: done_X — уже сделано?  do_X — сделать. ---
+
+done_system() {
+  [ "$(dpkg-query -W -f='${Status}\n' "${APT_PACKAGES[@]}" 2>/dev/null | grep -c 'install ok installed')" -eq ${#APT_PACKAGES[@]} ]
+}
+do_system() { sudo apt-get update && sudo apt-get install -y "${APT_PACKAGES[@]}"; }
+
+done_driver() { gpus | grep -q .; }
+do_driver() {
+  # Готовые подписанные модули Ubuntu: без сборки DKMS и без ключей Secure Boot.
+  sudo apt-get install -y "nvidia-driver-$DRIVER" "linux-modules-nvidia-$DRIVER-generic" ||
+    sudo ubuntu-drivers install || fail "драйвер не установился"
+  say "Драйвер установлен. Перезагрузите компьютер и запустите ./install снова — продолжу с этого места."
+  exit 0
+}
+
+done_cuda() { [ -x "/usr/local/cuda-$CUDA/bin/nvcc" ]; }
+do_cuda() { sudo apt-get install -y "cuda-compiler-${CUDA/./-}" "cuda-libraries-dev-${CUDA/./-}"; } # Ubuntu multiverse
+
+done_tools() { [ "$(node -v 2>/dev/null)" = "v$NODE_VERSION" ] && uv --version 2>/dev/null | grep -q "^uv $UV_VERSION"; }
+do_tools() {
+  local temp
+  temp=$(mktemp -d)
+  mkdir -p "$LOCAL/bin" "$LOCAL/lib/nodejs"
+  download "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" "$temp/node.tar.xz" sha256 "$NODE_SHA"
+  tar -xJf "$temp/node.tar.xz" -C "$LOCAL/lib/nodejs"
+  for tool in node npm npx; do ln -sfn "$LOCAL/lib/nodejs/node-v$NODE_VERSION-linux-x64/bin/$tool" "$LOCAL/bin/$tool"; done
+  download "https://github.com/astral-sh/uv/releases/download/$UV_VERSION/uv-x86_64-unknown-linux-gnu.tar.gz" "$temp/uv.tar.gz" sha256 "$UV_SHA"
+  tar -xzf "$temp/uv.tar.gz" -C "$temp"
+  install -m 755 "$temp"/uv-x86_64-unknown-linux-gnu/uv "$temp"/uv-x86_64-unknown-linux-gnu/uvx "$LOCAL/bin/"
+  rm -rf "$temp"
+}
+
+done_engine() {
+  [ -x "$BACKEND/build/bin/llama-server" ] && [ "$(git -C "$BACKEND" rev-parse HEAD 2>/dev/null)" = "$IK_COMMIT" ] &&
+    [ "$(readlink "$WORK/models/llama-server")" = "$BACKEND/build/bin/llama-server" ]
+}
+do_engine() {
+  local archs
+  [ -d "$BACKEND/.git" ] || git clone "$IK_REPO" "$BACKEND"
+  git -C "$BACKEND" fetch --quiet origin
+  git -C "$BACKEND" checkout --quiet "$IK_COMMIT"
+  # Архитектуры установленных карт (7.5 и 12.0 → 75;120); без драйвера — проверенная пара.
+  archs=$(gpus | awk -F', ' '{ sub(/\./, "", $3); print $3 }' | sort -un | paste -sd';' || true)
+  cmake -S "$BACKEND" -B "$BACKEND/build" -DGGML_CUDA=ON -DGGML_CUDA_FA_ALL_QUANTS=ON -DGGML_NATIVE=ON \
+    -DCMAKE_CUDA_ARCHITECTURES="${archs:-75;120}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON \
+    -DCMAKE_CUDA_COMPILER="/usr/local/cuda-$CUDA/bin/nvcc"
+  # Четыре потока, как у nexus-update: сборка CUDA-ядер съедает по несколько ГБ памяти на поток.
+  cmake --build "$BACKEND/build" --target llama-server -j 4
+  ln -sfn "$BACKEND/build/bin/llama-server" "$WORK/models/llama-server"
+}
+
+done_binaries() { [ -x "$WORK/models/llama-swap" ] && [ -x "$WORK/gateway/caddy" ]; }
+do_binaries() {
+  local temp
+  temp=$(mktemp -d)
+  download "https://github.com/mostlygeek/llama-swap/releases/download/v$SWAP_VERSION/llama-swap_${SWAP_VERSION}_linux_amd64.tar.gz" \
+    "$temp/swap.tar.gz" sha256 "$SWAP_SHA"
+  tar -xzf "$temp/swap.tar.gz" -C "$temp" llama-swap
+  install -m 755 "$temp/llama-swap" "$WORK/models/llama-swap"
+  download "https://github.com/caddyserver/caddy/releases/download/v$CADDY_VERSION/caddy_${CADDY_VERSION}_linux_amd64.tar.gz" \
+    "$temp/caddy.tar.gz" sha512 "$CADDY_SHA512"
+  tar -xzf "$temp/caddy.tar.gz" -C "$temp" caddy
+  install -m 755 "$temp/caddy" "$WORK/gateway/caddy"
+  rm -rf "$temp"
+}
+
+done_apps() {
+  [ -f "$WORK/agent/node_modules/@openhands/agent-canvas/package.json" ] && [ -f "$WORK/ui/dist/index.html" ] &&
+    [ -x "$WORK/voice/.venv/bin/uvicorn" ] && [ -x "$WORK/screen/.venv/bin/desk" ] &&
+    [ "$(ls "$WORK/voice/models" 2>/dev/null | grep -cE '\.(pt|ckpt|model)$')" -ge 3 ]
+}
+do_apps() {
+  # Без npm lifecycle-скриптов, как в nexus-update: на проверенных версиях сборке они не нужны.
+  (cd "$WORK/agent" && npm ci --ignore-scripts)
+  (cd "$WORK/ui" && npm ci --ignore-scripts && npm run build)
+  (cd "$WORK/voice" && uv sync --frozen && .venv/bin/python download_models.py)
+  (cd "$WORK/screen" && uv sync --frozen)
+}
+
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/openhands-nexus"
+done_keys() { [ -f "$CONFIG_DIR/session.env" ] && [ -f "$WORK/gateway/ca/openhands-ca.crt" ] && [ -f "$WORK/gateway/ca/openhands-ca.key" ]; }
+do_keys() {
+  local file="$PERSONAL"
+  if [ -z "$file" ]; then
+    file=$(ls -t "$HOME"/Nexus-архивы/личное/nexus-personal-*.tar.gz 2>/dev/null | head -n1 || true)
+    if [ "$YES" = 1 ]; then
+      file=""
+    elif [ -n "$file" ] && ask "Найдена личная копия $file. Восстановить из неё ключи, сертификат и беседы?" y; then
+      :
+    else
+      file=$(ask_text "Путь к личной копии (Enter — без неё, ключи и сертификат будут новыми)" "")
+    fi
+  fi
+  if [ -n "$file" ]; then
+    [ -f "$file" ] || fail "нет файла $file"
+    "$WORK/pack" restore "$file"
+    done_keys && return
+    say "В копии не всё: недостающее создаю заново."
+  else
+    say "Новые ключи и новый корневой сертификат. На планшете сертификат нужно будет установить заново (docs/first-run.md)."
+  fi
+  umask 077
+  mkdir -p "$CONFIG_DIR" "$WORK/gateway/ca"
+  [ -f "$CONFIG_DIR/session.env" ] ||
+    printf 'OHN_SESSION_KEY=%s\nOHN_SECRET_KEY=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > "$CONFIG_DIR/session.env"
+  [ -f "$WORK/gateway/ca/openhands-ca.key" ] ||
+    openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -subj "/CN=OpenHands Local Root CA" \
+      -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" \
+      -keyout "$WORK/gateway/ca/openhands-ca.key" -out "$WORK/gateway/ca/openhands-ca.crt" 2>/dev/null
+  umask 022
+}
+
+done_models() { [ -L "$WORK/models/weights" ] && python3 -I "$WORK/models/weights.py" status "$WORK/models/weights/" >/dev/null; }
+do_models() {
+  local folder current ids=()
+  current=$(readlink -f "$WORK/models/weights" 2>/dev/null || echo "$HOME/Models")
+  folder=$(ask_text "Папка для моделей (около 80 ГБ на всё)" "$current")
+  folder=${folder/#\~/$HOME}
+  mkdir -p "$folder"
+  ln -sfn "$folder" "$WORK/models/weights"
+  python3 -I "$WORK/models/weights.py" status "$folder" && return
+  if [ "$YES" = 1 ]; then
+    say "Модели не скачиваются в режиме --yes; позже: ./install, шаг «Модели»."
+    return
+  fi
+  while read -r id; do
+    ask "Скачать $(python3 -I -c 'import json,sys; d=json.load(open(sys.argv[1])); print(next(g["name"] for g in d["groups"] if g["id"]==sys.argv[2]))' "$WORK/models/weights.json" "$id")?" y &&
+      ids+=("$id")
+  done < <(python3 -I "$WORK/models/weights.py" missing "$folder")
+  [ ${#ids[@]} -eq 0 ] || python3 -I "$WORK/models/weights.py" get "$folder" "${ids[@]}" ||
+    fail "модели скачаны не все; повторный запуск продолжит"
+}
+
+# Профили на одной карте называют её по UUID: у новой карты он другой. Ищем карту по названию.
+done_cards() {
+  local want have
+  gpus | grep -q . || return 0  # без драйвера проверить нечем
+  want=$(grep -oE 'GPU-[0-9a-f-]{36}' "$WORK/models/llama-swap.yaml" | sort -u)
+  have=$(gpus | awk -F', ' '{print $1}' | sort -u)
+  [ -z "$(comm -23 <(echo "$want") <(echo "$have"))" ]
+}
+do_cards() {
+  local profile card uuid old
+  for profile in 5060 2080; do
+    old=$(awk -v p="nex19-$profile:" '$1 == p {f=1} f && /CUDA_VISIBLE_DEVICES=GPU-/ {match($0, /GPU-[0-9a-f-]+/); print substr($0, RSTART, RLENGTH); exit}' "$WORK/models/llama-swap.yaml")
+    uuid=$(gpus | awk -F', ' -v p="$profile" 'index($2, p) {print $1; exit}' || true)
+    if [ -n "$old" ] && [ -n "$uuid" ] && [ "$old" != "$uuid" ]; then
+      sed -i "s/$old/$uuid/g" "$WORK/models/llama-swap.yaml"
+      echo "nex19-$profile: карта $uuid"
+    elif [ -n "$old" ] && [ -z "$uuid" ]; then
+      echo "Карты с «$profile» в названии нет: профиль nex19-$profile не запустится (README «Модели»)."
+    fi
+  done
+}
+
+TDLS=/etc/NetworkManager/dispatcher.d/90-no-tdls
+mt7921e() { local d; for d in /sys/class/net/*/device/driver; do [ "$(basename "$(readlink -f "$d")")" = mt7921e ] && return 0; done; return 1; }
+done_wifi() { ! mt7921e || [ -f "$TDLS" ]; }
+do_wifi() {
+  ask "Карта Wi-Fi mt7921e рвёт связь с планшетом на ~15 с при попытках TDLS. Отключить TDLS?" y || return 0
+  sudo tee "$TDLS" >/dev/null <<'EOF'
+#!/bin/sh
+# OpenHands-Nexus 2026-10-25: mt7921e cannot install TDLS keys ("Failed to set TPK to the driver").
+# A failed TDLS setup from the tablet cuts PC<->tablet traffic for ~15 s, so TDLS is refused.
+# Remove this file to undo.
+[ "$2" = up ] || exit 0
+[ -d "/sys/class/net/$1/wireless" ] || exit 0
+/usr/sbin/wpa_cli -i "$1" set tdls_disabled 1 >/dev/null 2>&1
+exit 0
+EOF
+  sudo chmod 755 "$TDLS"
+}
+
+UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+done_services() { [ -f "$UNIT_DIR/ohn.target" ] && grep -q "$WORK/launcher/run.sh" "$UNIT_DIR/ohn-agent.service"; }
+do_services() { "$WORK/launcher/install.sh"; }
+
+# Профили моделей и настройки агента из git записываются в запущенный агент. При первом запуске
+# Canvas сам скачивает agent-server (несколько минут).
+done_agent() { [ -f "$WORK/agent/state/.nexus-config-applied" ]; }
+do_agent() {
+  local was i
+  was=$(systemctl --user is-active ohn-agent || true)
+  [ "$was" = active ] || systemctl --user start ohn-agent
+  for i in $(seq 1 120); do
+    curl -fs --noproxy '*' -m 3 -o /dev/null http://127.0.0.1:18010/ready && break
+    sleep 5
+  done
+  [ "$i" -lt 120 ] || fail "агент не ответил за 10 минут: journalctl --user -u ohn-agent"
+  python3 -I "$WORK/agent/config.py" apply
+  touch "$WORK/agent/state/.nexus-config-applied"
+  [ "$was" = active ] || systemctl --user stop ohn-agent
+}
+
+say "Установка Nexus в $WORK"
+echo "Журнал: $LOG"
+[ "$(id -u)" != 0 ] || fail "запускайте от своего пользователя, не через sudo: права администратора спрошу сам"
+total=${#STEPS[@]} n=0
+# set -e не действует внутри функции, вызванной через «||», поэтому шаг вызывается напрямую:
+# первая же ошибочная команда останавливает установку, а ловушка говорит, на каком шаге.
+trap 'code=$?; [ "$BASH_SUBSHELL" != 0 ] || printf "\n\033[1;31mОшибка (код %s): шаг «%s» не выполнен.\033[0m\nЖурнал: %s\nПовторный ./install продолжит с этого шага.\n" "$code" "${TITLE[$step]}" "$LOG"' ERR
+for step in "${STEPS[@]}"; do
+  n=$((n + 1))
+  say "Шаг $n из $total: ${TITLE[$step]}"
+  if [[ "$SKIP" == *",$step,"* ]]; then echo "Пропущен (--skip)."; continue; fi
+  if "done_$step"; then echo "Уже сделано."; continue; fi
+  if ask "Выполнить?" y; then
+    "do_$step"
+  else
+    echo "Пропущен."
+  fi
+done
+
+say "Проверка готовности"
+if python3 -I "$WORK/launcher/preflight.py"; then
+  say "Готово. Запуск — ярлык «Запустить Nexus» на рабочем столе. Дальше: docs/first-run.md"
+else
+  say "Не всё на месте (список выше). Повторите ./install: сделанные шаги пропустятся."
+fi

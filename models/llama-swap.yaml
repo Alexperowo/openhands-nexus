@@ -22,8 +22,12 @@ hooks:
     preload: ["nex25"]
 
 macros:
-  server: /home/user/backend/ik_llama-fresh/build/bin/llama-server
-  nex_dir: /data/home/user/Models/Nex-N2.5-mini-OrcaRouter
+  # Two links the installer makes in models/ (not in git): llama-server -> the ik_llama build,
+  # weights -> the folder with the weights. The paths here are relative to models/.
+  server: ./llama-server
+  nex_dir: weights/Nex-N2.5-mini-OrcaRouter
+  tess_dir: weights/Tess-4.5-27B
+  holo_dir: weights/Holo4-27B
   # --metrics: numbers only (KV tokens, requests in progress), no prompt text. The status line of
   # the interface reads them to tell reading the context from writing the answer and from a stall.
   # At the thinking budget (thinking_budget_tokens of the request) the server ends the thought with
@@ -120,8 +124,8 @@ models:
     # n_max=4 failed the full window. Measured 28.10 (OpenHands-Nexus-work/speed-2026-10-28).
     cmd: |
       ${server}
-      -m /data/home/user/Models/Tess-4.5-27B/migtissera_Tess-4.5-27B-Q5_K_M.gguf
-      --mmproj /data/home/user/Models/Tess-4.5-27B/mmproj-Tess-4.5-27B-F16.gguf
+      -m ${tess_dir}/migtissera_Tess-4.5-27B-Q5_K_M.gguf
+      --mmproj ${tess_dir}/mmproj-Tess-4.5-27B-F16.gguf
       -dev CUDA0,CUDA1 -sm layer -ts 17,19 -ngl 999 -c 262144
       --spec-type mtp:n_max=3
       ${qwen_sampling} ${common}
@@ -136,8 +140,8 @@ models:
     # 14.1/18.8 GB, answers at temp 0 unchanged. Measured 28.10 (OpenHands-Nexus-work/speed-2026-10-28).
     cmd: |
       ${server}
-      -m /data/home/user/Models/Holo4-27B/Holo4-27B-q4_k_m.gguf
-      --mmproj /data/home/user/Models/Holo4-27B/Holo4-27B-mmproj.f16.gguf
+      -m ${holo_dir}/Holo4-27B-q4_k_m.gguf
+      --mmproj ${holo_dir}/Holo4-27B-mmproj.f16.gguf
       -dev CUDA0,CUDA1 -sm layer -ts 16,20 -ngl 999 -c 262144
       ${qwen_sampling} ${common} -ub 2048
     metadata: {ctx: 262144}

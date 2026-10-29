@@ -320,6 +320,24 @@ class GuardRules(unittest.TestCase):
         self.assertEqual(decide("rm -rf *", working_dir=HOME), guard.REASON_RM)
         self.assertEqual(decide("rm -rf .*", working_dir=HOME), guard.REASON_RM)
 
+    def test_models_named_through_the_installer_links_are_protected_where_they_lead(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            repo, store = Path(temp, "repo"), Path(temp, "store")
+            (store / "Nex").mkdir(parents=True)
+            (repo / "models").mkdir(parents=True)
+            (repo / "models/weights").symlink_to(store)
+            (repo / "models/llama-swap.yaml").write_text(
+                "macros:\n  server: ./llama-server\n  nex_dir: weights/Nex\n\nmodels:\n"
+                "  nex:\n    cmd: |\n      ${server}\n      -m ${nex_dir}/a.gguf --mmproj ${nex_dir}/b.gguf\n")
+            guard.nexus_paths.cache_clear()
+            try:
+                with mock.patch.object(guard, "REPO", repo):
+                    self.assertIn(str(store / "Nex/a.gguf"), guard.nexus_paths())
+                    self.assertEqual(decide(f"rm -rf {store}/Nex"), guard.REASON_RM)
+            finally:
+                guard.nexus_paths.cache_clear()
+
     def test_protected_files_are_not_editable_by_the_agent(self):
         edit = lambda path: {"tool_name": "file_editor", "tool_input": {"command": "str_replace", "path": path}}
         self.assertEqual(guard.decide(edit(str(GUARD))), guard.REASON_SELF)
