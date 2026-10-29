@@ -12,10 +12,12 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 MANIFEST = Path(__file__).resolve().parent / "weights.json"
 GiB = 1024 ** 3
+ATTEMPTS = 10
 
 
 def load(manifest=MANIFEST):
@@ -46,9 +48,18 @@ def fetch(folder, name, entry):
     part = target.with_name(target.name + ".part")
     target.parent.mkdir(parents=True, exist_ok=True)
     print(f"\n{name} ({entry['size'] / GiB:.1f} ГБ)", flush=True)
-    result = subprocess.run(["curl", "-fL", "--retry", "5", "--retry-delay", "5", "--progress-bar",
-                             "-C", "-", "-o", str(part), entry["url"]])
-    if result.returncode != 0 and not (part.exists() and part.stat().st_size == entry["size"]):
+    # curl's own --retry starts the file over; each new curl -C - continues from the .part.
+    # A connection that stalls (under 64 KB/s for a minute) is dropped and resumed the same way.
+    for attempt in range(ATTEMPTS):
+        result = subprocess.run(["curl", "-fL", "--progress-bar", "--speed-limit", "65536", "--speed-time", "60",
+                                 "-C", "-", "-o", str(part), entry["url"]])
+        done = part.exists() and part.stat().st_size >= entry["size"]
+        if result.returncode == 0 or done:
+            break
+        if attempt + 1 < ATTEMPTS:
+            print(f"Связь прервалась (curl {result.returncode}), продолжаю с того же места…", flush=True)
+            time.sleep(5)
+    else:
         print(f"Скачивание прервалось (curl {result.returncode}). Повторный запуск продолжит с того же места.")
         return False
     if part.stat().st_size != entry["size"]:

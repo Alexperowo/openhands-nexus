@@ -50,6 +50,28 @@ class WeightsTests(unittest.TestCase):
             self.assertEqual((folder / "A/a.gguf").read_bytes(), b"weights")
             self.assertEqual(quiet(["status", str(folder)], data), 0)
 
+    def test_interrupted_download_continues_from_the_part(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data, folder = fake(temp, b"0123456789" * 1000), Path(temp) / "store"
+            (folder / "A").mkdir(parents=True)
+            (folder / "A/a.gguf.part").write_bytes(b"0123456789" * 400)
+            self.assertEqual(quiet(["get", str(folder), "a"], data), 0)
+            self.assertEqual((folder / "A/a.gguf").read_bytes(), b"0123456789" * 1000)
+
+    def test_unreachable_source_is_retried_then_given_up(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data, folder = fake(temp), Path(temp) / "store"
+            data["files"]["A/a.gguf"]["url"] = (Path(temp) / "gone.bin").as_uri()
+            saved, weights.ATTEMPTS, sleep = weights.ATTEMPTS, 2, weights.time.sleep
+            weights.time.sleep = lambda seconds: None
+            try:
+                with redirect_stdout(io.StringIO()) as out:
+                    self.assertEqual(weights.main(["get", str(folder), "a"], data), 1)
+            finally:
+                weights.ATTEMPTS, weights.time.sleep = saved, sleep
+            self.assertIn("продолжаю с того же места", out.getvalue())
+            self.assertFalse((folder / "A/a.gguf").exists())
+
     def test_wrong_checksum_never_takes_the_name(self):
         with tempfile.TemporaryDirectory() as temp:
             data, folder = fake(temp), Path(temp) / "store"
