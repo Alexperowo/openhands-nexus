@@ -1,7 +1,6 @@
 """Real npm/build failure and recovery, exclusively in an existing /tmp copy."""
 import argparse
 import json
-from pathlib import Path
 
 from nexus_update import Updater, UpdateError, digest, parse_args
 
@@ -9,11 +8,12 @@ from nexus_update import Updater, UpdateError, digest, parse_args
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("sandbox")
+    parser.add_argument("version", help="Canvas, на которую копия обновляется (не её текущая)")
     args = parser.parse_args()
-    updater = Updater(parse_args(["canvas", "1.33.0", "--sandbox", args.sandbox]))
+    updater = Updater(parse_args(["canvas", args.version, "--sandbox", args.sandbox]))
     updater.state.mkdir(exist_ok=True)
     original_version = updater.installed_canvas()
-    assert original_version == "1.30.1", "This regression test expects a 1.30.1 sandbox"
+    assert original_version != args.version, f"The sandbox already has Canvas {args.version}: nothing to update"
     paths = [updater.root / project / name for project in ("agent", "ui")
              for name in ("package.json", "package-lock.json")]
     before = {str(path): digest(path) for path in paths}

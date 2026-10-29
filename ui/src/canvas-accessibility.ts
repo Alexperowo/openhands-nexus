@@ -1,5 +1,5 @@
-// Canvas 1.30.1 exposes no props for these two label defects. Keep the
-// corrections in the host, scoped by test IDs, and observe late-mounted panels.
+// Canvas 1.33.0 still exposes no props for these two label defects (axe: label-content-name-mismatch,
+// label-title-only). Keep the corrections in the host, scoped by test IDs, and observe late-mounted panels.
 export function observeCanvasAccessibility(root: HTMLElement) {
   const update = () => {
     // Its content already names the button, including the visible shortcut.

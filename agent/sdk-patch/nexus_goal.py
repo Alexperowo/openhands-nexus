@@ -163,12 +163,6 @@ def objective_index(events, objective):
     return None
 
 
-def since_objective(events, objective):
-    """Events from the goal's request on; all when it is not found."""
-    index = objective_index(events, objective)
-    return list(events) if index is None else list(events[index:])
-
-
 def last_messages(events):
     """The last few messages of these events, each clipped, the loop's own ones aside."""
     turns = []
@@ -180,11 +174,6 @@ def last_messages(events):
             if len(turns) == CONTEXT_MESSAGES:
                 break
     return "\n\n".join(reversed(turns))
-
-
-def earlier_context(events, objective):
-    """The last few messages before the goal's request."""
-    return last_messages(events[:objective_index(events, objective) or 0])
 
 
 def render_transcript(events):

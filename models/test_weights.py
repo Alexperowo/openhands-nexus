@@ -2,7 +2,6 @@
 import hashlib
 import importlib.util
 import io
-import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout

@@ -7,11 +7,8 @@
 (4) Замеры времени ответа эндпоинтов и потребления RAM/VRAM
 """
 
-import io
 import json
-import os
 import subprocess
-import sys
 import time
 import urllib.request
 from pathlib import Path

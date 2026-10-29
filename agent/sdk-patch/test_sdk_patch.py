@@ -366,7 +366,8 @@ class GoalTests(unittest.TestCase):
         return FakeLLM()
 
     def test_transcript_has_commands_clipped_outputs_and_starts_at_the_goal(self):
-        events = goal.since_objective(self.run_events("Х" * 10000), self.objective)
+        run = self.run_events("Х" * 10000)
+        events = run[goal.objective_index(run, self.objective):]
         text = goal.render_transcript(events)
         self.assertNotIn("старая просьба", text)
         self.assertIn("echo привет > hello.txt", text)

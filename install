@@ -243,7 +243,7 @@ done_cards() {
   [ -z "$(comm -23 <(echo "$want") <(echo "$have"))" ]
 }
 do_cards() {
-  local profile card uuid old
+  local profile uuid old
   for profile in 5060 2080; do
     old=$(awk -v p="nex19-$profile:" '$1 == p {f=1} f && /CUDA_VISIBLE_DEVICES=GPU-/ {match($0, /GPU-[0-9a-f-]+/); print substr($0, RSTART, RLENGTH); exit}' "$WORK/models/llama-swap.yaml")
     uuid=$(gpus | awk -F', ' -v p="$profile" 'index($2, p) {print $1; exit}' || true)

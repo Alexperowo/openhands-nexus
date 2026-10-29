@@ -39,7 +39,7 @@ if (typeof window !== "undefined") {
     if (!existing?.baseUrl) {
       localStorage.setItem("openhands-transcription-endpoint", JSON.stringify({
         baseUrl: `${window.location.origin}/v1`,
-        model: "v3_ctc",
+        model: "v3_e2e_rnnt",
       }));
     }
   } catch (e) {

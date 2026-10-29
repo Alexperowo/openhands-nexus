@@ -63,9 +63,9 @@ python3 test_update.py      # внешние команды подменены: 
 под `/tmp/nexus-update-test.*` (службы, health и API smoke там пропускаются):
 
 ```sh
-./nexus-update canvas 1.33.0 --sandbox /tmp/nexus-update-test.XXXX
+./nexus-update canvas НОВАЯ --sandbox /tmp/nexus-update-test.XXXX   # НОВАЯ — версия, на которую обновляемся
 ./nexus-update rollback canvas --sandbox /tmp/nexus-update-test.XXXX
-python3 test_canvas_failure.py /tmp/nexus-update-test.XXXX   # битый import в overlay → откат
+python3 test_canvas_failure.py /tmp/nexus-update-test.XXXX НОВАЯ   # битый import в overlay → откат
 ```
 
 После обновления canvas выводится список ключей английской локали, которых нет

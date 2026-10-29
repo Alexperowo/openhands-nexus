@@ -12,7 +12,7 @@ from typing import Optional
 import anyio.from_thread
 import soundfile as sf
 import torch
-from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
@@ -389,10 +389,8 @@ def speech(req: SpeechRequest, request: Request = None):
 def transcriptions(
     request: Request,
     file: UploadFile = File(...),
-    model: Optional[str] = Form(None),
-    authorization: Optional[str] = Header(None)
 ):
-    # Принимаем Authorization header (Bearer ...), ключ не требуем
+    # Поля model и Authorization из запроса Canvas не нужны: модель одна, ключа нет.
     stt = get_stt_model()
 
     with tempfile.TemporaryDirectory() as tmpdir:

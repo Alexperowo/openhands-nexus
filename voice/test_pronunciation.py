@@ -1,7 +1,6 @@
 import re
 import unittest
 from concurrent.futures import ThreadPoolExecutor
-from unittest.mock import patch
 
 from pronunciation import for_silero, spoken_numbers
 
