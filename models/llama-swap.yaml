@@ -8,6 +8,9 @@
 
 healthCheckTimeout: 600
 logLevel: info
+# The models' own output goes to the journal too (journalctl --user -u ohn-models): prompt reading,
+# cache reuse and errors of llama-server were invisible with the default "proxy".
+logToStdout: "proxy,upstream"
 startPort: 18040
 globalTTL: 0
 unloadTimeout: 15
