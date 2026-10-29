@@ -1,4 +1,7 @@
 """The readiness check reads the model files from llama-swap.yaml and names what is missing."""
+import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -39,6 +42,20 @@ class PreflightTests(unittest.TestCase):
                      "voice/models/v3_e2e_rnnt.ckpt", "/models/a/a.gguf", "/opt/ik/llama-server", "apt install ffmpeg"):
             self.assertIn(item, found)
 
+
+class InstallTests(unittest.TestCase):
+    def test_folder_path_with_a_space_stops_the_install_at_once(self):
+        root = Path(__file__).resolve().parent.parent
+        with tempfile.TemporaryDirectory() as temp:
+            folder = Path(temp) / "Мои программы/OpenHands-Nexus"
+            folder.mkdir(parents=True)
+            shutil.copy2(root / "install", folder)
+            steps = "system,driver,cuda,tools,engine,binaries,apps,keys,models,cards,wifi,services,agent"
+            result = subprocess.run(["bash", folder / "install", "--yes", "--skip", steps], capture_output=True,
+                                    text=True, env={**os.environ, "HOME": temp}, stdin=subprocess.DEVNULL)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("в пути к папке есть пробел", result.stdout)
+        self.assertNotIn("Шаг 1", result.stdout)
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,6 +7,9 @@ UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/openhands-nexus"
 APP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 DESKTOP_DIR=$(xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop")
+if [[ "$WORK$CONFIG_DIR" == *[[:space:]]* ]]; then  # systemd and desktop files would split the path
+  echo "В пути к папке есть пробел ($WORK): службы и ярлыки с ним не запустятся. Перенесите папку в ~/Agents."; exit 1
+fi
 
 # Private keys: generated once, then kept (the agent's secrets.json is encrypted with OHN_SECRET_KEY).
 umask 077
