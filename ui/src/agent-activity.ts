@@ -10,6 +10,7 @@ export type ModelReading = { state: "unknown" | "offline" | "loading" | "busy" |
 export type ModelState = ModelReading["state"] | "reading" | "writing" | "stalled";
 
 export const MODEL_STALLED = "Модель не продвигается больше 2 минут — возможно, зависла";
+export const MODEL_LOADING = "Модель загружается";
 // One batch of a long context takes seconds (2048 tokens of 45k in 1.5 s, 27.10); images as well.
 export const STALL_MS = 120_000;
 
@@ -226,7 +227,7 @@ export function describeStatus(status: string, activity: ActivitySnapshot, model
   }
   if (status !== "running") return null;
   if (model === "offline") return { text: "Агент ждёт модель", tone: "error" };
-  if (model === "loading") return { text: "Модель загружается", tone: "work" };
+  if (model === "loading") return { text: MODEL_LOADING, tone: "work" };
   if (model === "stalled") return { text: MODEL_STALLED, tone: "attention" };
   if (activity.error) return { text: `${activity.error}. Возможна повторная попытка`, tone: "error" };
   if (activity.actions.length > 1) return { text: `${first} и ещё ${activity.actions.length - 1}`, tone: "work" };
@@ -291,9 +292,10 @@ const metric = (text: string, name: string) => {
  * Reads llama-swap through the gateway: /llm/running names the loaded model and its state,
  * that model's own /metrics whether it works and how far (KV-cache tokens), /health whether
  * it works when the server has no metrics. An unreachable gateway is "unknown" (the page
- * itself is offline), not a model fault.
+ * itself is offline), not a model fault. Not `detailed` (between runs): only a swap or a
+ * stopped server, without asking the model itself.
  */
-export async function readModelState(signal: AbortSignal): Promise<ModelReading> {
+export async function readModelState(signal: AbortSignal, detailed = true): Promise<ModelReading> {
   const options = { signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]) };
   let response: Response;
   try {
@@ -308,6 +310,7 @@ export async function readModelState(signal: AbortSignal): Promise<ModelReading>
   if (!Array.isArray(running)) return { state: "unknown" };
   // A swap stops the old model, then starts the chosen one.
   if (running.some(item => item?.state === "starting" || item?.state === "stopping")) return { state: "loading" };
+  if (!detailed) return { state: "unknown" };
   const ready = running.find(item => item?.state === "ready");
   // Nothing loaded: llama-swap starts the model on the next request.
   if (typeof ready?.model !== "string") return { state: "idle" };

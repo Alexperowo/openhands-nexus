@@ -10,6 +10,8 @@ import { screenAwake } from "./screen-awake.ts";
 const NO_ACTIVITY: ActivitySnapshot = { actions: [], error: "" };
 const CONNECTION_LOST = "Нет связи с сервером";
 const MODEL_INTERVAL = 1500;
+// What a run's reading says about the model ends with the run; these still hold between runs.
+const BETWEEN_RUNS = new Set<ModelState>(["unknown", "offline", "loading"]);
 const RETRY_FIRST = 500;
 const RETRY_MAX = 10000;
 const CHECK_INTERVAL = 30000;
@@ -66,12 +68,13 @@ export function useConversationSpeech(conversationId: string | null) {
     let checkTimer: ReturnType<typeof setTimeout> | undefined;
     const visible = () => document.visibilityState === "visible";
 
-    // Model health matters only while the agent works and someone can see it.
-    const modelWanted = () => Boolean(session?.statusKnown) && visible() &&
-      activity.verifiedStatus(session!.status) === "running";
+    // The model matters while someone can see it: in detail while the agent works; before the
+    // first message a model chosen in the list is already loading, and that is shown too.
+    const working = () => activity.verifiedStatus(session!.status) === "running";
+    const modelWanted = () => Boolean(session?.statusKnown) && visible();
     const readModel = async () => {
       if (!modelWanted()) { modelTimer = undefined; return; }
-      const reading = await readModelState(signal);
+      const reading = await readModelState(signal, working());
       modelTimer = undefined;
       if (signal.aborted) return;
       model = progress.update(reading, Date.now());
@@ -84,8 +87,12 @@ export function useConversationSpeech(conversationId: string | null) {
         model = "unknown";
         modelAt = 0;
         progress.reset();
-      } else if (modelTimer === undefined) {
-        modelTimer = setTimeout(readModel, modelAt ? MODEL_INTERVAL : 0);
+      } else {
+        if (!working() && !BETWEEN_RUNS.has(model)) {
+          model = "unknown";
+          progress.reset();
+        }
+        if (modelTimer === undefined) modelTimer = setTimeout(readModel, modelAt ? MODEL_INTERVAL : 0);
       }
       const status = activity.verifiedStatus(session!.status);
       screenAwake.set(status === "running" || status === "checking");

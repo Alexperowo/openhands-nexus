@@ -10,7 +10,7 @@ const message = (id, source, text) => ({ id, kind: "MessageEvent", source, times
 const history = Array.from({length: 8}, (_, i) => message(`history-${i}`, i % 2 ? "agent" : "user", i % 2 ? "Предыдущая проверка выполнена. Настройки сохранены.\n\nМожно продолжать работу с компьютером." : "Проверь настройки компьютера и объясни результат."));
 export async function startFixture({ root, port = 0 } = {}) {
   let sequence = history.length - 1, runCount = 0, snapshots = 0;
-  let events = history.map((event, seq) => ({...event, seq})), status = "idle", offline = false, wsOffline = false, timers = [];
+  let events = history.map((event, seq) => ({...event, seq})), status = "idle", offline = false, wsOffline = false, timers = [], model = "ready";
   const requests = [], sockets = new Set();
   const conversation = (id = "replay") => ({ id, title: id === "replay" ? "Проверка компьютера" : "Вторая беседа", created_at: timestamp, updated_at: timestamp, execution_status: status, workspace: {working_dir: "/tmp"}, agent: {kind: "Agent", llm: {model: "fixture"}}, stats: {usage_to_metrics: {}}, sub_conversation_ids: [], available_models: [], sandbox_status: "RUNNING" });
   const send = (frame) => { for (const socket of sockets) if (socket.readyState === 1) socket.send(JSON.stringify(frame)); };
@@ -43,7 +43,7 @@ export async function startFixture({ root, port = 0 } = {}) {
     const url = new URL(req.url, "http://fixture.invalid"), p = url.pathname;
     if (p === "/__fixture/reset") {
       timers.forEach(clearTimeout); timers = []; events = history.map((event, seq) => ({...event, seq}));
-      sequence = history.length - 1; runCount = 0; status = "idle"; offline = false; wsOffline = false;
+      sequence = history.length - 1; runCount = 0; status = "idle"; offline = false; wsOffline = false; model = "ready";
       return json(res, {});
     }
     if (p === "/__fixture/start") { run(); return json(res, {}); }
@@ -53,10 +53,12 @@ export async function startFixture({ root, port = 0 } = {}) {
       return json(res, {});
     }
     if (p === "/__fixture/log") return json(res, requests);
+    // llama-swap's state of the one model: "starting" while a swap loads it.
+    if (p === "/__fixture/model") { model = url.searchParams.get("state") || "ready"; return json(res, {}); }
     if (p.startsWith("/api") || p.startsWith("/llm") || p.startsWith("/v1")) {
       requests.push({path: req.url, method: req.method});
       if (offline) return json(res, {detail: "Fixture offline"}, 503);
-      if (p === "/llm/running") return json(res, {running: [{model: "fixture", state: "ready"}]});
+      if (p === "/llm/running") return json(res, {running: [{model: "fixture", state: model}]});
       if (p === "/llm/model/fixture/health") return json(res, {status: status === "running" ? "no slot available" : "ok", slots_idle: status === "running" ? 0 : 1, slots_processing: status === "running" ? 1 : 0});
       if (p === "/api/settings") return json(res, {language: "ru", enable_sound_notifications: false, is_new_user: false, agent_settings: {llm: {model: "fixture", base_url: "http://127.0.0.1", api_key: "fixture-only"}, tools: []}, conversation_settings: {max_iterations: 100, confirmation_mode: false}, llm_api_key_set: true});
       if (p.endsWith("/events/search")) return json(res, {items: [...events].reverse(), next_page_id: null});

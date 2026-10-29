@@ -810,6 +810,14 @@ test("model reading: metrics give work and tokens; no metrics falls back to heal
   assert.deepEqual(await readModelState(signal), { state: "loading" });
   serve({ "/llm/running": new Response("", { status: 502 }) });
   assert.deepEqual(await readModelState(signal), { state: "offline" });
+  // Between runs only a swap or a stopped server matters: the loaded model itself is not asked.
+  const light = serve({ "/llm/running": running(), "/llm/model/nex25/metrics": new Response(metrics(1, 51234)) });
+  assert.deepEqual(await readModelState(signal, false), { state: "unknown" });
+  assert.deepEqual(light, ["/llm/running"]);
+  serve({ "/llm/running": new Response(JSON.stringify({ running: [{ model: "tess", state: "starting" }] })) });
+  assert.deepEqual(await readModelState(signal, false), { state: "loading" });
+  serve({ "/llm/running": new Response("", { status: 502 }) });
+  assert.deepEqual(await readModelState(signal, false), { state: "offline" });
 });
 
 test("status: only proven stages; a finish beats a stale action; model faults come first", () => {

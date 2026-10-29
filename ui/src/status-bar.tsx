@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MODEL_STALLED, describeStatus, type ActivitySnapshot, type ModelState } from "./agent-activity";
+import { MODEL_LOADING, MODEL_STALLED, describeStatus, type ActivitySnapshot, type ModelState } from "./agent-activity";
 import { getPreferences, stateCuesEnabled } from "./preferences";
 import { cueForStatus, playConnectionCue, playCue } from "./status-cues";
 import { shouldAnnounceStatus } from "./status-announcement";
@@ -27,6 +27,9 @@ export function StatusBar({ status, activity, model, problems, connection = "onl
   const [urgent, setUrgent] = useState("");
   const line = describeStatus(status, activity, model);
   const lineText = line?.text ?? "";
+  const visible = Boolean(line && (!TRANSIENT.has(status) || news === status));
+  // A model chosen in the list loads before the first message; the line has nothing else to say.
+  const loading = model === "loading" && !WORKING.has(status) && !visible;
   const problem = connection === "lost" ? "Связь потеряна. Пробую подключиться." :
     [model === "offline" ? "Нет связи с моделью" : model === "stalled" ? MODEL_STALLED : "", ...problems].filter(Boolean).join(". ");
 
@@ -50,6 +53,9 @@ export function StatusBar({ status, activity, model, problems, connection = "onl
     if (shouldAnnounceStatus(before, current)) setAnnouncement(lineText);
   }, [status, activity.error, connection]);
   useEffect(() => {
+    if (loading && connection === "online") setAnnouncement(MODEL_LOADING);
+  }, [loading]);
+  useEffect(() => {
     if (!announcement) return;
     const timer = setTimeout(() => setAnnouncement(""), 7000);
     return () => clearTimeout(timer);
@@ -71,12 +77,12 @@ export function StatusBar({ status, activity, model, problems, connection = "onl
     return () => clearTimeout(timer);
   }, [status, connection]);
 
-  const visible = Boolean(line && (!TRANSIENT.has(status) || news === status));
-  const visual = problem || (connection === "connecting" ? "Подключение к диалогу…" : visible ? lineText : "");
+  const visual = problem || (connection === "connecting" ? "Подключение к диалогу…" :
+    visible ? lineText : loading ? MODEL_LOADING : "");
   return <section className="nexus-status-slot" aria-label="Состояние агента">
-    <p className={`status-bar${problem ? " status-problem" : ""}`} data-tone={problem ? "error" : line?.tone}
+    <p className={`status-bar${problem ? " status-problem" : ""}`} data-tone={problem ? "error" : loading ? "work" : line?.tone}
       data-empty={!visual || undefined}>
-      <span className={WORKING.has(status) && !problem ? "nexus-working" : undefined} aria-hidden="true" />
+      <span className={(WORKING.has(status) || loading) && !problem ? "nexus-working" : undefined} aria-hidden="true" />
       <span className="nexus-status-text" key={visual}>{visual || "\u00a0"}</span>
     </p>
     <p className="visually-hidden" role="status" aria-atomic="true">{announcement}</p>

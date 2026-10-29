@@ -83,7 +83,7 @@ test("reasoning: collapsed while streaming and in history, never a live region",
     {message: "Готово", reasoning: "Проверено"});
 });
 
-test("socket: history silent, each answer spoken once across reconnects, notices only for real outages, model read only while running", async () => {
+test("socket: history silent, each answer spoken once across reconnects, notices only for real outages, the model itself read only while running", async () => {
   const savedDocument = globalThis.document, savedLocation = globalThis.location, savedSocket = globalThis.WebSocket;
   const savedFetch = globalThis.fetch, savedTimeout = globalThis.setTimeout, savedClear = globalThis.clearTimeout;
   const harness = {state: null, changes: [], timers: [], sockets: [], spoken: [], requests: [], count: () => Promise.resolve(3), cleanup: null};
@@ -152,13 +152,16 @@ test("socket: history silent, each answer spoken once across reconnects, notices
     assert.equal(harness.state.model, "busy", "model read at once while running");
     assert.ok(harness.timers.some(timer => timer.delay === 1500), "and again after 1.5 s");
 
-    // Live: spoken once; a finished run stops the model reads.
+    // Live: spoken once; after the run only a swap is watched, the model itself is not asked.
     send(durable(3, say("a3", "Готово")), durable(3, say("a3", "Готово")), durable(4, status("s4", "finished")));
     assert.deepEqual(harness.spoken, ["a3"]);
     assert.equal(harness.state.status, "finished", "a reply in words: no «not checked»"); assert.equal(harness.state.model, "unknown");
-    const reads = harness.requests.filter(path => path.endsWith("/running")).length;
+    const count = suffix => harness.requests.filter(path => path.endsWith(suffix)).length;
+    const reads = count("/running"), asked = harness.requests.length;
     await fire(1500);
-    assert.equal(harness.requests.filter(path => path.endsWith("/running")).length, reads, "no model read after the run");
+    assert.equal(count("/running"), reads + 1, "a swap is still watched after the run");
+    assert.equal(harness.requests.length, asked + 1, "the model itself is not asked after the run");
+    assert.equal(harness.state.model, "unknown");
 
     // A dropped socket reconnects quietly from the last seq; what came meanwhile is spoken, repeats are not.
     socket().onclose();

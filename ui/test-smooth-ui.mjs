@@ -118,6 +118,18 @@ try {
     assert.equal(await page.evaluate(() => window.connectionNotices.filter(text => text === "Связь восстановлена").length), 1);
     await context.close();
   }
+  // A model swap before the first message (the agent idle): the line shows the loading and says it once.
+  {
+    const {page, context, errors} = await openPage(browser, fixture.origin, {});
+    const text = () => document.querySelector(".nexus-status-text")?.textContent.trim();
+    await fetch(fixture.origin + "/__fixture/model?state=starting");
+    await page.waitForFunction(text => new Function(`return (${text})()`)() === "Модель загружается", {timeout: 8000}, String(text));
+    assert.equal(await page.$eval(".nexus-status-slot [role='status']", node => node.textContent), "Модель загружается");
+    assert.equal(await page.$eval(".status-bar", node => node.dataset.tone), "work");
+    await fetch(fixture.origin + "/__fixture/model?state=ready");
+    await page.waitForFunction(text => new Function(`return (${text})()`)() === "", {timeout: 8000}, String(text));
+    assert.deepEqual(errors, []); await context.close();
+  }
   // Actual controls, not direct service.stop(): both a step and an answer must stop.
   {
     const {page, context, errors} = await openPage(browser, fixture.origin, {autoSpeak: true});
@@ -147,7 +159,7 @@ try {
     await context.close();
   }
   await fs.writeFile(path.join(output, "ui-results.json"), JSON.stringify({status: "passed", browser: await browser.version(), axePath: String(axePath), results,
-    additionalChecks: ["settings Off and focus", "drawer keyboard and focus return", "one main", "socket loss/restoration once", "real Stop for step and answer", "STT Cancel releases hold and reads deferred answer"]}, null, 2) + "\n");
+    additionalChecks: ["settings Off and focus", "drawer keyboard and focus return", "one main", "socket loss/restoration once", "model loading shown while idle", "real Stop for step and answer", "STT Cancel releases hold and reads deferred answer"]}, null, 2) + "\n");
   console.log(`Chrome UI: ${results.length} matrix cases passed; axe=0; real Stop and dictation Cancel passed`);
 } catch (error) {
   await fs.writeFile(path.join(output, "ui-results.json"), JSON.stringify({status: error.code === "EPERM" ? "blocked" : "failed", reason: error.message, code: error.code ?? null, results}, null, 2) + "\n");
