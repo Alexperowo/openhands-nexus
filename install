@@ -203,10 +203,13 @@ do_keys() {
   mkdir -p "$CONFIG_DIR" "$WORK/gateway/ca"
   [ -f "$CONFIG_DIR/session.env" ] ||
     printf 'OHN_SESSION_KEY=%s\nOHN_SECRET_KEY=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > "$CONFIG_DIR/session.env"
-  [ -f "$WORK/gateway/ca/openhands-ca.key" ] ||
-    openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -subj "/CN=OpenHands Local Root CA" \
-      -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" \
-      -keyout "$WORK/gateway/ca/openhands-ca.key" -out "$WORK/gateway/ca/openhands-ca.crt" 2>/dev/null
+  local ca="$WORK/gateway/ca" root=(-x509 -sha256 -days 3650 -subj "/CN=OpenHands Local Root CA"
+    -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign")
+  if [ ! -f "$ca/openhands-ca.key" ]; then
+    openssl req "${root[@]}" -newkey rsa:4096 -nodes -keyout "$ca/openhands-ca.key" -out "$ca/openhands-ca.crt" 2>/dev/null
+  elif [ ! -f "$ca/openhands-ca.crt" ]; then  # the key outlived an interrupted run: the certificate comes from it
+    openssl req "${root[@]}" -key "$ca/openhands-ca.key" -out "$ca/openhands-ca.crt" 2>/dev/null
+  fi
   umask 022
 }
 
