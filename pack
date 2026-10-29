@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Archives of OpenHands-Nexus, in ~/Nexus-архивы (another folder: NEXUS_ARCHIVES=...).
 #   ./pack                 clean archive of the last commit: the project without keys, settings,
-#                          conversations, model weights or builds; checked file by file before it is kept
+#                          conversations, model weights or builds; checked file by file before it is kept;
+#                          next to it once per engine commit: ik_llama sources, so ./install builds without GitHub
 #   ./pack personal        private copy of this PC: keys, tablet certificate, conversations, ~/Nexus
 #   ./pack restore FILE    put a private copy back (./install does it); existing files stay untouched
 set -euo pipefail
@@ -23,7 +24,7 @@ clean() {
     name="OpenHands-Nexus-linux-$date-$commit"
     mkdir -p "$OUT"
     tmp=$(mktemp "$OUT/.pack-XXXXXX")
-    trap 'rm -f "$tmp"' EXIT
+    trap 'rm -rf "$tmp"' EXIT
     git archive --format=tar --prefix=OpenHands-Nexus/ \
         --add-virtual-file="OpenHands-Nexus/VERSION:OpenHands-Nexus linux, коммит $commit от $date"$'\n' \
         HEAD > "$tmp"
@@ -38,7 +39,31 @@ clean() {
         rm -f "$stale" "$stale.sha256"
     done
     echo "Готово: $OUT/$name.tar.gz ($(du -h "$OUT/$name.tar.gz" | cut -f1))"
+    engine
     echo "Установка на чистой системе: распаковать, затем ./install (подробно: docs/first-run.md)."
+}
+
+engine() {
+    local commit backend=$HOME/backend/ik_llama-fresh name  # backend: BACKEND in install
+    commit=$(sed -n 's/^IK_COMMIT=//p' install)
+    name="ik_llama-${commit:0:7}.bundle"
+    [ ! -f "$OUT/$name" ] || return 0
+    if ! git -C "$backend" cat-file -e "$commit^{commit}" 2>/dev/null; then
+        echo "Исходников движка $commit нет в $backend: архив движка не собран, ./install скачает их с GitHub."
+        return 0
+    fi
+    # One commit without history, as git clone --depth 1 would fetch; ./install marks it shallow.
+    rm -f "$tmp"  # the project archive is written
+    tmp=$(mktemp -d "$OUT/.pack-XXXXXX")
+    git init -q --bare "$tmp/git"
+    git -C "$tmp/git" fetch -q --depth 1 "file://$backend" "$commit:refs/heads/nexus"
+    git -C "$tmp/git" bundle create -q "$tmp/bundle" nexus
+    mv "$tmp/bundle" "$OUT/$name"
+    (cd "$OUT" && sha256sum "$name" > "$name.sha256")
+    ls -1t "$OUT"/ik_llama-*.bundle | tail -n +3 | while read -r stale; do
+        rm -f "$stale" "$stale.sha256"
+    done
+    echo "Движок: $OUT/$name ($(du -h "$OUT/$name" | cut -f1)), на новой системе положить в ~/Nexus-архивы."
 }
 
 case "${1:-}" in
@@ -51,5 +76,5 @@ case "${1:-}" in
     restore)
         [ -n "${2:-}" ] || { echo "Укажите файл: ./pack restore ФАЙЛ"; exit 2; }
         python3 -I launcher/archive.py restore "$2" ;;
-    *) sed -n '2,6s/^# \{0,1\}//p' "$0"; exit 2 ;;
+    *) sed -n '2,7s/^# \{0,1\}//p' "$0"; exit 2 ;;
 esac

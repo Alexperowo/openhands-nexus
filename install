@@ -24,6 +24,7 @@ CADDY_VERSION=2.11.7
 CADDY_SHA512=a7a433a1b133efc3c8d10eb0b99d52a24b5ef5c322dc77f5282182b1c0402139ab83f3a99f0c52409df77d20123fb0b523edad8a66d8f5e49136197bf61ef0e7
 IK_REPO=https://github.com/ikawrakow/ik_llama.cpp.git
 IK_COMMIT=a61ad7873c8306fe18123eea9659705cb5cf945d
+IK_SOURCE="$HOME/Nexus-архивы/ik_llama-${IK_COMMIT:0:7}.bundle"  # исходники движка от ./pack: сборка без GitHub
 DRIVER=615-open
 CUDA=13.1
 APT_PACKAGES=(git curl ca-certificates openssl xz-utils build-essential cmake python3 python3-yaml
@@ -99,8 +100,11 @@ do_driver() {
   exit 0
 }
 
-done_cuda() { [ -x "/usr/local/cuda-$CUDA/bin/nvcc" ]; }
-do_cuda() { sudo apt-get install -y "cuda-compiler-${CUDA/./-}" "cuda-libraries-dev-${CUDA/./-}"; } # Ubuntu multiverse
+done_cuda() {
+  [ -x "/usr/local/cuda-$CUDA/bin/nvcc" ] && dpkg-query -W -f='${Status}' libnccl-dev 2>/dev/null | grep -q 'install ok installed'
+}
+# Ubuntu multiverse; NCCL — обмен данными между картами, движок собирается с ним, если он есть.
+do_cuda() { sudo apt-get install -y "cuda-compiler-${CUDA/./-}" "cuda-libraries-dev-${CUDA/./-}" libnccl-dev; }
 
 done_tools() { [ "$(node -v 2>/dev/null)" = "v$NODE_VERSION" ] && uv --version 2>/dev/null | grep -q "^uv $UV_VERSION"; }
 do_tools() {
@@ -121,9 +125,19 @@ done_engine() {
     [ "$(readlink "$WORK/models/llama-server")" = "$BACKEND/build/bin/llama-server" ]
 }
 do_engine() {
-  local archs
+  local archs temp="$BACKEND.part"
+  if [ ! -d "$BACKEND/.git" ] && [ -f "$IK_SOURCE" ]; then
+    # Архив движка от ./pack — один коммит без истории; копия выходит как от git clone --depth 1.
+    (cd "$(dirname "$IK_SOURCE")" && sha256sum -c --quiet "$(basename "$IK_SOURCE").sha256") ||
+      fail "архив движка повреждён: $IK_SOURCE"
+    rm -rf "$temp" && git init -q "$temp"
+    echo "$IK_COMMIT" > "$temp/.git/shallow"
+    git -C "$temp" fetch -q "$IK_SOURCE" nexus
+    git -C "$temp" remote add origin "$IK_REPO"
+    mv -T "$temp" "$BACKEND"
+  fi
   [ -d "$BACKEND/.git" ] || git clone "$IK_REPO" "$BACKEND"
-  git -C "$BACKEND" fetch --quiet origin
+  git -C "$BACKEND" cat-file -e "$IK_COMMIT^{commit}" 2>/dev/null || git -C "$BACKEND" fetch --quiet origin
   git -C "$BACKEND" checkout --quiet "$IK_COMMIT"
   # Архитектуры установленных карт (7.5 и 12.0 → 75;120); без драйвера — проверенная пара.
   archs=$(gpus | awk -F', ' '{ sub(/\./, "", $3); print $3 }' | sort -un | paste -sd';' || true)
