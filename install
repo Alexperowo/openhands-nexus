@@ -28,7 +28,7 @@ IK_SOURCE="$HOME/Nexus-архивы/ik_llama-${IK_COMMIT:0:7}.bundle"  # исх�
 DRIVER=615-open
 CUDA=13.1
 APT_PACKAGES=(git curl ca-certificates openssl xz-utils build-essential cmake python3 python3-yaml
-  libflite1 xdotool wmctrl xclip libnotify-bin pulseaudio-utils sound-theme-freedesktop kdeconnect)
+  ffmpeg libflite1 xdotool wmctrl xclip libnotify-bin pulseaudio-utils sound-theme-freedesktop kdeconnect)
 
 STEPS=(system driver cuda tools engine binaries apps keys models cards wifi services agent)
 declare -A TITLE=(

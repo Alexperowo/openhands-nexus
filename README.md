@@ -47,7 +47,7 @@
 иначе новые. Автозапуск не включается.
 
 Вручную — то же по частям. Нужны: Linux с systemd (user-сеанс), Node 24, [uv](https://docs.astral.sh/uv/), Python 3.12,
-системный `libflite1` (произношение латиницы), сборка
+системные `ffmpeg` (распознавание, MP3 и скорость речи) и `libflite1` (произношение латиницы), сборка
 [ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) с CUDA.
 
 ```bash

@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DOWNLOADS = ROOT / "voice/download_models.py"
+FFMPEG = Path("/usr/bin/ffmpeg")  # voice/service.py FFMPEG_BIN: голос зовёт ffmpeg по этому пути
 
 
 def voice_models():
@@ -46,6 +47,7 @@ def missing():
                          ("xdotool", "apt install xdotool"), ("wmctrl", "apt install wmctrl"),
                          ("xclip", "apt install xclip")):
         need(shutil.which(program), program, how)
+    need(FFMPEG.exists(), f"{FFMPEG} (распознавание, MP3 и скорость речи)", "apt install ffmpeg")
     libraries = subprocess.run(["ldconfig", "-p"], capture_output=True, text=True).stdout
     need("libflite.so" in libraries, "libflite (произношение латиницы)", "apt install libflite1")
 

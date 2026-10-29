@@ -33,10 +33,10 @@ class PreflightTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             (Path(temp) / "models").mkdir()
             (Path(temp) / "models/llama-swap.yaml").write_text(CONFIG)
-            with patch.object(preflight, "ROOT", Path(temp)):
+            with patch.object(preflight, "ROOT", Path(temp)), patch.object(preflight, "FFMPEG", Path(temp) / "ffmpeg"):
                 found = "\n".join(preflight.missing())
         for item in ("сборка ui/dist", "gateway/caddy", "gateway/ca/openhands-ca.key",
-                     "voice/models/v3_e2e_rnnt.ckpt", "/models/a/a.gguf", "/opt/ik/llama-server"):
+                     "voice/models/v3_e2e_rnnt.ckpt", "/models/a/a.gguf", "/opt/ik/llama-server", "apt install ffmpeg"):
             self.assertIn(item, found)
 
 
