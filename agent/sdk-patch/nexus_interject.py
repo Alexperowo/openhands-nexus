@@ -8,6 +8,11 @@ message that arrives while the model answers cancels that answer and the step st
 the message as the newest one. Only while the step has recorded nothing for the model: after
 that, the step ends as usual and the message is read at the next one. The stop button (interrupt)
 still stops the run.
+
+The SDK compares the newest user message with the one from before the step, so after a redo it
+starts one more step, now with nothing to answer: its request ends in the agent's own answer.
+llama-server with thinking on refuses that as a prefill (500), other models answer twice. Such a
+step ends the run instead of asking the model.
 """
 import asyncio
 import contextlib
@@ -16,6 +21,7 @@ import contextlib
 def patch_conversation(module):
     cls = module.LocalConversation
     cls._nexus_waiting = None  # the run's task while it waits for the model with the lock freed
+    cls._nexus_period = 0  # counts those waits: a late hear() must not cancel the next one
     cls._nexus_spoke = False  # the current step already recorded an event for the model
     cls._nexus_redo = False  # a new message cancelled the answer: the step starts again
     released = cls._released_state_lock_during_io
@@ -23,42 +29,62 @@ def patch_conversation(module):
     @contextlib.asynccontextmanager
     async def _released_state_lock_during_io(self):
         freed = self._state._lock.owned()
+        before = self._state.last_user_message_id
         async with released(self):
             if freed:
+                self._nexus_period += 1
                 self._nexus_waiting = asyncio.current_task()
             try:
                 yield
             finally:
                 self._nexus_waiting = None
+        # A message that came with the answer, too late for hear(): the answer has not seen it either.
+        if freed and self._state.last_user_message_id != before and not self._nexus_spoke \
+                and not self._nexus_redo:
+            self._nexus_redo = True
+            raise asyncio.CancelledError
 
     cls._released_state_lock_during_io = _released_state_lock_during_io
     send = cls.send_message
 
     def send_message(self, message, sender=None):
         send(self, message, sender)
-        task = self._nexus_waiting
+        task, period = self._nexus_waiting, self._nexus_period
         if task is not None and not task.done():
-            task.get_loop().call_soon_threadsafe(hear, self, task)
+            task.get_loop().call_soon_threadsafe(hear, self, task, period)
 
     cls.send_message = send_message
 
 
-def hear(conversation, task):
+def hear(conversation, task, period):
     """Runs on the run's loop, so the step cannot move on between the check and the cancel.
     One redo per answer: a second quick message is already in the history the redone step reads,
     and a second cancel would look like the stop button."""
-    if conversation._nexus_waiting is task and not task.done() and not conversation._nexus_spoke \
-            and not conversation._nexus_redo:
+    if conversation._nexus_waiting is task and conversation._nexus_period == period and not task.done() \
+            and not conversation._nexus_spoke and not conversation._nexus_redo:
         conversation._nexus_redo = True
         task.cancel()
 
 
 def patch_agent(module):
     from openhands.sdk.conversation.state import ConversationExecutionStatus
-    from openhands.sdk.event import LLMConvertibleEvent
+    from openhands.sdk.event import LLMConvertibleEvent, MessageEvent, ObservationEvent
+    from openhands.sdk.tool.builtins.finish import FinishTool
     astep = module.Agent.astep
 
+    def answered(conversation):
+        """The agent's own answer (or finish) is the newest thing the model would read."""
+        for event in reversed(conversation._state.active_branch(limit=50)):
+            if isinstance(event, LLMConvertibleEvent):
+                return (isinstance(event, MessageEvent) and event.source == "agent") or \
+                    (isinstance(event, ObservationEvent) and event.tool_name == FinishTool.name)
+        return False
+
     async def astep_hearing(self, conversation, on_event, on_token=None):
+        if answered(conversation):
+            conversation._state.execution_status = ConversationExecutionStatus.FINISHED
+            return
+
         def record(event):
             if isinstance(event, LLMConvertibleEvent):
                 conversation._nexus_spoke = True

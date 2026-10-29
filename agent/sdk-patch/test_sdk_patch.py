@@ -479,7 +479,8 @@ class InterjectTests(unittest.TestCase):
 
         class Conversation:
             def __init__(self):
-                self._state = SimpleNamespace(_lock=SimpleNamespace(owned=lambda: True), execution_status="running")
+                self._state = SimpleNamespace(_lock=SimpleNamespace(owned=lambda: True), execution_status="running",
+                                              last_user_message_id=None, active_branch=lambda limit=None: [])
                 self.messages = []
 
             @contextlib.asynccontextmanager
@@ -488,6 +489,7 @@ class InterjectTests(unittest.TestCase):
 
             def send_message(self, message, sender=None):
                 self.messages.append(message)
+                self._state.last_user_message_id = len(self.messages)
 
         class Agent:
             async def astep(self, conversation, on_event, on_token=None):
@@ -553,6 +555,91 @@ class InterjectTests(unittest.TestCase):
         with self.assertRaises(asyncio.CancelledError):
             self.step(stop)
         self.assertEqual(len(self.calls), 1)
+
+    def test_after_finish_or_an_answer_the_step_ends_without_the_model(self):
+        from openhands.sdk.event import ObservationEvent
+        from openhands.sdk.tool.builtins.finish import FinishObservation, FinishTool
+        finish = ObservationEvent(source="environment", tool_name=FinishTool.name, tool_call_id="c1",
+                                  action_id="a1", observation=FinishObservation.from_text("готово"))
+        heard = MessageEvent(source="user", llm_message=Message(role="user", content=[TextContent(text="ещё")]))
+        for history, asks in (([finish], False), ([self.event], False), ([self.event, heard], True)):
+            self.calls.clear()
+            self.conversation._state.execution_status = "running"
+            self.conversation._state.active_branch = lambda limit=None, history=history: history
+            if asks:
+                self.step(lambda task: asyncio.sleep(0))
+            else:
+                asyncio.run(self.agent.astep(self.conversation, lambda event: None))
+                self.assertEqual(self.conversation._state.execution_status, "finished")
+            self.assertEqual(len(self.calls), int(asks))
+
+
+class InterjectRunTests(unittest.TestCase):
+    """The real run loop with the patched agent; the model is a stand-in that refuses a request
+    ending in the agent's own answer, as llama-server with thinking on does (prefill)."""
+
+    def test_the_heard_message_is_answered_once_without_an_empty_extra_step(self):
+        from litellm import ModelResponse
+        from openhands.sdk.conversation.state import ConversationExecutionStatus
+        from openhands.sdk.llm import LLMResponse
+        asked = []
+
+        async def agenerate(llm, messages, **_):
+            asked.append(messages[-1])
+            if len(asked) == 1:  # the owner speaks while the model answers
+                await asyncio.get_running_loop().run_in_executor(None, conversation.send_message, "Остановись")
+                await asyncio.sleep(10)
+            if messages[-1].role == "assistant":
+                raise RuntimeError("Assistant response prefill is incompatible with enable_thinking.")
+            return LLMResponse(message=Message(role="assistant", content=[TextContent(text="Остановилась.")]),
+                               metrics=llm.metrics.get_snapshot(), raw_response=ModelResponse())
+
+        with tempfile.TemporaryDirectory(prefix="nexus-interject-test.") as temp, \
+                patch.object(LLM, "agenerate", agenerate):
+            agent = Agent(llm=LLM(model="openai/tess", base_url="http://127.0.0.1:1/v1", api_key="not-needed"))
+            conversation = LocalConversation(agent=agent, workspace=temp, persistence_dir=temp, visualizer=None)
+            try:
+                conversation.send_message("Проверь место на диске")
+                asyncio.run(asyncio.wait_for(conversation.arun(), 30))
+                self.assertEqual(len(asked), 2)
+                self.assertIn("Остановись", str(asked[1].content))  # the redone request reads it
+                self.assertEqual(conversation._state.execution_status, ConversationExecutionStatus.FINISHED)
+                answers = [event for event in conversation._state.events
+                           if isinstance(event, MessageEvent) and event.source == "agent"]
+                self.assertEqual(len(answers), 1)
+            finally:
+                conversation.close()
+
+    def test_a_message_that_comes_with_the_answer_is_heard_once(self):
+        """Too late for the cancel: the answer is already back when the message lands."""
+        from litellm import ModelResponse
+        from openhands.sdk.conversation.state import ConversationExecutionStatus
+        from openhands.sdk.llm import LLMResponse
+        asked = []
+
+        async def agenerate(llm, messages, **_):
+            asked.append(messages[-1])
+            if len(asked) == 1:
+                conversation.send_message("Остановись")
+            else:
+                await asyncio.sleep(0.05)  # the late hear() runs during this request
+            if messages[-1].role == "assistant":
+                raise RuntimeError("Assistant response prefill is incompatible with enable_thinking.")
+            return LLMResponse(message=Message(role="assistant", content=[TextContent(text="Остановилась.")]),
+                               metrics=llm.metrics.get_snapshot(), raw_response=ModelResponse())
+
+        with tempfile.TemporaryDirectory(prefix="nexus-interject-test.") as temp, \
+                patch.object(LLM, "agenerate", agenerate):
+            agent = Agent(llm=LLM(model="openai/tess", base_url="http://127.0.0.1:1/v1", api_key="not-needed"))
+            conversation = LocalConversation(agent=agent, workspace=temp, persistence_dir=temp, visualizer=None)
+            try:
+                conversation.send_message("Проверь место на диске")
+                asyncio.run(asyncio.wait_for(conversation.arun(), 30))
+                self.assertEqual(len(asked), 2)
+                self.assertIn("Остановись", str(asked[1].content))
+                self.assertEqual(conversation._state.execution_status, ConversationExecutionStatus.FINISHED)
+            finally:
+                conversation.close()
 
 
 class GoalCorrectionTests(unittest.TestCase):
