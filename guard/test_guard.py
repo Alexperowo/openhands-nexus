@@ -52,6 +52,11 @@ DANGEROUS = {
     # Detached by systemd, but the replaced shell still leaves the session manager.
     "systemd-run --user --collect --service-type=exec cinnamon --replace": guard.REASON_REPLACE,
     "kill -9 -1": guard.REASON_ALL,
+    # The same commands handed to the shell by an inline script.
+    "python3 -c \"import os; os.system('systemctl --user stop ohn-agent')\"": guard.REASON_NEXUS,
+    "python3 -c \"import subprocess; subprocess.run(['systemctl', '--user', 'restart', 'ohn-models'])\"":
+        guard.REASON_NEXUS,
+    "node -e \"require('child_process').execSync('pkill -u user')\"": guard.REASON_ALL,
     "pkill -u user": guard.REASON_ALL,
     "kill $(lsof -t -i:18030)": guard.REASON_NEXUS,
     "fuser -k 8443/tcp": guard.REASON_NEXUS,
@@ -216,6 +221,9 @@ ORDINARY = [
     "cp /etc/resolv.conf /tmp/resolv.copy",
     "sudo cp /etc/resolv.conf /etc/resolv.conf.backup",
     "python3 -c \"print(open('/etc/resolv.conf').read())\"",
+    "python3 -c \"import os; os.system('ls /tmp')\"",
+    "python3 -c \"import subprocess; print(subprocess.run(['systemctl', '--user', 'status', 'ohn-agent']))\"",
+    "python3 -c \"import asyncio; asyncio.run(main())\"",
     "nmcli -f ipv4.dns connection show office",
     "nmcli device status",
     "curl -s http://127.0.0.1:18030/health",

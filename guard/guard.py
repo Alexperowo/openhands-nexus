@@ -13,7 +13,7 @@ systemd keeps them (the login session scope, the user session.slice, system serv
 so the same rules hold for Cinnamon, KDE or GNOME on any systemd distribution.
 Rules are deliberately narrow: they are a net under recoverable mistakes, not a judge.
 Whole personal folders go to the trash instead of being removed; inline scripts
-(python -c, heredocs) are searched for the same removals and writes.
+(python -c, heredocs) are searched for the same removals, writes and commands.
 """
 import itertools
 import json
@@ -93,6 +93,9 @@ CODE_WRITES = re.compile(r"""\bopen\([^()]*,\s*(?:mode\s*=\s*)?[rbuf]?['"][^'"]*
                          r"""\.open\(\s*(?:mode\s*=\s*)?['"][^'"]*[wax+]|write_(?:text|bytes)|"""
                          r"""(?:write|append)File|\b(?:unlink|remove|rename|copy\w*|move|symlink|truncate)\s*\(""")
 CODE_LITERAL = re.compile(r"""(['"])([^'"\s]*[/.][^'"\s]*)\1""")
+# A command an inline script hands to the shell: os.system("…"), subprocess.run(["…", …]), execSync("…").
+CODE_COMMAND = re.compile(r"""\b(?:system|popen|Popen|run|call|check_call|check_output|getoutput|exec|execSync)"""
+                          r"""\s*\(\s*(?:\[([^\]]*)\]|[rbuf]?(['"])([^'"\n]+)\2)""")
 
 # The shell's own restart, the same for every desktop: a D-Bus method, found and checked.
 DBUS_RESTART = (
@@ -771,7 +774,14 @@ def check_argv(argv: list[str], dirs: list[str], fed_to_rm=False):
 
 
 def check_code(command: str, dirs: list[str]):
-    """Inline scripts that remove a tree or write a protected file by a literal path."""
+    """Inline scripts that remove a tree, write a protected file by a literal path or run a command
+    the terminal would not get through."""
+    for match in CODE_COMMAND.finditer(command):
+        inner = shlex.join(m[2] for m in re.finditer(r"""(['"])([^'"]*)\1""", match[1])) if match[1] is not None \
+            else match[3]
+        reason = check_terminal(inner, dirs)
+        if reason:
+            return reason
     for match in TREE_REMOVAL.finditer(command):
         reason = removal(match[2], dirs)
         if reason:
