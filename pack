@@ -5,6 +5,7 @@
 #                          next to it once per engine commit: ik_llama sources, so ./install builds without GitHub
 #   ./pack personal        private copy of this PC: keys, tablet certificate, conversations, ~/Nexus
 #   ./pack restore FILE    put a private copy back (./install does it); existing files stay untouched
+# A second disk named in ~/.config/openhands-nexus/archive-copy gets the same files after each archive.
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")" && pwd)
 OUT=${NEXUS_ARCHIVES:-$HOME/Nexus-архивы}
@@ -40,6 +41,7 @@ clean() {
     done
     echo "Готово: $OUT/$name.tar.gz ($(du -h "$OUT/$name.tar.gz" | cut -f1))"
     engine
+    mirror
     echo "Установка на чистой системе: распаковать, затем ./install (подробно: docs/first-run.md)."
 }
 
@@ -66,15 +68,34 @@ engine() {
     echo "Движок: $OUT/$name ($(du -h "$OUT/$name" | cut -f1)), на новой системе положить в ~/Nexus-архивы."
 }
 
+mirror() {
+    local copy file
+    copy=$(cat "$HOME/.config/openhands-nexus/archive-copy" 2>/dev/null) || return 0
+    if ! mkdir -p "$copy/личное" 2>/dev/null || ! chmod 700 "$copy/личное"; then
+        echo "Второй диск недоступен ($copy): копия архивов не сделана."; return 0
+    fi
+    shopt -s nullglob
+    # The same files as in $OUT: the ones rotated out there go here too.
+    for file in "$copy"/* "$copy"/личное/*; do
+        if [ -f "$file" ] && [ ! -e "$OUT/${file#"$copy"/}" ]; then rm -f "$file"; fi
+    done
+    for file in "$OUT"/* "$OUT"/личное/*; do
+        if [ -f "$file" ]; then cp -pu "$file" "$copy/${file#"$OUT"/}"; fi
+    done
+    shopt -u nullglob
+    echo "Копия на втором диске: $copy"
+}
+
 case "${1:-}" in
     "") clean ;;
     personal)
         if systemctl --user is-active --quiet ohn-agent 2>/dev/null; then
             echo "Агент запущен: беседа, идущая сейчас, может попасть в копию не целиком."
         fi
-        python3 -I launcher/archive.py backup "$OUT/личное" ;;
+        python3 -I launcher/archive.py backup "$OUT/личное"
+        mirror ;;
     restore)
         [ -n "${2:-}" ] || { echo "Укажите файл: ./pack restore ФАЙЛ"; exit 2; }
         python3 -I launcher/archive.py restore "$2" ;;
-    *) sed -n '2,7s/^# \{0,1\}//p' "$0"; exit 2 ;;
+    *) sed -n '2,8s/^# \{0,1\}//p' "$0"; exit 2 ;;
 esac
