@@ -83,6 +83,7 @@ class UpdateTests(unittest.TestCase):
         self.assert_old_canvas()
         self.assertEqual(counts, {"install": 2, "build": 1})
         self.assertFalse((self.u.state / "update-canvas.json").exists())
+        self.assertEqual(list(self.u.backups.iterdir()), [])
 
     def test_build_failure_restores_and_rebuilds(self):
         counts = self.install_runner("first-build")
@@ -109,6 +110,22 @@ class UpdateTests(unittest.TestCase):
         self.assert_old_canvas()
         self.assertEqual(before, update.digest(self.root / "ui/package-lock.json"))
         self.assertFalse((self.u.state / "update-canvas.json").exists())
+        self.assertEqual(list(self.u.backups.iterdir()), [])
+
+    def test_only_the_remembered_copy_is_kept(self):
+        first = self.u.snapshot("canvas", [])
+        self.u.remember("canvas", first)
+        other = self.u.backups / "ohn-keys"
+        other.mkdir()
+        second = self.u.snapshot("canvas", [])
+        self.u.remember("canvas", second)
+        self.assertFalse(first.exists())
+        self.assertTrue(second.is_dir() and other.is_dir())
+        outside = self.root / "update-elsewhere"
+        outside.mkdir()
+        update.atomic_json(self.u.state / "update-canvas.json", {"backup": str(outside)})
+        self.u.remember("canvas", second)
+        self.assertTrue(outside.is_dir())
 
     def test_mismatch_refuses_before_backup(self):
         self.set_version("ui", "1.31.0")

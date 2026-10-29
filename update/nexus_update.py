@@ -293,7 +293,17 @@ class Updater:
         return backup
 
     def remember(self, kind, backup):
-        atomic_json(self.state / f"update-{kind}.json", {"backup": str(backup)})
+        path = self.state / f"update-{kind}.json"
+        stale = read_json(path)["backup"] if path.is_file() else None
+        atomic_json(path, {"backup": str(backup)})
+        # Rollback only ever uses the remembered copy: the one it replaces is dead weight.
+        if stale and Path(stale) != Path(backup):
+            self.discard(stale)
+
+    def discard(self, backup):
+        backup = Path(backup).resolve()
+        if backup.parent == self.backups.resolve() and backup.name.startswith("update-"):
+            shutil.rmtree(backup, ignore_errors=True)
 
     def previous(self, kind):
         path = self.state / f"update-{kind}.json"
@@ -334,6 +344,7 @@ class Updater:
             try:
                 restore(backup)
                 self.emit("Автоматический откат завершён; обновление НЕ выполнено.")
+                self.discard(backup)
             except BaseException as error:
                 self.emit(f"ОШИБКА ОТКАТА: {error}. Копия: {backup}")
             raise
@@ -618,6 +629,7 @@ class Updater:
                 retired.rename(previous)
             self.run(["git", "checkout", "--detach", old], cwd=self.backend)
             self.restore_files(backup)
+            self.discard(backup)
             raise
         finally:
             if stage.exists():
@@ -837,6 +849,7 @@ class Updater:
             self.run([current / "bin/llama-server", "--version"], timeout=30, env={"NCCL_SOCKET_IFNAME": "lo"})
             self.backend.with_name(self.backend.name + ".prev-commit").write_text(displaced_commit + "\n")
         (self.state / f"update-{kind}.json").unlink()
+        self.discard(backup)
         self.emit(f"Откат {kind} завершён.")
 
     def dry_run(self):
