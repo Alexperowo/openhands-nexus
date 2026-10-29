@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("archive", HERE / "archive.py")
@@ -139,6 +140,23 @@ class PersonalCopyTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual((archive.HOME / "Nexus/notes.md").read_text(), "newer")
         self.assertIn("не тронуто: workspace", out)
+
+    def test_copies_in_a_row_are_both_kept_and_a_failed_one_leaves_nothing(self):
+        self.fill()
+        folder = Path(self.temp.name) / "copies"
+        self.quiet("backup", str(folder))
+        self.quiet("backup", str(folder))
+        self.assertEqual(len(list(folder.glob("nexus-personal-*.tar.gz"))), 2)
+        kept = sorted(os.listdir(folder))
+
+        def broken(info):
+            raise OSError("диск отключён")
+        with patch.object(archive, "lean", broken), self.assertRaises(OSError):
+            self.quiet("backup", str(folder))
+        self.assertEqual(sorted(os.listdir(folder)), kept)
+        for name in kept:
+            with tarfile.open(folder / name) as tar:
+                self.assertIn("workspace/notes.md", tar.getnames())
 
     def test_foreign_or_escaping_members_are_refused(self):
         path = Path(self.temp.name) / "bad.tar.gz"

@@ -99,18 +99,24 @@ def backup(folder):
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
     os.chmod(folder, 0o700)
-    target = folder / f"nexus-personal-{time.strftime('%Y-%m-%d-%H%M')}.tar.gz"
+    for left in folder.glob(".nexus-personal-*.part"):  # from a copy that was interrupted
+        left.unlink()
+    while (target := folder / f"nexus-personal-{time.strftime('%Y-%m-%d-%H%M%S')}.tar.gz").exists():
+        time.sleep(1)  # never over a copy made the same second
+    part = folder / f".{target.name}.part"  # the copy gets its name only when it is whole
     old = os.umask(0o077)
     try:
-        with tarfile.open(target, "w:gz") as archive:
+        with tarfile.open(part, "w:gz") as archive:
             for path, name in personal_items():
                 if path.exists():
                     archive.add(path, arcname=name, filter=lean)
                     print(f"  {name}")
                 else:
                     print(f"  {name}: нет на этом ПК, пропущено")
+        os.replace(part, target)
     finally:
         os.umask(old)
+        part.unlink(missing_ok=True)  # still here only if the copy failed
     os.chmod(target, 0o600)
     copies = sorted(folder.glob("nexus-personal-*.tar.gz"))
     for stale in copies[:-3]:  # the three newest stay
