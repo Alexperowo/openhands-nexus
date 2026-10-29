@@ -3,8 +3,10 @@ import http.server
 import importlib
 import json
 import os
+import tempfile
 import threading
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import watch
@@ -135,6 +137,116 @@ class WatcherTests(unittest.TestCase):
         server.shutdown()
         server.server_close()
         self.assertFalse(probe(url))
+
+
+FIVE, TWO = "GPU-5060", "GPU-2080"
+MODELS = {"Nex-25G": "openai/nex25", "Nex-19G-2080": "openai/nex19-2080",
+          "Nex-19G-5060": "openai/nex19-5060", "Tess-27B": "openai/tess"}
+
+
+class FakeAgent:
+    """agent-server's settings and conversations as the Cards see them through the API."""
+    def __init__(self, active="Nex-25G", conversations=()):
+        self.active, self.calls = active, []
+        self.models = dict(conversations)
+
+    def api(self, method, path, body=None):
+        if method == "POST":
+            self.calls.append(path)
+        if path == "/api/settings":
+            return {"active_profile": self.active}
+        if path.endswith("/activate"):
+            self.active = path.split("/")[3]
+            return {}
+        if path.startswith("/api/conversations/search"):
+            return {"items": [{"id": c, "agent": {"llm": {"model": m}}} for c, m in self.models.items()]}
+        if path.endswith("/switch_profile"):
+            self.models[path.split("/")[3]] = MODELS[body["profile_name"]]
+            return {}
+        raise AssertionError(path)
+
+
+class CardsTests(unittest.TestCase):
+    def setUp(self):
+        self.state = Path(tempfile.mkdtemp()) / "cards.json"
+        self.alive = {FIVE: "RTX 5060 Ti", TWO: "RTX 2080 Ti"}
+        self.agent = FakeAgent(conversations={"a": "openai/nex25", "b": "openai/tess", "c": "openai/nex19-2080"})
+        self.told = []
+
+    def cards(self):
+        needs = {"Nex-25G": {FIVE, TWO}, "Tess-27B": {FIVE, TWO}, "Nex-19G-2080": {TWO}, "Nex-19G-5060": {FIVE}}
+        single = {TWO: "Nex-19G-2080", FIVE: "Nex-19G-5060"}
+        return watch.Cards(lambda: (MODELS, needs, single), lambda cards: dict(self.alive), self.agent.api,
+                           lambda title, body, urgent: self.told.append((title, body, urgent)), self.state)
+
+    def test_lost_card_moves_the_agent_to_the_other_and_back_after_a_reboot(self):
+        cards = self.cards()
+        cards.step()
+        self.assertEqual((self.agent.calls, self.told), ([], []))
+        del self.alive[FIVE]
+        cards.step()
+        cards.step()
+        self.assertEqual(self.agent.active, "Nex-19G-2080")
+        self.assertEqual(set(self.agent.models.values()), {"openai/nex19-2080"})
+        self.assertEqual(len(self.told), 1)
+        self.assertIn("RTX 2080 Ti", self.told[0][1])
+        self.assertTrue(self.told[0][2])
+        self.alive[FIVE] = "RTX 5060 Ti"
+        self.cards().step()  # a new watcher: the way back comes from the file
+        self.assertEqual(self.agent.active, "Nex-25G")
+        self.assertEqual(self.agent.models, {"a": "openai/nex25", "b": "openai/tess", "c": "openai/nex19-2080"})
+        self.assertFalse(self.state.exists())
+        self.assertEqual(self.told[-1][2], False)
+
+    def test_what_runs_on_the_card_that_answers_is_left_alone(self):
+        self.agent = FakeAgent(active="Nex-19G-2080", conversations={"c": "openai/nex19-2080"})
+        del self.alive[FIVE]
+        self.cards().step()
+        self.assertEqual((self.agent.calls, self.told), ([], []))
+        self.assertFalse(self.state.exists())
+
+    def test_profile_on_the_lost_card_moves_to_the_other_card(self):
+        self.agent = FakeAgent(active="Nex-19G-5060")
+        del self.alive[FIVE]
+        self.cards().step()
+        self.assertEqual(self.agent.active, "Nex-19G-2080")
+        del self.alive[TWO]
+        self.alive[FIVE] = "RTX 5060 Ti"
+        self.cards().step()  # still a card short: the agent goes where a card answers
+        self.assertEqual(self.agent.active, "Nex-19G-5060")
+        self.alive[TWO] = "RTX 2080 Ti"
+        self.cards().step()
+        self.assertEqual(self.agent.active, "Nex-19G-5060")
+        self.assertFalse(self.state.exists())
+
+    def test_no_card_answering_is_told_once_and_nothing_moves(self):
+        self.alive.clear()
+        cards = self.cards()
+        cards.step()
+        cards.step()
+        self.assertEqual(self.agent.calls, [])
+        self.assertEqual(len(self.told), 1)
+
+    def test_plan_reads_the_pinned_cards_from_llama_swap(self):
+        root = Path(tempfile.mkdtemp())
+        (root / "models").mkdir()
+        (root / "agent/config").mkdir(parents=True)
+        (root / "models/llama-swap.yaml").write_text(
+            "models:\n"
+            "  nex25:\n    env: &both\n      - \"CUDA_DEVICE_ORDER=PCI_BUS_ID\"\n    cmd: x\n"
+            "  nex19-2080:\n    env:\n      - \"CUDA_VISIBLE_DEVICES=GPU-2080\"\n    cmd: x\n"
+            "  nex19-5060:\n    env:\n      - \"CUDA_VISIBLE_DEVICES=GPU-5060\"\n    cmd: x\n"
+            "  tess:\n    env: *both\n    cmd: x\n")
+        (root / "agent/config/profiles.json").write_text(json.dumps(
+            {"profiles": {**{p: {"model": m} for p, m in MODELS.items()}, "Cloud": {"model": "other/x"}}}))
+        with mock.patch.object(watch, "WORK", root):
+            models, needs, single = watch.card_plan()
+        self.assertEqual(single, {TWO: "Nex-19G-2080", FIVE: "Nex-19G-5060"})
+        self.assertEqual(needs["Nex-25G"], {TWO, FIVE})
+        self.assertEqual(needs["Tess-27B"], {TWO, FIVE})
+        self.assertNotIn("Cloud", needs)
+        self.assertEqual(models["Nex-19G-5060"], "openai/nex19-5060")
+
 
 if __name__ == "__main__":
     unittest.main()
