@@ -150,16 +150,16 @@ class Cards:
         active = self.api("GET", "/api/settings").get("active_profile")
         if not works(active):
             saved.setdefault("active", active)
+            self.save(saved)  # the way back first: a crash right after the move must not lose it
             self.api("POST", f"/api/profiles/{quote(target)}/activate")
-            self.save(saved)
             moved = True
         by_model = {model: profile for profile, model in models.items()}
         for conversation in self.conversations():
             profile = by_model.get(conversation["agent"]["llm"]["model"])
             if profile is not None and not works(profile):
                 saved.setdefault("moved", {}).setdefault(conversation["id"], profile)
-                self.switch(conversation["id"], target)
                 self.save(saved)
+                self.switch(conversation["id"], target)
                 moved = True
         if moved:
             self.tell("Nexus: видеокарта не отвечает", f"Работает только {', '.join(alive.values())}: агент "
@@ -169,18 +169,33 @@ class Cards:
         fallback = {models[profile] for profile in single.values()}
         if "active" in saved and self.api("GET", "/api/settings").get("active_profile") in single.values():
             self.api("POST", f"/api/profiles/{quote(saved['active'])}/activate")
-        moved = saved.get("moved", {})
-        for conversation in self.conversations():
-            if conversation["id"] in moved and conversation["agent"]["llm"]["model"] in fallback:
-                self.switch(conversation["id"], moved[conversation["id"]])
+        for conversation, profile in saved.get("moved", {}).items():  # however long ago it was last used
+            if self.model(conversation) in fallback:
+                self.switch(conversation, profile)
         self.state.unlink()
         self.tell("Nexus: видеокарты снова работают", f"Агент вернулся к {saved.get('active') or 'прежним моделям'}.",
                   urgent=False)
 
     def conversations(self):
+        """Those used within RECENT, newest first, page by page (the server sorts by creation otherwise)."""
         since = datetime.now(timezone.utc) - RECENT
-        return [item for item in self.api("GET", "/api/conversations/search?limit=100")["items"]
-                if datetime.fromisoformat(item["updated_at"]) > since]
+        found, page = [], ""
+        while True:
+            result = self.api("GET", f"/api/conversations/search?limit=100&sort_order=UPDATED_AT_DESC{page}")
+            recent = [item for item in result["items"] if datetime.fromisoformat(item["updated_at"]) > since]
+            found += recent
+            if len(recent) < len(result["items"]) or not result.get("next_page_id"):
+                return found
+            page = f"&page_id={quote(result['next_page_id'])}"
+
+    def model(self, conversation):
+        """The model a conversation is on now; None once it is deleted."""
+        try:
+            return self.api("GET", f"/api/conversations/{conversation}")["agent"]["llm"]["model"]
+        except urllib.error.HTTPError as error:
+            if error.code != 404:
+                raise
+            return None
 
     def switch(self, conversation, profile):
         try:
@@ -191,7 +206,9 @@ class Cards:
 
     def save(self, saved):
         self.state.parent.mkdir(parents=True, exist_ok=True)
-        self.state.write_text(json.dumps(saved))
+        part = self.state.with_name(self.state.name + ".part")
+        part.write_text(json.dumps(saved))
+        part.replace(self.state)  # whole or the previous one: a cut-off file would stop every check
 
 
 def card_plan():

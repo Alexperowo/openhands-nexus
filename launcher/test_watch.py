@@ -6,6 +6,8 @@ import os
 import tempfile
 import threading
 import unittest
+import urllib.error
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
@@ -147,10 +149,13 @@ MODELS = {"Nex-25G": "openai/nex25", "Nex-19G-2080": "openai/nex19-2080",
 
 class FakeAgent:
     """agent-server's settings and conversations as the Cards see them through the API."""
+    page = 100
+
     def __init__(self, active="Nex-25G", conversations=()):
         self.active, self.calls = active, []
-        self.models = dict(conversations)
+        self.models = dict(conversations)  # in the order they were created
         self.updated = {c: datetime.now(timezone.utc).isoformat() for c in self.models}
+        self.lost_answer = False  # the server does what was asked, the answer never arrives
 
     def api(self, method, path, body=None):
         if method == "POST":
@@ -159,14 +164,30 @@ class FakeAgent:
             return {"active_profile": self.active}
         if path.endswith("/activate"):
             self.active = path.split("/")[3]
+            if self.lost_answer:
+                raise ConnectionResetError
             return {}
         if path.startswith("/api/conversations/search"):
-            return {"items": [{"id": c, "agent": {"llm": {"model": m}}, "updated_at": self.updated[c]}
-                              for c, m in self.models.items()]}
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
+            order = list(self.models)[::-1]  # agent-server's default: newest created first
+            if query.get("sort_order") == ["UPDATED_AT_DESC"]:
+                order.sort(key=lambda c: datetime.fromisoformat(self.updated[c]), reverse=True)
+            start = int(query.get("page_id", ["0"])[0])
+            items = [self.info(c) for c in order[start:start + self.page]]
+            more = start + self.page < len(order)
+            return {"items": items, "next_page_id": str(start + self.page) if more else None}
         if path.endswith("/switch_profile"):
             self.models[path.split("/")[3]] = MODELS[body["profile_name"]]
             return {}
+        if method == "GET" and path.startswith("/api/conversations/"):
+            if path.split("/")[3] not in self.models:
+                raise urllib.error.HTTPError(path, 404, "Not Found", {}, None)
+            return self.info(path.split("/")[3])
         raise AssertionError(path)
+
+    def info(self, conversation):
+        return {"id": conversation, "agent": {"llm": {"model": self.models[conversation]}},
+                "updated_at": self.updated[conversation]}
 
 
 class CardsTests(unittest.TestCase):
@@ -234,6 +255,39 @@ class CardsTests(unittest.TestCase):
         cards.step()
         self.assertEqual(self.agent.calls, [])
         self.assertEqual(len(self.told), 1)
+
+    def test_conversation_resumed_today_moves_even_if_created_long_ago(self):
+        self.agent = FakeAgent(conversations={"resumed": "openai/nex25", **{f"n{i}": "openai/nex25" for i in range(4)}})
+        week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+        for i in range(4):
+            self.agent.updated[f"n{i}"] = week_ago
+        self.agent.updated["n3"] = datetime.now(timezone.utc).isoformat()
+        self.agent.page = 1  # one per page: the recent ones are on more than one
+        del self.alive[FIVE]
+        self.cards().step()
+        self.assertEqual({c for c, m in self.agent.models.items() if m == "openai/nex19-2080"}, {"resumed", "n3"})
+
+    def test_moved_conversation_returns_however_long_the_card_was_gone(self):
+        del self.alive[FIVE]
+        self.cards().step()
+        self.agent.updated["a"] = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
+        del self.agent.models["b"]  # deleted meanwhile
+        self.alive[FIVE] = "RTX 5060 Ti"
+        self.cards().step()
+        self.assertEqual(self.agent.models, {"a": "openai/nex25", "c": "openai/nex19-2080", "old": "openai/nex25"})
+        self.assertFalse(self.state.exists())
+
+    def test_way_back_is_kept_when_the_move_answer_is_lost(self):
+        del self.alive[FIVE]
+        self.agent.lost_answer = True
+        with self.assertRaises(ConnectionResetError):
+            self.cards().step()
+        self.agent.lost_answer = False
+        self.cards().step()
+        self.alive[FIVE] = "RTX 5060 Ti"
+        self.cards().step()
+        self.assertEqual(self.agent.active, "Nex-25G")
+        self.assertEqual(list(self.state.parent.iterdir()), [])
 
     def test_plan_reads_the_pinned_cards_from_llama_swap(self):
         root = Path(tempfile.mkdtemp())
