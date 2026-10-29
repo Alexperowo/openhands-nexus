@@ -17,7 +17,9 @@ import json
 import ssl
 import subprocess
 import time
+import urllib.error
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
 
@@ -27,6 +29,8 @@ PROBE_TIMEOUT = 5
 SILENT_FOR = 60
 CARD_ROUNDS = 4  # the cards are asked every 4th round (1 min) and right after the models start
 CARDS_STATE = Path.home() / ".local/state/openhands-nexus/cards.json"
+# Conversations touched within a day move with the agent; switching an older one would load it.
+RECENT = timedelta(days=1)
 JOURNAL = "Журнал: journalctl --user -u {unit}"
 
 
@@ -114,7 +118,7 @@ class Cards:
     """Keeps the agent on models whose cards answer.
 
     plan() gives each agent profile its model and the cards that model needs, and each card the
-    profile pinned to it alone. With a card gone, the active profile and the open conversations
+    profile pinned to it alone. With a card gone, the active profile and the recent conversations
     that need it move to the profile of a card that answers; once every card is back, what was
     moved returns. The way back is kept in a file, so a restart or a reboot in between keeps it.
     """
@@ -174,10 +178,16 @@ class Cards:
                   urgent=False)
 
     def conversations(self):
-        return self.api("GET", "/api/conversations/search?limit=100")["items"]
+        since = datetime.now(timezone.utc) - RECENT
+        return [item for item in self.api("GET", "/api/conversations/search?limit=100")["items"]
+                if datetime.fromisoformat(item["updated_at"]) > since]
 
     def switch(self, conversation, profile):
-        self.api("POST", f"/api/conversations/{conversation}/switch_profile", {"profile_name": profile})
+        try:
+            self.api("POST", f"/api/conversations/{conversation}/switch_profile", {"profile_name": profile})
+        except urllib.error.HTTPError as error:  # deleted meanwhile: nothing to move
+            if error.code != 404:
+                raise
 
     def save(self, saved):
         self.state.parent.mkdir(parents=True, exist_ok=True)

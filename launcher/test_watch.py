@@ -6,6 +6,7 @@ import os
 import tempfile
 import threading
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -149,6 +150,7 @@ class FakeAgent:
     def __init__(self, active="Nex-25G", conversations=()):
         self.active, self.calls = active, []
         self.models = dict(conversations)
+        self.updated = {c: datetime.now(timezone.utc).isoformat() for c in self.models}
 
     def api(self, method, path, body=None):
         if method == "POST":
@@ -159,7 +161,8 @@ class FakeAgent:
             self.active = path.split("/")[3]
             return {}
         if path.startswith("/api/conversations/search"):
-            return {"items": [{"id": c, "agent": {"llm": {"model": m}}} for c, m in self.models.items()]}
+            return {"items": [{"id": c, "agent": {"llm": {"model": m}}, "updated_at": self.updated[c]}
+                              for c, m in self.models.items()]}
         if path.endswith("/switch_profile"):
             self.models[path.split("/")[3]] = MODELS[body["profile_name"]]
             return {}
@@ -170,7 +173,10 @@ class CardsTests(unittest.TestCase):
     def setUp(self):
         self.state = Path(tempfile.mkdtemp()) / "cards.json"
         self.alive = {FIVE: "RTX 5060 Ti", TWO: "RTX 2080 Ti"}
-        self.agent = FakeAgent(conversations={"a": "openai/nex25", "b": "openai/tess", "c": "openai/nex19-2080"})
+        self.agent = FakeAgent(conversations={"a": "openai/nex25", "b": "openai/tess", "c": "openai/nex19-2080",
+                                              "old": "openai/nex25"})
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        self.agent.updated["old"] = week_ago.isoformat().replace("+00:00", "Z")
         self.told = []
 
     def cards(self):
@@ -187,14 +193,16 @@ class CardsTests(unittest.TestCase):
         cards.step()
         cards.step()
         self.assertEqual(self.agent.active, "Nex-19G-2080")
-        self.assertEqual(set(self.agent.models.values()), {"openai/nex19-2080"})
+        self.assertEqual(self.agent.models, {"a": "openai/nex19-2080", "b": "openai/nex19-2080",
+                                             "c": "openai/nex19-2080", "old": "openai/nex25"})
         self.assertEqual(len(self.told), 1)
         self.assertIn("RTX 2080 Ti", self.told[0][1])
         self.assertTrue(self.told[0][2])
         self.alive[FIVE] = "RTX 5060 Ti"
         self.cards().step()  # a new watcher: the way back comes from the file
         self.assertEqual(self.agent.active, "Nex-25G")
-        self.assertEqual(self.agent.models, {"a": "openai/nex25", "b": "openai/tess", "c": "openai/nex19-2080"})
+        self.assertEqual(self.agent.models, {"a": "openai/nex25", "b": "openai/tess", "c": "openai/nex19-2080",
+                                             "old": "openai/nex25"})
         self.assertFalse(self.state.exists())
         self.assertEqual(self.told[-1][2], False)
 

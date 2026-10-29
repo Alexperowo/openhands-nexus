@@ -65,7 +65,14 @@ models:
   nex19-2080:
     name: "Nex 19G — RTX 2080 Ti"
     description: "Одна карта 2080 Ti, 5060 Ti свободна"
-    env: *env_cuda1_vision
+    # A single-card profile names its card by UUID, not by number: with the other card gone the numbers
+    # shift (this one would become CUDA0), and launcher/watch.py then moves the agent here from profiles
+    # that need the lost card. Inside the process the pinned card is CUDA0.
+    env:
+      - "CUDA_DEVICE_ORDER=PCI_BUS_ID"
+      - "CUDA_VISIBLE_DEVICES=GPU-edf061f2-691d-d6fb-d083-e5b1c42d0720"
+      - "MTMD_BACKEND_DEVICE=CUDA0"
+      - "LD_LIBRARY_PATH=/usr/local/cuda-13.1/lib64"
     # 128K fits 22 GB only with V cache q4_0 (the later -ctv overrides common). Measured 26.10 with a
     # screenshot and a 115K prompt: q8_0/q8_0 runs out of memory on the screenshot, q8_0 K with q6_0 or
     # q5_0 V at ~60K (flash attention converts those V types into an extra buffer); q8_0/q4_0 peaks at
@@ -75,7 +82,7 @@ models:
       ${server}
       -m ${nex_dir}/Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf
       --mmproj ${nex_dir}/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf
-      -dev CUDA1 -ngl 999 -c 131072
+      -dev CUDA0 -ngl 999 -c 131072
       ${nex_template} ${nex_sampling} ${common} -ctv q4_0
     metadata: {ctx: 131072}
     disableKeepAlives: true
@@ -85,6 +92,7 @@ models:
     description: "Одна карта 5060 Ti, эксперты 20 слоёв в ОЗУ (~41 ток/с); 2080 Ti свободна"
     env:
       - "CUDA_DEVICE_ORDER=PCI_BUS_ID"
+      - "CUDA_VISIBLE_DEVICES=GPU-aefa95ef-fb59-5594-0817-18dd07d74a09"
       - "MTMD_BACKEND_DEVICE=CUDA0"
       - "LD_LIBRARY_PATH=/usr/local/cuda-13.1/lib64"
     # -ub 2048: a batch of 1024+ tokens moves the RAM experts to the GPU for the prompt, so 45K reads in 40 s
