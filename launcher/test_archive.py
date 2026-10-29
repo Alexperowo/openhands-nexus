@@ -155,5 +155,51 @@ class PersonalCopyTests(unittest.TestCase):
         self.assertIn("пропущено ссылок наружу: 1", out)
 
 
+class SecondDiskTests(unittest.TestCase):
+    """./pack mirror: the second disk gets the archives; only Nexus archives beyond the kept ones go."""
+    MIRROR = 'source <(sed -n "/^prune()/,/^}/p;/^mirror()/,/^}/p" "$1"); mirror'
+
+    def test_archives_are_copied_and_rotated_other_files_stay(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            out, copy, home, here = base / "out", base / "disk", base / "home", base / "here"
+            for folder in (out / "личное", copy / "личное", home / ".config/openhands-nexus", here):
+                folder.mkdir(parents=True)
+            (home / ".config/openhands-nexus/archive-copy").write_text(str(copy))
+            (here / "stays.txt").write_text("cwd")
+            files = {copy: ["документ.odt", "личное/заметка.txt", "OpenHands-Nexus-linux-0.tar.gz",
+                            "ik_llama-0.bundle", "ik_llama-1.bundle"]
+                           + [f"личное/nexus-personal-{n}.tar.gz" for n in range(3)],
+                     out: [f"OpenHands-Nexus-linux-{n}.tar.gz" for n in range(1, 6)]
+                          + ["ik_llama-2.bundle", "личное/nexus-personal-3.tar.gz"]}
+            moment = 1_700_000_000
+            for folder, names in files.items():
+                for name in names:  # later in the list = newer, copies older than the archives
+                    moment += 60
+                    for path in (folder / name, folder / f"{name}.sha256"):
+                        path.write_text(name)
+                        os.utime(path, (moment, moment))
+
+            def mirror():
+                result = subprocess.run(["bash", "-c", "set -euo pipefail; " + self.MIRROR, "bash", HERE.parent / "pack"],
+                                        cwd=here, env={**os.environ, "HOME": str(home), "OUT": str(out)},
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                return sorted(str(p.relative_to(copy)) for p in copy.rglob("*") if p.is_file()
+                              and not p.name.endswith(".sha256"))
+
+            self.assertEqual(mirror(), sorted(
+                ["документ.odt", "личное/заметка.txt", "ik_llama-1.bundle", "ik_llama-2.bundle"]
+                + [f"OpenHands-Nexus-linux-{n}.tar.gz" for n in range(1, 6)]
+                + [f"личное/nexus-personal-{n}.tar.gz" for n in range(1, 4)]))
+            self.assertFalse((copy / "OpenHands-Nexus-linux-0.tar.gz.sha256").exists())
+            for path in (out / "личное").iterdir():
+                path.unlink()
+            for path in (copy / "личное").glob("nexus-personal-*"):
+                path.unlink()
+            self.assertIn("личное/заметка.txt", mirror())  # no personal copy at all is not an error
+            self.assertTrue((here / "stays.txt").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
