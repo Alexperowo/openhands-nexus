@@ -17,7 +17,7 @@ clean() {
         echo "Есть несохранённые в git изменения: архив должен совпадать с проектом. Сначала коммит:"
         git status --short; exit 1
     fi
-    local commit date name tmp
+    local commit date name  # tmp is global: the EXIT trap runs after this function
     commit=$(git rev-parse --short HEAD)
     date=$(git log -1 --format=%cd --date=format:%Y-%m-%d)
     name="OpenHands-Nexus-linux-$date-$commit"
