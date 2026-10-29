@@ -8,6 +8,7 @@
 """
 import os
 import re
+import shutil
 import sys
 import tarfile
 import time
@@ -126,7 +127,8 @@ def backup(folder):
 
 
 def restore(file):
-    places = {name: path for path, name in personal_items()}
+    # Keys last: once session.env is back, so is everything else (./install's keys step looks at it).
+    places = {name: path for path, name in reversed(personal_items())}
     restored, kept, skipped = [], [], []
 
     def place(member):
@@ -149,14 +151,19 @@ def restore(file):
             mine = [m for m in members if place(m) == name]
             if not mine:
                 continue
+            temp = path.parent / f".{path.name}.restore"  # left by an interrupted restore: started again
+            shutil.rmtree(temp, ignore_errors=True)
             if path.exists() and (not path.is_dir() or any(path.iterdir())):
                 kept.append(name)
                 continue
-            path.parent.mkdir(parents=True, exist_ok=True)
+            temp.mkdir(parents=True)
             for member in mine:
                 member = member.replace(name=str(Path(path.name) / Path(member.name).relative_to(name)))
-                archive.extract(member, path.parent, filter=safe)
-            restored.append(name)
+                archive.extract(member, temp, filter=safe)
+            if os.path.lexists(temp / path.name):
+                os.replace(temp / path.name, path)  # whole or not at all: half a folder never looks restored
+                restored.append(name)
+            temp.rmdir()
     if (CONFIG / "session.env").exists():
         os.chmod(CONFIG / "session.env", 0o600)
     for name in restored:

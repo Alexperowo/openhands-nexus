@@ -108,7 +108,7 @@ class PersonalCopyTests(unittest.TestCase):
         (archive.CONFIG / "session.env").write_text(f"OHN_SESSION_KEY={KEY}\n")
         os.chmod(archive.CONFIG / "session.env", 0o600)
         for folder, name in [("repo/gateway/ca", "root.crt"), ("repo/agent/state", "settings.json"),
-                             ("home/Nexus", "notes.md"), ("repo/agent/state/w/.venv/bin", "python")]:
+                             ("home/Nexus", "notes.md"), ("home/Nexus", "a.md"), ("repo/agent/state/w/.venv/bin", "python")]:
             (Path(self.temp.name) / folder).mkdir(parents=True, exist_ok=True)
             (Path(self.temp.name) / folder / name).write_text(name)
 
@@ -140,6 +140,25 @@ class PersonalCopyTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual((archive.HOME / "Nexus/notes.md").read_text(), "newer")
         self.assertIn("не тронуто: workspace", out)
+
+    def test_interrupted_restore_is_finished_by_the_next_one(self):
+        self.fill()
+        copy = self.backup()
+        for path, _ in archive.personal_items():
+            os.system(f"rm -rf '{path}'")
+        real = tarfile.data_filter
+
+        def interrupted(member, destination):
+            if member.name.endswith("notes.md"):  # after a.md: the folder already has a file
+                raise KeyboardInterrupt
+            return real(member, destination)
+        with patch.object(archive.tarfile, "data_filter", interrupted), self.assertRaises(KeyboardInterrupt):
+            self.quiet("restore", str(copy))
+        self.assertFalse((archive.CONFIG / "session.env").exists())  # ./install will offer the copy again
+        self.assertEqual(self.quiet("restore", str(copy))[0], 0)
+        self.assertEqual(sorted(os.listdir(archive.HOME / "Nexus")), ["a.md", "notes.md"])
+        self.assertTrue((archive.CONFIG / "session.env").is_file())
+        self.assertEqual([p for p in Path(self.temp.name).rglob(".*.restore")], [])
 
     def test_copies_in_a_row_are_both_kept_and_a_failed_one_leaves_nothing(self):
         self.fill()
