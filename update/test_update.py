@@ -421,7 +421,7 @@ class UpdateTests(unittest.TestCase):
             if command[:2] == ["cmake", "-S"]:
                 stage = Path(command[command.index("-B") + 1]);(stage / "bin").mkdir(parents=True)
                 (stage / "bin/llama-server").write_bytes(b"new binary")
-            if command[:2] == ["cmake", "--build"] and failure == "compile":
+            if command[:5] == ["nice", "-n", "19", "cmake", "--build"] and failure == "compile":
                 raise update.UpdateError("injected compile failure")
             if command[0] == str(backend / "build/bin/llama-server") and failure == "swapped-version":
                 raise update.UpdateError("injected relocated executable failure")
@@ -436,6 +436,9 @@ class UpdateTests(unittest.TestCase):
             self.assertEqual(old_prev.read_text(), "original pointer\n")
         else:
             self.u.ik_llama()
+            builds = [list(map(str, c.args[0])) for c in self.u.run.call_args_list if "--build" in map(str, c.args[0])]
+            self.assertEqual([c[:5] + c[6:] for c in builds],
+                             [["nice", "-n", "19", "cmake", "--build", "--parallel", str(update.os.cpu_count() or 2)]])
             self.assertEqual((backend / "build/bin/llama-server").read_bytes(), b"new binary")
             self.assertEqual((backend / "build.prev/bin/llama-server").read_bytes(), b"old binary")
             self.u.args.command, self.u.args.target = "rollback", "ik-llama"

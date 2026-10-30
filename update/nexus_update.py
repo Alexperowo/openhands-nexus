@@ -598,7 +598,9 @@ class Updater:
             target = self.run(["git", "rev-parse", "--verify", "FETCH_HEAD^{commit}"], cwd=self.backend, capture=True)
             self.run(["git", "checkout", "--detach", target], cwd=self.backend)
             self.run(["cmake", "-S", self.backend, "-B", stage, *flags])
-            self.run(["cmake", "--build", stage, "--parallel", str(min(os.cpu_count() or 2, 4))], timeout=14400)
+            # All threads at the lowest priority: fast build, the desktop stays responsive.
+            self.run(["nice", "-n", "19", "cmake", "--build", stage, "--parallel", str(os.cpu_count() or 2)],
+                     timeout=14400)
             self.models_idle(bench=bool(bench))
             self.run([stage / "bin/llama-server", "--version"], timeout=30,
                      env={"NCCL_SOCKET_IFNAME": "lo"})
