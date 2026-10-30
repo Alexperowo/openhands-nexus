@@ -48,7 +48,7 @@ wheels = [
 
 [[package]]
 name = "hai-drivers"
-version = "0.1.14"
+version = "0.1.16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdownify" },
@@ -56,7 +56,7 @@ dependencies = [
     { name = "pydantic" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/e0/4cb03f66a7d17620682081820fc39d8f0fbab2e12714ec2760d56bf3128f/hai_drivers-0.1.14-py3-none-any.whl", hash = "sha256:c13a44526e5f2048f5027929b616a07581e64d9f4f8c117fab7673d2b638ea08", size = 297619, upload-time = "2026-10-22T14:12:52.127Z" },
+    { url = "https://files.pythonhosted.org/packages/66/9c/73c07ac9d7aa2164d5e2c65a9a27cb98e2b222436d4ea2d10803f0982621/hai_drivers-0.1.16-py3-none-any.whl", hash = "sha256:69e0f41a37b4b8312550bda8059d2a768d327c3b047fb89166fb0830561e5c26", size = 314135, upload-time = "2026-10-29T13:34:31.684Z" },
 ]
 
 [package.optional-dependencies]
@@ -124,7 +124,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "hai-drivers", extras = ["desktop-cli"], specifier = "==0.1.14" }]
+requires-dist = [{ name = "hai-drivers", extras = ["desktop-cli"], specifier = "==0.1.16" }]
 
 [[package]]
 name = "pillow"

@@ -189,7 +189,7 @@ TypeScript-проверки типов нет намеренно: надстро
 | ik_llama.cpp `llama-server` | a61ad78 (26.10.2026) | github.com/ikawrakow/ik_llama.cpp; `cmake -DGGML_CUDA=ON -DGGML_CUDA_FA_ALL_QUANTS=ON -DGGML_NATIVE=ON -DCMAKE_CUDA_ARCHITECTURES="75;120" -DCMAKE_BUILD_TYPE=Release` |
 | Голос: Silero v5.6 ru, GigaAM v3_e2e_rnnt | SHA-256 в `voice/download_models.py` | `download_models.py` скачивает и сверяет |
 | Node, uv, Python | 24.21, 0.12, 3.12 (голос) | системные |
-| hai-drivers (`screen/`) | 0.1.14 | `uv sync --frozen` |
+| hai-drivers (`screen/`) | 0.1.16 | `uv sync --frozen` |
 
 Веса моделей (адреса и SHA-256 — `models/weights.json`):
 
