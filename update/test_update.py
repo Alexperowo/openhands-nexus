@@ -334,6 +334,20 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(self.u.restart.call_args_list[0].args, ("ohn-models",))
         self.assertEqual(self.u.restart.call_count, 2)
 
+    def test_github_requests_carry_token_only_to_github(self):
+        sent = []
+
+        def urlopen(request, timeout):
+            sent.append(request)
+            return io.BytesIO(b"{}")
+
+        self.u.github_token = Mock(return_value="tok")
+        with patch.object(update.urllib.request, "urlopen", urlopen):
+            self.u.fetch_json(update.GITHUB + "/a/b/releases/latest")
+            self.u.fetch_json("https://example.org/x.json")
+        self.assertEqual(sent[0].get_header("Authorization"), "Bearer tok")
+        self.assertIsNone(sent[1].get_header("Authorization"))
+
     def test_check_reports_uv_upgrade_output(self):
         self.u.args = update.parse_args(["check"])
         base = self.root / "voice"

@@ -146,9 +146,20 @@ class Updater:
 
     def fetch_json(self, url):
         require(not self.args.offline, "Сеть отключена флагом --offline")
-        request = urllib.request.Request(url, headers={"User-Agent": "nexus-update", "Accept": "application/json"})
+        headers = {"User-Agent": "nexus-update", "Accept": "application/json"}
+        if url.startswith(GITHUB) and (token := self.github_token()):
+            # The anonymous limit is 60 requests an hour per address, shared by everyone behind the VPN exit.
+            headers["Authorization"] = "Bearer " + token
+        request = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(request, timeout=15) as response:
             return json.load(response)
+
+    def github_token(self):
+        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+        if not token and shutil.which("gh"):
+            result = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=10)
+            token = result.stdout.strip() if result.returncode == 0 else ""
+        return token
 
     def npm_metadata(self, version="latest"):
         require(not self.args.offline, "Сеть отключена флагом --offline")
