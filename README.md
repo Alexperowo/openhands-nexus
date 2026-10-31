@@ -178,14 +178,14 @@ TypeScript-проверки типов нет намеренно: надстро
 
 ## Восстановление
 
-Что нужно, чтобы поднять Nexus на чистой системе, кроме этого репозитория. Проверено 27.10.2026;
+Что нужно, чтобы поднять Nexus на чистой системе, кроме этого репозитория. Проверено 31.10.2026;
 `./check` и `python3 -I launcher/preflight.py` показывают, чего не хватает.
 
 | Что | Версия | Откуда |
 |---|---|---|
-| Agent Canvas, agent-server, automation | 1.33.0, 1.58.1, 1.25.1 | `npm ci` в `agent/` и `ui/`; agent-server и automation Canvas сам ставит через uv при первом запуске |
+| Agent Canvas, agent-server, automation | 1.34.0, 1.58.1, 1.26.0 | `npm ci` в `agent/` и `ui/`; agent-server и automation Canvas сам ставит через uv при первом запуске |
 | Caddy → `gateway/caddy` | v2.11.7 | caddyserver.com, linux-amd64 |
-| llama-swap → `models/llama-swap` | v266 | github.com/mostlygeek/llama-swap, релиз linux-amd64 |
+| llama-swap → `models/llama-swap` | v268 | github.com/mostlygeek/llama-swap, релиз linux-amd64 |
 | ik_llama.cpp `llama-server` | 13cffc0 (30.10.2026) | github.com/ikawrakow/ik_llama.cpp; `cmake -DGGML_CUDA=ON -DGGML_CUDA_FA_ALL_QUANTS=ON -DGGML_NATIVE=ON -DCMAKE_CUDA_ARCHITECTURES="75;120" -DCMAKE_BUILD_TYPE=Release` |
 | Голос: Silero v5.6 ru, GigaAM v3_e2e_rnnt | SHA-256 в `voice/download_models.py` | `download_models.py` скачивает и сверяет |
 | Node, uv, Python | 24.21, 0.12, 3.12 (голос) | системные |
@@ -203,10 +203,11 @@ TypeScript-проверки типов нет намеренно: надстро
 | Holo4-27B-q4_k_m.gguf | 16094 |
 | Holo4-27B-mmproj.f16.gguf | 885 |
 
-Вне git и только в личной копии (`./pack personal`): `~/.config/openhands-nexus/session.env` (ключ
+Вне git, в личной копии (`./pack personal`): `~/.config/openhands-nexus/session.env` (ключ
 сессии и ключ шифрования `agent/state/secrets.json`; без него сохранённые в агенте ключи
 не читаются), корневой сертификат `gateway/ca/openhands-ca.{crt,key}` («OpenHands Local Root CA»,
-до 2036 г., уже установлен на планшете) и `agent/state/` (беседы). Потерян сертификат — выпустить
+до 2036 г., уже установлен на планшете; он есть и в архиве этого ПК) и `agent/state/` (беседы).
+Потерян сертификат — выпустить
 новый корневой, положить в `gateway/ca/` и заново установить на планшет с `http://<адрес ПК>:8081/ca.crt`:
 
 ```bash
@@ -222,6 +223,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -subj "/CN=OpenHand
 
 ```bash
 ./pack            # чистый архив последнего коммита: ~/Nexus-архивы, пять последних, рядом .sha256
+./pack own        # архив этого ПК, готовый к ./install: ~/Nexus-архивы/личное, 0600, два последних
 ./pack personal   # личная копия: ~/Nexus-архивы/личное, 0600, три последние
 ```
 
@@ -234,11 +236,22 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -subj "/CN=OpenHand
 Рядом, один раз на коммит движка, — архив движка `ik_llama-<коммит>.bundle` с `.sha256`: исходники
 ik_llama одним коммитом без истории (git bundle, около 35 МБ). Если он лежит в `~/Nexus-архивы/`,
 `./install` берёт исходники из него: выходит такая же git-копия, как от `git clone --depth 1`,
-`origin` — GitHub, `nexus-update` работает как обычно. Готовая сборка не переносится: она под процессор
-(`GGML_NATIVE`), карты и CUDA своего ПК.
+`origin` — GitHub, `nexus-update` работает как обычно. Готовой сборки в чистом архиве нет: она под
+процессор (`GGML_NATIVE`), карты и CUDA своего ПК.
+
+Архив этого ПК (`nexus-own-<дата>-<коммит>.tar.zst`, около 1 ГБ) — Nexus, готовый к запуску здесь же
+после переустановки системы, без бесед, журналов и ключей сессии. Пути от домашней папки:
+проект — свежая git-копия последнего коммита (одна версия, без истории, `origin` — GitHub) плюс
+`models/llama-swap`, `gateway/caddy`, сертификат планшета, модели голоса и ссылки `models/llama-server`,
+`models/weights`; движок `backend/ik_llama-fresh` — свежая копия коммита из `install` и из сборки
+только `llama-server`, три его библиотеки и `CMakeCache.txt` (флаги для `nexus-update`). Перед сжатием
+`launcher/archive.py scan-own` проверяет каждый файл: мусор (кеши, журналы, `.prev`, старые сборки,
+`ui/dist`, беседы), чужие программы и ссылки, строки вида ключей и ключи этого ПК — архив не сохраняется.
+Восстановление на новой системе, пока этих папок нет: `tar -xf ФАЙЛ -C ~`, затем `./install` —
+шаги «Движок» и «llama-swap и Caddy» уже сделаны, ключи сессии создаются новые, сертификат прежний.
 
 Второй диск для копий: путь одной строкой в `~/.config/openhands-nexus/archive-copy`. После каждого
-`./pack` и `./pack personal` там те же файлы, что в `~/Nexus-архивы` (удалённые ротацией удаляются и там);
+`./pack`, `./pack own` и `./pack personal` там те же файлы, что в `~/Nexus-архивы` (удалённые ротацией удаляются и там);
 диск недоступен — архив всё равно сохраняется, копия пропускается.
 
 Личная копия: `session.env`, `gateway/ca/`, `agent/state/`, `~/Nexus` — без `.venv`, `node_modules`,

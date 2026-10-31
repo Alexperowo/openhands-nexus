@@ -3,6 +3,7 @@
 
   archive.py scan TAR          the clean project archive holds no keys, personal data, weights, builds
                                or leftovers; prints each problem by path, never the matched text
+  archive.py scan-own TAR      the own archive holds this PC's Nexus ready to start and nothing else
   archive.py backup FOLDER     the personal copy: keys, tablet certificate, conversations, ~/Nexus
   archive.py restore FILE      put a personal copy back where it was; existing files stay untouched
 """
@@ -33,6 +34,23 @@ SECRETS = re.compile(
 REQUIRED = ("install", "pack", "check", "README.md", "docs/first-run.md", "docs/user-guide.md",
             "models/llama-swap.yaml", "models/weights.json", "launcher/install.sh", "VERSION")
 EXECUTABLE = ("install", "pack", "check", "launcher/install.sh")
+
+# The own archive (./pack own), paths from the home folder: the project as a fresh clone of the last
+# commit plus what ./install would otherwise build or download, and the engine as a fresh checkout of
+# its commit with the built server.
+ENGINE = "backend/ik_llama-fresh"  # BACKEND in install
+ENGINE_BUILD = ("build/bin/llama-server", "build/src/libllama.so", "build/ggml/src/libggml.so",
+                "build/examples/mtmd/libmtmd.so", "build/CMakeCache.txt")  # the cache: cmake flags for nexus-update
+PROGRAMS = ("models/llama-swap", "gateway/caddy")
+CA_KEY = "gateway/ca/openhands-ca.key"
+OWN_REQUIRED = (*PROGRAMS, CA_KEY, "gateway/ca/openhands-ca.crt", ".git/HEAD", ".git/shallow")
+PC_LINKS = ("models/llama-server", "models/weights")  # absolute: the engine and the model folder of this PC
+VOICE_MODELS = re.compile(r"^voice/models/[\w.-]+\.(pt|ckpt|model)$")
+GARBAGE = re.compile(
+    r"(^|/)(__pycache__|node_modules|\.venv|\.\w+_cache|evidence|agent/state|gateway/(data|config)|ui/dist)(/|$)"
+    r"|^\.git/(logs|hooks|info|description|FETCH_HEAD|ORIG_HEAD)(/|$)"
+    r"|(^|/)(\.env|session\.env|secrets?\.json)$"
+    r"|\.(pyc|log|pid|part|tmp|orig|rej|swp|restore)$|\.(prev|old|next|retired)[\w-]*(/|$)|\.bak|~$")
 
 
 def own_keys():
@@ -80,6 +98,70 @@ def scan(tar_path, keys=None):
         modes = {m.name.split("/", 1)[1]: m.mode for m in members if "/" in m.name}
     problems += [f"{n}: нет в архиве" for n in REQUIRED if n not in names]
     problems += [f"{n}: не исполняемый" for n in EXECUTABLE if n in modes and not modes[n] & 0o100]
+    return problems
+
+
+def scan_own(tar_path, project, keys=None):
+    """project: the project folder from the home folder, Agents/OpenHands-Nexus on this PC."""
+    keys = own_keys() if keys is None else keys
+    roots = {project: "", ENGINE: "движок: "}
+    problems, found, voice = [], set(), 0
+    with tarfile.open(tar_path) as archive:
+        for member in archive:
+            root = next((r for r in roots if member.name == r or member.name.startswith(r + "/")), None)
+            if root is None:
+                if not (member.isdir() and any(r.startswith(member.name + "/") for r in roots)):
+                    problems.append(f"{member.name}: чужой файл")
+                continue
+            name, label = member.name[len(root) + 1:], roots[root]
+            path = label + name
+            if not name:
+                continue
+            found.add(path)
+            if member.issym() or member.islnk():
+                target = os.path.normpath(os.path.join(os.path.dirname(name), member.linkname))
+                if not (root == project and name in PC_LINKS) and (
+                        member.islnk() or member.linkname.startswith("/") or target.startswith("..")):
+                    problems.append(f"{path}: ссылка за пределы своей папки")
+                continue
+            if not member.isfile():
+                if not member.isdir():
+                    problems.append(f"{path}: не файл и не папка")
+                continue
+            if GARBAGE.search(name):
+                problems.append(f"{path}: мусор")
+            binary = (root == project and name in PROGRAMS) or (root == ENGINE and name in ENGINE_BUILD[:4])
+            if root == ENGINE and name.startswith("build/") and name not in ENGINE_BUILD:
+                problems.append(f"{path}: лишний файл сборки")
+            elif root == project and name.startswith("voice/models/"):
+                if VOICE_MODELS.match(name):
+                    voice += 1
+                else:
+                    problems.append(f"{path}: лишний файл в voice/models")
+            elif binary or name.startswith(".git/objects/") or name == ".git/index":
+                if binary and archive.extractfile(member).read(4) != b"\x7fELF":
+                    problems.append(f"{path}: не программа")
+            elif member.size > 64 * LIMIT:
+                problems.append(f"{path}: неожиданно большой файл")
+            else:
+                body = archive.extractfile(member).read()
+                if body.startswith(b"\x7fELF"):
+                    problems.append(f"{path}: программа (ELF)")
+                if root == project and name != CA_KEY and SECRETS.search(body):
+                    problems.append(f"{path}: похоже на ключ или пароль")
+                if any(key in body for key in keys):
+                    problems.append(f"{path}: содержит ключ этого ПК из session.env")
+            if root == project and name == CA_KEY and member.mode & 0o077:
+                problems.append(f"{path}: ключ сертификата открыт другим пользователям")
+            executable = (root == project and name in (*PROGRAMS, *EXECUTABLE)) or (
+                root == ENGINE and name == ENGINE_BUILD[0])
+            if executable and not member.mode & 0o100:
+                problems.append(f"{path}: не исполняемый")
+    required = [n for n in (*REQUIRED, *OWN_REQUIRED, *PC_LINKS) if n != "VERSION"]
+    required += [roots[ENGINE] + n for n in (*ENGINE_BUILD, ".git/HEAD", ".git/shallow")]
+    problems += [f"{n}: нет в архиве" for n in required if n not in found]
+    if voice < 3:
+        problems.append("voice/models: нет моделей голоса")
     return problems
 
 
@@ -177,11 +259,11 @@ def restore(file):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    if len(argv) != 2 or argv[0] not in ("scan", "backup", "restore"):
+    if len(argv) != 2 or argv[0] not in ("scan", "scan-own", "backup", "restore"):
         print(__doc__.strip())
         return 2
-    if argv[0] == "scan":
-        problems = scan(argv[1])
+    if argv[0] in ("scan", "scan-own"):
+        problems = scan(argv[1]) if argv[0] == "scan" else scan_own(argv[1], str(ROOT.relative_to(HOME)))
         for line in problems:
             print(f"  {line}")
         return 1 if problems else 0

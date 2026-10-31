@@ -23,6 +23,14 @@ tar xf OpenHands-Nexus-linux-*.tar.gz -C ~/Agents
 cd ~/Agents/OpenHands-Nexus
 ```
 
+Переустановка системы на этом же ПК и есть архив этого ПК `nexus-own-….tar.zst` (`./pack own`) —
+распаковать вместо архива проекта его: собирать движок не придётся.
+
+```bash
+tar xf nexus-own-*.tar.zst -C ~
+cd ~/Agents/OpenHands-Nexus
+```
+
 ## 3. Установить
 
 ```bash

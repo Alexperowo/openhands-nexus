@@ -88,6 +88,74 @@ class ScanTests(unittest.TestCase):
             self.assertEqual(archive.scan(path), [])
 
 
+class OwnArchiveTests(unittest.TestCase):
+    """./pack own: this PC's Nexus ready to start; garbage, foreign files and keys are caught by path."""
+    PROJECT = "Agents/OpenHands-Nexus"
+
+    def scan(self, extra=(), drop=()):
+        project = [n for n in archive.REQUIRED if n != "VERSION"] + list(archive.OWN_REQUIRED)
+        files = {f"{self.PROJECT}/{n}": b"ok\n" for n in project}
+        files.update({f"{self.PROJECT}/{n}": b"\x7fELF" for n in archive.PROGRAMS})
+        files.update({f"{self.PROJECT}/voice/models/m{n}.pt": b"\x80" for n in range(3)})
+        files.update({f"{archive.ENGINE}/{n}": b"\x7fELF" for n in archive.ENGINE_BUILD[:4]})
+        files.update({f"{archive.ENGINE}/{n}": b"ok\n" for n in (archive.ENGINE_BUILD[4], ".git/HEAD", ".git/shallow")})
+        files.update({f"{self.PROJECT}/{n}": "/abs/" + n for n in archive.PC_LINKS})
+        files.update(extra)
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "own.tar"
+            with tarfile.open(path, "w") as tar:
+                for folder in ("Agents", "backend"):
+                    info = tarfile.TarInfo(folder)
+                    info.type = tarfile.DIRTYPE
+                    tar.addfile(info)
+                for name, body in files.items():
+                    if any(name.endswith("/" + d) for d in drop):
+                        continue
+                    info = tarfile.TarInfo(name)
+                    if isinstance(body, str):
+                        info.type, info.linkname = tarfile.SYMTYPE, body
+                        tar.addfile(info)
+                        continue
+                    executable = name.endswith(("/install", "/pack", "/check", "/install.sh", "/caddy",
+                                                "/llama-swap", "/llama-server"))
+                    info.size = len(body)
+                    info.mode = 0o600 if name.endswith(".key") else 0o755 if executable else 0o644
+                    tar.addfile(info, io.BytesIO(body))
+            return archive.scan_own(path, self.PROJECT, keys=[KEY.encode()])
+
+    def test_ready_archive_passes(self):
+        self.assertEqual(self.scan({f"{self.PROJECT}/screen/bin/click": "../.venv/bin/desk",
+                                    f"{archive.ENGINE}/src/llama.cpp": b"int x;\n"}), [])
+
+    def test_garbage_and_foreign_files_are_caught(self):
+        names = [f"{self.PROJECT}/{n}" for n in ("voice/__pycache__/s.pyc", "agent/state/base_state.json",
+                                                   "models/llama-swap.prev", "ui/dist/index.html", ".git/logs/HEAD",
+                                                   "ui/dev/evidence/a.png", ".ruff_cache/x", "ui/.env", "a.bak")]
+        names += [f"{archive.ENGINE}/build.prev/bin/x", f"{archive.ENGINE}/build/ggml/src/x.o", "Documents/x.txt"]
+        problems = self.scan({n: b"x" for n in names})
+        self.assertEqual(len(problems), len(names), problems)
+
+    def test_keys_programs_and_links_are_caught(self):
+        token = "hf_" + "A1b2" * 9
+        problems = self.scan({f"{self.PROJECT}/notes.md": f"{token}\n".encode(),
+                              f"{archive.ENGINE}/cfg.txt": f"key={KEY}\n".encode(),
+                              f"{self.PROJECT}/tool": b"\x7fELF..",
+                              f"{self.PROJECT}/agent/link": "/etc/passwd",
+                              f"{self.PROJECT}/voice/models/notes.txt": b"x"})
+        self.assertEqual(len(problems), 5, problems)
+        self.assertFalse(any(token in p or KEY in p for p in problems))
+
+    def test_missing_parts_and_open_key_are_caught(self):
+        problems = self.scan(drop=("libggml.so", "openhands-ca.crt", "llama-server"))
+        self.assertEqual(len(problems), 4, problems)  # the server binary and the link to it
+        problems = self.scan({f"{self.PROJECT}/voice/models/m2.pt": "x"})
+        self.assertIn("voice/models: нет моделей голоса", problems)
+
+    def test_open_ca_key_is_caught(self):
+        with patch.object(archive, "CA_KEY", "gateway/ca/openhands-ca.crt"):
+            self.assertIn("gateway/ca/openhands-ca.crt: ключ сертификата открыт другим пользователям", self.scan())
+
+
 class PersonalCopyTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

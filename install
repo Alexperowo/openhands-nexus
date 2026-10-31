@@ -18,8 +18,8 @@ NODE_VERSION=24.21.0
 NODE_SHA=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6
 UV_VERSION=0.12.23
 UV_SHA=9167d72b3319674b6303c4cbe071854bba13ebdf3d76b1a7cbdc175471fb66d6
-SWAP_VERSION=266
-SWAP_SHA=7daa0170f997c1e60ebc749e8cb13f4ae9966fd73e9d5fca334770dcce5c4ab5
+SWAP_VERSION=268
+SWAP_SHA=013a317d52a5874d4a036980c259ca37a95f9a539e4dda6d2c02a54ce422e0ba
 CADDY_VERSION=2.11.7
 CADDY_SHA512=a7a433a1b133efc3c8d10eb0b99d52a24b5ef5c322dc77f5282182b1c0402139ab83f3a99f0c52409df77d20123fb0b523edad8a66d8f5e49136197bf61ef0e7
 IK_REPO=https://github.com/ikawrakow/ik_llama.cpp.git
@@ -196,6 +196,8 @@ do_keys() {
     "$WORK/pack" restore "$file"
     done_keys && return
     say "В копии не всё: недостающее создаю заново."
+  elif [ -f "$WORK/gateway/ca/openhands-ca.key" ]; then
+    say "Новые ключи сессии; сертификат планшета прежний."
   else
     say "Новые ключи и новый корневой сертификат. На планшете сертификат нужно будет установить заново (docs/first-run.md)."
   fi

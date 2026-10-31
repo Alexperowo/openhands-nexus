@@ -3,6 +3,8 @@
 #   ./pack                 clean archive of the last commit: the project without keys, settings,
 #                          conversations, model weights or builds; checked file by file before it is kept;
 #                          next to it once per engine commit: ik_llama sources, so ./install builds without GitHub
+#   ./pack own             own archive of this PC: the project, the built engine, llama-swap, Caddy, voice
+#                          models and the tablet certificate, ready for ./install; no conversations or session keys
 #   ./pack personal        private copy of this PC: keys, tablet certificate, conversations, ~/Nexus
 #   ./pack restore FILE    put a private copy back (./install does it); existing files stay untouched
 # A second disk named in ~/.config/openhands-nexus/archive-copy gets the same files after each archive.
@@ -19,14 +21,18 @@ prune() {  # keep the $1 newest of the archives given, each with its .sha256; no
     done
 }
 
-clean() {
+committed() {  # both archives hold the last commit
     if ! git rev-parse --verify -q HEAD >/dev/null 2>&1; then
-        echo "Чистый архив собирается из git-копии проекта, а это распакованный архив."; exit 1
+        echo "Архив собирается из git-копии проекта, а это распакованный архив."; exit 1
     fi
     if [ -n "$(git status --porcelain)" ]; then
         echo "Есть несохранённые в git изменения: архив должен совпадать с проектом. Сначала коммит:"
         git status --short; exit 1
     fi
+}
+
+clean() {
+    committed
     local commit date name  # tmp is global: the EXIT trap runs after this function
     commit=$(git rev-parse --short HEAD)
     date=$(git log -1 --format=%cd --date=format:%Y-%m-%d)
@@ -71,6 +77,60 @@ engine() {
     echo "Движок: $OUT/$name ($(du -h "$OUT/$name" | cut -f1)), на новой системе положить в ~/Nexus-архивы."
 }
 
+own() {
+    committed
+    local backend=$HOME/backend/ik_llama-fresh ik repo branch commit date name project file  # backend: BACKEND in install
+    ik=$(sed -n 's/^IK_COMMIT=//p' install)
+    repo=$(sed -n 's/^IK_REPO=//p' install)
+    branch=$(git branch --show-current)
+    project=${ROOT#"$HOME"/}
+    [ "$project" != "$ROOT" ] || { echo "Проект не в домашней папке: архив этого ПК не собран."; exit 1; }
+    [ -n "$branch" ] || { echo "Проект не на ветке (git switch linux): архив не собран."; exit 1; }
+    if [ "$(git -C "$backend" rev-parse HEAD 2>/dev/null)" != "$ik" ] ||
+        [ -n "$(git -C "$backend" status --porcelain --untracked-files=no)" ]; then
+        echo "Движок в $backend не на коммите ${ik:0:7} из install или изменён: архив не собран."; exit 1
+    fi
+    commit=$(git rev-parse --short HEAD)
+    date=$(git log -1 --format=%cd --date=format:%Y-%m-%d)
+    name="nexus-own-$date-$commit.tar.zst"
+    mkdir -p "$OUT/личное" && chmod 700 "$OUT/личное"
+    tmp=$(mktemp -d "$OUT/личное/.pack-XXXXXX")
+    trap 'rm -rf "$tmp"' EXIT
+    local p="$tmp/home/$project" e="$tmp/home/backend/ik_llama-fresh"
+    # Fresh clones without hooks, logs or history: the last commit of each, origin as before.
+    git clone -q --template= --depth 1 --no-tags --branch "$branch" "file://$ROOT" "$p"
+    git -C "$p" remote set-url origin "$(git remote get-url origin)"
+    git init -q --template= "$e"
+    git -C "$e" fetch -q --depth 1 --no-tags "file://$backend" "$ik"
+    git -C "$e" checkout -q --detach "$ik"
+    git -C "$e" remote add origin "$repo"
+    rm -rf "$p/.git/logs" "$e/.git/logs" "$e/.git/FETCH_HEAD"
+    # What ./install would build or download, as it is on this PC.
+    cp -p models/llama-swap "$p/models/"
+    cp -p gateway/caddy "$p/gateway/"
+    mkdir -m 700 "$p/gateway/ca"
+    cp -p gateway/ca/openhands-ca.crt gateway/ca/openhands-ca.key "$p/gateway/ca/"
+    cp -rp voice/models "$p/voice/"
+    cp -P models/llama-server models/weights "$p/models/"
+    for file in bin/llama-server src/libllama.so ggml/src/libggml.so examples/mtmd/libmtmd.so CMakeCache.txt; do
+        mkdir -p "$e/build/$(dirname "$file")"
+        cp -p "$backend/build/$file" "$e/build/$file"
+    done
+    echo "Проверка файлов архива…"
+    tar -C "$tmp/home" --sort=name -cf "$tmp/own.tar" "$project" backend/ik_llama-fresh
+    if ! python3 -I launcher/archive.py scan-own "$tmp/own.tar"; then
+        echo "Архив не сохранён: исправьте файлы выше."; exit 1
+    fi
+    echo "Сжатие…"
+    (umask 077 && zstd -q -T0 -12 "$tmp/own.tar" -o "$tmp/$name")
+    mv "$tmp/$name" "$OUT/личное/$name"
+    (cd "$OUT/личное" && sha256sum "$name" > "$name.sha256")
+    prune 2 "$OUT"/личное/nexus-own-*.tar.zst
+    echo "Готово: $OUT/личное/$name ($(du -h "$OUT/личное/$name" | cut -f1))."
+    echo "В нём сертификат планшета: хранить у себя, никому не отправлять."
+    mirror
+}
+
 mirror() {
     local copy file
     copy=$(cat "$HOME/.config/openhands-nexus/archive-copy" 2>/dev/null) || return 0
@@ -86,11 +146,13 @@ mirror() {
     prune 5 "$copy"/OpenHands-Nexus-linux-*.tar.gz
     prune 2 "$copy"/ik_llama-*.bundle
     prune 3 "$copy"/личное/nexus-personal-*.tar.gz
+    prune 2 "$copy"/личное/nexus-own-*.tar.zst
     echo "Копия на втором диске: $copy"
 }
 
 case "${1:-}" in
     "") clean ;;
+    own) own ;;
     personal)
         if systemctl --user is-active --quiet ohn-agent 2>/dev/null; then
             echo "Агент запущен: беседа, идущая сейчас, может попасть в копию не целиком."
@@ -100,5 +162,5 @@ case "${1:-}" in
     restore)
         [ -n "${2:-}" ] || { echo "Укажите файл: ./pack restore ФАЙЛ"; exit 2; }
         python3 -I launcher/archive.py restore "$2" ;;
-    *) sed -n '2,8s/^# \{0,1\}//p' "$0"; exit 2 ;;
+    *) sed -n '2,10s/^# \{0,1\}//p' "$0"; exit 2 ;;
 esac
