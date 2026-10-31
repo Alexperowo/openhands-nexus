@@ -43,7 +43,7 @@ def post_multipart(url: str, filepath: Path, model_name: str = "whisper-1", auth
 
     lines = []
     lines.append(f"--{boundary}".encode("utf-8"))
-    lines.append(f'Content-Disposition: form-data; name="model"'.encode("utf-8"))
+    lines.append('Content-Disposition: form-data; name="model"'.encode("utf-8"))
     lines.append(b"")
     lines.append(model_name.encode("utf-8"))
 
@@ -116,7 +116,7 @@ def main():
         print(f"  Ответ: {health_data}")
 
     # 1. TTS
-    print(f"\n[1] Синтез речи (TTS) POST /v1/audio/speech...")
+    print("\n[1] Синтез речи (TTS) POST /v1/audio/speech...")
     print(f"  Текст: «{PHRASE}»")
     status, audio_bytes, t_tts = post_json(
         f"{URL_BASE}/v1/audio/speech",
@@ -134,7 +134,7 @@ def main():
     print(f"  RTF (Real-Time Factor): {t_tts / info.duration:.3f}")
 
     # 2. STT WAV
-    print(f"\n[2] Распознавание речи (STT) POST /v1/audio/transcriptions (WAV)...")
+    print("\n[2] Распознавание речи (STT) POST /v1/audio/transcriptions (WAV)...")
     status, stt_res_wav, t_stt_wav = post_multipart(
         f"{URL_BASE}/v1/audio/transcriptions",
         WAV_OUTPUT,
@@ -146,7 +146,7 @@ def main():
     print(f"  Распознанный текст: «{stt_res_wav.get('text')}»")
 
     # 3. Конвертация в webm/opus и STT WEBM
-    print(f"\n[3] Конвертация в WebM/Opus и STT POST /v1/audio/transcriptions (WebM)...")
+    print("\n[3] Конвертация в WebM/Opus и STT POST /v1/audio/transcriptions (WebM)...")
     cmd_conv = [FFMPEG_BIN, "-y", "-i", str(WAV_OUTPUT), "-c:a", "libopus", str(WEBM_OUTPUT)]
     subprocess.run(cmd_conv, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print(f"  Файл WebM создан: {WEBM_OUTPUT} ({WEBM_OUTPUT.stat().st_size} байт)")
@@ -163,7 +163,7 @@ def main():
 
     # 4. Память RAM и VRAM
     ram_mb, vram_info = get_memory_stats()
-    print(f"\n[4] Потребление ресурсов:")
+    print("\n[4] Потребление ресурсов:")
     print(f"  Служба RAM (VmRSS): {ram_mb:.1f} МБ")
     print(f"  VRAM GPU: {vram_info}")
 

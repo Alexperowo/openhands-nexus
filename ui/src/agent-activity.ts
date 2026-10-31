@@ -88,7 +88,7 @@ export function actionLabel(event: AgentEvent): string {
 const messageText = (event: AgentEvent) =>
   (event.llm_message?.content ?? []).filter((part) => part.type === "text").map((part) => part.text ?? "").join("").trim();
 
-export function errorLabel(event: { code?: string; classification?: { kind?: string } | null }) {
+function errorLabel(event: { code?: string; classification?: { kind?: string } | null }) {
   return ERROR_BY_CODE[event.code ?? ""] ?? ERROR_BY_KIND[event.classification?.kind ?? ""] ?? "Неизвестный сбой";
 }
 

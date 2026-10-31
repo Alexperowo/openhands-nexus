@@ -11,7 +11,7 @@ export interface SessionFrame {
 }
 
 /** How many of the last events are read on opening: the run state needs them, speech does not. */
-export const HISTORY_EVENTS = 100;
+const HISTORY_EVENTS = 100;
 
 /** The resume cursor for opening: the last HISTORY_EVENTS of a log with `count` events. */
 export const openingCursor = (count: number) => Math.max(Number(count) - HISTORY_EVENTS - 1, -1);

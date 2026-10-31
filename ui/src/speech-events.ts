@@ -192,7 +192,7 @@ export function formatPlanCount(count: number): string {
   return `План: ${count} ${word}`;
 }
 
-export function extractFileName(path: unknown): string {
+function extractFileName(path: unknown): string {
   if (typeof path !== "string" || !path) return "";
   const clean = path.trim().replace(/[\\/]+$/, "");
   const base = clean.split(/[/\\]/).filter(Boolean).pop() ?? "";
@@ -229,7 +229,7 @@ export function clipStepExplanation(text: string, limit = STEP_CHARS): string {
   return first.slice(0, splitIdx).trim().replace(/[,;:—–\s]+$/, "");
 }
 
-export function extractStepExplanation(event: AgentEvent): string {
+function extractStepExplanation(event: AgentEvent): string {
   let raw = "";
   if (Array.isArray(event.thought)) {
     raw = event.thought
