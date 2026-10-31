@@ -72,7 +72,7 @@ def layers():
                                      ["python3", "launcher/test_archive.py"], ["python3", "models/test_weights.py"]], None
     yield "шлюз", "gateway", [["python3", "test_gateway.py"]], None
     try:
-        sdk = [agent_server_python("agent/sdk-patch/test_sdk_patch.py")]
+        sdk = [agent_server_python("agent/sdk-patch/test_sdk_patch.py"), agent_server_python("agent/skills/test_skills.py")]
         reason = None
     except Skip as error:
         sdk, reason = [], str(error)

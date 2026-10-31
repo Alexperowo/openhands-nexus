@@ -35,7 +35,12 @@ case "${1:-}" in
     # The agent's terminal gets the desktop commands (screen/); Holo4 and the Qwen-based models
     # point in 0-1000 of the screen.
     export PATH="$WORK/screen/bin:$PATH" COORDINATE_SYSTEM=0-1000
-    mkdir -p "$OH_CANVAS_SAFE_STATE_DIR"
+    mkdir -p "$OH_CANVAS_SAFE_STATE_DIR" state/skills
+    # Nexus skills (agent/skills) reach the agent as user skills: agent-server reads them from
+    # $OH_PERSISTENCE_DIR/skills, and only this agent, not other programs, looks there.
+    for skill in skills/*/; do
+      ln -sfn "../../${skill%/}" "state/skills/$(basename -- "$skill")"
+    done
     # Canvas only logs it when its agent-server child dies and keeps running, so the unit would stay
     # "active" without an agent. Leave once 18010 stops answering (1 min) or never answers after
     # the start (5 min), and systemd restarts the stack.
