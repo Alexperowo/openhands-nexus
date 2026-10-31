@@ -2,7 +2,7 @@ import { getSyntaxHighlighterTheme as canvasTheme } from "../node_modules/@openh
 
 // Replaces Canvas's themes/syntax-highlighter-themes.js. Its dark theme (VS Code Dark+) is set
 // as inline styles at 13px, and several token colours are 4–6:1 on the #1e1e1e block. Here the
-// same theme keeps its hues, each colour lifted to at least 7:1 (shades calculated by Gemini),
+// same theme keeps its hues, each colour lifted to at least 7:1,
 // at the chosen text size, without dimmed or slanted tokens. Long lines wrap: at full size
 // a block would otherwise scroll sideways, which is hard to follow and unreachable by keyboard.
 const LIFTED: Record<string, string> = {

@@ -122,7 +122,8 @@ own() {
         echo "Архив не сохранён: исправьте файлы выше."; exit 1
     fi
     echo "Сжатие…"
-    (umask 077 && zstd -q -T0 -12 "$tmp/own.tar" -o "$tmp/$name")
+    zstd -q -T0 -12 "$tmp/own.tar" -o "$tmp/$name"
+    chmod 600 "$tmp/$name"  # zstd gives the archive the mode of the tar
     mv "$tmp/$name" "$OUT/личное/$name"
     (cd "$OUT/личное" && sha256sum "$name" > "$name.sha256")
     prune 2 "$OUT"/личное/nexus-own-*.tar.zst
