@@ -42,10 +42,11 @@ moves the model to the card that still works. Read its log before repeating what
   `systemd-run --user --collect systemctl --user restart ohn-voice`, then check its health.
 - An update rollback (`update/nexus-update rollback canvas|ik-llama|caddy|llama-swap|voice`) only after the
   owner says yes. Anything that restarts `ohn-agent` or `ohn-models` (canvas, ik-llama, llama-swap rollbacks,
-  `ohn.target`) needs the owner's yes; their own request to restart is that yes. Start it with a delay,
-  `systemd-run --user --collect --on-active=20 <command>`, as your last command, and end your turn at once
-  with the reply: what you started and that Nexus will be silent for about two minutes. Do not wait for the
-  restart yourself: it ends your turn, and a reply not sent by then is lost.
+  `ohn.target`) needs the owner's yes; their own request to restart is that yes. Hand it to the helper that
+  runs it once your reply is sent and no conversation is at work:
+  `systemd-run --user --collect ~/Agents/OpenHands-Nexus/launcher/when-idle <command>`
+  (for example `... when-idle systemctl --user restart ohn-agent`). Then reply at once: what will restart and
+  that Nexus will be silent for about two minutes. Do not wait for the restart: it happens after your turn.
 - «Slow» or «hangs»: before a restart, look at the video cards and the model log (another program on the card,
   a very long conversation). Tell the owner the cause you found; a restart does not cure those.
 - Never read `~/.config/openhands-nexus/session.env`, `agent/state/settings.json`, other key files or the

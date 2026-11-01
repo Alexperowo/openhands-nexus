@@ -67,7 +67,7 @@ def layers():
     yield "голос", "voice", [[VOICE, name] for name in ("test_pronunciation.py", "test_service.py", "test_download.py")], \
         None if venv else "нет voice/.venv: (cd voice && uv sync --frozen)"
     yield "обновления", "update", [["python3", "test_update.py"]], None
-    yield "запуск и смотритель", "launcher", [["python3", "test_watch.py"], ["python3", "test_preflight.py"]], None
+    yield "запуск и смотритель", "launcher", [["python3", "test_watch.py"], ["python3", "test_preflight.py"], ["python3", "test_when_idle.py"]], None
     yield "установка и архив", ".", [["bash", "-n", "install"], ["bash", "-n", "pack"],
                                      ["python3", "launcher/test_archive.py"], ["python3", "models/test_weights.py"]], None
     yield "шлюз", "gateway", [["python3", "test_gateway.py"]], None
