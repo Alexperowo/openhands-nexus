@@ -130,6 +130,13 @@ REASON_NEXUS = (
     "~/Agents/OpenHands-Nexus/launcher/when-idle systemctl --user restart ohn-agent (выполнится после "
     "твоего ответа: сразу ответь, что Nexus замолчит примерно на две минуты, и не жди перезапуска). "
     "Подробности — навык nexus-repair.")
+# The agent's own ground restarted from its terminal ends its turn before the reply.
+REASON_DEFER = (
+    "Страж Nexus: перезапуск агента, моделей или всего Nexus оборвёт твой ход раньше ответа. Передай его "
+    "помощнику, который дождётся твоего ответа: systemd-run --user --collect "
+    "~/Agents/OpenHands-Nexus/launcher/when-idle <команда> (например systemctl --user restart ohn-agent). "
+    "Затем сразу ответь владельцу, что Nexus замолчит примерно на две минуты, и не жди перезапуска.")
+OWN_GROUND = re.compile(r"\bohn-(agent|models)\b|\bohn\.target\b|\brollback\s+(canvas|ik-llama|llama-swap)\b")
 REASON_RM = ("Страж Nexus: рекурсивное удаление системного или домашнего каталога, каталога настроек, "
              "целого диска, самого Nexus или его моделей запрещено. Удаляй конкретные файлы или подкаталоги "
              "по полному пути.")
@@ -751,6 +758,10 @@ def check_argv(argv: list[str], dirs: list[str], fed_to_rm=False):
             return REASON_RM
     if program == "systemctl":
         return check_systemctl(args)
+    if program == "systemd-run" and not set(args) & INFO_ONLY and OWN_GROUND.search(words) \
+            and re.search(r"\b(restart|try-restart|reload-or-restart|stop|kill|rollback)\b", words) \
+            and "launcher/when-idle" not in words:
+        return REASON_DEFER
     if program in ("reboot", "poweroff", "shutdown", "halt") and not set(args) & INFO_ONLY \
             or re.search(r"session-quit$|^logout$", program) \
             or program == "loginctl" and set(args) & {"terminate-session", "terminate-user", "kill-session",

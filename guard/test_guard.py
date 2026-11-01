@@ -52,6 +52,12 @@ DANGEROUS = {
     # Detached by systemd, but the replaced shell still leaves the session manager.
     "systemd-run --user --collect --service-type=exec cinnamon --replace": guard.REASON_REPLACE,
     "kill -9 -1": guard.REASON_ALL,
+    # The agent's own restart, detached but not waiting for its reply.
+    "systemd-run --user --collect --on-active=20 systemctl --user restart ohn-agent": guard.REASON_DEFER,
+    "systemd-run --user --quiet --collect --unit=x /bin/bash -lc 'systemctl --user restart ohn-agent.service'":
+        guard.REASON_DEFER,
+    "systemd-run --user --collect systemctl --user restart ohn.target": guard.REASON_DEFER,
+    "systemd-run --user --collect ~/Agents/OpenHands-Nexus/update/nexus-update rollback canvas": guard.REASON_DEFER,
     # The same commands handed to the shell by an inline script.
     "python3 -c \"import os; os.system('systemctl --user stop ohn-agent')\"": guard.REASON_NEXUS,
     "python3 -c \"import subprocess; subprocess.run(['systemctl', '--user', 'restart', 'ohn-models'])\"":
@@ -175,6 +181,9 @@ ORDINARY = [
     "systemd-run --user --collect --service-type=exec cinnamon",  # brings back a shell that died
     "podman run --replace --name web nginx",
     "systemctl --user restart pipewire",
+    "systemd-run --user --collect ~/Agents/OpenHands-Nexus/launcher/when-idle systemctl --user restart ohn-agent",
+    "systemd-run --user --collect systemctl --user restart ohn-voice",
+    "systemd-run --user --collect ~/Agents/OpenHands-Nexus/update/nexus-update rollback voice",
     "cinnamon --version",
     "command -v nm-applet",
     "kill 999999",
