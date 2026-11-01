@@ -1,6 +1,7 @@
 {
   "agent_settings": {
-    "condenser": {"max_tokens": 160000}
+    "condenser": {"max_tokens": 160000},
+    "agent_context": {"load_user_skills": true}
   },
   "conversation_settings": {}
 }
