@@ -35,13 +35,15 @@ moves the model to the card that still works. Read its log before repeating what
 ## Fix
 
 - A project file: back it up first (git is the backup for tracked files), keep the change small, run
-  `./check` after it. Never discard changes you did not make in this conversation: report them.
-- A service restart or an update rollback (`update/nexus-update rollback canvas|ik-llama|caddy|llama-swap|voice`)
-  only after the owner says yes, always detached (the guard denies a direct `systemctl restart` of Nexus):
-  voice or gateway right away, `systemd-run --user --collect systemctl --user restart ohn-voice`, then check its
-  health. Anything that restarts `ohn-agent` or `ohn-models` (canvas, ik-llama, llama-swap rollbacks,
-  `ohn.target`): first tell the owner that Nexus will be silent for about two minutes, then add a delay so your
-  reply arrives: `systemd-run --user --collect --on-active=20 <command>`.
+  `./check` after it. Never discard changes you did not make in this conversation: report them. A change of
+  the owner that causes the fault may be corrected after a copy to `~/Agents/Backups/nexus-repair/`.
+- Restarts go detached (the guard denies a direct `systemctl restart` of Nexus). A running voice or gateway
+  that needs a restart for your fix to take effect: restart it yourself,
+  `systemd-run --user --collect systemctl --user restart ohn-voice`, then check its health.
+- An update rollback (`update/nexus-update rollback canvas|ik-llama|caddy|llama-swap|voice`) only after the
+  owner says yes. Anything that restarts `ohn-agent` or `ohn-models` (canvas, ik-llama, llama-swap rollbacks,
+  `ohn.target`): tell the owner that Nexus will be silent for about two minutes, wait for their yes, then add a
+  delay so your reply arrives: `systemd-run --user --collect --on-active=20 <command>`.
 - Never read `~/.config/openhands-nexus/session.env`, `agent/state/settings.json`, other key files or the
   environment of other programs (`/proc/*/environ`).
 - A stopped Nexus service was stopped on purpose or failed past the watcher's one restart: do not start it on
