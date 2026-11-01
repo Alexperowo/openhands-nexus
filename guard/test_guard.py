@@ -52,6 +52,11 @@ DANGEROUS = {
     # Detached by systemd, but the replaced shell still leaves the session manager.
     "systemd-run --user --collect --service-type=exec cinnamon --replace": guard.REASON_REPLACE,
     "kill -9 -1": guard.REASON_ALL,
+    # Nexus keys stay out of the conversation, names or values.
+    "sed -n 's/^OHN_SESSION_KEY=//p' ~/.config/openhands-nexus/session.env": guard.REASON_KEYS,
+    "grep -E '^[A-Z_]+=' /home/user/Agents/Backups/ohn-keys-1024/session.env | cut -d= -f1": guard.REASON_KEYS,
+    "cat ~/.config/openhands-nexus/*": guard.REASON_KEYS,
+    "head ~/Agents/OpenHands-Nexus/gateway/ca/openhands-ca.key": guard.REASON_KEYS,
     # The agent's own restart, detached but not waiting for its reply.
     "systemd-run --user --collect --on-active=20 systemctl --user restart ohn-agent": guard.REASON_DEFER,
     "systemd-run --user --quiet --collect --unit=x /bin/bash -lc 'systemctl --user restart ohn-agent.service'":
@@ -361,6 +366,14 @@ class GuardRules(unittest.TestCase):
         self.assertEqual(guard.decide(edit("/etc/systemd/resolved.conf")), guard.REASON_NETWORK)
         patch = {"tool_name": "apply_patch", "tool_input": {"patch": f"*** Update File: {GUARD}\n"}}
         self.assertEqual(guard.decide(patch), guard.REASON_SELF)
+
+    def test_key_files_are_not_viewed_in_the_editor(self):
+        for path in ("/home/user/.config/openhands-nexus/session.env",
+                     "/home/user/Agents/OpenHands-Nexus/agent/state/settings.json"):
+            event = {"tool_name": "file_editor", "tool_input": {"command": "view", "path": path}}
+            self.assertEqual(guard.decide(event), guard.REASON_KEYS)
+        event = {"tool_name": "file_editor", "tool_input": {"command": "view", "path": "/home/user/notes.txt"}}
+        self.assertIsNone(guard.decide(event))
 
     def test_hook_contract(self):
         """Exit 2 and a JSON deny on stdout block; exit 0 and no output allow; bad input or a crash blocks visibly."""

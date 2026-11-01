@@ -53,7 +53,7 @@ moves the model to the card that still works. Read its log before repeating what
   environment of other programs (`/proc/*/environ`).
 - A stopped Nexus service was stopped on purpose or failed past the watcher's one restart: do not start it on
   your own. Tell the owner and start it only after their yes.
-- Never change DNS, VPN or proxy settings.
+- Never change DNS, VPN or proxy settings, and do not advise the owner to turn the VPN off: this PC needs it.
 - Delete the temporary files you made (test audio, logs) before the report.
 
 ## Report

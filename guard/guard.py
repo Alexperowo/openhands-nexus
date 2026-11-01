@@ -130,6 +130,14 @@ REASON_NEXUS = (
     "~/Agents/OpenHands-Nexus/launcher/when-idle systemctl --user restart ohn-agent (выполнится после "
     "твоего ответа: сразу ответь, что Nexus замолчит примерно на две минуты, и не жди перезапуска). "
     "Подробности — навык nexus-repair.")
+# Nexus keys: whatever the agent reads stays in the conversation history.
+KEY_FILES = re.compile(r"session\.env|\.config/openhands-nexus\b|ohn-keys|openhands-ca\.key|kv-secret|"
+                       r"secrets\.json|state/settings\.json")
+REASON_KEYS = (
+    "Страж Nexus: ключи Nexus (session.env, ключ сертификата, файлы настроек с секретами) агент не читает и не "
+    "показывает, даже по просьбе владельца: всё прочитанное остаётся в истории разговора. Владельцу ключ не "
+    "нужен — интерфейс и планшет получают его сами. Ответь, что показать ключ нельзя, и предложи помочь с "
+    "самой задачей другим способом.")
 # The agent's own ground restarted from its terminal ends its turn before the reply.
 REASON_DEFER = (
     "Страж Nexus: перезапуск агента, моделей или всего Nexus оборвёт твой ход раньше ответа. Передай его "
@@ -850,9 +858,11 @@ def decide(event: dict):
     tool_input = event.get("tool_input") or {}
     # The hook runs in the conversation's folder; a `cd` earlier in the command line moves it.
     dirs = [event.get("working_dir") or os.getcwd()]
+    keys = tool == "terminal" and KEY_FILES.search(tool_input.get("command") or "") \
+        or tool in ("file_editor", "planning_file_editor") and KEY_FILES.search(str(tool_input.get("path") or ""))
     if tool == "terminal":
         # Text sent with is_input goes to the running program, and at a shell prompt it runs as a command.
-        return check_terminal(tool_input.get("command") or "", dirs)
+        return check_terminal(tool_input.get("command") or "", dirs) or (REASON_KEYS if keys else None)
     if tool in ("file_editor", "planning_file_editor") and tool_input.get("command") != "view":
         path = str(tool_input.get("path") or "")
         path = os.path.normpath(os.path.join(dirs[0], normalized(path)))
@@ -862,7 +872,7 @@ def decide(event: dict):
             return REASON_NETWORK
     if tool == "apply_patch" and str(GUARD_DIR) in str(tool_input.get("patch") or ""):
         return REASON_SELF
-    return None
+    return REASON_KEYS if keys else None
 
 
 def main():
