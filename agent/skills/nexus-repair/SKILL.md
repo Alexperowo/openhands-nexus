@@ -1,6 +1,6 @@
 ---
 name: nexus-repair
-description: Use when Nexus itself misbehaves (no voice or speech, the tablet page fails, the model is slow or will not load, an update broke something, a Nexus service error). How to find the cause without stopping Nexus, what to fix yourself and what needs the owner's yes.
+description: Use when Nexus itself misbehaves (no voice or speech, the tablet page fails, the model is slow or will not load, an update broke something, a Nexus service error) or the owner asks to restart Nexus or a part of it. How to find the cause without stopping Nexus, what to fix yourself and what needs the owner's yes.
 ---
 
 # Nexus: find and fix a fault
@@ -42,8 +42,12 @@ moves the model to the card that still works. Read its log before repeating what
   `systemd-run --user --collect systemctl --user restart ohn-voice`, then check its health.
 - An update rollback (`update/nexus-update rollback canvas|ik-llama|caddy|llama-swap|voice`) only after the
   owner says yes. Anything that restarts `ohn-agent` or `ohn-models` (canvas, ik-llama, llama-swap rollbacks,
-  `ohn.target`): tell the owner that Nexus will be silent for about two minutes, wait for their yes, then add a
-  delay so your reply arrives: `systemd-run --user --collect --on-active=20 <command>`.
+  `ohn.target`) needs the owner's yes; their own request to restart is that yes. Start it with a delay,
+  `systemd-run --user --collect --on-active=20 <command>`, as your last command, and end your turn at once
+  with the reply: what you started and that Nexus will be silent for about two minutes. Do not wait for the
+  restart yourself: it ends your turn, and a reply not sent by then is lost.
+- «Slow» or «hangs»: before a restart, look at the video cards and the model log (another program on the card,
+  a very long conversation). Tell the owner the cause you found; a restart does not cure those.
 - Never read `~/.config/openhands-nexus/session.env`, `agent/state/settings.json`, other key files or the
   environment of other programs (`/proc/*/environ`).
 - A stopped Nexus service was stopped on purpose or failed past the watcher's one restart: do not start it on
