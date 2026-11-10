@@ -65,16 +65,18 @@ DANGEROUS = {
     # What git ignores in the Nexus clone is the conversations, the certificate and the builds.
     f"git -C {GUARD.parent.parent} clean -fdx": guard.REASON_RM,
     f"cd {GUARD.parent.parent}/agent && git clean -ffdX": guard.REASON_RM,
-    "cat /proc/*/environ": guard.REASON_KEYS,
-    "ps eww -u user": guard.REASON_KEYS,
-    "ps auxe | grep KEY": guard.REASON_KEYS,
+    "cat /proc/*/environ": guard.REASON_ENVIRON,
+    "ps eww -u user": guard.REASON_ENVIRON,
+    "sudo nvidia-smi -i 0 -pl 250": guard.REASON_POWER,
+    "nvidia-smi --power-limit=200": guard.REASON_POWER,
+    "ps auxe | grep KEY": guard.REASON_ENVIRON,
     "sudo systemctl stop user@1000.service": guard.REASON_SESSION,
     "sudo systemctl kill user-1000.slice": guard.REASON_SESSION,
     "sudo iptables -F": guard.REASON_NETWORK,
     "sudo iptables -P INPUT DROP": guard.REASON_NETWORK,
     "sudo nft flush ruleset": guard.REASON_NETWORK,
     "sudo ufw enable": guard.REASON_NETWORK,
-    "tr '\\0' '\\n' < /proc/$(pgrep -f agent-server | head -1)/environ": guard.REASON_KEYS,
+    "tr '\\0' '\\n' < /proc/$(pgrep -f agent-server | head -1)/environ": guard.REASON_ENVIRON,
     # Nexus keys stay out of the conversation, names or values.
     "sed -n 's/^OHN_SESSION_KEY=//p' ~/.config/openhands-nexus/session.env": guard.REASON_KEYS,
     "grep -E '^[A-Z_]+=' /home/user/Agents/Backups/ohn-keys-1024/session.env | cut -d= -f1": guard.REASON_KEYS,
@@ -224,6 +226,7 @@ ORDINARY = [
     f"git -C {GUARD.parent.parent} status --short",
     "cd /tmp && git clean -fdx",
     "cat /proc/self/environ",
+    "nvidia-smi", "nvidia-smi -q -d POWER", "nvidia-smi --query-gpu=power.limit,power.draw --format=csv",
     "ps -e", "ps -ef", "ps aux", "ps -p 1 -o exe", "ps -eo pid,etime,cmd",
     "sudo iptables -L -n", "sudo iptables -A INPUT -p tcp --dport 8443 -j ACCEPT", "sudo nft list ruleset",
     "sudo ufw status", "sudo ufw allow 8443/tcp",
@@ -346,6 +349,17 @@ class GuardRules(unittest.TestCase):
         for command in (f"{name} &", f"setsid {name} >/dev/null 2>&1 &", f"bash -c '{name} &'"):
             with self.subTest(command=command):
                 self.assertTrue(matches(decide(command) or "", guard.REASON_START), decide(command))
+
+    def test_a_helper_of_the_session_is_not_its_component(self):
+        """A desktop applet polls nvidia-smi inside the session scope: the agent's own call must not wait for a gap."""
+        def process(comm, started):
+            return SimpleNamespace(pid="77", comm=comm, argv=[comm], line=comm, pgrp="77", started=started,
+                                   unit="session-2.scope", cgroup="/user.slice/user-1000.slice/session-2.scope")
+        with mock.patch.object(guard, "uptime", return_value=5000.0):
+            with mock.patch.object(guard, "processes", return_value=(process("nvidia-smi", 4999.5),)):
+                self.assertIsNone(decide("nvidia-smi"))
+            with mock.patch.object(guard, "processes", return_value=(process("cinnamon", 60.0),)):
+                self.assertTrue(matches(decide("cinnamon &") or "", guard.REASON_START))
 
     def test_session_service_stop_blocked_restart_allowed(self):
         if guard.unit_slice("pipewire.service") != "session.slice":

@@ -39,6 +39,8 @@ SESSION_CGROUP = re.compile(r"/session-\d+\.scope$|/session\.slice/|^/system\.sl
 AUTOSTART_CGROUP = re.compile(r"/session-\d+\.scope$|/session\.slice/")
 INTERPRETERS = {"python", "python3", "perl", "ruby", "node", "bash", "sh", "dash", "zsh", "env",
                 "sleep", "cat", "tail", "timeout"}
+# A component stays; what it runs for a moment (a GPU applet polling nvidia-smi) is not one.
+COMPONENT_SECONDS = 10
 INFO_ONLY = {"--version", "--help", "-h", "-V"}
 
 # Command lines of the Nexus services (launcher/run.sh is the main process of ohn-agent).
@@ -139,6 +141,10 @@ REASON_KEYS = (
     "показывает, даже по просьбе владельца: всё прочитанное остаётся в истории разговора. Владельцу ключ не "
     "нужен — интерфейс и планшет получают его сами. Ответь, что показать ключ нельзя, и предложи помочь с "
     "самой задачей другим способом.")
+REASON_ENVIRON = (
+    "Страж Nexus: так окружение показывается у всех процессов сразу или у неизвестно какого, а среди них службы "
+    "Nexus с ключами. Окружение своего процесса читай по его номеру: /proc/12345/environ (номер — из pgrep "
+    "или ps -ef); своё собственное — командой env.")
 # The agent's own ground restarted from its terminal ends its turn before the reply.
 REASON_DEFER = (
     "Страж Nexus: перезапуск агента, моделей или всего Nexus оборвёт твой ход раньше ответа. Передай его "
@@ -155,6 +161,9 @@ REASON_DISK = (
     "Страж Nexus: {path} — подключённый диск с данными; запись прямо на устройство сотрёт его целиком. "
     "Работай с файлами на диске. Чтобы записать образ на флешку, найди её по lsblk (размер, название), "
     "отмонтируй именно её (udisksctl unmount -b <раздел>) и только потом пиши на неё.")
+REASON_POWER = (
+    "Страж Nexus: лимит мощности видеокарт выставлен владельцем под блок питания с двумя картами и агентом "
+    "не меняется. Смотреть можно (nvidia-smi -q -d POWER); если лимит мешает делу — напиши об этом в итоге.")
 REASON_MIRROR = (
     "Страж Nexus: rsync --delete сотрёт в {path} всё, чего нет в источнике, а это домашняя или системная "
     "папка, целый диск либо сам Nexus. Копируй без --delete или зеркаль в отдельную подпапку.")
@@ -236,7 +245,9 @@ class Process:
         self.comm = (base / "comm").read_text().strip()
         self.argv = (base / "cmdline").read_bytes().decode(errors="replace").split("\0")[:-1]
         self.cgroup = (base / "cgroup").read_text().strip().split("::", 1)[-1]
-        self.pgrp = (base / "stat").read_text().rsplit(")", 1)[1].split()[2]
+        stat = (base / "stat").read_text().rsplit(")", 1)[1].split()
+        self.pgrp = stat[2]
+        self.started = int(stat[19]) / os.sysconf("SC_CLK_TCK")  # seconds after boot
 
     @property
     def line(self):
@@ -457,15 +468,15 @@ def cleans_nexus(args: list[str], dirs: list[str]):
 
 
 def reads_nexus_environment(command: str):
-    """`/proc/PID/environ` of a Nexus process shows the session key it was started with."""
+    """Why not, when the command reads `/proc/PID/environ` of a Nexus process: it shows the keys it was started with."""
     for pid in re.findall(r"/proc/((?:\$\([^)]*\)|`[^`]*`|[^/\s])+)/environ", command):
         if pid in ("self", "thread-self", "$$"):
             continue  # the terminal's own environment: launcher/run.sh and the SDK keep the secret key out of it
         if not pid.isdigit():
-            return True  # a pattern, a variable or a substitution may reach a Nexus process
+            return REASON_ENVIRON  # a pattern, a variable or a substitution may reach a Nexus process
         if any(p.pid == pid and (NEXUS.search(p.line) or p.unit.startswith("ohn-")) for p in processes()):
-            return True
-    return False
+            return REASON_KEYS
+    return None
 
 
 @lru_cache(maxsize=1)
@@ -791,6 +802,10 @@ def without_redirects(argv: list[str]):
     return words
 
 
+def uptime():
+    return float(Path("/proc/uptime").read_text().split()[0])
+
+
 def check_start(program: str, argv: list[str]):
     """Starting a session component from the agent's terminal ties it to the terminal."""
     argv = without_redirects(argv)
@@ -813,7 +828,7 @@ def check_start(program: str, argv: list[str]):
     if detached or program in INTERPRETERS or any(not a.startswith("-") for a in args):
         return None  # daemons and applets start with options only; a positional means a CLI call
     for p in processes():
-        if p.comm == program[:15] and AUTOSTART_CGROUP.search(p.cgroup):
+        if p.comm == program[:15] and AUTOSTART_CGROUP.search(p.cgroup) and uptime() - p.started > COMPONENT_SECONDS:
             return REASON_START.format(what=f"{program} (уже работает в {p.unit})")
     return None
 
@@ -839,8 +854,10 @@ def check_argv(argv: list[str], dirs: list[str], fed_to_rm=False):
         emptied = mirrored_over(args, dirs)
         if emptied:
             return REASON_MIRROR.format(path=emptied)
+    if program == "nvidia-smi" and any(re.match(r"-pl|--power-limit", arg) for arg in args):
+        return REASON_POWER
     if program == "ps" and shows_environments(args):
-        return REASON_KEYS
+        return REASON_ENVIRON
     if program == "find":
         reason = check_find(args, dirs, fed_to_rm)
         if reason:
@@ -959,11 +976,11 @@ def decide(event: dict):
     # The hook runs in the conversation's folder; a `cd` earlier in the command line moves it.
     dirs = [event.get("working_dir") or os.getcwd()]
     command = tool_input.get("command") or ""
-    keys = tool == "terminal" and (KEY_FILES.search(command) or reads_nexus_environment(command)) \
+    keys = tool == "terminal" and (KEY_FILES.search(command) and REASON_KEYS or reads_nexus_environment(command)) \
         or tool in ("file_editor", "planning_file_editor") and KEY_FILES.search(str(tool_input.get("path") or ""))
     if tool == "terminal":
         # Text sent with is_input goes to the running program, and at a shell prompt it runs as a command.
-        return check_terminal(tool_input.get("command") or "", dirs) or (REASON_KEYS if keys else None)
+        return check_terminal(tool_input.get("command") or "", dirs) or keys or None
     if tool in ("file_editor", "planning_file_editor") and tool_input.get("command") != "view":
         path = str(tool_input.get("path") or "")
         path = os.path.normpath(os.path.join(dirs[0], normalized(path)))
