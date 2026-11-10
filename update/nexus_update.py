@@ -28,6 +28,9 @@ from pathlib import Path
 
 
 PACKAGE = "@openhands/agent-canvas"
+# Our page wraps Canvas components: React, the router and i18n must be the one copy Canvas also uses,
+# or its hooks find no context and the page stays blank.
+SHARED = ("react", "react-dom", "react-router", "i18next", "react-i18next", "lucide-react")
 UNKNOWN = "unknown (неизвестно)"
 GITHUB = "https://api.github.com/repos"
 FORBIDDEN = {".env", "session.env", "secrets.json", "settings.json"}
@@ -522,6 +525,7 @@ class Updater:
             for project in ("agent", "ui"):
                 self.run(["npm", "install", "--save-exact", "--ignore-scripts", "--no-audit", "--no-fund",
                           f"{PACKAGE}@{version}"], cwd=self.root / project)
+            self.canvas_shared()
             require(self.installed_canvas() == version, "Установлена неожиданная версия canvas")
             self.run(["npm", "run", "build"], cwd=self.root / "ui")
             self.locale_report()
@@ -530,6 +534,16 @@ class Updater:
             self.canvas_smoke()
 
         self.transaction("canvas", backup, action, self.canvas_restore)
+
+    def canvas_shared(self):
+        ui = self.root / "ui"
+        wanted = read_json(ui / "node_modules" / PACKAGE / "package.json").get("dependencies", {})
+        ours = read_json(ui / "package.json").get("dependencies", {})
+        stale = [f"{name}@{wanted[name]}" for name in SHARED if name in wanted and ours.get(name, wanted[name]) != wanted[name]]
+        if stale:
+            self.run(["npm", "install", "--save-exact", "--ignore-scripts", "--no-audit", "--no-fund", *stale], cwd=ui)
+        nested = [name for name in SHARED if (ui / "node_modules" / PACKAGE / "node_modules" / name).exists()]
+        require(not nested, "Canvas держит свою копию " + ", ".join(nested) + ": страница не заработает")
 
     def canvas_snapshot(self, items):
         # Copying a live SQLite DB and its WAL separately can produce an invalid rollback.
@@ -562,7 +576,16 @@ class Updater:
         require(not sockets, "Порт 18030 занят; отказ")
         processes = self.run(["nvidia-smi", "--query-compute-apps=pid,process_name", "--format=csv,noheader,nounits"],
                              capture=True, timeout=15)
-        require("llama-server" not in processes, "nvidia-smi показывает llama-server; отказ")
+        for line in processes.splitlines():
+            pid, _, name = line.partition(",")
+            if "llama-server" in name:
+                # Only our engine is swapped; another program's own llama-server copy keeps running untouched.
+                try:
+                    exe = Path(os.readlink(f"/proc/{pid.strip()}/exe")).resolve()
+                except (OSError, ValueError):
+                    exe = None
+                require(exe is not None and not exe.is_relative_to(self.backend.resolve()),
+                        "На видеокарте работает llama-server этого движка; отказ")
         if bench:
             require(not processes.strip(), "GPU заняты вычислениями; benchmark запрещён")
             load = self.run(["nvidia-smi", "--query-gpu=utilization.gpu,memory.used", "--format=csv,noheader,nounits"],

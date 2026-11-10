@@ -183,13 +183,13 @@ TypeScript-проверки типов нет намеренно: надстро
 
 | Что | Версия | Откуда |
 |---|---|---|
-| Agent Canvas, agent-server, automation | 1.34.0, 1.58.1, 1.26.0 | `npm ci` в `agent/` и `ui/`; agent-server и automation Canvas сам ставит через uv при первом запуске |
-| Caddy → `gateway/caddy` | v2.11.7 | caddyserver.com, linux-amd64 |
-| llama-swap → `models/llama-swap` | v268 | github.com/mostlygeek/llama-swap, релиз linux-amd64 |
+| Agent Canvas, agent-server, automation | 1.38.0, 1.61.0, 1.31.0 | `npm ci` в `agent/` и `ui/`; agent-server и automation Canvas сам ставит через uv при первом запуске |
+| Caddy → `gateway/caddy` | v2.11.9 | caddyserver.com, linux-amd64 |
+| llama-swap → `models/llama-swap` | v271 | github.com/mostlygeek/llama-swap, релиз linux-amd64 |
 | ik_llama.cpp `llama-server` | 13cffc0 (30.10.2026) | github.com/ikawrakow/ik_llama.cpp; `cmake -DGGML_CUDA=ON -DGGML_CUDA_FA_ALL_QUANTS=ON -DGGML_NATIVE=ON -DCMAKE_CUDA_ARCHITECTURES="75;120" -DCMAKE_BUILD_TYPE=Release` |
 | Голос: Silero v5.6 ru, GigaAM v3_e2e_rnnt | SHA-256 в `voice/download_models.py` | `download_models.py` скачивает и сверяет |
 | Node, uv, Python | 24.21, 0.12, 3.12 (голос) | системные |
-| hai-drivers (`screen/`) | 0.1.16 | `uv sync --frozen` |
+| hai-drivers (`screen/`) | 0.1.19 | `uv sync --frozen` |
 
 Веса моделей (адреса и SHA-256 — `models/weights.json`):
 

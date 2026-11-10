@@ -115,6 +115,38 @@ class UpdateTests(unittest.TestCase):
         self.assert_old_canvas()
         self.assertEqual(self.u.health.call_count, 2)
 
+    def canvas_wants(self, deps):
+        package = self.root / "ui/node_modules" / update.PACKAGE / "package.json"
+        update.atomic_json(package, {**update.read_json(package), "dependencies": deps})
+
+    def test_shared_libraries_follow_canvas(self):
+        # Canvas 1.38 pinned React 19.3.1 while the page had 19.3.0: two Reacts, a blank page.
+        self.canvas_wants({"react": "19.3.1", "react-router": "8.5.1", "zustand": "5.0.0"})
+        update.atomic_json(self.root / "ui/package.json", {"dependencies": {
+            update.PACKAGE: "1.30.1", "react": "19.3.0", "react-router": "8.5.1"}})
+        self.u.run = Mock(return_value="")
+        self.u.canvas_shared()
+        command = self.u.run.call_args.args[0]
+        self.assertEqual(command[-1:], ["react@19.3.1"])  # only what we share and differs
+        self.assertEqual(self.u.run.call_args.kwargs["cwd"], self.root / "ui")
+
+    def test_nested_shared_copy_fails_the_update(self):
+        self.install_runner()
+        self.canvas_wants({})
+        nested = self.root / "ui/node_modules" / update.PACKAGE / "node_modules/react"
+        run = self.u.run.side_effect
+
+        def install(command, **kwargs):
+            result = run(command, **kwargs)
+            if command[:2] == ["npm", "install"] and Path(kwargs["cwd"]).name == "ui":
+                nested.mkdir(parents=True)
+            return result
+
+        self.u.run.side_effect = install
+        with self.assertRaisesRegex(update.UpdateError, "react"):
+            self.u.canvas()
+        self.assert_old_canvas()
+
     def test_explicit_canvas_rollback(self):
         self.install_runner()
         before = update.digest(self.root / "ui/package-lock.json")
@@ -203,6 +235,23 @@ class UpdateTests(unittest.TestCase):
                     self.u.models_idle(bench)
         self.u.run = Mock(side_effect=["inactive", "", "", "0, 300\n1, 400"])
         self.u.models_idle(True)
+        # Another program's own llama-server copy does not block the build; ours or an unknown one does.
+        foreign = self.root / "other/llama-server"
+        foreign.parent.mkdir()
+        ours = self.u.backend / "build/bin/llama-server"
+        links = {"7": foreign, "8": ours}
+        def readlink(path):
+            if path.split("/")[2] not in links:
+                raise FileNotFoundError(path)
+            return str(links[path.split("/")[2]])
+
+        with patch.object(update.os, "readlink", side_effect=readlink):
+            self.u.run = Mock(side_effect=["inactive", "", "7, /x/llama-server"])
+            self.u.models_idle()
+            for line in ("8, /x/llama-server", "9, /x/llama-server"):
+                self.u.run = Mock(side_effect=["inactive", "", line])
+                with self.assertRaises(update.UpdateError):
+                    self.u.models_idle()
 
     def test_cmake_flags_preserved_and_relocatable(self):
         self.u.backend = self.root / "backend"
