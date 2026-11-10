@@ -65,6 +65,12 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def digest_like(path, expected):
+    """Сумма файла тем же алгоритмом, каким записана ожидаемая: Caddy 2.11.9 публикует SHA-512, остальные SHA-256."""
+    algorithm = {64: hashlib.sha256, 128: hashlib.sha512}.get(len(expected))
+    return algorithm(Path(path).read_bytes()).hexdigest() if algorithm else ""
+
+
 class Updater:
     def __init__(self, args):
         self.args = args
@@ -83,7 +89,11 @@ class Updater:
         self.log = None
 
     def emit(self, message):
-        print(message, flush=True)
+        # A closed terminal or pipe must not stop an update halfway or skip its rollback: the journal goes on.
+        try:
+            print(message, flush=True)
+        except OSError:
+            sys.stdout = open(os.devnull, "w")
         if self.log:
             self.log.write(time.strftime("%Y-%m-%d %H:%M:%S ") + str(message) + "\n")
             self.log.flush()
@@ -368,7 +378,10 @@ class Updater:
         for unit in units:
             require(unit in {"ohn-agent", "ohn-gateway", "ohn-voice", "ohn-models"}, "Недопустимая служба")
             # Quick update + rollback restarts can trip systemd's start limit.
-            self.run(["systemctl", "--user", "reset-failed", unit], timeout=30)
+            try:
+                self.run(["systemctl", "--user", "reset-failed", unit], timeout=30)
+            except UpdateError:  # служба ещё ни разу не загружалась (Nexus не запускали) — сбрасывать нечего
+                pass
             self.run(["systemctl", "--user", "restart", unit], timeout=120)
 
     def curl(self, url, *, body=None, method=None, missing_ok=False):
@@ -704,8 +717,8 @@ class Updater:
                               "--connect-timeout", "10", "--max-time", "600", "--output", destination, assets[name]], timeout=610)
                 expected = [line.split()[0] for line in checksums.read_text().splitlines()
                             if len(line.split()) == 2 and line.split()[1].lstrip("*") == archive_name]
-                require(len(expected) == 1 and digest(archive) == expected[0], f"SHA-256 архива {binary} не совпал")
-                self.emit(f"SHA-256 {binary} подтверждён файлом контрольных сумм релиза.")
+                require(len(expected) == 1 and digest_like(archive, expected[0]) == expected[0], f"SHA-256 архива {binary} не совпал")
+                self.emit(f"Контрольная сумма {binary} подтверждена файлом контрольных сумм релиза.")
                 with tarfile.open(archive) as tar:
                     member = tar.getmember(binary)
                     require(member.isfile(), f"В архиве {binary} не обычный файл")

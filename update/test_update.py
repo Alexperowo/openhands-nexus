@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+import sys
 import tarfile
 import tempfile
 import unittest
@@ -84,6 +85,20 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(counts, {"install": 2, "build": 1})
         self.assertFalse((self.u.state / "update-canvas.json").exists())
         self.assertEqual(list(self.u.backups.iterdir()), [])
+
+    def test_closed_output_still_restores(self):
+        # 10.11: the caller's pipe closed during npm install; every print raised and the rollback never ran.
+        del self.u.emit  # the real emit, printing into a closed pipe
+        log = io.StringIO()
+        self.u.log = log
+        broken = Mock()
+        broken.write.side_effect = BrokenPipeError
+        counts = self.install_runner("second-install")
+        with patch.object(sys, "stdout", broken), self.assertRaises(update.UpdateError):
+            self.u.canvas()
+        self.assert_old_canvas()
+        self.assertEqual(counts, {"install": 2, "build": 1})
+        self.assertIn("Автоматический откат завершён", log.getvalue())
 
     def test_build_failure_restores_and_rebuilds(self):
         counts = self.install_runner("first-build")
