@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+import signal
 import sys
 import tarfile
 import tempfile
@@ -158,6 +159,100 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(before, update.digest(self.root / "ui/package-lock.json"))
         self.assertFalse((self.u.state / "update-canvas.json").exists())
         self.assertEqual(list(self.u.backups.iterdir()), [])
+
+    def test_update_stopped_halfway_returns_from_its_own_copy(self):
+        # A kill or a power cut between the two installs: nothing restored, as if the rollback never ran.
+        earlier = self.u.snapshot("canvas", [])
+        self.u.remember("canvas", earlier)  # the record of the last finished update
+        self.install_runner("second-install")
+        with patch.object(self.u, "canvas_restore", side_effect=KeyboardInterrupt), self.assertRaises(update.UpdateError):
+            self.u.canvas()
+        self.assertTrue(self.u.pending("canvas").is_file())
+        self.assertEqual(update.read_json(self.root / "agent/package.json")["dependencies"][update.PACKAGE], "1.33.0")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+            self.assertEqual(update.main(["canvas", "1.33.0", "--sandbox", str(self.root)]), 1)
+        self.assertIn("nexus-update rollback canvas", output.getvalue())
+        self.install_runner()
+        self.u.args.command, self.u.args.target = "rollback", "canvas"
+        self.u.rollback()
+        self.assert_old_canvas()
+        self.assertFalse(self.u.pending("canvas").exists())
+        self.assertEqual(update.read_json(self.u.state / "update-canvas.json")["backup"], str(earlier))
+        self.assertEqual(list(self.u.backups.iterdir()), [earlier])
+
+    def test_finished_update_leaves_no_mark_and_a_late_kill_is_rolled_back_whole(self):
+        self.install_runner()
+        self.u.canvas()
+        self.assertFalse(self.u.pending("canvas").exists())
+        # Killed after the record was written and before the mark was removed: both name one copy.
+        self.u.begin("canvas", update.read_json(self.u.state / "update-canvas.json")["backup"])
+        self.u.args.command, self.u.args.target = "rollback", "canvas"
+        self.u.rollback()
+        self.assert_old_canvas()
+        self.assertEqual(list(self.u.state.glob("update-canvas*")), [])
+        self.assertEqual(list(self.u.backups.iterdir()), [])
+
+    def test_lost_copy_is_named_instead_of_a_traceback(self):
+        self.u.begin("canvas", self.u.backups / "update-gone")
+        self.u.backups.mkdir()
+        with self.assertRaisesRegex(update.UpdateError, "update-canvas.pending.json"):
+            self.u.previous("canvas")
+
+    def test_failed_snapshot_leaves_no_half_copy(self):
+        (self.root / "file").write_text("data")
+        with patch.object(update.shutil, "copy2", side_effect=OSError(28, "No space left on device")), \
+                self.assertRaises(OSError):
+            self.u.snapshot("caddy", [(self.root / "file", "file")])
+        self.assertEqual(list(self.u.backups.iterdir()), [])
+
+    def test_services_found_stopped_are_stopped_again(self):
+        self.u.args.sandbox = None
+        states = {"ohn-agent": "inactive", "ohn-gateway": "active"}
+        done = []
+
+        def run(command, **kwargs):
+            if command[2] == "show":
+                return states[command[-1]]
+            done.append(tuple(command[2:]))
+            if command[2] == "restart":
+                states[command[-1]] = "active"
+            return ""
+
+        self.u.run = Mock(side_effect=run)
+        self.u.restart("ohn-agent", "ohn-gateway")
+        self.u.restart("ohn-agent")  # the state the update itself made is not the one to return to
+        self.u.settle()
+        self.assertEqual([step for step in done if step[0] != "reset-failed"],
+                         [("restart", "ohn-agent"), ("restart", "ohn-gateway"), ("restart", "ohn-agent"),
+                          ("stop", "ohn-agent")])
+
+    def test_services_settle_and_errors_stay_short_whatever_the_update_ends_with(self):
+        for error in (None, update.UpdateError("health"), tarfile.ReadError("bad archive")):
+            with self.subTest(error=error), patch.object(update.Updater, "canvas", side_effect=error), \
+                    patch.object(update.Updater, "settle") as settle, \
+                    contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as errors:
+                self.assertEqual(update.main(["canvas", "1.33.0", "--sandbox", str(self.root)]), 1 if error else 0)
+                settle.assert_called_once_with()
+                self.assertNotIn("Traceback", errors.getvalue())
+
+    def test_canvas_update_refuses_to_run_inside_the_agent(self):
+        self.u.args.sandbox = None
+        cgroup = "0::/user.slice/user-1000.slice/user@1000.service/app.slice/ohn-agent.service\n"
+        with patch.object(update.Path, "read_text", return_value=cgroup), \
+                self.assertRaisesRegex(update.UpdateError, "launcher/when-idle .*nexus-update canvas 1.33.0$"):
+            self.u.canvas_paths()
+
+    def test_one_interrupt_starts_the_rollback_and_the_next_cannot_stop_it(self):
+        numbers = (signal.SIGTERM, signal.SIGINT, signal.SIGHUP)
+        saved = [signal.getsignal(number) for number in numbers]
+        self.addCleanup(lambda: [signal.signal(number, handler) for number, handler in zip(numbers, saved)])
+        update.handle_signals()
+        signal.raise_signal(signal.SIGHUP)  # a closed terminal: the update goes on
+        with self.assertRaises(update.UpdateError):
+            signal.raise_signal(signal.SIGINT)
+        signal.raise_signal(signal.SIGINT)
+        signal.raise_signal(signal.SIGTERM)
 
     def test_only_the_remembered_copy_is_kept(self):
         first = self.u.snapshot("canvas", [])
@@ -526,6 +621,35 @@ class UpdateTests(unittest.TestCase):
 
     def test_ik_swap_and_manual_rollback(self):
         self.exercise_ik()
+
+    def test_ik_update_stopped_halfway_returns_by_what_is_on_disk(self):
+        for moment in ("building", "between-renames", "switched"):
+            with self.subTest(moment=moment):
+                backend = self.root / ("ik-" + moment)
+                tree = {"old": backend / "build", "older": backend / "build.prev"}
+                if moment != "building":  # build → build.prev done, the earlier build.prev set aside
+                    tree = {"old": backend / "build.prev", "older": backend / "build.retired-0f"}
+                tree["new"] = backend / ("build" if moment == "switched" else "build.next-1e")
+                for name, directory in tree.items():
+                    (directory / "bin").mkdir(parents=True)
+                    (directory / "bin/llama-server").write_bytes(name.encode())
+                pointer = backend.with_name(backend.name + ".prev-commit")
+                pointer.write_text("original pointer\n")
+                self.u.backend = backend
+                backup = self.u.snapshot("ik-llama", [(pointer, "previous-commit-file")])
+                update.atomic_json(backup / "ik.json", {"commit": "a" * 40, "binary_sha256": update.digest(
+                    tree["old"] / "bin/llama-server")})
+                self.u.begin("ik-llama", backup)
+                pointer.write_text("a" * 40 + "\n")
+                self.u.models_idle = Mock()
+                self.u.run = Mock(return_value="")
+                self.u.args.command, self.u.args.target = "rollback", "ik-llama"
+                self.u.rollback()
+                self.assertEqual({path.name: (path / "bin/llama-server").read_bytes() for path in backend.iterdir()},
+                                 {"build": b"old", "build.prev": b"older"})
+                self.assertEqual(pointer.read_text(), "original pointer\n")
+                self.u.run.assert_called_once_with(["git", "checkout", "--detach", "a" * 40], cwd=backend)
+                self.assertFalse(self.u.pending("ik-llama").exists() or backup.exists())
 
 
 if __name__ == "__main__":

@@ -23,7 +23,8 @@ You run inside Nexus. Your terminal belongs to `ohn-agent` (agent-server 18010) 
 6. Project files: `git -C ~/Agents/OpenHands-Nexus status --short` (a changed file is a suspect) and
    `cd ~/Agents/OpenHands-Nexus && ./check` (about 3 minutes, processor only, safe while Nexus runs).
 7. Updates: `~/Agents/OpenHands-Nexus/update/nexus-update check --offline`; the update journal is in
-   `~/.local/state/ohn/`. A fault that began right after an update points at that component.
+   `~/.local/state/ohn/`. A fault that began right after an update points at that component. An update
+   that stopped halfway is named there too; its rollback returns the component to the state before it.
 
 Stay inside Nexus: other projects in `~/Agents` and the conversation files in `agent/state` are not suspects.
 When the services answer, `git status` is clean and `./check` passes, do not keep searching: report what you

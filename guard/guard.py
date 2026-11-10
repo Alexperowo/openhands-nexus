@@ -48,7 +48,8 @@ NEXUS = re.compile(r"llama-server|llama-swap|agent-server|agent-canvas|openhands
 NEXUS_PORTS = {"18010", "18011", "18020", "18030", "3011", "8443", "8081", "2029", "8010"} | \
     {str(port) for port in range(18040, 18050)}
 NETWORK_UNITS = re.compile(r"^(systemd-resolved|NetworkManager|wpa_supplicant|happd)")
-SESSION_UNITS = re.compile(r"^(display-manager|lightdm|gdm3?|sddm|systemd-logind|dbus|graphical\.target)")
+SESSION_UNITS = re.compile(r"^(display-manager|lightdm|gdm3?|sddm|systemd-logind|dbus|graphical\.target|"
+                           r"user@\d+|user-\d+\.slice|user\.slice)")
 NETWORK_FILES = {"/etc/resolv.conf", "/etc/systemd/resolved.conf"}  # a copy next to them is fine
 NETWORK_DIRS = ("/etc/systemd/resolved.conf.d/", "/etc/NetworkManager/", "/etc/netplan/")
 # Nexus itself and its keys too: settings and secrets are encrypted with OHN_SECRET_KEY.
@@ -144,10 +145,19 @@ REASON_DEFER = (
     "помощнику, который дождётся твоего ответа: systemd-run --user --collect "
     "~/Agents/OpenHands-Nexus/launcher/when-idle <команда> (например systemctl --user restart ohn-agent). "
     "Затем сразу ответь владельцу, что Nexus замолчит примерно на две минуты, и не жди перезапуска.")
-OWN_GROUND = re.compile(r"\bohn-(agent|models)\b|\bohn\.target\b|\brollback\s+(canvas|ik-llama|llama-swap)\b")
+OWN_GROUND = re.compile(r"\bohn-(agent|models)\b|\bohn\.target\b|\bnexus-stop\b|"
+                        r"\bnexus[-_]update\S*\s+(rollback\s+)?(canvas|ik-llama|llama-swap)\b")
+OWN_GROUND_VERBS = re.compile(r"\b(restart|try-restart|reload-or-restart|stop|kill|nexus-stop|nexus[-_]update)\b")
 REASON_RM = ("Страж Nexus: рекурсивное удаление системного или домашнего каталога, каталога настроек, "
-             "целого диска, самого Nexus или его моделей запрещено. Удаляй конкретные файлы или подкаталоги "
-             "по полному пути.")
+             "целого диска, самого Nexus или его моделей запрещено (git clean -x в папке Nexus — то же "
+             "самое: он стирает беседы и сертификат). Удаляй конкретные файлы или подкаталоги по полному пути.")
+REASON_DISK = (
+    "Страж Nexus: {path} — подключённый диск с данными; запись прямо на устройство сотрёт его целиком. "
+    "Работай с файлами на диске. Чтобы записать образ на флешку, найди её по lsblk (размер, название), "
+    "отмонтируй именно её (udisksctl unmount -b <раздел>) и только потом пиши на неё.")
+REASON_MIRROR = (
+    "Страж Nexus: rsync --delete сотрёт в {path} всё, чего нет в источнике, а это домашняя или системная "
+    "папка, целый диск либо сам Nexus. Копируй без --delete или зеркаль в отдельную подпапку.")
 REASON_EMPTY_VAR = (
     "Страж Nexus: если переменная {name} в этом терминале пуста или не задана, команда удалит {path}. "
     "Пиши ${{{name}:?}} — тогда при пустой переменной оболочка остановится, — или полный путь.")
@@ -389,6 +399,73 @@ def mount_points():
         return frozenset()
     return frozenset(fields[1].replace("\\040", " ") for fields in map(str.split, lines)
                      if fields[0].startswith("/dev/") and not fields[0].startswith("/dev/loop"))
+
+
+@lru_cache(maxsize=1)
+def mounted_devices():
+    """Devices that hold mounted file systems, and the whole disks their partitions are on."""
+    try:
+        lines = Path("/proc/self/mounts").read_text().splitlines()
+    except OSError:
+        return frozenset()
+    found = {line.split()[0] for line in lines if line.startswith("/dev/") and not line.startswith("/dev/loop")}
+    disks = (re.fullmatch(r"(/dev/(?:[shv]d[a-z]+|nvme\d+n\d+|mmcblk\d+))p?\d+", device) for device in found)
+    return frozenset(found | {m[1] for m in disks if m})
+
+
+# Programs that write the device they are given (dd: its of=); any program does through a redirect.
+DISK_WRITERS = {"dd", "tee", "shred", "wipefs", "blkdiscard", "mke2fs", "mkswap"}
+
+
+def disk_written(argv: list[str], dirs: list[str]):
+    """A mounted disk or partition this command would overwrite as a device, or None."""
+    program = os.path.basename(argv[0])
+    words = [word for i, word in enumerate(argv[1:], 1) if argv[i - 1] in REDIRECTS]
+    if program == "dd":
+        words += [word[3:] for word in argv[1:] if word.startswith("of=")]
+    elif program in DISK_WRITERS or program.startswith("mkfs"):
+        words += argv[1:]
+    elif program in COPIERS:
+        words.append(argv[-1])
+    return next((path for word in words for path in absolute(word, dirs) if path in mounted_devices()), None)
+
+
+def mirrored_over(args: list[str], dirs: list[str]):
+    """The folder `rsync --delete` would empty of everything the source lacks, when it is not one to lose."""
+    if not any(a.startswith("--del") for a in args) or any(re.fullmatch(r"-[a-zA-Z]*n[a-zA-Z]*|--dry-run", a) for a in args):
+        return None
+    for path in absolute(args[-1], dirs):
+        if removal(path, dirs) == REASON_RM or path in personal_roots():
+            return path
+    return None
+
+
+def shows_environments(args: list[str]):
+    """`ps e` (BSD style, no dash) prints every process with its environment — the Nexus keys among them."""
+    return any(re.fullmatch(r"[a-zA-Z]*e[a-zA-Z]*", a) and not (i and args[i - 1].startswith("-"))
+               for i, a in enumerate(args))
+
+
+def cleans_nexus(args: list[str], dirs: list[str]):
+    """`git clean -x` in the Nexus clone removes what git ignores there: the conversations, the
+    tablet's certificate, the builds."""
+    if "clean" not in args or not any(re.fullmatch(r"-[a-zA-Z]*[xX][a-zA-Z]*", a) for a in args) \
+            or any(re.fullmatch(r"-[a-zA-Z]*n[a-zA-Z]*|--dry-run", a) for a in args):
+        return False
+    where = [args[i + 1] for i, a in enumerate(args[:-1]) if a == "-C"] or ["."]
+    return any(inside(path, REPO) for word in where for path in absolute(word, dirs))
+
+
+def reads_nexus_environment(command: str):
+    """`/proc/PID/environ` of a Nexus process shows the session key it was started with."""
+    for pid in re.findall(r"/proc/((?:\$\([^)]*\)|`[^`]*`|[^/\s])+)/environ", command):
+        if pid in ("self", "thread-self", "$$"):
+            continue  # the terminal's own environment: launcher/run.sh and the SDK keep the secret key out of it
+        if not pid.isdigit():
+            return True  # a pattern, a variable or a substitution may reach a Nexus process
+        if any(p.pid == pid and (NEXUS.search(p.line) or p.unit.startswith("ohn-")) for p in processes()):
+            return True
+    return False
 
 
 @lru_cache(maxsize=1)
@@ -756,6 +833,14 @@ def check_argv(argv: list[str], dirs: list[str], fed_to_rm=False):
             reason = empty_variable(arg, dirs) or removal(arg, dirs)
             if reason:
                 return reason
+    if program == "git" and cleans_nexus(args, dirs):
+        return REASON_RM
+    if program == "rsync":
+        emptied = mirrored_over(args, dirs)
+        if emptied:
+            return REASON_MIRROR.format(path=emptied)
+    if program == "ps" and shows_environments(args):
+        return REASON_KEYS
     if program == "find":
         reason = check_find(args, dirs, fed_to_rm)
         if reason:
@@ -767,10 +852,17 @@ def check_argv(argv: list[str], dirs: list[str], fed_to_rm=False):
     if program == "systemctl":
         return check_systemctl(args)
     if program == "systemd-run" and not set(args) & INFO_ONLY and OWN_GROUND.search(words) \
-            and re.search(r"\b(restart|try-restart|reload-or-restart|stop|kill|rollback)\b", words) \
-            and "launcher/when-idle" not in words:
+            and OWN_GROUND_VERBS.search(words) and "launcher/when-idle" not in words:
         return REASON_DEFER
-    if program in ("reboot", "poweroff", "shutdown", "halt") and not set(args) & INFO_ONLY \
+    # «Остановить Nexus» and an update of the agent's own ground stop ohn-agent, and with it this
+    # terminal and the command itself halfway: Nexus would stay down, an update half done.
+    if program == "nexus-stop":
+        return REASON_NEXUS
+    if re.fullmatch(r"nexus[-_]update(\.py)?", program) or program in SCRIPTERS and "nexus_update.py" in words:
+        if OWN_GROUND.search(words) and "--dry-run" not in args and not set(args) & INFO_ONLY:
+            return REASON_DEFER
+    if program in ("reboot", "poweroff", "halt") and not set(args) & INFO_ONLY \
+            or program == "shutdown" and not set(args) & {"--help", "-c", "--show"} \
             or re.search(r"session-quit$|^logout$", program) \
             or program == "loginctl" and set(args) & {"terminate-session", "terminate-user", "kill-session",
                                                        "kill-user", "poweroff", "reboot"} \
@@ -789,6 +881,14 @@ def check_argv(argv: list[str], dirs: list[str], fed_to_rm=False):
             or program == "ip" and re.search(r"\blink set\b.*\bdown\b|\baddr(ess)? (flush|del)|"
                                              r"\broute (flush|del)", words):
         return REASON_NETWORK
+    if re.fullmatch(r"ip6?tables(-legacy|-nft)?", program) and set(args) & {"-F", "--flush", "-X", "-P", "--policy"} \
+            or re.fullmatch(r"ip6?tables(-legacy|-nft)?-restore", program) \
+            or program == "nft" and re.search(r"\b(flush|delete) (ruleset|table|chain)\b", words) \
+            or program == "ufw" and set(args[:1]) & {"enable", "reset", "default"}:
+        return REASON_NETWORK  # the VPN's routing and the tablet's way in live in the firewall rules
+    disk = disk_written(argv, dirs)
+    if disk:
+        return REASON_DISK.format(path=disk)
     changed = written(argv)
     if any(network_file(path) for word in changed for path in absolute(word, dirs)):
         return REASON_NETWORK
@@ -858,7 +958,8 @@ def decide(event: dict):
     tool_input = event.get("tool_input") or {}
     # The hook runs in the conversation's folder; a `cd` earlier in the command line moves it.
     dirs = [event.get("working_dir") or os.getcwd()]
-    keys = tool == "terminal" and KEY_FILES.search(tool_input.get("command") or "") \
+    command = tool_input.get("command") or ""
+    keys = tool == "terminal" and (KEY_FILES.search(command) or reads_nexus_environment(command)) \
         or tool in ("file_editor", "planning_file_editor") and KEY_FILES.search(str(tool_input.get("path") or ""))
     if tool == "terminal":
         # Text sent with is_input goes to the running program, and at a shell prompt it runs as a command.

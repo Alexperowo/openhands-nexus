@@ -63,10 +63,18 @@ class Watcher:
         self.episodes = {unit: Episode() for unit in CHECKS}
         self.restarts = {}
         self.failed = set()
+        self.states = {}  # what systemd showed in the last round
 
     def step(self):
         for unit, check in CHECKS.items():
-            self.look(unit, check, self.show(unit))
+            try:
+                self.states[unit] = self.show(unit)
+                self.look(unit, check, self.states[unit])
+            except (OSError, subprocess.SubprocessError) as error:
+                # systemd did not answer in time. The watcher stays: leaving would forget which service
+                # it has already restarted, and it would restart that one again and again.
+                self.states.pop(unit, None)
+                print(f"{unit}: {error!r}", flush=True)
 
     def look(self, unit, check, state):
         service = f"Nexus: служба «{check.name}»"
@@ -312,7 +320,7 @@ def main():
     rounds, models_were = 0, None
     while True:
         watcher.step()
-        models = show("ohn-models").get("ActiveState")
+        models = watcher.states.get("ohn-models", {}).get("ActiveState")
         if models == "active" and (rounds % CARD_ROUNDS == 0 or models_were != "active"):
             try:
                 cards.step()

@@ -3,6 +3,7 @@ import http.server
 import importlib
 import json
 import os
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -49,6 +50,28 @@ class WatcherTests(unittest.TestCase):
     def setUp(self):
         self.nexus = FakeNexus()
         self.nexus.run(30)
+
+    def test_systemd_not_answering_neither_ends_the_watch_nor_repeats_a_restart(self):
+        def stuck(unit):
+            self.nexus.restarted.append(unit)
+            raise subprocess.TimeoutExpired("systemctl", 120)
+
+        self.nexus.watcher.restart = stuck
+        self.nexus.answers[VOICE] = False
+        self.nexus.run(watch.SILENT_FOR + 2 * watch.INTERVAL)
+        self.assertEqual(self.nexus.restarted, ["ohn-voice"])
+        self.nexus.run(watch.SILENT_FOR + 2 * watch.INTERVAL)
+        self.assertEqual(self.nexus.restarted, ["ohn-voice"])
+        self.assertEqual(self.nexus.told, [("Nexus: служба «голос» не отвечает", True)])
+
+        def show(unit):
+            if unit == "ohn-models":
+                raise subprocess.TimeoutExpired("systemctl", 30)
+            return self.nexus.show(unit)
+
+        self.nexus.watcher.show = show
+        self.nexus.watcher.step()
+        self.assertEqual(set(self.nexus.watcher.states), set(watch.CHECKS) - {"ohn-models"})
 
     def test_hung_service_is_restarted_once_and_the_owner_hears_it_helped(self):
         self.nexus.answers[VOICE] = False

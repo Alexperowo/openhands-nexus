@@ -52,6 +52,29 @@ DANGEROUS = {
     # Detached by systemd, but the replaced shell still leaves the session manager.
     "systemd-run --user --collect --service-type=exec cinnamon --replace": guard.REASON_REPLACE,
     "kill -9 -1": guard.REASON_ALL,
+    "shutdown -h now": guard.REASON_SESSION,  # -h is halt here, not help
+    "sudo shutdown -r +5": guard.REASON_SESSION,
+    # «Остановить Nexus» and an update of the agent's own ground end this terminal halfway through.
+    "~/Agents/OpenHands-Nexus/launcher/nexus-stop": guard.REASON_NEXUS,
+    f"cd {GUARD.parent.parent} && ./launcher/nexus-stop": guard.REASON_NEXUS,
+    "~/Agents/OpenHands-Nexus/update/nexus-update canvas": guard.REASON_DEFER,
+    "~/Agents/OpenHands-Nexus/update/nexus-update rollback llama-swap": guard.REASON_DEFER,
+    "python3 ~/Agents/OpenHands-Nexus/update/nexus_update.py rollback canvas": guard.REASON_DEFER,
+    "systemd-run --user --collect ~/Agents/OpenHands-Nexus/update/nexus-update canvas 1.38.0": guard.REASON_DEFER,
+    "systemd-run --user --collect ~/Agents/OpenHands-Nexus/launcher/nexus-stop": guard.REASON_DEFER,
+    # What git ignores in the Nexus clone is the conversations, the certificate and the builds.
+    f"git -C {GUARD.parent.parent} clean -fdx": guard.REASON_RM,
+    f"cd {GUARD.parent.parent}/agent && git clean -ffdX": guard.REASON_RM,
+    "cat /proc/*/environ": guard.REASON_KEYS,
+    "ps eww -u user": guard.REASON_KEYS,
+    "ps auxe | grep KEY": guard.REASON_KEYS,
+    "sudo systemctl stop user@1000.service": guard.REASON_SESSION,
+    "sudo systemctl kill user-1000.slice": guard.REASON_SESSION,
+    "sudo iptables -F": guard.REASON_NETWORK,
+    "sudo iptables -P INPUT DROP": guard.REASON_NETWORK,
+    "sudo nft flush ruleset": guard.REASON_NETWORK,
+    "sudo ufw enable": guard.REASON_NETWORK,
+    "tr '\\0' '\\n' < /proc/$(pgrep -f agent-server | head -1)/environ": guard.REASON_KEYS,
     # Nexus keys stay out of the conversation, names or values.
     "sed -n 's/^OHN_SESSION_KEY=//p' ~/.config/openhands-nexus/session.env": guard.REASON_KEYS,
     "grep -E '^[A-Z_]+=' /home/user/Agents/Backups/ohn-keys-1024/session.env | cut -d= -f1": guard.REASON_KEYS,
@@ -190,6 +213,23 @@ ORDINARY = [
     "systemd-run --user --collect systemctl --user restart ohn-voice",
     "systemd-run --user --collect ~/Agents/OpenHands-Nexus/update/nexus-update rollback voice",
     "cinnamon --version",
+    "shutdown --help",
+    "shutdown -c",
+    "~/Agents/OpenHands-Nexus/update/nexus-update check --offline",
+    "~/Agents/OpenHands-Nexus/update/nexus-update canvas --dry-run",
+    "~/Agents/OpenHands-Nexus/update/nexus-update rollback caddy",
+    "systemd-run --user --collect ~/Agents/OpenHands-Nexus/launcher/when-idle "
+    "~/Agents/OpenHands-Nexus/update/nexus-update rollback canvas",
+    f"git -C {GUARD.parent.parent} clean -nfdx",  # a dry run
+    f"git -C {GUARD.parent.parent} status --short",
+    "cd /tmp && git clean -fdx",
+    "cat /proc/self/environ",
+    "ps -e", "ps -ef", "ps aux", "ps -p 1 -o exe", "ps -eo pid,etime,cmd",
+    "sudo iptables -L -n", "sudo iptables -A INPUT -p tcp --dport 8443 -j ACCEPT", "sudo nft list ruleset",
+    "sudo ufw status", "sudo ufw allow 8443/tcp",
+    "rsync -a --delete /tmp/src/ /tmp/out/", "rsync -a /tmp/src/ ~/", "rsync -an --delete /tmp/src/ ~/",
+    "cat /proc/999999/environ",  # not a Nexus process
+    "sudo dd if=/tmp/image.iso of=/dev/null",
     "command -v nm-applet",
     "kill 999999",
     "kill -0 999999",
@@ -341,6 +381,44 @@ class GuardRules(unittest.TestCase):
                 self.assertEqual(decide(f"rm -rf {Path(path).parent}"), guard.REASON_RM)
         self.assertEqual(decide("rm -rf *", working_dir=HOME), guard.REASON_RM)
         self.assertEqual(decide("rm -rf .*", working_dir=HOME), guard.REASON_RM)
+
+    def test_mounted_disks_are_not_overwritten_as_devices(self):
+        devices = sorted(guard.mounted_devices())
+        if not devices:
+            self.skipTest("no mounted disk devices here")
+        for device in devices:
+            for command in (f"sudo dd if=/tmp/image.iso of={device} bs=4M", f"sudo mkfs.ext4 {device}",
+                            f"cat /tmp/image.iso > {device}", f"sudo wipefs -a {device}",
+                            f"echo x | sudo tee {device}", f"sudo cp /tmp/image.iso {device}"):
+                with self.subTest(command=command):
+                    self.assertTrue(matches(decide(command) or "", guard.REASON_DISK), decide(command))
+            for command in (f"lsblk {device}", f"sudo smartctl -a {device}", f"sudo dd if={device} of=/tmp/copy.img count=1",
+                            f"udisksctl unmount -b {device}", f"df -h {device}"):
+                with self.subTest(command=command):
+                    self.assertIsNone(decide(command))
+        self.assertIsNone(decide("sudo dd if=/tmp/image.iso of=/dev/sdzz9 bs=4M"))  # not mounted: a flash drive made ready
+
+    def test_rsync_does_not_mirror_over_a_folder_to_keep(self):
+        home = guard.HOME
+        for target in (home, home + "/", "/", f"{home}/Agents/", f"{guard.REPO}/", f"{home}/.config"):
+            self.assertEqual(decide(f"rsync -a --delete /tmp/empty/ {target}"),
+                             guard.REASON_MIRROR.format(path=target.rstrip("/") or "/"), target)
+        self.assertEqual(decide("rsync -a --delete-after /tmp/empty/ .", working_dir=home),
+                         guard.REASON_MIRROR.format(path=home))
+        self.assertIsNone(decide(f"rsync -a --delete /tmp/site/ {home}/Agents/site-copy/"))
+
+    def test_environment_of_a_nexus_process_is_not_read(self):
+        def process(pid, argv, unit):
+            return SimpleNamespace(pid=pid, comm=argv[0], argv=argv, line=" ".join(argv), pgrp=pid, unit=unit,
+                                   cgroup="/user.slice/user-1000.slice/user@1000.service/app.slice/" + unit)
+        table = (process("4545", ["/opt/uv/bin/python", "/opt/uv/bin/agent-server", "--port", "18010"], "ohn-agent.service"),
+                 process("4546", ["sleep", "10"], "ohn-agent.service"),  # run.sh's own child carries the same keys
+                 process("4547", ["sleep", "10"], "app-org.gnome.Terminal.scope"))
+        with mock.patch.object(guard, "processes", return_value=table):
+            self.assertEqual(decide("tr '\\0' '\\n' < /proc/4545/environ | grep KEY"), guard.REASON_KEYS)
+            self.assertEqual(decide("cat /proc/4546/environ"), guard.REASON_KEYS)
+            self.assertIsNone(decide("cat /proc/4547/environ"))
+            self.assertIsNone(decide("cat /proc/cpuinfo; cat /proc/self/environ"))
 
     def test_models_named_through_the_installer_links_are_protected_where_they_lead(self):
         import tempfile

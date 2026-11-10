@@ -29,7 +29,6 @@ StartLimitBurst=3
 
 [Service]
 Type=exec
-EnvironmentFile=$CONFIG_DIR/session.env
 ExecStart=/usr/bin/bash $WORK/launcher/run.sh $1
 Restart=on-failure
 RestartSec=5
@@ -38,12 +37,14 @@ ${3:-}
 EOF
 }
 mkdir -p "$UNIT_DIR"
+# Only the agent and the gateway work with the keys; the other services never see them.
+KEYS="EnvironmentFile=$CONFIG_DIR/session.env"
 unit models "модели (llama-swap)"
 # Loading a model pushes idle services into swap; paging the voice models back in made the
 # first dictation take 12 s. The voice service and the agent are small, keep them in RAM.
 unit voice "распознавание и синтез речи" "MemorySwapMax=0"
-unit agent "агент OpenHands" "MemorySwapMax=0"
-unit gateway "шлюз HTTPS для планшета"
+unit agent "агент OpenHands" "MemorySwapMax=0"$'\n'"$KEYS"
+unit gateway "шлюз HTTPS для планшета" "$KEYS"
 unit watch "смотритель служб"
 cat > "$UNIT_DIR/ohn.target" <<EOF
 [Unit]

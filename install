@@ -144,7 +144,7 @@ do_engine() {
   cmake -S "$BACKEND" -B "$BACKEND/build" -DGGML_CUDA=ON -DGGML_CUDA_FA_ALL_QUANTS=ON -DGGML_NATIVE=ON \
     -DCMAKE_CUDA_ARCHITECTURES="${archs:-75;120}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON \
     -DCMAKE_CUDA_COMPILER="/usr/local/cuda-$CUDA/bin/nvcc"
-  # Четыре потока, как у nexus-update: сборка CUDA-ядер съедает по несколько ГБ памяти на поток.
+  # Четыре потока: сборка CUDA-ядер съедает по несколько ГБ памяти на поток, а памяти нового ПК мы не знаем.
   cmake --build "$BACKEND/build" --target llama-server -j 4
   ln -sfn "$BACKEND/build/bin/llama-server" "$WORK/models/llama-server"
 }

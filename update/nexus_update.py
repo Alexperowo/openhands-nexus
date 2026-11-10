@@ -31,6 +31,7 @@ PACKAGE = "@openhands/agent-canvas"
 # Our page wraps Canvas components: React, the router and i18n must be the one copy Canvas also uses,
 # or its hooks find no context and the page stays blank.
 SHARED = ("react", "react-dom", "react-router", "i18next", "react-i18next", "lucide-react")
+COMPONENTS = ("canvas", "ik-llama", "caddy", "llama-swap", "voice")
 UNKNOWN = "unknown (неизвестно)"
 GITHUB = "https://api.github.com/repos"
 FORBIDDEN = {".env", "session.env", "secrets.json", "settings.json"}
@@ -90,6 +91,7 @@ class Updater:
                     "--sandbox предназначен только для canvas и его отката")
             self.root, self.state, self.backups = root, root / "update-state", root / "backups"
         self.log = None
+        self.found = {}  # service → its state before this run first stopped or restarted it
 
     def emit(self, message):
         # A closed terminal or pipe must not stop an update halfway or skip its rollback: the journal goes on.
@@ -296,25 +298,44 @@ class Updater:
             for row in rows:
                 self.emit(" | ".join(row))
         self.emit("agent-server/automation следуют canvas; модель и GGUF не проверяются.")
+        for kind in COMPONENTS:
+            if self.pending(kind).is_file():
+                self.emit(f"ВНИМАНИЕ: обновление {kind} оборвалось на полпути. Вернуть прежнее состояние: "
+                          f"nexus-update rollback {kind}")
 
     def snapshot(self, kind, items):
         self.backups.mkdir(parents=True, exist_ok=True)
         backup = Path(tempfile.mkdtemp(prefix=time.strftime(f"update-%Y%m%d-%H%M%S-{kind}-"), dir=self.backups))
         self.emit(f"Резервная копия: {backup}")
         manifest = {"owner": "nexus-update-v1", "component": kind, "root": str(self.root), "items": []}
-        for source, name in items:
-            source = Path(source)
-            require(not source.is_symlink(), f"Недопустимая ссылка: {source}")
-            exists = source.exists()
-            manifest["items"].append({"path": str(source), "name": name, "exists": exists, "directory": source.is_dir()})
-            if exists:
-                if source.is_dir():
-                    shutil.copytree(source, backup / name, symlinks=True,
-                                    ignore=shutil.ignore_patterns(*FORBIDDEN, ".env.*", "*.bak*"))
-                else:
-                    shutil.copy2(source, backup / name)
-        atomic_json(backup / "manifest.json", manifest)
+        try:
+            for source, name in items:
+                source = Path(source)
+                require(not source.is_symlink(), f"Недопустимая ссылка: {source}")
+                exists = source.exists()
+                manifest["items"].append({"path": str(source), "name": name, "exists": exists, "directory": source.is_dir()})
+                if exists:
+                    if source.is_dir():
+                        shutil.copytree(source, backup / name, symlinks=True,
+                                        ignore=shutil.ignore_patterns(*FORBIDDEN, ".env.*", "*.bak*"))
+                    else:
+                        shutil.copy2(source, backup / name)
+            atomic_json(backup / "manifest.json", manifest)
+        except BaseException:
+            shutil.rmtree(backup, ignore_errors=True)  # half a copy (a full disk) restores nothing
+            raise
         return backup
+
+    def pending(self, kind):
+        return self.state / f"update-{kind}.pending.json"
+
+    def begin(self, kind, backup):
+        """From here to `finish` the component may be half changed. The mark outlives a kill and a power
+        cut: `rollback` then returns the files from this copy, and a new update waits for that."""
+        atomic_json(self.pending(kind), {"backup": str(backup)})
+
+    def finish(self, kind):
+        self.pending(kind).unlink(missing_ok=True)
 
     def remember(self, kind, backup):
         path = self.state / f"update-{kind}.json"
@@ -330,10 +351,12 @@ class Updater:
             shutil.rmtree(backup, ignore_errors=True)
 
     def previous(self, kind):
-        path = self.state / f"update-{kind}.json"
+        """The copy `rollback` restores: of an update that stopped halfway, else of the last finished one."""
+        path = self.pending(kind) if self.pending(kind).is_file() else self.state / f"update-{kind}.json"
         require(path.is_file(), f"Нет сохранённого обновления {kind} для отката")
         backup = Path(read_json(path)["backup"]).resolve()
         require(backup.parent == self.backups.resolve() and backup.name.startswith("update-"), "Некорректная копия")
+        require((backup / "manifest.json").is_file(), f"Копии {backup} нет; запись о ней: {path}")
         manifest = read_json(backup / "manifest.json")
         require(manifest["owner"] == "nexus-update-v1" and manifest["component"] == kind and
                 manifest["root"] == str(self.root), "Резервная копия относится к другой установке")
@@ -360,6 +383,7 @@ class Updater:
                 path.unlink(missing_ok=True)
 
     def transaction(self, kind, backup, action, restore):
+        self.begin(kind, backup)
         try:
             action()
             self.remember(kind, backup)
@@ -368,11 +392,34 @@ class Updater:
             try:
                 restore(backup)
                 self.emit("Автоматический откат завершён; обновление НЕ выполнено.")
+                self.finish(kind)
                 self.discard(backup)
             except BaseException as error:
-                self.emit(f"ОШИБКА ОТКАТА: {error}. Копия: {backup}")
+                self.emit(f"ОШИБКА ОТКАТА: {error}. Копия цела: {backup}. Повторить откат: nexus-update rollback {kind}")
             raise
+        self.finish(kind)
         self.emit(f"Обновление {kind} завершено.")
+
+    def unit_state(self, unit):
+        return self.run(["systemctl", "--user", "show", "--property=ActiveState", "--value", unit],
+                        capture=True, timeout=10)
+
+    def note(self, unit):
+        """Called before a service is first stopped or restarted: `settle` needs the state it was found in."""
+        if unit not in self.found:
+            self.found[unit] = self.unit_state(unit)
+
+    def settle(self):
+        """An update starts services only for its checks: what it found stopped does not stay running
+        (the GPUs and the PC may be busy with something else; Nexus starts by its shortcut)."""
+        for unit, state in self.found.items():
+            if state in {"inactive", "failed"}:
+                self.emit(f"{unit} до обновления не работал: останавливаю снова.")
+                try:
+                    self.run(["systemctl", "--user", "stop", unit], timeout=120)
+                except UpdateError as error:
+                    self.emit(f"Не удалось остановить {unit}: {error}")
+        self.found = {}
 
     def restart(self, *units):
         if self.args.sandbox:
@@ -380,6 +427,7 @@ class Updater:
             return
         for unit in units:
             require(unit in {"ohn-agent", "ohn-gateway", "ohn-voice", "ohn-models"}, "Недопустимая служба")
+            self.note(unit)
             # Quick update + rollback restarts can trip systemd's start limit.
             try:
                 self.run(["systemctl", "--user", "reset-failed", unit], timeout=30)
@@ -492,6 +540,7 @@ class Updater:
         self.canvas_paths()
         if not self.args.sandbox:
             # The running server holds the automation database open.
+            self.note("ohn-agent")
             self.run(["systemctl", "--user", "stop", "ohn-agent"], timeout=120)
         self.restore_files(backup)
         self.installed_canvas()
@@ -550,8 +599,8 @@ class Updater:
         # Stop the writer before the snapshot, not only before restoring it.
         was_active = False
         if not self.args.sandbox:
-            state = self.run(["systemctl", "--user", "show", "--property=ActiveState", "--value", "ohn-agent"],
-                             capture=True, timeout=10)
+            self.note("ohn-agent")
+            state = self.found["ohn-agent"]
             require(state in {"active", "inactive", "failed"}, "ohn-agent меняет состояние; повторите обновление позже")
             was_active = state == "active"
             self.run(["systemctl", "--user", "stop", "ohn-agent"], timeout=120)
@@ -567,11 +616,15 @@ class Updater:
             directory = self.root / name
             require(directory.is_dir() and not directory.is_symlink() and directory.resolve().is_relative_to(self.root),
                     f"Нужна независимая рабочая копия {name}, без ссылки на живое дерево")
+        # Stopping ohn-agent kills everything started from the agent's terminal, this update included.
+        require(self.args.sandbox or "/ohn-agent.service" not in Path("/proc/self/cgroup").read_text(),
+                "Canvas обновляется с остановкой агента, а команда запущена из его терминала и оборвётся на полпути. "
+                f"Запустите её отдельно: systemd-run --user --collect {self.root}/launcher/when-idle "
+                f"{self.root}/update/nexus-update {self.args.command} {self.args.target or ''}".rstrip())
 
     def models_idle(self, bench=False):
-        state = self.run(["systemctl", "--user", "show", "--property=ActiveState", "--value", "ohn-models"],
-                         capture=True, timeout=10)
-        require(state in {"inactive", "failed"}, "ohn-models активен или его состояние неизвестно; отказ")
+        require(self.unit_state("ohn-models") in {"inactive", "failed"},
+                "ohn-models активен или его состояние неизвестно; отказ")
         sockets = self.run(["ss", "-H", "-lntu", "( sport = :18030 )"], capture=True, timeout=10)
         require(not sockets, "Порт 18030 занят; отказ")
         processes = self.run(["nvidia-smi", "--query-compute-apps=pid,process_name", "--format=csv,noheader,nounits"],
@@ -638,7 +691,7 @@ class Updater:
         stage = self.backend / ("build.next-" + uuid.uuid4().hex)
         previous = self.backend / "build.prev"
         retired = self.backend / ("build.retired-" + uuid.uuid4().hex)
-        switched = False
+        self.begin("ik-llama", backup)
         try:
             previous_commit.write_text(old + "\n")
             self.run(["git", "fetch", "--no-tags", "origin", (self.args.target or "main").removeprefix("origin/")], cwd=self.backend)
@@ -656,12 +709,7 @@ class Updater:
                 require(not any(previous.rglob("*.gguf")), "GGUF найден в build.prev; удаление запрещено")
                 previous.rename(retired)
             (self.backend / "build").rename(previous)
-            try:
-                stage.rename(self.backend / "build")
-            except BaseException:
-                previous.rename(self.backend / "build")
-                raise
-            switched = True
+            stage.rename(self.backend / "build")
             self.run([self.backend / "build/bin/llama-server", "--version"], timeout=30,
                      env={"NCCL_SOCKET_IFNAME": "lo"})
             if bench:
@@ -671,21 +719,39 @@ class Updater:
             self.remember("ik-llama", backup)
         except BaseException:
             self.emit("Ошибка ik_llama; возвращаю исходный commit и build.")
-            if switched:
-                shutil.rmtree(self.backend / "build")
-                previous.rename(self.backend / "build")
-            if retired.exists():
-                retired.rename(previous)
-            self.run(["git", "checkout", "--detach", old], cwd=self.backend)
-            self.restore_files(backup)
-            self.discard(backup)
+            self.ik_llama_undo(backup)
             raise
-        finally:
-            if stage.exists():
-                shutil.rmtree(stage)
+        self.finish("ik-llama")
         if retired.exists():
             shutil.rmtree(retired)
         self.emit("ik_llama собран и заменён; build.prev сохранён. Модель НЕ запускалась.")
+
+    def ik_llama_undo(self, backup):
+        """Back to the commit and the build an unfinished update started from. Where it stopped is read
+        from the disk, so this also works after a kill or a power cut (`rollback`)."""
+        metadata = read_json(backup / "ik.json")
+        build, previous = self.backend / "build", self.backend / "build.prev"
+
+        def original(directory):
+            binary = directory / "bin/llama-server"
+            return binary.is_file() and digest(binary) == metadata["binary_sha256"]
+
+        for stage in self.backend.glob("build.next-*"):
+            shutil.rmtree(stage)
+        if not original(build):
+            # The swap began: build.prev is the build to return, build (if there) the new, unchecked one.
+            require(original(previous), "Прежний llama-server не найден ни в build, ни в build.prev")
+            if build.exists():
+                require(not any(build.rglob("*.gguf")), "GGUF найден в build; удаление запрещено")
+                shutil.rmtree(build)
+            previous.rename(build)
+        retired = sorted(self.backend.glob("build.retired-*"))
+        if retired and not previous.exists():
+            retired[0].rename(previous)
+        self.run(["git", "checkout", "--detach", metadata["commit"]], cwd=self.backend)
+        self.restore_files(backup)
+        self.finish("ik-llama")
+        self.discard(backup)
 
     def caddy_environment(self):
         lan = os.environ.get("OHN_LAN_IP")
@@ -772,8 +838,7 @@ class Updater:
             candidate.unlink(missing_ok=True)
 
     def models_active(self):
-        return self.run(["systemctl", "--user", "show", "--property=ActiveState", "--value", "ohn-models"],
-                        capture=True, timeout=10) == "active"
+        return self.unit_state("ohn-models") == "active"
 
     def models_health(self):
         if self.args.sandbox:
@@ -868,7 +933,12 @@ class Updater:
     def rollback(self):
         kind = self.args.target
         backup = self.previous(kind)
-        if kind == "canvas":
+        if self.pending(kind).is_file():
+            self.emit(f"Обновление {kind} оборвалось на полпути; возвращаю состояние до него.")
+        if kind == "ik-llama" and self.pending(kind).is_file():
+            self.models_idle()
+            self.ik_llama_undo(backup)
+        elif kind == "canvas":
             self.canvas_restore(backup)
             self.canvas_smoke()
         elif kind == "caddy":
@@ -897,7 +967,10 @@ class Updater:
             displaced.rename(previous)
             self.run([current / "bin/llama-server", "--version"], timeout=30, env={"NCCL_SOCKET_IFNAME": "lo"})
             self.backend.with_name(self.backend.name + ".prev-commit").write_text(displaced_commit + "\n")
-        (self.state / f"update-{kind}.json").unlink()
+        # Spent: the mark of the unfinished update, and the record of a finished one if it names this copy.
+        for record in (self.pending(kind), self.state / f"update-{kind}.json"):
+            if record.is_file() and Path(read_json(record)["backup"]).resolve() == backup:
+                record.unlink()
         self.discard(backup)
         self.emit(f"Откат {kind} завершён.")
 
@@ -910,7 +983,7 @@ class Updater:
             "caddy": "GitHub linux_amd64 + SHA-256 → validate текущего Caddyfile с окружением launcher (ключ-заглушка) → caddy.prev/swap → restart ohn-gateway → HTTPS health. При ошибке восстановление/restart/health.",
             "llama-swap": "GitHub linux_amd64 + SHA-256 → --version → llama-swap.prev/swap → restart ohn-models и /health, только если он уже запущен. При ошибке восстановление.",
             "voice": "Проверка torch/torchaudio <=2.5.1 → копия uv.lock → uv lock --upgrade → uv sync --frozen → restart ohn-voice → health, TTS и STT. При ошибке старый lock/sync/restart/smoke.",
-            "rollback": "Восстановить последнее сохранённое состояние выбранного компонента; для ik_llama сначала проверить занятость. Модели не запускать.",
+            "rollback": "Вернуть состояние до оборванного обновления компонента, а если такого нет — до последнего удачного; для ik_llama сначала проверить занятость. Модели не запускать.",
         }
         self.emit(f"Сухой запуск: {command} {self.args.target or ''}; дерево {self.root}")
         self.emit(plans[command])
@@ -923,15 +996,15 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(prog="nexus-update", add_help=False,
                                      description="Обновление движков Nexus; по умолчанию только проверка.")
     parser.add_argument("-h", "--help", action="help", help="Показать справку")
-    parser.add_argument("command", nargs="?", default="check", choices=["check", "canvas", "ik-llama", "caddy", "llama-swap", "voice", "rollback"])
+    parser.add_argument("command", nargs="?", default="check", choices=["check", *COMPONENTS, "rollback"])
     parser.add_argument("target", nargs="?", help="Версия/commit либо компонент для rollback")
     parser.add_argument("--dry-run", action="store_true", help="Показать план без изменений, включая журнал")
     parser.add_argument("--offline", action="store_true", help="check без сетевых запросов")
     parser.add_argument("--bench", metavar="MODEL.gguf", help="Явно разрешённое чтение модели для короткого benchmark ik_llama")
     parser.add_argument("--sandbox", metavar="DIR", help="Только canvas: независимая копия /tmp/nexus-update-test.*, без служб/API")
     args = parser.parse_args(argv)
-    if args.command == "rollback" and args.target not in {"canvas", "ik-llama", "caddy", "llama-swap", "voice"}:
-        parser.error("rollback требует canvas|ik-llama|caddy|llama-swap|voice")
+    if args.command == "rollback" and args.target not in COMPONENTS:
+        parser.error("rollback требует " + "|".join(COMPONENTS))
     if args.command in {"check", "voice"} and args.target:
         parser.error("Эта команда не принимает версию")
     if args.offline and args.command != "check":
@@ -960,12 +1033,19 @@ def main(argv=None):
                         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     except BlockingIOError:
                         raise UpdateError("Другое обновление уже выполняется") from None
-                command = updater.args.command.replace("-", "_")
-                updater.emit("Nexus update: " + updater.args.command)
-                getattr(updater, command)()
+                command = updater.args.command
+                updater.emit("Nexus update: " + command)
+                require(command in {"check", "rollback"} or not updater.pending(command).is_file(),
+                        f"Прошлое обновление {command} оборвалось на полпути. Сначала верните прежнее состояние: "
+                        f"nexus-update rollback {command}")
+                try:
+                    getattr(updater, command.replace("-", "_"))()
+                finally:
+                    updater.settle()
         updater.log = None
         return 0
-    except (UpdateError, OSError, ValueError, KeyError, urllib.error.URLError, subprocess.SubprocessError) as error:
+    except (UpdateError, OSError, ValueError, KeyError, EOFError, urllib.error.URLError, subprocess.SubprocessError,
+            tarfile.TarError, wave.Error) as error:
         # API response bodies and settings never appear in exception text.
         if updater:
             updater.log = None
@@ -976,10 +1056,24 @@ def main(argv=None):
         return 1
 
 
-if __name__ == "__main__":
-    def interrupted(signum, frame):
-        raise UpdateError("Выполнение прервано; требуется откат активной операции")
+def unheard(signum, frame):
+    """A handler, not SIG_IGN: the commands the update starts keep their own, default reactions."""
 
+
+def interrupted(signum, frame):
+    # The first Ctrl+C or kill stops the update and starts its rollback; a second one must not stop the rollback.
+    signal.signal(signal.SIGTERM, unheard)
+    signal.signal(signal.SIGINT, unheard)
+    raise UpdateError("Выполнение прервано")
+
+
+def handle_signals():
     signal.signal(signal.SIGTERM, interrupted)
     signal.signal(signal.SIGINT, interrupted)
+    # A closed terminal stops nothing: the update goes on into the journal (see emit).
+    signal.signal(signal.SIGHUP, unheard)
+
+
+if __name__ == "__main__":
+    handle_signals()
     sys.exit(main())

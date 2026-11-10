@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One Nexus service in the foreground for its ohn-*.service user unit.
-# Logs: journalctl --user -u ohn-<name>. The key comes from the unit's EnvironmentFile.
+# Logs: journalctl --user -u ohn-<name>. The agent and the gateway get the keys from their unit's
+# EnvironmentFile (session.env) and pass on only what the program they start needs.
 set -euo pipefail
 WORK=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 export PATH="$HOME/.local/bin:$PATH"
@@ -30,6 +31,9 @@ case "${1:-}" in
       OH_CANVAS_SAFE_AUTOMATION_PORT=18011 OH_CANVAS_SAFE_VITE_PORT=3011 \
       OH_CANVAS_SAFE_STATE_DIR="$PWD/state/agent-canvas" OH_PERSISTENCE_DIR="$PWD/state" \
       LOCAL_BACKEND_API_KEY="$OHN_SESSION_KEY" OH_SECRET_KEY="$OHN_SECRET_KEY"
+    # Canvas knows the keys by those names. Under ours they would only travel on into the agent's
+    # terminal: the SDK keeps OH_SECRET_KEY out of it, but knows nothing about OHN_SECRET_KEY.
+    unset OHN_SESSION_KEY OHN_SECRET_KEY
     # Canvas passes its environment on to agent-server: an SDK fix it loads at startup.
     export PYTHONPATH="$PWD/sdk-patch${PYTHONPATH:+:$PYTHONPATH}"
     # The agent's terminal gets the desktop commands (screen/); Holo4 and the Qwen-based models
@@ -61,6 +65,7 @@ case "${1:-}" in
     ;;
   gateway)
     : "${OHN_SESSION_KEY:?missing in session.env}"
+    unset OHN_SECRET_KEY  # the agent's alone
     D="$WORK/gateway"
     LAN_IP=${OHN_LAN_IP:-$(lan_ip || true)}
     [ -n "$LAN_IP" ] || { echo "no private LAN address; set OHN_LAN_IP in session.env" >&2; exit 1; }
