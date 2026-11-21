@@ -7,6 +7,21 @@ import { fileURLToPath } from "node:url";
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 
+function canvasPwaIcons(): Plugin {
+  return {
+    name: "nexus-pwa-icons",
+    apply: "build",
+    generateBundle() {
+      const { icons } = JSON.parse(fs.readFileSync(path.join(directory, "public/manifest.webmanifest"), "utf8"));
+      const canvas = path.join(directory, "node_modules/@openhands/agent-canvas/dist");
+      for (const icon of icons) {
+        const fileName = path.basename(icon.src);
+        this.emitFile({ type: "asset", fileName, source: fs.readFileSync(path.join(canvas, fileName)) });
+      }
+    },
+  };
+}
+
 // Canvas nests a <main> files panel inside the host's main. HTML forbids even
 // role=presentation on <main>. Adapt this one tag at build time, keeping React
 // ownership and all panel behavior. Fail loudly if the pinned markup changes.
@@ -157,13 +172,15 @@ export default defineConfig(({ command, mode }) => {
   return {
     // Vite 6 treats envDir:false as the project root; use an explicitly empty directory.
     envDir: path.join(directory, "dev/no-env"),
-    plugins: [canvasAdapters(mode === "fixture-upstream"), canvasFilesSemantics(), canvasEnglishOnly(), noRemoteCss(), react()],
+    plugins: [canvasAdapters(mode === "fixture-upstream"), canvasFilesSemantics(), canvasEnglishOnly(), canvasPwaIcons(), noRemoteCss(), react()],
     resolve: {
       // Private Canvas contexts whose providers the published build drops;
       // pinned-version compatibility workaround (test-providers.mjs guards it).
       alias: [
         { find: /.*context\/navigation-context(\.js)?$/, replacement: path.resolve(directory, "src/navigation-context.tsx") },
         { find: /^.*\bsidebar-mobile-nav-context(\.js)?$/, replacement: path.resolve(directory, "src/sidebar-mobile-nav-context.tsx") },
+        // Canvas bundles its toast store separately. Its emitters and the host renderer share one copy.
+        { find: /^(?:.*\/)?node_modules\/react-hot-toast\/dist\/index\.js$/, replacement: "react-hot-toast" },
         // No version check against the npm registry (test-providers.mjs guards the exports).
         { find: /^.*\bapi\/agent-canvas-updates(\.js)?$/, replacement: path.resolve(directory, "src/no-update-check.ts") },
       ],

@@ -9,6 +9,8 @@ import {
   SecretsSettings,
   Sidebar,
 } from "@openhands/agent-canvas";
+import { Toaster } from "react-hot-toast";
+import { TOAST_OPTIONS } from "../node_modules/@openhands/agent-canvas/dist/utils/custom-toast-handlers.js";
 import { NavigationProvider } from "./navigation-context";
 import { SidebarMobileNavProvider } from "./sidebar-mobile-nav-context";
 import { audioService, useAudioStatus } from "./audio-service";
@@ -205,6 +207,7 @@ export default function App() {
       <NavigationProvider value={navigation}>
         <SidebarMobileNavProvider>
           <div className="app" ref={shell} data-testid="nexus-shell-root" onClickCapture={newConversationClick}>
+            <Toaster toastOptions={TOAST_OPTIONS} />
             <Sidebar />
             <div className="app-main" ref={main} tabIndex={-1} role={currentPath.startsWith("/settings") ? undefined : "main"}
               aria-label={currentPath.startsWith("/settings") ? undefined : "Основная область"} data-nexus-connection={connection}>

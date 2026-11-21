@@ -12,9 +12,8 @@ import { GOAL_ROUNDS, deliverGoal, goalAttempt, goalObjective } from "./goal-req
  * the judge instead of the agent's own word.
  *
  * Delivery: each send has its own attempt id, and a lost answer repeats the same attempt, which the
- * server starts once (agent/sdk-patch/nexus_goal.py). A refusal sends the text the usual way, but
- * only into the conversation it was written in. Leaving the page drops the repeats; what arrived
- * is in that conversation's feed.
+ * server starts once (agent/sdk-patch/nexus_goal.py). Repeats stay bound to the original conversation.
+ * A refusal falls back to the usual send while that conversation is still open.
  */
 export function useGoalInterceptor(conversationId: string | null, next: (text: string) => void) {
   const canvas = useCanvasGoalInterceptor(conversationId, next);

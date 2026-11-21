@@ -11,18 +11,19 @@ const history = Array.from({length: 8}, (_, i) => message(`history-${i}`, i % 2 
 export async function startFixture({ root, port = 0 } = {}) {
   let sequence = history.length - 1, runCount = 0, snapshots = 0;
   let events = history.map((event, seq) => ({...event, seq})), status = "idle", offline = false, wsOffline = false, timers = [], model = "ready";
+  let transcriptionAvailable = true;
   const requests = [], sockets = new Set();
   const conversation = (id = "replay") => ({ id, title: id === "replay" ? "Проверка компьютера" : "Вторая беседа", created_at: timestamp, updated_at: timestamp, execution_status: status, workspace: {working_dir: "/tmp"}, agent: {kind: "Agent", llm: {model: "fixture"}}, stats: {usage_to_metrics: {}}, sub_conversation_ids: [], available_models: [], sandbox_status: "RUNNING" });
   const send = (frame) => { for (const socket of sockets) if (socket.readyState === 1) socket.send(JSON.stringify(frame)); };
   const durable = event => { event = {...event, seq: ++sequence}; events.push(event); send({type: "durable", seq: event.seq, event}); };
   const statusEvent = () => ({id: `status-${sequence + 1}`, kind: "ConversationStateUpdateEvent", source: "environment", timestamp, key: "execution_status", value: status});
   const schedule = (delay, run) => timers.push(setTimeout(run, delay));
-  const run = () => {
+  const run = (question = "Проверь звук и сеть. Объясни, что проверяешь, и дай подробный результат.") => {
     timers.forEach(clearTimeout); timers = []; runCount++;
     const reply = runCount === 1 ? "reply" : `reply-${runCount}`;
     const step = runCount === 1 ? "sound-check" : `sound-check-${runCount}`;
     status = "running"; durable(statusEvent());
-    durable(message(`question-${runCount}`, "user", "Проверь звук и сеть. Объясни, что проверяешь, и дай подробный результат."));
+    durable(message(`question-${runCount}`, "user", question));
     schedule(100, () => durable({id: step, kind: "ActionEvent", source: "agent", timestamp,
       tool_name: "terminal", tool_call_id: "call-sound", llm_response_id: "fixture-response", thought: [{type: "text", text: "Проверяю звук."}],
       action: {kind: "TerminalAction", command: "pactl info", is_input: false}}));
@@ -44,25 +45,40 @@ export async function startFixture({ root, port = 0 } = {}) {
     if (p === "/__fixture/reset") {
       timers.forEach(clearTimeout); timers = []; events = history.map((event, seq) => ({...event, seq}));
       sequence = history.length - 1; runCount = 0; status = "idle"; offline = false; wsOffline = false; model = "ready";
+      transcriptionAvailable = true;
       return json(res, {});
     }
     if (p === "/__fixture/start") { run(); return json(res, {}); }
     if (p === "/__fixture/connection") {
-      const kind = url.searchParams.get("kind"); offline = kind === "all"; wsOffline = kind !== "online";
+      const kind = url.searchParams.get("kind");
+      offline = kind === "all" || kind === "rest";
+      wsOffline = kind === "all" || kind === "socket";
       if (wsOffline) for (const socket of sockets) socket.close(1011, "Fixture disconnect");
       return json(res, {});
     }
     if (p === "/__fixture/log") return json(res, requests);
+    if (p === "/__fixture/transcription") {
+      transcriptionAvailable = url.searchParams.get("available") !== "false";
+      return json(res, {});
+    }
     // llama-swap's state of the one model: "starting" while a swap loads it.
     if (p === "/__fixture/model") { model = url.searchParams.get("state") || "ready"; return json(res, {}); }
     if (p.startsWith("/api") || p.startsWith("/llm") || p.startsWith("/v1")) {
-      requests.push({path: req.url, method: req.method});
+      const entry = {path: req.url, method: req.method};
+      requests.push(entry);
       if (offline) return json(res, {detail: "Fixture offline"}, 503);
       if (p === "/llm/running") return json(res, {running: [{model: "fixture", state: model}]});
       if (p === "/llm/model/fixture/health") return json(res, {status: status === "running" ? "no slot available" : "ok", slots_idle: status === "running" ? 0 : 1, slots_processing: status === "running" ? 1 : 0});
       if (p === "/api/settings") return json(res, {language: "ru", enable_sound_notifications: false, is_new_user: false, agent_settings: {llm: {model: "fixture", base_url: "http://127.0.0.1", api_key: "fixture-only"}, tools: []}, conversation_settings: {max_iterations: 100, confirmation_mode: false}, llm_api_key_set: true});
       if (p === "/api/settings/experimental") return json(res, []);
       if (p === "/api/settings/secrets") return json(res, {secrets: []});
+      if (p === "/api/conversations/replay/goal" && req.method === "POST") {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        entry.objective = JSON.parse(Buffer.concat(chunks).toString()).objective;
+        run(entry.objective);
+        return json(res, {});
+      }
       if (p.endsWith("/events/search")) return json(res, {items: [...events].reverse(), next_page_id: null});
       if (p.endsWith("/events/count")) return json(res, events.length);
       if (p.endsWith("/state")) return json(res, {execution_status: status, stats: {usage_to_metrics: {}}, agent: {llm: {model: "fixture"}}, workspace: {working_dir: "/tmp"}});
@@ -76,6 +92,10 @@ export async function startFixture({ root, port = 0 } = {}) {
       if (p === "/api/health" || p === "/health") return json(res, {status: "ok"});
       if (/profiles/.test(p)) return json(res, {profiles: [], active_agent_profile_id: null});
       if (/skills|secrets|models/.test(p)) return json(res, {items: [], models: [], skills: [], next_page_id: null});
+      if (p === "/v1/audio/transcriptions") {
+        req.resume();
+        return transcriptionAvailable ? json(res, {text: "связь"}) : json(res, {}, 503);
+      }
       if (p === "/v1/audio/speech") {
         const chunks = []; for await (const chunk of req) chunks.push(chunk);
         requests.at(-1).speech = JSON.parse(Buffer.concat(chunks).toString() || "{}").input;

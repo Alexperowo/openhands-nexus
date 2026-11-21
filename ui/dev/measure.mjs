@@ -10,12 +10,12 @@ export const chromeOptions = {
     "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
 };
 export const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-export async function openPage(browser, origin, {width = 564, height = 785, fontSize = 28, reduced = false, autoSpeak = false, motion = "system", stallSTT = false, initialPath = "/conversations/replay"} = {}) {
+export async function openPage(browser, origin, {width = 564, height = 785, fontSize = 28, reduced = false, autoSpeak = false, motion = "system", stallSTT = false, touch = false, initialPath = "/conversations/replay"} = {}) {
   // Fixture setup precedes page navigation; each viewport receives identical history.
   await fetch(origin + "/__fixture/reset", {method: "POST"});
   const context = await browser.createBrowserContext();
   const page = await context.newPage();
-  await page.setViewport({width, height});
+  await page.setViewport({width, height, hasTouch: touch});
   await page.emulateMediaFeatures([{name: "prefers-reduced-motion", value: reduced ? "reduce" : "no-preference"}]);
   const errors = [], remoteRequests = [];
   page.on("pageerror", error => errors.push(error.message));

@@ -59,6 +59,9 @@ export function useConversationSpeech(conversationId: string | null) {
     let session: SessionEvents | null = null;
     let socket: WebSocket | null = null;
     let failures = 0;
+    let socketError = "";
+    let restUnavailable = false;
+    let checking = false;
     let behind = 0;
     let model: ModelState = "unknown";
     let modelAt = 0;
@@ -97,7 +100,7 @@ export function useConversationSpeech(conversationId: string | null) {
       const status = activity.verifiedStatus(session!.status);
       screenAwake.set(status === "running" || status === "checking");
       setState(previous => mergeSpeechSnapshot(previous, {
-        status, error: "", ready: true, id: conversationId,
+        status, error: socketError || (restUnavailable ? CONNECTION_LOST : ""), ready: true, id: conversationId,
         activity: activity.snapshot(), model,
       }));
     };
@@ -131,7 +134,8 @@ export function useConversationSpeech(conversationId: string | null) {
       failures += 1;
       // One quick reconnect after a dropped socket is not worth a notice; a failed attempt is.
       if (error || failures > 1) {
-        setState(previous => mergeSpeechSnapshot(previous, { error: error ? errorMessage(error) : CONNECTION_LOST }));
+        socketError = error ? errorMessage(error) : CONNECTION_LOST;
+        setState(previous => mergeSpeechSnapshot(previous, { error: socketError }));
       }
       retryTimer = setTimeout(connect, Math.min(RETRY_FIRST * 2 ** (failures - 1), RETRY_MAX));
     };
@@ -164,7 +168,11 @@ export function useConversationSpeech(conversationId: string | null) {
         } catch {
           return;
         }
-        if (frame?.type === "sync") { synced = true; failures = 0; }
+        if (frame?.type === "sync") {
+          synced = true;
+          failures = 0;
+          socketError = "";
+        }
         receive(frame);
       };
       ws.onclose = () => {
@@ -173,28 +181,41 @@ export function useConversationSpeech(conversationId: string | null) {
         fail(synced ? null : new Error(CONNECTION_LOST));
       };
     };
-    // A socket can die silently (Wi-Fi drop without a close); the log length shows it fell behind.
+    // The same probe checks HTTP availability and a socket that silently stopped receiving events.
     const check = async () => {
-      checkTimer = setTimeout(check, CHECK_INTERVAL);
-      const ws = socket;
-      if (!session || !ws || ws.readyState !== WebSocket.OPEN) return;
-      let count: number;
+      if (checking || signal.aborted) return;
+      checking = true;
+      let delay = restUnavailable ? RECHECK_DELAY : CHECK_INTERVAL;
       try {
-        count = await requestJson<number>(`${path}/events/count`, { signal });
-      } catch {
-        return;
+        const ws = socket;
+        if (!session || !ws || ws.readyState !== WebSocket.OPEN) return;
+        let count: number;
+        try {
+          count = await requestJson<number>(`${path}/events/count`, { signal });
+        } catch {
+          if (signal.aborted || socket !== ws) return;
+          restUnavailable = true;
+          delay = RECHECK_DELAY;
+          publish();
+          return;
+        }
+        if (signal.aborted || socket !== ws) return;
+        if (restUnavailable) {
+          restUnavailable = false;
+          delay = CHECK_INTERVAL;
+          publish();
+        }
+        if (count - 1 <= session.lastSeq) { behind = 0; return; }
+        // Allow one check for an event in flight before reopening the socket.
+        if (++behind === 1) { delay = RECHECK_DELAY; return; }
+        behind = 0;
+        socket = null;
+        ws.close();
+        void connect();
+      } finally {
+        checking = false;
+        if (!signal.aborted) checkTimer = setTimeout(check, delay);
       }
-      if (socket !== ws || count - 1 <= session.lastSeq) { behind = 0; return; }
-      // Once may be an event still on its way; the second time the socket is replaced.
-      if (++behind === 1) {
-        clearTimeout(checkTimer);
-        checkTimer = setTimeout(check, RECHECK_DELAY);
-        return;
-      }
-      behind = 0;
-      socket = null;
-      ws.close();
-      void connect();
     };
     // A locked screen may freeze the page and drop the socket; on return it reconnects at once.
     const resume = () => {

@@ -59,6 +59,8 @@ class GatewayTests(unittest.TestCase):
         (root / "dist/assets").mkdir(parents=True)
         (root / "dist/index.html").write_text('<script src="/assets/index-AbC123.js"></script>')
         (root / "dist/assets/index-AbC123.js").write_text("console.log(1);")
+        (root / "dist/manifest.webmanifest").write_text('{"display":"standalone"}')
+        (root / "dist/android-chrome-192x192.png").write_bytes(b"icon fixture")
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             port = probe.getsockname()[1]
@@ -121,6 +123,11 @@ class GatewayTests(unittest.TestCase):
 
     def test_hashed_files_are_kept_for_good(self):
         self.assertEqual(self.get("/assets/index-AbC123.js")[:2], (200, "public, max-age=31536000, immutable"))
+
+    def test_installation_files_have_their_own_responses(self):
+        self.assertEqual(self.get("/manifest.webmanifest"), (200, "no-cache", "application/manifest+json"))
+        self.assertEqual(self.get("/android-chrome-192x192.png"), (200, "no-cache", "image/png"))
+        self.assertEqual(self.get("/android-chrome-512x512.png")[0], 404)
 
     def test_missing_file_is_a_plain_404_not_the_page_and_not_cached(self):
         # An old page asking for a removed file, or a file not yet written during a rebuild.

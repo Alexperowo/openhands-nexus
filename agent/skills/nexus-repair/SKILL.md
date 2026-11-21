@@ -46,8 +46,8 @@ moves the model to the card that still works. Read its log before repeating what
   `ohn.target`) needs the owner's yes; their own request to restart is that yes. Hand it to the helper that
   runs it once your reply is sent and no conversation is at work:
   `systemd-run --user --collect ~/Agents/OpenHands-Nexus/launcher/when-idle <command>`
-  (for example `... when-idle systemctl --user restart ohn-agent`). Then reply at once: what will restart and
-  that Nexus will be silent for about two minutes. Do not wait for the restart: it happens after your turn.
+  (for example `... when-idle systemctl --user restart ohn-agent`). Reply with the name of the service
+  and say that Nexus may be unavailable while it starts. The restart happens after your turn.
 - «Slow» or «hangs»: before a restart, look at the video cards and the model log (another program on the card,
   a very long conversation). Tell the owner the cause you found; a restart does not cure those.
 - Never read `~/.config/openhands-nexus/session.env`, `agent/state/settings.json`, other key files or the

@@ -131,7 +131,7 @@ REASON_NEXUS = (
     "починки), — только отложенный: голос или шлюз — systemd-run --user --collect systemctl --user restart "
     "ohn-voice; агент, модели или весь Nexus — systemd-run --user --collect "
     "~/Agents/OpenHands-Nexus/launcher/when-idle systemctl --user restart ohn-agent (выполнится после "
-    "твоего ответа: сразу ответь, что Nexus замолчит примерно на две минуты, и не жди перезапуска). "
+    "твоего ответа: скажи владельцу, какая служба перезапустится и что Nexus может быть недоступен во время запуска). "
     "Подробности — навык nexus-repair.")
 # Nexus keys: whatever the agent reads stays in the conversation history.
 KEY_FILES = re.compile(r"session\.env|\.config/openhands-nexus\b|ohn-keys|openhands-ca\.key|kv-secret|"
@@ -150,7 +150,7 @@ REASON_DEFER = (
     "Страж Nexus: перезапуск агента, моделей или всего Nexus оборвёт твой ход раньше ответа. Передай его "
     "помощнику, который дождётся твоего ответа: systemd-run --user --collect "
     "~/Agents/OpenHands-Nexus/launcher/when-idle <команда> (например systemctl --user restart ohn-agent). "
-    "Затем сразу ответь владельцу, что Nexus замолчит примерно на две минуты, и не жди перезапуска.")
+    "Сразу скажи владельцу, какая служба перезапустится и что Nexus может быть недоступен во время запуска.")
 OWN_GROUND = re.compile(r"\bohn-(agent|models)\b|\bohn\.target\b|\bnexus-stop\b|"
                         r"\bnexus[-_]update\S*\s+(rollback\s+)?(canvas|ik-llama|llama-swap)\b")
 OWN_GROUND_VERBS = re.compile(r"\b(restart|try-restart|reload-or-restart|stop|kill|nexus-stop|nexus[-_]update)\b")

@@ -30,7 +30,7 @@ from pathlib import Path
 PACKAGE = "@openhands/agent-canvas"
 # Our page wraps Canvas components: React, the router and i18n must be the one copy Canvas also uses,
 # or its hooks find no context and the page stays blank.
-SHARED = ("react", "react-dom", "react-router", "i18next", "react-i18next", "lucide-react")
+SHARED = ("react", "react-dom", "react-router", "i18next", "react-i18next", "lucide-react", "react-hot-toast")
 COMPONENTS = ("canvas", "ik-llama", "caddy", "llama-swap", "voice")
 UNKNOWN = "unknown (неизвестно)"
 GITHUB = "https://api.github.com/repos"

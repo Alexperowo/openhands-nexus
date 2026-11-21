@@ -29,6 +29,63 @@ try {
     }
   }
   const axe = await fs.readFile(axePath, "utf8");
+  // A recognition outage keeps a typed draft. A second recording replaces only the selected
+  // word, leaves the edit in the composer, and sends it once on the user's tap.
+  {
+    const {page, context, errors} = await openPage(browser, fixture.origin, {autoSpeak: true, touch: true});
+    const input = "[data-testid='chat-input']";
+    const mic = "[data-testid='chat-dictation-button']";
+    const dictation = async () => {
+      await page.tap(mic);
+      await page.waitForSelector(`${mic}[aria-pressed='true']`);
+      await page.tap(mic);
+    };
+    await page.type(input, "Проверь погоду сегодня");
+    await fetch(fixture.origin + "/__fixture/transcription?available=false", {method: "POST"});
+    await dictation();
+    await page.waitForFunction(() => [...document.querySelectorAll("[role='status'], [role='alert']")]
+      .some(node => node.textContent.includes("Сервис распознавания недоступен")));
+    assert.equal(await page.$eval(input, node => node.innerText), "Проверь погоду сегодня");
+    assert.equal(await page.evaluate(() => window.replay.audio().isDictating), false);
+
+    await fetch(fixture.origin + "/__fixture/transcription?available=true", {method: "POST"});
+    await page.$eval(input, node => {
+      node.focus();
+      const range = document.createRange();
+      const start = node.textContent.indexOf("погоду");
+      range.setStart(node.firstChild, start);
+      range.setEnd(node.firstChild, start + "погоду".length);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+    });
+    await dictation();
+    await page.waitForFunction(selector => document.querySelector(selector).innerText === "Проверь связь сегодня", {}, input);
+    const sends = () => fixture.requests.filter(entry => entry.method === "POST" && entry.path.endsWith("/goal"));
+    assert.equal(sends().length, 0, "dictation must leave a draft");
+    await page.tap("[data-testid='submit-button']");
+    await page.waitForFunction(() => window.replay.audio().currentId === "reply", {timeout: 15000});
+    assert.deepEqual(sends().map(entry => entry.objective), ["Проверь связь сегодня"]);
+    assert.deepEqual(errors, []);
+    console.log("PASS dictation, edit, send once and speak");
+    await context.close();
+  }
+  // A wake-up check can find an HTTP failure even while the socket stays open.
+  {
+    const {page, context} = await openPage(browser, fixture.origin, {});
+    const change = async (kind, status) => {
+      await fetch(`${fixture.origin}/__fixture/connection?kind=${kind}`, {method: "POST"});
+      await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+      await page.waitForFunction(value => document.querySelector(".app-main").dataset.nexusConnection === value,
+        {timeout: 8000}, status);
+    };
+    await page.waitForSelector("[data-nexus-connection='online']");
+    await change("rest", "lost");
+    await page.waitForFunction(() => document.querySelector(".nexus-status-slot [role='alert']").textContent.startsWith("Связь потеряна"));
+    await change("online", "online");
+    await page.waitForFunction(() => document.querySelector(".nexus-status-slot [role='alert']").textContent === "Связь восстановлена");
+    console.log("PASS REST loss and restoration with the socket open");
+    await context.close();
+  }
   for (const [width, height] of [[564, 785], [1280, 900]]) for (const fontSize of [18, 28]) for (const reduced of [false, true]) {
     const {page, context, errors, remoteRequests} = await openPage(browser, fixture.origin, {width, height, fontSize, reduced});
     const caseName = `${width}x${height}-${fontSize}px-${reduced ? "reduced" : "normal"}`;
@@ -159,7 +216,7 @@ try {
     await context.close();
   }
   await fs.writeFile(path.join(output, "ui-results.json"), JSON.stringify({status: "passed", browser: await browser.version(), axePath: String(axePath), results,
-    additionalChecks: ["settings Off and focus", "drawer keyboard and focus return", "one main", "socket loss/restoration once", "model loading shown while idle", "real Stop for step and answer", "STT Cancel releases hold and reads deferred answer"]}, null, 2) + "\n");
+    additionalChecks: ["dictation error, retry, replace selected text, send once and read the answer", "settings Off and focus", "drawer keyboard and focus return", "one main", "REST-only and socket-only loss/restoration", "model loading shown while idle", "real Stop for step and answer", "STT Cancel releases hold and reads deferred answer"]}, null, 2) + "\n");
   console.log(`Chrome UI: ${results.length} matrix cases passed; axe=0; real Stop and dictation Cancel passed`);
 } catch (error) {
   await fs.writeFile(path.join(output, "ui-results.json"), JSON.stringify({status: error.code === "EPERM" ? "blocked" : "failed", reason: error.message, code: error.code ?? null, results}, null, 2) + "\n");

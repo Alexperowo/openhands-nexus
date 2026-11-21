@@ -21,8 +21,22 @@ const sources = (directory) => {
   return result;
 };
 const modules = sources(dist);
-const build = [...sources(path.join(process.env.OHN_UI_BUILD_DIR || "dist", "assets")).values()];
+const buildDir = process.env.OHN_UI_BUILD_DIR || "dist";
+const build = [...sources(path.join(buildDir, "assets")).values()];
 const grep = (pattern) => [...modules.values()].flatMap((source) => source.match(new RegExp(pattern, "g")) ?? []).join("\n");
+
+test("the built shell supplies the installed app's manifest and icons", () => {
+  assert.match(readFileSync(path.join(buildDir, "index.html"), "utf8"), /<link rel="manifest" href="\/manifest\.webmanifest"\s*\/?>/);
+  const manifest = JSON.parse(readFileSync(path.join(buildDir, "manifest.webmanifest"), "utf8"));
+  assert.deepEqual([manifest.id, manifest.start_url, manifest.scope, manifest.display], ["/", "/", "/", "standalone"]);
+  assert.deepEqual(manifest.icons.map(icon => icon.sizes), ["192x192", "512x512"]);
+  for (const icon of manifest.icons) {
+    assert.equal(icon.type, "image/png");
+    const png = readFileSync(path.join(buildDir, icon.src));
+    assert.equal(png.subarray(1, 4).toString(), "PNG");
+    assert.equal(`${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, icon.sizes);
+  }
+});
 
 test("every dropped Canvas provider has a host copy", () => {
   const required = new Set(grep("must be used within [A-Z][A-Za-z]+Provider").match(/[A-Z][A-Za-z]+Provider/g) ?? []);
