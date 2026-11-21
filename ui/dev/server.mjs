@@ -61,6 +61,8 @@ export async function startFixture({ root, port = 0 } = {}) {
       if (p === "/llm/running") return json(res, {running: [{model: "fixture", state: model}]});
       if (p === "/llm/model/fixture/health") return json(res, {status: status === "running" ? "no slot available" : "ok", slots_idle: status === "running" ? 0 : 1, slots_processing: status === "running" ? 1 : 0});
       if (p === "/api/settings") return json(res, {language: "ru", enable_sound_notifications: false, is_new_user: false, agent_settings: {llm: {model: "fixture", base_url: "http://127.0.0.1", api_key: "fixture-only"}, tools: []}, conversation_settings: {max_iterations: 100, confirmation_mode: false}, llm_api_key_set: true});
+      if (p === "/api/settings/experimental") return json(res, []);
+      if (p === "/api/settings/secrets") return json(res, {secrets: []});
       if (p.endsWith("/events/search")) return json(res, {items: [...events].reverse(), next_page_id: null});
       if (p.endsWith("/events/count")) return json(res, events.length);
       if (p.endsWith("/state")) return json(res, {execution_status: status, stats: {usage_to_metrics: {}}, agent: {llm: {model: "fixture"}}, workspace: {working_dir: "/tmp"}});

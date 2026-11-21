@@ -646,29 +646,34 @@ class GoalCorrectionTests(unittest.TestCase):
     """A message during a goal: a correction keeps the goal and its judge, a stop ends it as in the SDK."""
 
     def deliver(self, text):
-        """(the goal was stopped, the message reached the conversation)"""
+        """Return whether the goal stopped and the senders recorded on delivered messages."""
         from openhands.agent_server.event_service import EventService
-        stopped, received = [], []
+        received = []
 
         async def run():
             loop = asyncio.create_task(asyncio.sleep(10))
 
-            async def stop_goal_loop():
-                stopped.append(text)
+            async def run_state_op(fn, *args):
+                return fn(*args)
+
+            def record(message, *, sender=None):
+                received.append(sender)
+
+            service = SimpleNamespace(_conversation=SimpleNamespace(send_message=record), _goal_loop_task=loop,
+                                      stop_goal_loop=lambda: EventService.stop_goal_loop(service),
+                                      run_state_op=run_state_op, _explicit_interrupt_generation=0)
+            try:
+                await EventService.send_message(service, Message(role="user", content=[TextContent(text=text)]))
+                return loop.cancelled(), received
+            finally:
                 loop.cancel()
-                return True
-            service = SimpleNamespace(_conversation=SimpleNamespace(send_message=received.append), _goal_loop_task=loop,
-                                      stop_goal_loop=stop_goal_loop, _explicit_interrupt_generation=0)
-            await EventService.send_message(service, Message(role="user", content=[TextContent(text=text)]))
-            loop.cancel()
-        asyncio.run(run())
-        return bool(stopped), len(received)
+        return asyncio.run(run())
 
     def test_a_correction_keeps_the_goal_a_stop_ends_it(self):
         for text in ["И шрифт покрупнее", "И оставь тёмную тему", "Спасибо, продолжай"]:
-            self.assertEqual(self.deliver(text), (False, 1), text)
+            self.assertEqual(self.deliver(text), (False, [None]), text)
         for text in ["Стоп", "Остановись, пожалуйста", "Подожди минутку", "Хватит", "Не надо больше ничего делать"]:
-            self.assertEqual(self.deliver(text), (True, 1), text)
+            self.assertEqual(self.deliver(text), (True, [None]), text)
 
     def test_the_judge_reads_the_correction_as_the_owners_and_the_follow_up_as_its_own(self):
         events = [GoalTests.user(None, "Сделай тёмную тему"), GoalTests.user(None, "И шрифт покрупнее"),

@@ -30,10 +30,12 @@ continues, at most a few rounds. The SDK loop is kept; this adapts it:
   appear there as the check's own lines, not as the owner's. A stop ends the goal as before, and a
   stop said in other words is caught by the judge, which then hands the task back to the owner.
 """
+import asyncio
 import json
 import math
 import re
 import sys
+from contextvars import ContextVar
 
 FOLLOWUP_MARK = "Проверка Nexus:"
 NEEDS_USER = "Нужно ваше решение: "
@@ -286,13 +288,27 @@ def stops(message):
 def patch_event_service(module):
     module.RESUME_PROMPT = RESUME_PROMPT
     send = module.EventService.send_message
+    stop = module.EventService.stop_goal_loop
+    correction = ContextVar("nexus_goal_correction", default=None)
+
+    async def stop_goal_loop(self):
+        active = correction.get()
+        if active is not None and active[0] is self and active[1] is asyncio.current_task():
+            return False
+        return await stop(self)
 
     async def send_message(self, message, run=False, _from_goal_loop=False, **kwargs):
         loop = self._goal_loop_task
-        if not _from_goal_loop and loop is not None and not loop.done() and not stops(message):
-            _from_goal_loop = True  # a correction: the goal goes on and its judge reads it
-        return await send(self, message, run, _from_goal_loop, **kwargs)
+        if _from_goal_loop or loop is None or loop.done() or stops(message):
+            return await send(self, message, run, _from_goal_loop, **kwargs)
+        # Keep the goal active while the SDK records the correction with its actual sender.
+        token = correction.set((self, asyncio.current_task()))
+        try:
+            return await send(self, message, run, _from_goal_loop, **kwargs)
+        finally:
+            correction.reset(token)
 
+    module.EventService.stop_goal_loop = stop_goal_loop
     module.EventService.send_message = send_message
 
 
@@ -360,7 +376,6 @@ def patch_goal_route(module):
     understood before a slower request it came after was delivered first, and the old task started
     after the stop. Now the stop comes second and is heard by the running task (nexus_interject.py);
     an addition («и шрифт крупнее») is understood with the request before it in the history."""
-    import asyncio
     from collections import OrderedDict, defaultdict
     from uuid import UUID
     from fastapi import Depends, HTTPException, status
