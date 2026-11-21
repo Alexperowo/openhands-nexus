@@ -88,5 +88,42 @@ class RunTests(unittest.TestCase):
         self.assertNotIn("OHN_SECRET_KEY", env)
 
 
+class AgentInstallTests(unittest.TestCase):
+    def install_agent(self, *, active=False, ready_at=1, apply_exit=0):
+        with tempfile.TemporaryDirectory() as temp:
+            work = Path(temp)
+            (work / "agent/state").mkdir(parents=True)
+            (work / "install").write_bytes((LAUNCHER.parent / "install").read_bytes())
+            commands = {
+                "systemctl": f'''printf '%s\n' "$2" >> calls
+case "$2" in is-active) echo {'active' if active else 'inactive'}; exit {0 if active else 3} ;; esac''',
+                "curl": f'''printf 'probe\n' >> calls
+[ "$(grep -c '^probe$' calls)" -ge {ready_at} ]''',
+                "python3": f'''if [ "$3" = apply ]; then
+  printf 'apply\n' >> calls
+  exit {apply_exit}
+fi''',
+                "sleep": "true",
+            }
+            for name, script in commands.items():
+                command = work / name
+                command.write_text(f"#!/bin/sh\n{script}\n")
+                command.chmod(0o755)
+            result = subprocess.run([
+                "bash", "./install", "--yes", "--skip",
+                "system,driver,cuda,tools,engine,binaries,apps,keys,models,cards,wifi,services",
+            ], cwd=work, env={"HOME": temp, "PATH": f"{work}:/usr/bin:/bin"},
+               capture_output=True, text=True, timeout=20)
+            calls = [call for call in (work / "calls").read_text().splitlines() if call != "probe"]
+            return result.returncode, calls, (work / "agent/state/.nexus-config-applied").is_file()
+
+    def test_the_last_readiness_probe_can_succeed(self):
+        self.assertEqual(self.install_agent(ready_at=120), (0, ["is-active", "start", "apply", "stop"], True))
+
+    def test_failed_configuration_releases_only_the_agent_started_by_install(self):
+        self.assertEqual(self.install_agent(apply_exit=23), (23, ["is-active", "start", "apply", "stop"], False))
+        self.assertEqual(self.install_agent(active=True, apply_exit=23), (23, ["is-active", "apply"], False))
+
+
 if __name__ == "__main__":
     unittest.main()

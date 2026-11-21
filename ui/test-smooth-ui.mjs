@@ -7,18 +7,20 @@ import { execFileSync } from "node:child_process";
 import puppeteer from "puppeteer-core";
 import { startFixture } from "./dev/server.mjs";
 import { chromeOptions, openPage, pause, replay } from "./dev/measure.mjs";
+import { testLongHistory } from "./test-long-history.mjs";
 
 // A kept fixture build would test old code: without OHN_REPLAY_DIR the current source is built afresh.
 const built = process.env.OHN_REPLAY_DIR ? null : await fs.mkdtemp(path.join(os.tmpdir(), "ohn-ui-replay-"));
-if (built) execFileSync(process.execPath, ["--import", "./dev/forbid-secrets.mjs", "dev/build.mjs", built], {stdio: "inherit"});
 const root = path.resolve(process.env.OHN_REPLAY_DIR || built);
 const output = path.resolve(process.env.OHN_UI_EVIDENCE || "dev/evidence");
 await fs.mkdir(output, {recursive: true});
 let fixture, browser;
 const results = [];
 try {
+  if (built) execFileSync(process.execPath, ["--import", "./dev/forbid-secrets.mjs", "dev/build.mjs", built], {stdio: "inherit"});
   fixture = await startFixture({root});
   browser = await puppeteer.launch(chromeOptions);
+  await testLongHistory(browser, fixture);
   // Prefer the declared dependency; allow the offline cached engine without installing packages.
   let axePath = process.env.AXE_PATH;
   if (!axePath) {
@@ -216,7 +218,7 @@ try {
     await context.close();
   }
   await fs.writeFile(path.join(output, "ui-results.json"), JSON.stringify({status: "passed", browser: await browser.version(), axePath: String(axePath), results,
-    additionalChecks: ["dictation error, retry, replace selected text, send once and read the answer", "settings Off and focus", "drawer keyboard and focus return", "one main", "REST-only and socket-only loss/restoration", "model loading shown while idle", "real Stop for step and answer", "STT Cancel releases hold and reads deferred answer"]}, null, 2) + "\n");
+    additionalChecks: ["long history: touch, stable reading, speech and keyboard navigation", "dictation error, retry, replace selected text, send once and read the answer", "settings Off and focus", "drawer keyboard and focus return", "one main", "REST-only and socket-only loss/restoration", "model loading shown while idle", "real Stop for step and answer", "STT Cancel releases hold and reads deferred answer"]}, null, 2) + "\n");
   console.log(`Chrome UI: ${results.length} matrix cases passed; axe=0; real Stop and dictation Cancel passed`);
 } catch (error) {
   await fs.writeFile(path.join(output, "ui-results.json"), JSON.stringify({status: error.code === "EPERM" ? "blocked" : "failed", reason: error.message, code: error.code ?? null, results}, null, 2) + "\n");

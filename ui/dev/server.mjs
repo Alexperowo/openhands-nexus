@@ -7,10 +7,13 @@ import { fileURLToPath } from "node:url";
 const timestamp = "2026-10-24T12:00:00Z";
 export const answer = "Проверка завершена. Звук работает, сеть подключена.\n\n" + Array.from({length: 9}, (_, i) => `Пункт ${i + 1}. Это записанный пример длинного ответа для проверки плавности. Текст приходит неравномерными пакетами, но место чтения должно сохраняться.`).join("\n\n");
 const message = (id, source, text) => ({ id, kind: "MessageEvent", source, timestamp, llm_message: { role: source === "agent" ? "assistant" : "user", content: [{type: "text", text}] } });
-const history = Array.from({length: 8}, (_, i) => message(`history-${i}`, i % 2 ? "agent" : "user", i % 2 ? "Предыдущая проверка выполнена. Настройки сохранены.\n\nМожно продолжать работу с компьютером." : "Проверь настройки компьютера и объясни результат."));
+const history = length => Array.from({length}, (_, i) => ({
+  ...message(`history-${i}`, i % 2 ? "agent" : "user", i % 2 ? "Предыдущая проверка выполнена. Настройки сохранены.\n\nМожно продолжать работу с компьютером." : "Проверь настройки компьютера и объясни результат."),
+  seq: i,
+}));
 export async function startFixture({ root, port = 0 } = {}) {
-  let sequence = history.length - 1, runCount = 0, snapshots = 0;
-  let events = history.map((event, seq) => ({...event, seq})), status = "idle", offline = false, wsOffline = false, timers = [], model = "ready";
+  let events = history(8), status = "idle", offline = false, wsOffline = false, timers = [], model = "ready";
+  let sequence = events.length - 1, runCount = 0, snapshots = 0;
   let transcriptionAvailable = true;
   const requests = [], sockets = new Set();
   const conversation = (id = "replay") => ({ id, title: id === "replay" ? "Проверка компьютера" : "Вторая беседа", created_at: timestamp, updated_at: timestamp, execution_status: status, workspace: {working_dir: "/tmp"}, agent: {kind: "Agent", llm: {model: "fixture"}}, stats: {usage_to_metrics: {}}, sub_conversation_ids: [], available_models: [], sandbox_status: "RUNNING" });
@@ -43,8 +46,8 @@ export async function startFixture({ root, port = 0 } = {}) {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://fixture.invalid"), p = url.pathname;
     if (p === "/__fixture/reset") {
-      timers.forEach(clearTimeout); timers = []; events = history.map((event, seq) => ({...event, seq}));
-      sequence = history.length - 1; runCount = 0; status = "idle"; offline = false; wsOffline = false; model = "ready";
+      timers.forEach(clearTimeout); timers = []; events = history(url.searchParams.get("history") ?? 8);
+      sequence = events.length - 1; runCount = 0; status = "idle"; offline = false; wsOffline = false; model = "ready";
       transcriptionAvailable = true;
       return json(res, {});
     }

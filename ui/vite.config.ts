@@ -63,7 +63,7 @@ export function canvasEnglishOnly(): Plugin {
 
 // Routes Canvas imports of a private module to a host module, matched by resolved path
 // (Canvas imports its siblings as "./name.js", which a specifier alias cannot tell apart).
-// Adapters wrap the original: EventMessage gets ▶ under answers, the list arrow a spoken name.
+// Adapters wrap the original: EventMessage gets a reading button under answers.
 // Replacements take its place: English that bypasses the dictionary where Aleksandr sees or hears it.
 // Private-module compatibility shims for the pinned version (test-providers.mjs guards them).
 export const ADAPTERS = {
@@ -82,6 +82,7 @@ export const ADAPTERS = {
   "themes/syntax-highlighter-themes.js": "src/syntax-theme.ts",
   // Observe actual content sizes; Canvas only follows its private text reveal flag.
   "hooks/use-scroll-to-bottom.js": "src/use-scroll-to-bottom.ts",
+  "components/shared/buttons/scroll-to-bottom-button.js": "src/scroll-to-bottom-button.tsx",
   // A plain request between runs goes as a goal: the agent's «done» is checked (nexus_goal.py).
   "hooks/chat/use-goal-interceptor.js": "src/use-goal-by-default.ts",
   // The goal block as one line that opens on a click: the request in its title took half the screen.

@@ -32,6 +32,11 @@ export function useScrollToBottom(scrollRef: RefObject<HTMLElement | null>, _rev
   useLayoutEffect(() => {
     const element = scrollRef.current;
     if (!element) return;
+    if (element.dataset.testid === "chat-scroll-container") {
+      element.tabIndex = 0;
+      element.setAttribute("role", "region");
+      element.setAttribute("aria-label", "История беседы");
+    }
     const state = policy.current;
     let anchor: HTMLElement | null = null;
     let saved: (ReadingAnchor & {owner: string}) | null = null;

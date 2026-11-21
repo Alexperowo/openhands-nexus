@@ -10,9 +10,9 @@ export const chromeOptions = {
     "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
 };
 export const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-export async function openPage(browser, origin, {width = 564, height = 785, fontSize = 28, reduced = false, autoSpeak = false, motion = "system", stallSTT = false, touch = false, initialPath = "/conversations/replay"} = {}) {
+export async function openPage(browser, origin, {width = 564, height = 785, fontSize = 28, reduced = false, autoSpeak = false, motion = "system", stallSTT = false, touch = false, historyLength = 8, initialPath = "/conversations/replay"} = {}) {
   // Fixture setup precedes page navigation; each viewport receives identical history.
-  await fetch(origin + "/__fixture/reset", {method: "POST"});
+  await fetch(`${origin}/__fixture/reset?history=${historyLength}`, {method: "POST"});
   const context = await browser.createBrowserContext();
   const page = await context.newPage();
   await page.setViewport({width, height, hasTouch: touch});

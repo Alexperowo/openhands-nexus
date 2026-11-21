@@ -27,9 +27,8 @@
 .nexus-audio-controls > .icon-button { flex: 0 0 48px; }
 button:disabled { cursor: default; }
 [data-testid='chat-scroll-container'] { scrollbar-gutter: stable; overflow-anchor: none; overscroll-behavior-y: contain; }
-[data-testid='scroll-to-bottom'] { min-width: 48px; min-height: 48px; width: auto; gap: 0.4rem; padding: 0 0.7rem; border: 2px solid #888899; transform: none; color: #fff; background: #16161e; font: inherit; font-size: 0.85rem; white-space: nowrap; }
-[data-testid='scroll-to-bottom'] svg { transform: rotate(180deg); }
-[data-agent-server-ui] [data-testid='scroll-to-bottom'] { rotate: none; }
+.nexus-scroll-to-bottom { display: inline-flex; align-items: center; justify-content: center; min-width: 48px; min-height: 48px; gap: 0.4rem; padding: 0 0.7rem; border: 2px solid #888899; border-radius: 999px; color: #fff; background: #16161e; font: inherit; font-size: 0.85rem; white-space: nowrap; cursor: pointer; }
+.nexus-scroll-to-bottom:hover { background: #22222d; }
 .nexus-backend-label { display: block; font-size: 0.8rem; color: #fff; }
 [data-agent-server-ui] [data-testid='chat-input'] { line-height: 1.55 !important; min-height: 1.55em; }
 [data-agent-server-ui] [data-testid='chat-input']::before { font-size: inherit !important; line-height: inherit !important; }
@@ -52,7 +51,6 @@ button:disabled { cursor: default; }
 @media (max-width: 439.98px) {
   [data-agent-server-ui] div.ml-auto:has(> [data-testid='chat-dictation-button']) { inline-size: 192px; }
 }
-[data-testid='scroll-to-bottom']::after { content: 'К новым сообщениям'; }
 /* Model name over the reasoning level: two short lines, no wider than the name alone. */
 [data-agent-server-ui] .nexus-model-pill-text { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; line-height: 1.1; }
 [data-agent-server-ui] .nexus-model-pill-text > .truncate { max-width: 100%; font-size: 0.8rem; color: #f0f0f5; }

@@ -283,19 +283,23 @@ do_services() { "$WORK/launcher/install.sh"; }
 # Профили моделей и настройки агента из git записываются в запущенный агент. При первом запуске
 # Canvas сам скачивает agent-server (несколько минут).
 done_agent() { [ -f "$WORK/agent/state/.nexus-config-applied" ]; }
-do_agent() {
+do_agent() (
   local was i
   was=$(systemctl --user is-active ohn-agent || true)
-  [ "$was" = active ] || systemctl --user start ohn-agent
+  if [ "$was" != active ]; then
+    systemctl --user start ohn-agent
+    trap 'result=$?; systemctl --user stop ohn-agent || exit 1; exit "$result"' EXIT
+  fi
   for i in $(seq 1 120); do
-    curl -fs --noproxy '*' -m 3 -o /dev/null http://127.0.0.1:18010/ready && break
-    sleep 5
+    if curl -fs --noproxy '*' -m 3 -o /dev/null http://127.0.0.1:18010/ready; then
+      python3 -I "$WORK/agent/config.py" apply
+      touch "$WORK/agent/state/.nexus-config-applied"
+      exit 0
+    fi
+    [ "$i" -eq 120 ] || sleep 5
   done
-  [ "$i" -lt 120 ] || fail "агент не ответил за 10 минут: journalctl --user -u ohn-agent"
-  python3 -I "$WORK/agent/config.py" apply
-  touch "$WORK/agent/state/.nexus-config-applied"
-  [ "$was" = active ] || systemctl --user stop ohn-agent
-}
+  fail "агент не ответил: journalctl --user -u ohn-agent"
+)
 
 say "Установка Nexus в $WORK"
 echo "Журнал: $LOG"
