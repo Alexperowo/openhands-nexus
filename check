@@ -3,12 +3,14 @@
 updater, launcher, gateway, SDK patches and the agent's settings against git.
 
   ./check            # exit 1 if any layer failed; a skipped layer says why
+  ./check --strict   # release check: exit 1 if a layer failed or was skipped
 
 Builds nothing and starts no service: the interface tests need an existing ui/dist, the
 settings check a running agent. The end of a failed layer's log is printed after the summary;
 every layer's whole log, passed ones too, stays in LOGS until the next run. A layer that runs
 longer than LAYER_SECONDS (a hung test) is stopped with all its processes and counts as failed.
 """
+import argparse
 import json
 import os
 import re
@@ -94,19 +96,21 @@ def run(command, folder, env, seconds):
     return process.returncode == 0, output
 
 
-def main():
+def main(strict=False):
     env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "OPENHANDS_SUPPRESS_BANNER": "1"}
     # The tests talk only to this PC; a system proxy (Happ) answered for 127.0.0.1 with 503.
     for name in ("http_proxy", "https_proxy", "all_proxy"):
         env.pop(name, None)
         env.pop(name.upper(), None)
     summary, failures = [], []
+    skipped = False
     LOGS.mkdir(parents=True, exist_ok=True)
     for old in LOGS.glob("*.log"):
         old.unlink()
     for number, (name, folder, commands, reason) in enumerate(layers(), 1):
         if reason:
             summary.append(f"ПРОПУЩЕНО  {name}: {reason}")
+            skipped = True
             continue
         start, log, ok = time.monotonic(), [], True
         for command in commands:
@@ -127,8 +131,12 @@ def main():
         print("\n".join(log.rstrip().splitlines()[-40:]))
     print("\n" + "\n".join(summary))
     print(f"Журналы всех слоёв: {LOGS}")
-    return 1 if failures else 0
+    if strict and skipped:
+        print("Для приёмки нужно пройти все группы проверок.")
+    return int(bool(failures) or strict and skipped)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    parser = argparse.ArgumentParser(description="Проверка OpenHands-Nexus")
+    parser.add_argument("--strict", action="store_true", help="пропущенная группа считается ошибкой")
+    sys.exit(main(parser.parse_args().strict))

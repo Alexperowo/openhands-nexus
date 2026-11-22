@@ -1,5 +1,6 @@
 """The readiness check reads the model files from llama-swap.yaml and names what is missing."""
 import os
+import runpy
 import shutil
 import subprocess
 import tempfile
@@ -24,6 +25,16 @@ models:
 
 
 class PreflightTests(unittest.TestCase):
+    def test_strict_check_rejects_a_skipped_group(self):
+        main = runpy.run_path(str(preflight.ROOT / "check"))["main"]
+        with tempfile.TemporaryDirectory() as temp, patch("builtins.print"):
+            with patch.dict(main.__globals__, {
+                "LOGS": Path(temp),
+                "layers": lambda: iter([("агент", ".", [], "агент не запущен")]),
+            }):
+                self.assertEqual(main(), 0)
+                self.assertEqual(main(strict=True), 1)
+
     def test_model_files_expand_macros_and_resolve_relative_paths(self):
         with tempfile.TemporaryDirectory() as temp:
             config = Path(temp) / "llama-swap.yaml"

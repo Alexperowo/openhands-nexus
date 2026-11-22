@@ -36,7 +36,7 @@ def matches(result, reason):
 def session_process():
     """A process of the login session scope, as (name, pid)."""
     for p in guard._scan():
-        if guard.AUTOSTART_CGROUP.search(p.cgroup) and p.comm not in guard.INTERPRETERS and len(p.comm) < 15:
+        if guard.AUTOSTART_CGROUP.search(p.cgroup) and p.comm not in guard.SESSION_HELPERS and len(p.comm) < 15:
             return p.comm, p.pid
     return None
 
@@ -352,12 +352,16 @@ class GuardRules(unittest.TestCase):
 
     def test_a_helper_of_the_session_is_not_its_component(self):
         """A desktop applet polls nvidia-smi inside the session scope: the agent's own call must not wait for a gap."""
-        def process(comm, started):
-            return SimpleNamespace(pid="77", comm=comm, argv=[comm], line=comm, pgrp="77", started=started,
+        def process(comm, started, *args):
+            return SimpleNamespace(pid="77", comm=comm, argv=[comm, *args], line=" ".join([comm, *args]),
+                                   pgrp="77", started=started,
                                    unit="session-2.scope", cgroup="/user.slice/user-1000.slice/session-2.scope")
         with mock.patch.object(guard, "uptime", return_value=5000.0):
-            with mock.patch.object(guard, "processes", return_value=(process("nvidia-smi", 4999.5),)):
+            polling = process("nvidia-smi", 60.0, "--query-gpu=temperature.gpu", "--format=csv", "--loop", "5")
+            with mock.patch.object(guard, "processes", return_value=(polling,)):
                 self.assertIsNone(decide("nvidia-smi"))
+                self.assertIsNone(decide("nvidia-smi --query-gpu=driver_version --format=csv,noheader"))
+                self.assertEqual(decide("nvidia-smi --power-limit=200"), guard.REASON_POWER)
             with mock.patch.object(guard, "processes", return_value=(process("cinnamon", 60.0),)):
                 self.assertTrue(matches(decide("cinnamon &") or "", guard.REASON_START))
 

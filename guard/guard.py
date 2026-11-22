@@ -37,8 +37,8 @@ DETACHED = "systemd-run --user --collect --service-type=exec <команда>"
 SESSION_CGROUP = re.compile(r"/session-\d+\.scope$|/session\.slice/|^/system\.slice/|/init\.scope$")
 # Only the session itself counts when a program is started: system services run helpers like `sleep`.
 AUTOSTART_CGROUP = re.compile(r"/session-\d+\.scope$|/session\.slice/")
-INTERPRETERS = {"python", "python3", "perl", "ruby", "node", "bash", "sh", "dash", "zsh", "env",
-                "sleep", "cat", "tail", "timeout"}
+SESSION_HELPERS = {"python", "python3", "perl", "ruby", "node", "bash", "sh", "dash", "zsh", "env",
+                   "sleep", "cat", "tail", "timeout", "nvidia-smi"}
 # A component stays; what it runs for a moment (a GPU applet polling nvidia-smi) is not one.
 COMPONENT_SECONDS = 10
 INFO_ONLY = {"--version", "--help", "-h", "-V"}
@@ -825,7 +825,7 @@ def check_start(program: str, argv: list[str]):
     # Window managers and shells take options only; `podman run --replace IMAGE` is a CLI call.
     if "--replace" in args and not any(not a.startswith(("-", ":")) for a in args):
         return REASON_REPLACE.format(what=f"{program} --replace")
-    if detached or program in INTERPRETERS or any(not a.startswith("-") for a in args):
+    if detached or program in SESSION_HELPERS or any(not a.startswith("-") for a in args):
         return None  # daemons and applets start with options only; a positional means a CLI call
     for p in processes():
         if p.comm == program[:15] and AUTOSTART_CGROUP.search(p.cgroup) and uptime() - p.started > COMPONENT_SECONDS:

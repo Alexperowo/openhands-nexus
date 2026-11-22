@@ -16,6 +16,8 @@ continues, at most a few rounds. The SDK loop is kept; this adapts it:
   extras the agent itself offered are no requirement (it had demanded a monitor the agent proposed).
 - The judge knows the setting (a personal PC, a user who is not a programmer), answers in Russian,
   and says when only the user can continue: the loop then stops instead of pushing the agent.
+- Local verdicts have their own output budget and deadline. A timed-out check leaves a resumable
+  goal while the agent's answer stays in the conversation.
 - Its verdict is read strictly. The SDK takes `bool(data["complete"])`, so the string "false" was a
   success. Here only the JSON value true with a score of at least COMPLETE_SCORE and no
   "needs_user" is complete; a wrong type, a missing field or a verdict that contradicts itself
@@ -36,10 +38,14 @@ import math
 import re
 import sys
 from contextvars import ContextVar
+from urllib.parse import urlsplit
 
 FOLLOWUP_MARK = "Проверка Nexus:"
 NEEDS_USER = "Нужно ваше решение: "
 COMPLETE_SCORE = 0.8
+LOCAL_AUDIT_TIMEOUT = 120  # A bounded transcript gets its own deadline, independent of the full run.
+LOCAL_AUDIT_OUTPUT = 1024
+LOCAL_AUDIT_THINKING = 512
 UNREADABLE = "проверка не смогла прочитать свой ответ, нужен ещё один круг"
 TOOL_OUTPUT_CHARS = 3000
 CALL_CHARS = 600
@@ -252,6 +258,22 @@ def patch_judge(module):
     module._parse_verdict = lambda message: parse_verdict(message, module.GoalVerdict)
 
 
+def bounded_auditor(llm):
+    endpoint = urlsplit(getattr(llm, "base_url", None) or "")
+    if endpoint.hostname not in {"127.0.0.1", "localhost", "::1"} or endpoint.port != 18030:
+        return llm
+    body = dict(llm.litellm_extra_body or {})
+    budget = body.get("thinking_budget_tokens")
+    if not isinstance(budget, int) or not 0 <= budget <= LOCAL_AUDIT_THINKING:
+        body["thinking_budget_tokens"] = LOCAL_AUDIT_THINKING
+    return llm.model_copy(update={
+        "timeout": min(llm.timeout or LOCAL_AUDIT_TIMEOUT, LOCAL_AUDIT_TIMEOUT),
+        "num_retries": 0,
+        "max_output_tokens": min(llm.max_output_tokens or LOCAL_AUDIT_OUTPUT, LOCAL_AUDIT_OUTPUT),
+        "litellm_extra_body": body,
+    })
+
+
 def patch_controller(module):
     module.FOLLOWUP_PROMPT = FOLLOWUP_PROMPT
     judge = module.judge_goal
@@ -263,7 +285,8 @@ def patch_controller(module):
         context = last_messages(events[:index or 0])
         if context:
             request = f"{request}\n\n{CONTEXT_HEADER}\n{context}"
-        return judge(judge_llm, request, list(events) if index is None else list(events[index:]))
+        return judge(bounded_auditor(judge_llm), request,
+                     list(events) if index is None else list(events[index:]))
 
     module.judge_goal = judge_goal
     # The agent gets the owner's own words; the goal is what the UI shows and the judge checks.

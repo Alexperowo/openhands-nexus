@@ -374,6 +374,32 @@ class GoalTests(unittest.TestCase):
         self.assertIn("пропущено 7000 символов", text)
         self.assertLess(len(goal.render_transcript(self.run_events("Х" * 10000) * 100)), goal.TRANSCRIPT_CHARS + 200)
 
+    def test_local_goal_audit_has_its_own_budget_without_retrying(self):
+        from openhands.sdk.conversation.goal import controller as sdk
+
+        engine = LLM(model="openai/holo-mtp", base_url="http://127.0.0.1:18030/v1",
+                     api_key="not-needed", usage_id="audit", timeout=2400, num_retries=2, stream=True,
+                     max_output_tokens=32768, litellm_extra_body={"thinking_budget_tokens": 8192})
+        audited = []
+
+        def completion(llm, messages):
+            audited.append((llm.timeout, llm.num_retries, llm.stream, llm.max_output_tokens,
+                            llm.litellm_extra_body["thinking_budget_tokens"]))
+            return SimpleNamespace(message=Message(role="assistant", content=[TextContent(
+                text='{"score": 1, "complete": true, "missing": ""}')]))
+
+        with patch.object(LLM, "completion", completion):
+            done = sdk.GoalController(self.objective, engine).on_run_finished(self.run_events("ok"))
+        self.assertEqual(done.outcome.status, "complete")
+        self.assertEqual(audited, [(120, 0, False, 1024, 512)])
+        self.assertEqual((engine.timeout, engine.num_retries, engine.stream), (2400, 2, True))
+        self.assertEqual((engine.max_output_tokens, engine.litellm_extra_body), (32768, {"thinking_budget_tokens": 8192}))
+        short = goal.bounded_auditor(engine.model_copy(update={
+            "timeout": 20, "max_output_tokens": 400, "litellm_extra_body": {"thinking_budget_tokens": 100},
+        }))
+        self.assertEqual((short.timeout, short.max_output_tokens, short.litellm_extra_body["thinking_budget_tokens"]),
+                         (20, 400, 100))
+
     def test_owner_decision_stops_the_loop_and_plain_gap_continues_in_russian(self):
         from openhands.sdk.conversation.goal import controller as sdk
         from openhands.agent_server import event_service

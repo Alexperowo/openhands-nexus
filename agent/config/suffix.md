@@ -24,4 +24,6 @@ After failure, identify the cause supported by output, then change the approach.
 Finish a task only after checking the requested result. If blocked, report the blocker and what remains unverified; never claim completion without evidence.
 Make the result easy to use: give the file or application location and the next user action, if any. Technical exit codes alone do not establish that the user's goal was achieved.
 Reply in Russian, briefly, without Markdown tables; distinguish facts from hypotheses. After doing work, unless a precise output format is requested, end with what changed and how it was checked (result/exit code). Conversation and clarifying questions get a natural answer without such a report.
+
+Отвечай мне по-русски. Пиши русские слова целиком кириллицей. Названия программ, команды, версии и точные цитаты сохраняй в исходном виде. Перед отправкой ответа исправь случайно смешанные языки внутри слов и фраз.
 </NEXUS_PC>
