@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useOptionalConversationId } from "../node_modules/@openhands/agent-canvas/dist/hooks/use-conversation-id.js";
 import { displayErrorToast } from "../node_modules/@openhands/agent-canvas/dist/utils/custom-toast-handlers.js";
 import { isConversationStateUpdateEvent, isGoalConversationStateUpdateEvent } from "../node_modules/@openhands/agent-canvas/dist/types/agent-server/type-guards.js";
 import { useEventStore } from "../node_modules/@openhands/agent-canvas/dist/stores/use-event-store.js";
 import { useGoalStore } from "../node_modules/@openhands/agent-canvas/dist/stores/goal-store.js";
-import { pauseConversation, resumeGoal, stopGoal } from "../node_modules/@openhands/agent-canvas/dist/hooks/mutation/conversation-mutation-utils.js";
+import { interruptConversation, resumeGoal, stopGoal } from "../node_modules/@openhands/agent-canvas/dist/hooks/mutation/conversation-mutation-utils.js";
 import { chatInputPillButtonClassName, formControlDisabledClassName } from "../node_modules/@openhands/agent-canvas/dist/utils/form-control-classes.js";
 import { cn } from "../node_modules/@openhands/agent-canvas/dist/utils/utils.js";
 import CheckCircle from "../node_modules/@openhands/agent-canvas/dist/icons/check-circle-solid.js";
@@ -18,22 +18,32 @@ const latestGoalEvent = (events: any[]) => {
   }
 };
 
+// The interrupted event mounts a new row before the running request has stopped.
+const pendingActions = new Set<string>();
+const listeners = new Set<() => void>();
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
+
 /** Canvas's goal block put the whole request in its title, once per round: here one line that
  *  opens on a click, with the same stop and resume buttons. */
 export function GoalStatusContent({ status, eventId }: { status: GoalStatus; eventId?: string }) {
   const { conversationId } = useOptionalConversationId();
   const goalActive = useGoalStore((state: any) => conversationId ? !!state.statusByConversation[conversationId]?.active : false);
   const latest = useEventStore((state: any) => eventId === undefined || latestGoalEvent(state.events) === eventId);
-  const [busy, setBusy] = useState(false);
+  const busy = useSyncExternalStore(subscribe, () => !!conversationId && pendingActions.has(conversationId));
   const act = async (action: (id: string) => Promise<unknown>, failure: string) => {
-    if (!conversationId || busy) return;
-    setBusy(true);
+    if (!conversationId || pendingActions.has(conversationId)) return;
+    pendingActions.add(conversationId);
+    for (const listener of listeners) listener();
     try {
       await action(conversationId);
     } catch (error) {
       displayErrorToast(error instanceof Error && error.message ? error.message : failure);
     } finally {
-      setBusy(false);
+      pendingActions.delete(conversationId);
+      for (const listener of listeners) listener();
     }
   };
   const button = (testId: string, label: string, onClick: () => void) => (
@@ -42,7 +52,10 @@ export function GoalStatusContent({ status, eventId }: { status: GoalStatus; eve
   );
   let trailing = null;
   if (conversationId && status.active) {
-    trailing = button("goal-stop", "Остановить", () => act(async (id) => { await stopGoal(id); await pauseConversation(id); },
+    trailing = button("goal-stop", "Остановить", () => act(async (id) => {
+      await stopGoal(id);
+      await interruptConversation(id);
+    },
       "Не удалось остановить цикл цели"));
   } else if (conversationId && status.status === "interrupted" && latest && !goalActive) {
     trailing = button("goal-resume", "Продолжить", () => act(resumeGoal, "Не удалось продолжить цикл цели"));

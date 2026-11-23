@@ -6,16 +6,26 @@ import puppeteer from "puppeteer-core";
 
 const mocks = {
   "use-goal-interceptor.js": `export const useGoalInterceptor = () => text => window.calls.push(["canvas", text]);`,
-  "conversation-mutation-utils.js": `export const startGoal = async (id, body) => { window.calls.push(["goal", id, {...body}]); return window.goalResult(); };`,
+  "conversation-mutation-utils.js": `
+    export const startGoal = async (id, body) => { window.calls.push(["goal", id, {...body}]); return window.goalResult(); };
+    export const stopGoal = async id => { window.calls.push(["stop", id]); window.goalStatus(false); };
+    export const interruptConversation = id => { window.calls.push(["interrupt", id]); return window.interruptPending; };
+    export const resumeGoal = async id => { window.calls.push(["resume", id]); };
+  `,
   "use-agent-state.js": `export const useAgentState = () => ({curAgentState: window.agentState});`,
   "conversation-store.js": `export const useConversationStore = select => select({images: window.images, files: [], conversationMode: window.mode});`,
   "custom-toast-handlers.js": `export const displayErrorToast = text => window.calls.push(["toast", text]);`,
+  "use-conversation-id.js": `export const useOptionalConversationId = () => ({conversationId: "c"});`,
+  "use-event-store.js": `export const useEventStore = select => select({events: []});`,
+  "goal-store.js": `export const useGoalStore = select => select({statusByConversation: {}});`,
+  "type-guards.js": `export const isConversationStateUpdateEvent = () => false; export const isGoalConversationStateUpdateEvent = () => false;`,
 };
 const bundle = await build({
   stdin: {resolveDir: process.cwd(), loader: "tsx", contents: `
     import React from "react";
     import {createRoot} from "react-dom/client";
     import {useGoalInterceptor} from "./src/use-goal-by-default.ts";
+    import {GoalStatusContent} from "./src/goal-status-compact.tsx";
     function App({id, version}) {
       window.submit = useGoalInterceptor(id, text => window.calls.push(["next", text]));
       return <div>{id}:{version}</div>;
@@ -23,6 +33,8 @@ const bundle = await build({
     const root = createRoot(document.getElementById("root"));
     window.render = (id, version) => root.render(<App id={id} version={version}/>);
     window.unmount = () => root.render(<div/>);
+    window.goalStatus = active => root.render(<GoalStatusContent key={String(active)}
+      status={{active, status: active ? "running" : "interrupted", iteration: 0, max_iterations: 3, objective: "Создай файл"}} />);
   `},
   bundle: true, write: false, platform: "browser", format: "iife", jsx: "automatic",
   plugins: [{name: "offline-canvas", setup(builder) {
@@ -97,6 +109,26 @@ try {
     console.log(`PASS ${name}`);
     await page.close();
   }
+  const page = await browser.newPage();
+  await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await page.addScriptTag({content: bundle.outputFiles[0].text});
+  await page.evaluate(() => {
+    window.calls = [];
+    window.interruptPending = new Promise(resolve => { window.finishInterrupt = resolve; });
+    window.goalStatus(true);
+  });
+  await page.click('[data-testid="goal-stop"]');
+  const resume = '[data-testid="goal-resume"]';
+  await page.waitForSelector(resume);
+  assert.equal(await page.$eval(resume, button => button.disabled), true, "a new row must wait for the interrupt");
+  await page.click(resume);
+  assert.deepEqual(await page.evaluate(() => window.calls), [["stop", "c"], ["interrupt", "c"]]);
+  await page.evaluate(() => window.finishInterrupt());
+  await page.waitForFunction(selector => !document.querySelector(selector).disabled, {}, resume);
+  await page.click(resume);
+  assert.deepEqual(await page.evaluate(() => window.calls), [["stop", "c"], ["interrupt", "c"], ["resume", "c"]]);
+  console.log("PASS resume waits for the active request to stop");
+  await page.close();
 } finally {
   await browser?.close();
   await new Promise(resolve => server.close(resolve));

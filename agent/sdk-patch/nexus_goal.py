@@ -73,8 +73,12 @@ CONTEXT_MESSAGES = 6
 CONTEXT_MESSAGE_CHARS = 1500
 CONTEXT_HEADER = "Earlier in this conversation (context for the request above, not part of it):"
 CHECK_ROLE = "check"
-STOP_WORDS = re.compile(r"\b(стоп|хватит|останов\w*|прекрат\w*|отмен\w*|подожди\w*|погоди\w*|пауз\w*|"
-                        r"не надо|не нужно|брось|забудь)\b", re.IGNORECASE)
+STOP_ACTIONS = r"останов\w*|останавл\w*|прекра[тщ]\w*|отмен\w*|подожди\w*|погоди\w*|пауз\w*|брось|забудь"
+STOP_WORDS = re.compile(rf"\b(?:стоп|хватит|не надо|не нужно|{STOP_ACTIONS})\b", re.IGNORECASE)
+KEEP_GOING = re.compile(
+    rf"\bне\s+(?:(?:надо|нужно)\s+)?(?:(?:по)?став(?:ь|ить)\s+на\s+)?(?:{STOP_ACTIONS})\b",
+    re.IGNORECASE,
+)
 
 JUDGE_CONTEXT = """
 
@@ -95,7 +99,8 @@ agree to give up is not a repair.
 A later "user" message in the transcript is the owner correcting or adding to the request: judge
 the request as corrected. "check" lines are this check's own reminders, not the owner's words. If
 the owner later asked to stop, wait or leave the task, ask for no more work: add "needs_user": true
-and say in "missing" that the owner stopped it.
+and say in "missing" that the owner stopped it. Honor invitations to keep working, including
+Russian negated stop phrases such as «не останавливайся».
 
 The objective may be followed by earlier messages of the conversation. A short reply there (a
 name, "yes", a choice) continues the request it answers: judge whether that request is now done.
@@ -386,7 +391,7 @@ def patch_controller(module):
 
 
 def stops(message):
-    return any(STOP_WORDS.search(getattr(content, "text", "")) for content in message.content)
+    return any(STOP_WORDS.search(KEEP_GOING.sub(" ", getattr(content, "text", ""))) for content in message.content)
 
 
 def patch_event_service(module):
@@ -457,6 +462,10 @@ async def understand(event_service, text):
                 "chat_template_kwargs": {"enable_thinking": False, "reasoning_effort": "none"}}
         if uses_local_router(llm):
             body["response_format"] = LOCAL_INTENT_FORMAT
+            if model in {"nex25", "nex19-2080", "nex19-5060"}:
+                # The Nex template opens a thought block even with reasoning_effort=none.
+                # Tess's sampler can fail when zero budget and the schema are combined.
+                body["thinking_budget_tokens"] = 0
         key = llm.api_key.get_secret_value() if hasattr(llm.api_key, "get_secret_value") else llm.api_key
         headers = {"Authorization": f"Bearer {key}"} if key else {}
         # trust_env=False: the desktop's proxy settings must not catch a local request.

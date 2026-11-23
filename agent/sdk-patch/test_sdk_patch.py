@@ -540,16 +540,22 @@ class GoalTests(unittest.TestCase):
         self.assertEqual(asyncio.run(goal.understand(SimpleNamespace(), "Почини звук")), ("talk", ""))
 
     def test_local_understanding_requests_a_structured_answer(self):
-        llm = SimpleNamespace(model="openai/holo", base_url="http://127.0.0.1:18030/v1", api_key="not-needed")
-        service = SimpleNamespace(_conversation=SimpleNamespace(agent=SimpleNamespace(llm=llm)))
         response = SimpleNamespace(raise_for_status=lambda: None,
                                    json=lambda: {"choices": [{"message": {"content":
                                        '{"kind":"task","goal":"Проверить звук"}'}}]})
-        with patch("httpx.AsyncClient") as client, patch.object(goal, "recent_messages", return_value=""):
-            post = client.return_value.__aenter__.return_value.post = AsyncMock(return_value=response)
-            self.assertEqual(asyncio.run(goal.understand(service, "Почини звук")), ("task", "Проверить звук"))
-        schema = post.call_args.kwargs["json"]["response_format"]["json_schema"]["schema"]
-        self.assertEqual(schema["properties"]["kind"]["enum"], ["task", "talk"])
+        for model, budget in [("nex25", 0), ("nex19-2080", 0), ("nex19-5060", 0),
+                              ("tess", None), ("holo", None), ("holo-mtp", None)]:
+            with self.subTest(model=model), patch("httpx.AsyncClient") as client, \
+                    patch.object(goal, "recent_messages", return_value=""):
+                llm = SimpleNamespace(model=f"openai/{model}", base_url="http://127.0.0.1:18030/v1",
+                                      api_key="not-needed")
+                service = SimpleNamespace(_conversation=SimpleNamespace(agent=SimpleNamespace(llm=llm)))
+                post = client.return_value.__aenter__.return_value.post = AsyncMock(return_value=response)
+                self.assertEqual(asyncio.run(goal.understand(service, "Почини звук")), ("task", "Проверить звук"))
+                body = post.call_args.kwargs["json"]
+                self.assertEqual(body.get("thinking_budget_tokens"), budget)
+                schema = body["response_format"]["json_schema"]["schema"]
+                self.assertEqual(schema["properties"]["kind"]["enum"], ["task", "talk"])
 
 
 class InterjectTests(unittest.TestCase):
@@ -756,6 +762,15 @@ class GoalCorrectionTests(unittest.TestCase):
             self.assertEqual(self.deliver(text), (False, [None]), text)
         for text in ["Стоп", "Остановись, пожалуйста", "Подожди минутку", "Хватит", "Не надо больше ничего делать"]:
             self.assertEqual(self.deliver(text), (True, [None]), text)
+
+    def test_a_request_to_keep_going_preserves_the_goal(self):
+        for text in ["Не останавливайся, только назови отчёт иначе", "Не надо останавливаться, продолжай",
+                     "Не нужно прекращать проверку", "Не ставь на паузу, закончи проверку",
+                     "Не отменяй, просто поменяй имя файла"]:
+            with self.subTest(text=text):
+                self.assertEqual(self.deliver(text), (False, [None]))
+        self.assertEqual(self.deliver("Не останавливайся надолго. Стоп, я сейчас уточню."), (True, [None]))
+        self.assertEqual(self.deliver("Нет, остановись, пожалуйста."), (True, [None]))
 
     def test_the_judge_reads_the_correction_as_the_owners_and_the_follow_up_as_its_own(self):
         events = [GoalTests.user(None, "Сделай тёмную тему"), GoalTests.user(None, "И шрифт покрупнее"),
