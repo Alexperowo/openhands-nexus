@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import sitecustomize as shim
 from openhands.sdk import Agent, LLM
@@ -384,14 +384,18 @@ class GoalTests(unittest.TestCase):
 
         def completion(llm, messages):
             audited.append((llm.timeout, llm.num_retries, llm.stream, llm.max_output_tokens,
-                            llm.litellm_extra_body["thinking_budget_tokens"]))
+                            llm.litellm_extra_body["thinking_budget_tokens"],
+                            llm.litellm_extra_body.get("response_format")))
             return SimpleNamespace(message=Message(role="assistant", content=[TextContent(
                 text='{"score": 1, "complete": true, "missing": ""}')]))
 
         with patch.object(LLM, "completion", completion):
             done = sdk.GoalController(self.objective, engine).on_run_finished(self.run_events("ok"))
         self.assertEqual(done.outcome.status, "complete")
-        self.assertEqual(audited, [(120, 0, False, 1024, 512)])
+        [(timeout, retries, stream, output, thinking, response_format)] = audited
+        self.assertEqual((timeout, retries, stream, output, thinking), (120, 0, False, 1024, 512))
+        self.assertEqual(response_format["type"], "json_schema")
+        self.assertEqual(response_format["json_schema"]["schema"]["required"], ["score", "complete", "missing"])
         self.assertEqual((engine.timeout, engine.num_retries, engine.stream), (2400, 2, True))
         self.assertEqual((engine.max_output_tokens, engine.litellm_extra_body), (32768, {"thinking_budget_tokens": 8192}))
         short = goal.bounded_auditor(engine.model_copy(update={
@@ -414,6 +418,7 @@ class GoalTests(unittest.TestCase):
         self.assertIsInstance(step, sdk.GoalContinue)
         self.assertTrue(step.followup.startswith(goal.FOLLOWUP_MARK))
         self.assertIn("нет проверки файла", step.followup)
+
         system, user = (message.content[0].text for message in llm.prompts[0])
         self.assertIn("not a programmer", system)
         # The earlier request comes as context with the objective, not as part of the judged run.
@@ -421,6 +426,18 @@ class GoalTests(unittest.TestCase):
         self.assertIn(goal.CONTEXT_HEADER + "\nuser: старая просьба", request)
         self.assertNotIn("старая просьба", transcript)
         self.assertTrue(event_service.RESUME_PROMPT.startswith(goal.FOLLOWUP_MARK))
+
+    def test_unreadable_goal_audit_does_not_repeat_the_work(self):
+        from openhands.sdk.conversation.goal import controller as sdk
+
+        for response in ("Размышление без итогового решения.", '{"score": 0.2, "complete": "false"}',
+                         '{"score": 0.2, "complete": true}', '{"score": 0.5, "complete": false}'):
+            with self.subTest(response=response):
+                step = sdk.GoalController(self.objective, self.judge_llm(response)).on_run_finished(
+                    self.run_events("ok"))
+                self.assertIsInstance(step, sdk.GoalDone)
+                self.assertEqual(step.outcome.status, "capped")
+                self.assertEqual(step.outcome.verdict.missing, goal.UNREADABLE)
 
     def test_verdict_is_complete_only_as_json_true_with_a_matching_score(self):
         from openhands.sdk.conversation.goal import controller as sdk, judge
@@ -430,22 +447,16 @@ class GoalTests(unittest.TestCase):
         for text in ['{"score": 0.95, "complete": true, "missing": ""}', '{"score": 1, "complete": true}',
                      'Вот вердикт: {"score": 5, "complete": true}']:
             self.assertTrue(verdict(text).complete, text)
-        for text, why in [('{"score": 0.9, "complete": "true"}', "не по форме"),
-                          ('{"score": 0.2, "complete": "false", "missing": "нет файла"}', "нет файла; проверка ответила не по форме"),
-                          ('{"score": 0.9}', "не по форме"),
-                          ('{"score": 0.9, "complete": 1}', "не по форме"),
-                          ('{"score": 0.3, "complete": true}', "противоречит себе: «готово», но уверенность 30%"),
-                          ('{"score": "0.9", "complete": true}', "уверенность 0%"),
-                          ('{"score": NaN, "complete": true}', "уверенность 0%"),
-                          ('{"score": true, "complete": true}', "уверенность 0%"),
-                          ('{"score": 0.9, "complete": false}', "проверка не назвала"),
-                          ('{"score": 0.9, "complete": tru', "не смогла прочитать"),
-                          ("не JSON", "не смогла прочитать"),
-                          ('{"score": 0.9, "complete": true, "needs_user": true, "missing": "выбрать папку"}',
-                           goal.NEEDS_USER + "выбрать папку")]:
+        for text in ('{"score": 0.9, "complete": "true"}', '{"score": 0.9}',
+                     '{"score": 0.9, "complete": 1}', '{"score": "0.9", "complete": true}',
+                     '{"score": NaN, "complete": true}', '{"score": true, "complete": true}',
+                     '{"score": 0.9, "complete": tru', "не JSON"):
             result = verdict(text)
             self.assertFalse(result.complete, text)
-            self.assertIn(why, result.missing, text)
+            self.assertEqual(result.missing, goal.UNREADABLE, text)
+        result = verdict('{"score": 0.9, "complete": true, "needs_user": true, "missing": "выбрать папку"}')
+        self.assertFalse(result.complete)
+        self.assertEqual(result.missing, goal.NEEDS_USER + "выбрать папку")
         # The acceptance case through the real controller: a "false" string with needs_user is no success.
         step = sdk.GoalController(self.objective, self.judge_llm(
             '{"score": 0.2, "complete": "false", "missing": "Файл результата не создан", "needs_user": true}'
@@ -453,8 +464,6 @@ class GoalTests(unittest.TestCase):
         self.assertIsInstance(step, sdk.GoalDone)
         self.assertEqual(step.outcome.status, "capped")
         self.assertFalse(step.outcome.verdict.complete)
-        step = sdk.GoalController(self.objective, self.judge_llm('{"score": 0.2, "complete": "false"}')).on_run_finished([])
-        self.assertIsInstance(step, sdk.GoalContinue)
 
 
     def status(self, objective, iteration=0):
@@ -494,6 +503,18 @@ class GoalTests(unittest.TestCase):
 
     def test_understanding_failure_sends_the_message_as_usual(self):
         self.assertEqual(asyncio.run(goal.understand(SimpleNamespace(), "Почини звук")), ("talk", ""))
+
+    def test_local_understanding_requests_a_structured_answer(self):
+        llm = SimpleNamespace(model="openai/holo", base_url="http://127.0.0.1:18030/v1", api_key="not-needed")
+        service = SimpleNamespace(_conversation=SimpleNamespace(agent=SimpleNamespace(llm=llm)))
+        response = SimpleNamespace(raise_for_status=lambda: None,
+                                   json=lambda: {"choices": [{"message": {"content":
+                                       '{"kind":"task","goal":"Проверить звук"}'}}]})
+        with patch("httpx.AsyncClient") as client, patch.object(goal, "recent_messages", return_value=""):
+            post = client.return_value.__aenter__.return_value.post = AsyncMock(return_value=response)
+            self.assertEqual(asyncio.run(goal.understand(service, "Почини звук")), ("task", "Проверить звук"))
+        schema = post.call_args.kwargs["json"]["response_format"]["json_schema"]["schema"]
+        self.assertEqual(schema["properties"]["kind"]["enum"], ["task", "talk"])
 
 
 class InterjectTests(unittest.TestCase):

@@ -8,9 +8,15 @@ import { join } from "node:path";
 import puppeteer from "puppeteer-core";
 
 const flag = process.argv[2];
-assert.ok(process.argv.length <= 3 && [undefined, "--tess", "--holo", "--with-mtp"].includes(flag),
-  "Usage: node ui/test-live-local-models.mjs [--tess | --holo | --with-mtp]");
-const startProfile = flag === "--tess" ? "Tess-27B" : flag ? "Holo4-27B" : "Nex-25G";
+const profilesByFlag = {
+  "--nex19": "Nex-19G-2080",
+  "--tess": "Tess-27B",
+  "--holo": "Holo4-27B",
+  "--with-mtp": "Holo4-27B",
+};
+assert.ok(process.argv.length <= 3 && (flag === undefined || Object.hasOwn(profilesByFlag, flag)),
+  "Usage: node ui/test-live-local-models.mjs [--nex19 | --tess | --holo | --with-mtp]");
+const startProfile = flag === undefined ? "Nex-25G" : profilesByFlag[flag];
 const scenarios = [[startProfile, false], [startProfile, true]];
 if (flag === "--with-mtp") {
   scenarios.push(["Holo4-MTP-27B", true], [startProfile, false]);

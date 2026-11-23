@@ -25,6 +25,25 @@ models:
 
 
 class PreflightTests(unittest.TestCase):
+    def test_desk_skill_explains_the_configured_coordinates_and_keeps_aliases(self):
+        with tempfile.TemporaryDirectory() as temp:
+            screen = Path(temp)
+            (screen / "bin").mkdir()
+            (screen / ".venv/bin").mkdir(parents=True)
+            wrapper = screen / "bin/desk"
+            shutil.copy2(preflight.ROOT / "screen/bin/desk", wrapper)
+            native = screen / ".venv/bin/desk"
+            native.write_text("#!/bin/sh\nif [ \"$1\" = skill ]; then\n"
+                              "  printf '%s\\n' '- Coordinates are screen pixels, (0,0) top-left.'\n"
+                              "else\n  printf '%s\\n' \"$*\"\nfi\n")
+            native.chmod(0o755)
+            click = screen / "bin/click"
+            click.symlink_to("desk")
+            for mode, expected in (("0-1000", "Nexus uses 0-1000"), ("px", "Coordinates are screen pixels")):
+                env = {**os.environ, "COORDINATE_SYSTEM": mode}
+                self.assertIn(expected, subprocess.check_output([wrapper, "skill"], env=env, text=True))
+            self.assertEqual(subprocess.check_output([click, "310", "600"], text=True), "click 310 600\n")
+
     def test_strict_check_rejects_a_skipped_group(self):
         main = runpy.run_path(str(preflight.ROOT / "check"))["main"]
         with tempfile.TemporaryDirectory() as temp, patch("builtins.print"):

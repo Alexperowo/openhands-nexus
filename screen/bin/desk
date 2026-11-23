@@ -1,1 +1,13 @@
-../.venv/bin/desk
+#!/usr/bin/env bash
+set -euo pipefail
+
+desk="$(dirname -- "${BASH_SOURCE[0]}")/../.venv/bin/desk"
+command=${0##*/}
+if [[ "$command" != desk ]]; then
+    exec "$desk" "$command" "$@"
+fi
+if [[ ${COORDINATE_SYSTEM:-} == 0-1000 && $# == 1 && "$1" == skill ]]; then
+    "$desk" skill | sed -E '/^- Coordinates are screen pixels,/c\- Nexus uses 0-1000 on each axis. The top left is (0,0), and the bottom right is (1000,1000). For a W by H screenshot, convert pixels to (1000*x/W, 1000*y/H). On a 1600 by 900 screenshot a point at (800,450) is click 500 500. Use coords to check the size. Rulers and receipts use the same frame.'
+    exit
+fi
+exec "$desk" "$@"

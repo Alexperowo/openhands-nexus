@@ -16,12 +16,11 @@ continues, at most a few rounds. The SDK loop is kept; this adapts it:
   extras the agent itself offered are no requirement (it had demanded a monitor the agent proposed).
 - The judge knows the setting (a personal PC, a user who is not a programmer), answers in Russian,
   and says when only the user can continue: the loop then stops instead of pushing the agent.
-- Local verdicts have their own output budget and deadline. A timed-out check leaves a resumable
-  goal while the agent's answer stays in the conversation.
+- Local classification and verdicts use JSON schemas. Verdicts have their own output budget and
+  deadline. A timed-out or unreadable check leaves the goal unconfirmed and keeps the agent's work.
 - Its verdict is read strictly. The SDK takes `bool(data["complete"])`, so the string "false" was a
   success. Here only the JSON value true with a score of at least COMPLETE_SCORE and no
-  "needs_user" is complete; a wrong type, a missing field or a verdict that contradicts itself
-  is not, and the agent gets another round with what was wrong.
+  "needs_user" is complete. A valid verdict with a gap in the work can request another round.
 - Its follow-up and resume messages are Russian and start with FOLLOWUP_MARK, which the UI uses to
   tell them from the user's own messages.
 - The start takes the UI's id of that send ("attempt"). When the answer was lost, the UI sends the
@@ -40,13 +39,29 @@ import sys
 from contextvars import ContextVar
 from urllib.parse import urlsplit
 
+
+def json_response_format(name, properties, required):
+    return {"type": "json_schema", "json_schema": {
+        "name": name, "strict": True, "schema": {
+            "type": "object", "properties": properties, "required": required, "additionalProperties": False,
+        },
+    }}
+
+
 FOLLOWUP_MARK = "Проверка Nexus:"
 NEEDS_USER = "Нужно ваше решение: "
 COMPLETE_SCORE = 0.8
 LOCAL_AUDIT_TIMEOUT = 120  # A bounded transcript gets its own deadline, independent of the full run.
 LOCAL_AUDIT_OUTPUT = 1024
 LOCAL_AUDIT_THINKING = 512
-UNREADABLE = "проверка не смогла прочитать свой ответ, нужен ещё один круг"
+LOCAL_VERDICT_FORMAT = json_response_format("nexus_goal_verdict", {
+    "score": {"type": "number"}, "complete": {"type": "boolean"},
+    "missing": {"type": "string"}, "needs_user": {"type": "boolean"},
+}, ["score", "complete", "missing"])
+LOCAL_INTENT_FORMAT = json_response_format("nexus_goal_intent", {
+    "kind": {"type": "string", "enum": ["task", "talk"]}, "goal": {"type": "string"},
+}, ["kind", "goal"])
+UNREADABLE = "проверка не получила читаемый итог"
 TOOL_OUTPUT_CHARS = 3000
 CALL_CHARS = 600
 TRANSCRIPT_CHARS = 60000
@@ -232,24 +247,19 @@ def parse_verdict(message, verdict_class):
     if data is None:
         return verdict_class(score=0.0, complete=False, missing=UNREADABLE)
     score, complete, missing = data.get("score"), data.get("complete"), data.get("missing")
-    missing = missing.strip() if isinstance(missing, str) else ""
     # bool is an int in Python; NaN and infinity are no probability.
     if not isinstance(score, (int, float)) or isinstance(score, bool) or not math.isfinite(score):
-        score = 0.0
+        return verdict_class(score=0.0, complete=False, missing=UNREADABLE)
     score = max(0.0, min(1.0, float(score)))
-    if not isinstance(complete, bool):
-        problem = "проверка ответила не по форме, нужен ещё один круг"
-    elif complete and score < COMPLETE_SCORE:
-        problem = f"проверка противоречит себе: «готово», но уверенность {score:.0%}; нужен ещё один круг"
-    else:
-        problem = ""
+    missing = missing.strip() if isinstance(missing, str) else ""
     if data.get("needs_user") is True:
         missing = missing if missing.startswith(NEEDS_USER) else NEEDS_USER + (missing or "ответ пользователя")
         return verdict_class(score=score, complete=False, missing=missing)
-    if complete is True and not problem:
+    if complete is True and score >= COMPLETE_SCORE:
         return verdict_class(score=score, complete=True, missing=missing)
-    missing = "; ".join(part for part in [missing, problem] if part)
-    return verdict_class(score=score, complete=False, missing=missing or "проверка не назвала, чего не хватает: перепроверь результат")
+    if complete is False and missing:
+        return verdict_class(score=score, complete=False, missing=missing)
+    return verdict_class(score=score, complete=False, missing=UNREADABLE)
 
 
 def patch_judge(module):
@@ -258,14 +268,19 @@ def patch_judge(module):
     module._parse_verdict = lambda message: parse_verdict(message, module.GoalVerdict)
 
 
-def bounded_auditor(llm):
+def uses_local_router(llm):
     endpoint = urlsplit(getattr(llm, "base_url", None) or "")
-    if endpoint.hostname not in {"127.0.0.1", "localhost", "::1"} or endpoint.port != 18030:
+    return endpoint.hostname in {"127.0.0.1", "localhost", "::1"} and endpoint.port == 18030
+
+
+def bounded_auditor(llm):
+    if not uses_local_router(llm):
         return llm
     body = dict(llm.litellm_extra_body or {})
     budget = body.get("thinking_budget_tokens")
     if not isinstance(budget, int) or not 0 <= budget <= LOCAL_AUDIT_THINKING:
         body["thinking_budget_tokens"] = LOCAL_AUDIT_THINKING
+    body["response_format"] = LOCAL_VERDICT_FORMAT
     return llm.model_copy(update={
         "timeout": min(llm.timeout or LOCAL_AUDIT_TIMEOUT, LOCAL_AUDIT_TIMEOUT),
         "num_retries": 0,
@@ -295,8 +310,11 @@ def patch_controller(module):
 
     def on_run_finished(self, events):
         step = decide(self, events)
-        # Asking the agent again cannot replace the owner's answer.
-        if isinstance(step, module.GoalContinue) and step.verdict.missing.startswith(NEEDS_USER):
+        if not isinstance(step, module.GoalContinue):
+            return step
+        # The owner's decision and a broken verifier both need the current work left as is.
+        missing = step.verdict.missing
+        if missing == UNREADABLE or missing.startswith(NEEDS_USER):
             return module.GoalDone(outcome=module.GoalOutcome(
                 status="capped", iterations=self.iteration, verdict=step.verdict))
         return step
@@ -374,6 +392,8 @@ async def understand(event_service, text):
         body = {"model": model, "temperature": 0.3, "max_tokens": 200,
                 "messages": [{"role": "system", "content": UNDERSTAND_SYSTEM}, {"role": "user", "content": user}],
                 "chat_template_kwargs": {"enable_thinking": False, "reasoning_effort": "none"}}
+        if uses_local_router(llm):
+            body["response_format"] = LOCAL_INTENT_FORMAT
         key = llm.api_key.get_secret_value() if hasattr(llm.api_key, "get_secret_value") else llm.api_key
         headers = {"Authorization": f"Bearer {key}"} if key else {}
         # trust_env=False: the desktop's proxy settings must not catch a local request.
