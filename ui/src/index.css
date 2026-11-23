@@ -28,6 +28,16 @@ body, #root { margin: 0; height: 100%; background: #000; color: #fff; }
 /* The input is pinned to text-[16px] in Canvas; it must follow the chosen size too. */
 [data-testid="chat-input"] { font-size: 1rem !important; }
 
+/* Follow Canvas's measured fit, including font changes and side panels. */
+.nexus-input-actions { width: 100%; min-width: 0; }
+.nexus-model-status {
+  display: none; margin: 0; padding-top: 0.25rem;
+  font-size: 1rem; line-height: 1.5; overflow-wrap: anywhere;
+}
+.nexus-input-actions:has(.hidden [data-testid="chat-input-llm-profile"]) > .nexus-model-status {
+  display: block;
+}
+
 *:focus-visible {
   outline: 3px solid var(--nexus-focus-color) !important;
   outline-offset: 2px !important;

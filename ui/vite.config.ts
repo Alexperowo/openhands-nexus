@@ -75,6 +75,7 @@ export const ADAPTERS = {
   // Same place in the input row as the original, but it keeps the last reading and reads aloud.
   "components/features/chat/components/context-window-meter.js": "src/context-window-meter.tsx",
   "components/features/chat/components/chat-input-field.js": "src/chat-input-with-label.tsx",
+  "components/features/chat/components/chat-input-actions.js": "src/chat-input-actions-with-model.tsx",
   // Same model button and menu, plus the reasoning level (reasoning.ts).
   "components/features/chat/components/chat-input-llm-profile-picker.js": "src/llm-profile-picker-with-reasoning.tsx",
   "components/features/conversation-panel/conversation-card/conversation-card-context-menu.js": "src/conversation-menu-with-focus.tsx",

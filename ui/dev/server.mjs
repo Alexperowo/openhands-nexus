@@ -11,12 +11,13 @@ const history = length => Array.from({length}, (_, i) => ({
   ...message(`history-${i}`, i % 2 ? "agent" : "user", i % 2 ? "Предыдущая проверка выполнена. Настройки сохранены.\n\nМожно продолжать работу с компьютером." : "Проверь настройки компьютера и объясни результат."),
   seq: i,
 }));
-export async function startFixture({ root, port = 0 } = {}) {
+export async function startFixture({ root, port = 0, profiles = [] } = {}) {
   let events = history(8), status = "idle", offline = false, wsOffline = false, timers = [], model = "ready";
   let sequence = events.length - 1, runCount = 0, snapshots = 0;
   let transcriptionAvailable = true;
+  let llm = profiles[0]?.config ?? {model: "fixture"};
   const requests = [], sockets = new Set();
-  const conversation = (id = "replay") => ({ id, title: id === "replay" ? "Проверка компьютера" : "Вторая беседа", created_at: timestamp, updated_at: timestamp, execution_status: status, workspace: {working_dir: "/tmp"}, agent: {kind: "Agent", llm: {model: "fixture"}}, stats: {usage_to_metrics: {}}, sub_conversation_ids: [], available_models: [], sandbox_status: "RUNNING" });
+  const conversation = (id = "replay") => ({ id, title: id === "replay" ? "Проверка компьютера" : "Вторая беседа", created_at: timestamp, updated_at: timestamp, execution_status: status, workspace: {working_dir: "/tmp"}, agent: {kind: "Agent", llm}, llm_model: llm.model, stats: {usage_to_metrics: {}}, sub_conversation_ids: [], available_models: [], sandbox_status: "RUNNING" });
   const send = (frame) => { for (const socket of sockets) if (socket.readyState === 1) socket.send(JSON.stringify(frame)); };
   const durable = event => { event = {...event, seq: ++sequence}; events.push(event); send({type: "durable", seq: event.seq, event}); };
   const statusEvent = () => ({id: `status-${sequence + 1}`, kind: "ConversationStateUpdateEvent", source: "environment", timestamp, key: "execution_status", value: status});
@@ -49,6 +50,7 @@ export async function startFixture({ root, port = 0 } = {}) {
       timers.forEach(clearTimeout); timers = []; events = history(url.searchParams.get("history") ?? 8);
       sequence = events.length - 1; runCount = 0; status = "idle"; offline = false; wsOffline = false; model = "ready";
       transcriptionAvailable = true;
+      llm = profiles[0]?.config ?? {model: "fixture"};
       return json(res, {});
     }
     if (p === "/__fixture/start") { run(); return json(res, {}); }
@@ -75,6 +77,15 @@ export async function startFixture({ root, port = 0 } = {}) {
       if (p === "/api/settings") return json(res, {language: "ru", enable_sound_notifications: false, is_new_user: false, agent_settings: {llm: {model: "fixture", base_url: "http://127.0.0.1", api_key: "fixture-only"}, tools: []}, conversation_settings: {max_iterations: 100, confirmation_mode: false}, llm_api_key_set: true});
       if (p === "/api/settings/experimental") return json(res, []);
       if (p === "/api/settings/secrets") return json(res, {secrets: []});
+      if (p === "/api/profiles") return json(res, {profiles: profiles.map(({name, config}) => ({name, model: config.model})), active_profile: profiles[0]?.name ?? null});
+      if (p.startsWith("/api/profiles/")) return json(res, profiles.find(profile => profile.name === decodeURIComponent(p.split("/").at(-1))) ?? {});
+      if (p.endsWith("/switch_llm") && req.method === "POST") {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        llm = JSON.parse(Buffer.concat(chunks).toString()).llm;
+        entry.llm = llm;
+        return json(res, {});
+      }
       if (p === "/api/conversations/replay/goal" && req.method === "POST") {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
@@ -84,7 +95,7 @@ export async function startFixture({ root, port = 0 } = {}) {
       }
       if (p.endsWith("/events/search")) return json(res, {items: [...events].reverse(), next_page_id: null});
       if (p.endsWith("/events/count")) return json(res, events.length);
-      if (p.endsWith("/state")) return json(res, {execution_status: status, stats: {usage_to_metrics: {}}, agent: {llm: {model: "fixture"}}, workspace: {working_dir: "/tmp"}});
+      if (p.endsWith("/state")) return json(res, {execution_status: status, stats: {usage_to_metrics: {}}, agent: {llm}, workspace: {working_dir: "/tmp"}});
       if (p === "/api/conversations/search") return json(res, {items: [conversation(), conversation("second")], next_page_id: null});
       if (p === "/api/conversations") {
         if (req.method === "POST") return json(res, conversation("second"));
@@ -131,7 +142,7 @@ export async function startFixture({ root, port = 0 } = {}) {
     socket.on("close", () => sockets.delete(socket));
   });
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(port, "127.0.0.1", resolve); });
-  return { origin: `http://127.0.0.1:${server.address().port}`, requests, close: async () => { timers.forEach(clearTimeout); for (const socket of sockets) socket.terminate(); await new Promise(resolve => ws.close(resolve)); await new Promise(resolve => server.close(resolve)); } };
+  return { origin: `http://127.0.0.1:${server.address().port}`, requests, setProfiles: values => { profiles = values; }, close: async () => { timers.forEach(clearTimeout); for (const socket of sockets) socket.terminate(); await new Promise(resolve => ws.close(resolve)); await new Promise(resolve => server.close(resolve)); } };
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fixture = await startFixture({root: path.resolve(process.argv[2] || "/tmp/ohn-ui-replay"), port: Number(process.argv[3] || 4174)});

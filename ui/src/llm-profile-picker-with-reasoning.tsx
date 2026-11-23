@@ -51,7 +51,7 @@ const subscribe = (listener: () => void) => {
 };
 
 /** The open conversation's level; without a conversation, the one new conversations get. */
-function useReasoningLevel() {
+export function useReasoningLevel() {
   const { conversationId } = useNavigation();
   const preferred = usePreferences().reasoning;
   const level = useSyncExternalStore(subscribe, () => (conversationId ? levels.get(conversationId) : preferred));
@@ -100,9 +100,6 @@ export function ChatInputLlmProfileMenuContent(props: MenuProps) {
   return <><ReasoningGroup onClose={props.onClose} /><CanvasMenuContent {...props} /></>;
 }
 
-const LABEL_CHARS = 18;
-const shortLabel = (label: string) => (label.length <= LABEL_CHARS ? label : `${label.slice(0, LABEL_CHARS)}…`);
-
 export function ChatInputLlmProfilePicker() {
   const { t } = useTranslation();
   const { profiles, currentProfileName, currentProfileModel, isLoading, isSwitching } = useChatInputLlmProfileState();
@@ -133,11 +130,10 @@ export function ChatInputLlmProfilePicker() {
     <div className="relative min-w-0">
       <button ref={button} type="button" className={cn(chatInputPillButtonClassName, "max-w-50 nexus-model-pill")}
         title={currentProfileName ?? undefined} data-testid="chat-input-llm-profile"
-        aria-label={levelLabel ? `${name}, рассуждения: ${levelLabel}` : undefined}
         aria-expanded={open} aria-haspopup="dialog" disabled={isSwitching} aria-busy={isSwitching}
         onClick={(event) => { event.preventDefault(); event.stopPropagation(); setOpen((value) => !value); }}>
         <span className="nexus-model-pill-text">
-          <span className="truncate">{shortLabel(name)}</span>
+          <span className="truncate">{name}</span>
           {levelLabel && <span className="nexus-model-pill-level">{levelLabel}</span>}
         </span>
         {catalogWarning(currentProfileModel) && <ModelCatalogWarning compact />}

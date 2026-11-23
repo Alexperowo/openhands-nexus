@@ -54,6 +54,7 @@ const ADAPTED = {
   [`${dist}/components/conversation-events/chat/event-message.js`]: "EventMessage",
   [`${dist}/ui/dropdown/toggle-button.js`]: "ToggleButton",
   [`${dist}/components/features/chat/components/chat-input-field.js`]: "ChatInputField",
+  [`${dist}/components/features/chat/components/chat-input-actions.js`]: "ChatInputActions",
   [`${dist}/components/features/conversation-panel/conversation-card/conversation-card-context-menu.js`]: "ConversationCardContextMenu",
   [`${dist}/components/shared/modals/modal-backdrop.js`]: "ModalBackdrop",
   [`${dist}/themes/syntax-highlighter-themes.js`]: "getSyntaxHighlighterTheme",

@@ -88,9 +88,32 @@ try {
     console.log("PASS REST loss and restoration with the socket open");
     await context.close();
   }
+  const config = {model: "fixture", base_url: "http://127.0.0.1:18030/v1", litellm_extra_body: {
+    chat_template_kwargs: {enable_thinking: true, reasoning_effort: "xhigh"}, thinking_budget_tokens: 8192,
+  }};
+  fixture.setProfiles([
+    {name: "Holo4-MTP-27B-Q8_0", config},
+    {name: "Tess4.5-27B", config: {...config, model: "fixture-tess"}},
+  ]);
   for (const [width, height] of [[564, 785], [1280, 900]]) for (const fontSize of [18, 28]) for (const reduced of [false, true]) {
     const {page, context, errors, remoteRequests} = await openPage(browser, fixture.origin, {width, height, fontSize, reduced});
     const caseName = `${width}x${height}-${fontSize}px-${reduced ? "reduced" : "normal"}`;
+    await page.waitForFunction(() => document.querySelector("[data-testid='chat-input-model-status']")?.textContent.includes("Высокое"));
+    const modelStatus = await page.$eval("[data-testid='chat-input-model-status']", node => {
+      const picker = document.querySelector("[data-testid='chat-input-llm-profile']");
+      const row = node.previousElementSibling.getBoundingClientRect();
+      const rect = node.getBoundingClientRect();
+      return {visible: !!node.getClientRects().length, pickerVisible: !!picker.getClientRects().length,
+        text: node.textContent, below: rect.top >= row.bottom, fits: node.scrollWidth <= node.clientWidth,
+        fontSize: getComputedStyle(node).fontSize};
+    });
+    assert.equal(modelStatus.visible, width === 564, `model status visibility: ${caseName}`);
+    assert.equal(modelStatus.pickerVisible, width === 1280, `model picker visibility: ${caseName}`);
+    assert.equal(modelStatus.text, "Holo4-MTP-27B-Q8_0 · Высокое");
+    if (modelStatus.visible) {
+      assert.ok(modelStatus.below && modelStatus.fits, `model status must fit below controls: ${caseName}`);
+      assert.equal(modelStatus.fontSize, `${fontSize}px`);
+    }
     assert.ok(await page.$eval("[data-testid='chat-input']", node => {
       const style = getComputedStyle(node), placeholder = getComputedStyle(node, "::before");
       return style.fontSize === placeholder.fontSize && node.getBoundingClientRect().height >= parseFloat(style.lineHeight) - 1;
@@ -137,6 +160,33 @@ try {
     console.log(`PASS ${caseName}: scroll, article, keyboard, axe including enhanced contrast`);
     await context.close();
   }
+  // Select through Canvas's existing overflow menu and read the confirmed settings below it.
+  {
+    const {page, context, errors} = await openPage(browser, fixture.origin, {fontSize: 28});
+    const status = "[data-testid='chat-input-model-status']";
+    const openModels = async () => {
+      await page.click("button[aria-haspopup='menu'][aria-label='Действия с дополнительным вводом']");
+      await page.click("[data-testid='overflow-model-button']");
+      await page.waitForSelector("[data-testid='overflow-model-submenu']", {visible: true});
+    };
+    await openModels();
+    await page.click("[data-testid='chat-input-llm-profile-option-Tess4.5-27B']");
+    await page.waitForFunction(selector => document.querySelector(selector)?.textContent === "Tess4.5-27B · Высокое", {}, status);
+    await openModels();
+    await page.click("[data-testid='chat-input-reasoning-low']");
+    await page.waitForFunction(selector => document.querySelector(selector)?.textContent === "Tess4.5-27B · Низкое", {}, status);
+    assert.equal(fixture.requests.filter(entry => entry.path.endsWith("/switch_llm")).length, 2);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.setViewport({width: 1280, height: 900});
+    await page.waitForFunction(selector => !document.querySelector(selector).getClientRects().length, {}, status);
+    await page.setViewport({width: 564, height: 785});
+    await page.waitForSelector(status, {visible: true});
+    assert.equal(await page.$eval(status, node => node.textContent), "Tess4.5-27B · Низкое");
+    assert.deepEqual(errors, []);
+    console.log("PASS model and reasoning from overflow menu, status follows switches and resizing");
+    await context.close();
+  }
+  fixture.setProfiles([]);
   // Native setting, keyboard drawer and a single main landmark.
   {
     const {page, context} = await openPage(browser, fixture.origin, {initialPath: "/settings/accessibility"});
