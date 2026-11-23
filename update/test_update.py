@@ -116,6 +116,35 @@ class UpdateTests(unittest.TestCase):
         self.assert_old_canvas()
         self.assertEqual(self.u.health.call_count, 2)
 
+    def test_canvas_health_waits_for_automation_readiness(self):
+        self.u.args.sandbox = None
+        automation = "http://127.0.0.1:18011/ready"
+        self.u.curl = Mock(side_effect=[b"{}", update.UpdateError("HTTP 503"), b"{}", b"{}"])
+
+        with patch.object(update.time, "sleep") as sleep:
+            self.u.health(agent=True)
+
+        self.assertEqual([call.args[0] for call in self.u.curl.call_args_list], [
+            "http://127.0.0.1:18010/ready", automation, automation, "https://localhost:8443/",
+        ])
+        sleep.assert_called_once_with(2)
+
+    def test_canvas_health_reports_automation_timeout(self):
+        self.u.args.sandbox = None
+        self.u.curl = Mock(side_effect=[b"{}", update.UpdateError("HTTP 503")])
+
+        with patch.object(update.time, "monotonic", side_effect=[0, 0, 300]), \
+             self.assertRaisesRegex(update.UpdateError, "Служба автоматизаций не готова.*18011/ready"):
+            self.u.health(agent=True)
+
+    def test_gateway_health_only_checks_https(self):
+        self.u.args.sandbox = None
+        self.u.curl = Mock(return_value=b"{}")
+
+        self.u.health()
+
+        self.u.curl.assert_called_once_with("https://localhost:8443/")
+
     def canvas_wants(self, deps):
         package = self.root / "ui/node_modules" / update.PACKAGE / "package.json"
         update.atomic_json(package, {**update.read_json(package), "dependencies": deps})

@@ -9,7 +9,7 @@
 |---|---|
 | `./nexus-update [check]` | Установленные/доступные версии: npm, pins из tarball, git ls-remote и отставание, GitHub releases Caddy и llama-swap, uv resolver dry-run для голоса, PyPI для команд экрана (hai-drivers). Проекты/окружения не меняются; допустимы журнал и кэши инструментов |
 | `./nexus-update check --offline` | Без сети; доступные версии — unknown |
-| `./nexus-update canvas [VERSION]` | Точная одинаковая версия в двух проектах, build overlay, отчёт локали, restart agent → gateway, health и API smoke guard. При ошибке восстановление обоих проектов, build, restart и health |
+| `./nexus-update canvas [VERSION]` | Точная одинаковая версия в двух проектах, build overlay, отчёт локали, restart agent → gateway, проверка готовности агента, Automation и HTTPS, затем API smoke guard. При ошибке восстановление обоих проектов, build, restart и проверка готовности |
 | `./nexus-update ik-llama [COMMIT]` | По умолчанию origin/main; проверки занятости, диска и чистоты tracked-файлов, новый каталог сборки, --version до/после swap. Сохраняет build.prev; службу модели не запускает |
 | `./nexus-update ik-llama [COMMIT] --bench /path/model.gguf` | Только явное разрешение короткого чтения указанной модели: 64 prompt / 16 generation / 1 повтор. Отказ при compute-процессах, загрузке GPU >5% или занятой памяти >1024 МиБ |
 | `./nexus-update caddy [VERSION]` | linux_amd64 tarball, SHA-256 из checksums релиза, validate, caddy.prev, restart gateway, HTTPS health; автоматическое восстановление при ошибке |

@@ -455,7 +455,10 @@ class Updater:
     def health(self, agent=False, voice=False):
         if self.args.sandbox:
             return
-        urls = ["http://127.0.0.1:18010/ready", "https://localhost:8443/"] if agent else ["https://localhost:8443/"]
+        gateway = "https://localhost:8443/"
+        # Agent Server can be ready while Automation is still migrating SQLite.
+        automation = "http://127.0.0.1:18011/ready"
+        urls = ["http://127.0.0.1:18010/ready", automation, gateway] if agent else [gateway]
         if voice:
             urls = ["http://127.0.0.1:18020/health"]
         for url in urls:
@@ -468,6 +471,8 @@ class Updater:
                     break
                 except (UpdateError, ValueError, subprocess.TimeoutExpired):
                     if time.monotonic() >= deadline:
+                        if url == automation:
+                            raise UpdateError(f"Служба автоматизаций не готова ({url})") from None
                         raise UpdateError(f"Health не прошёл: {url}") from None
                     time.sleep(2)
             self.emit(f"Health OK: {url}")
