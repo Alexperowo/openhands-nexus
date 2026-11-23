@@ -4,10 +4,47 @@ set -euo pipefail
 desk="$(dirname -- "${BASH_SOURCE[0]}")/../.venv/bin/desk"
 command=${0##*/}
 if [[ "$command" != desk ]]; then
-    exec "$desk" "$command" "$@"
+    set -- "$command" "$@"
 fi
-if [[ ${COORDINATE_SYSTEM:-} == 0-1000 && $# == 1 && "$1" == skill ]]; then
-    "$desk" skill | sed -E '/^- Coordinates are screen pixels,/c\- Nexus uses 0-1000 on each axis. The top left is (0,0), and the bottom right is (1000,1000). For a W by H screenshot, convert pixels to (1000*x/W, 1000*y/H). On a 1600 by 900 screenshot a point at (800,450) is click 500 500. Use coords to check the size. Rulers and receipts use the same frame.'
+if [[ ${1:-} == locate-label ]]; then
+    screen_dir="$(dirname -- "${BASH_SOURCE[0]}")/.."
+    exec "$screen_dir/.venv/bin/python" -I "$screen_dir/locate_label.py" "${@:2}"
+fi
+if [[ ${1:-} == click-crop ]]; then
+    usage='Usage: desk click-crop X Y shows=LEFT,TOP-RIGHT,BOTTOM (0-1000)'
+    if [[ ${2:-} == --help && $# == 2 ]]; then
+        printf '%s\n' "$usage"
+        exit
+    fi
+    number='[0-9]{1,4}'
+    if [[ ${COORDINATE_SYSTEM:-} != 0-1000 || $# != 4 || ! $2 =~ ^$number$ || ! $3 =~ ^$number$ ||
+          ! ${4#shows=} =~ ^($number),($number)-($number),($number)$ ]]; then
+        printf '%s\n' "$usage" >&2
+        exit 2
+    fi
+    x=$((10#$2)) y=$((10#$3))
+    left=$((10#${BASH_REMATCH[1]})) top=$((10#${BASH_REMATCH[2]}))
+    right=$((10#${BASH_REMATCH[3]})) bottom=$((10#${BASH_REMATCH[4]}))
+    if ((x > 1000 || y > 1000 || left >= right || top >= bottom || right > 1000 || bottom > 1000)); then
+        printf '%s\n' 'The point and the zoom region must be within 0-1000, with a positive region size.' >&2
+        exit 2
+    fi
+    # Keep fractional screen coordinates so the desktop driver can convert to pixels once.
+    screen_x=$((1000 * left + x * (right - left)))
+    screen_y=$((1000 * top + y * (bottom - top)))
+    printf -v x '%d.%03d' "$((screen_x / 1000))" "$((screen_x % 1000))"
+    printf -v y '%d.%03d' "$((screen_y / 1000))" "$((screen_y % 1000))"
+    exec "$desk" click "$x" "$y"
+fi
+if [[ ${COORDINATE_SYSTEM:-} == 0-1000 ]]; then
+    if [[ $# == 1 && "$1" == skill ]]; then
+        "$desk" skill | sed -E '/^- Coordinates are screen pixels,/c\- Nexus uses 0-1000 on each axis. The top left is (0,0), and the bottom right is (1000,1000). For a W by H screenshot, convert pixels to (1000*x/W, 1000*y/H). On a 1600 by 900 screenshot a point at (800,450) is click 500 500. Use coords to check the size. Rulers and receipts use the same frame.'
+    elif [[ ${1:-} == zoom && $# -ge 3 ]]; then
+        "$desk" "$@"
+    else
+        exec "$desk" "$@"
+    fi
+    printf '%s\n' 'With Holo4, find a named button on a zoom image using desk locate-label SHOT "LABEL" and the number printed by zoom, without #. If the label is not found, refine the zoom. For any model, desk click-crop X Y shows=LEFT,TOP-RIGHT,BOTTOM uses integer X and Y from 0 to 1000 within the image itself and the shows= box from that image. Verify the outcome with a new screenshot.'
     exit
 fi
 exec "$desk" "$@"

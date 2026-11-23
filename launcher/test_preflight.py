@@ -35,6 +35,8 @@ class PreflightTests(unittest.TestCase):
             native = screen / ".venv/bin/desk"
             native.write_text("#!/bin/sh\nif [ \"$1\" = skill ]; then\n"
                               "  printf '%s\\n' '- Coordinates are screen pixels, (0,0) top-left.'\n"
+                              "elif [ \"$1\" = zoom ]; then\n"
+                              "  printf '%s\\n' 'shows=58,347-558,847' '@@attach /tmp/example.png'\n"
                               "else\n  printf '%s\\n' \"$*\"\nfi\n")
             native.chmod(0o755)
             click = screen / "bin/click"
@@ -43,6 +45,28 @@ class PreflightTests(unittest.TestCase):
                 env = {**os.environ, "COORDINATE_SYSTEM": mode}
                 self.assertIn(expected, subprocess.check_output([wrapper, "skill"], env=env, text=True))
             self.assertEqual(subprocess.check_output([click, "310", "600"], text=True), "click 310 600\n")
+            env = {**os.environ, "COORDINATE_SYSTEM": "0-1000"}
+            zoom = screen / "bin/zoom"
+            zoom.symlink_to("desk")
+            output = subprocess.check_output([zoom, "308", "597"], env=env, text=True)
+            self.assertIn("shows=58,347-558,847\n@@attach /tmp/example.png\n", output)
+            self.assertIn("desk click-crop X Y", output)
+            click_crop = screen / "bin/click-crop"
+            click_crop.symlink_to("desk")
+            self.assertEqual(subprocess.check_output(
+                [click_crop, "493", "513", "shows=58,347-558,847"], env=env, text=True),
+                "click 304.500 603.500\n")
+            for x, y, expected in (("493", "513", "click 304.500 603.500\n"),
+                                   ("647", "508", "click 381.500 601.000\n"),
+                                   ("0000", "1000", "click 58.000 847.000\n")):
+                self.assertEqual(subprocess.check_output(
+                    [wrapper, "click-crop", x, y, "shows=58,347-558,847"], env=env, text=True), expected)
+            for coordinate, box in (("1001", "58,347-558,847"), ("500", "558,347-58,847"),
+                                    ("500", "58,347-558,1001"), ("500", "$(touch unexpected)")):
+                result = subprocess.run([wrapper, "click-crop", coordinate, "500", box],
+                                        env=env, capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, "")
 
     def test_strict_check_rejects_a_skipped_group(self):
         main = runpy.run_path(str(preflight.ROOT / "check"))["main"]

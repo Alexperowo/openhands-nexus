@@ -404,6 +404,41 @@ class GoalTests(unittest.TestCase):
         self.assertEqual((short.timeout, short.max_output_tokens, short.litellm_extra_body["thinking_budget_tokens"]),
                          (20, 400, 100))
 
+    def test_only_recent_desktop_captures_reach_the_local_vision_auditor(self):
+        from openhands.sdk.conversation.goal import controller as sdk
+
+        def image_turn(path, data):
+            _, _, action, event = self.run_events("")
+            observation = TerminalObservation(command="screenshot", content=[
+                TextContent(text=f"@@attach {path}"), ImageContent(image_urls=[f"data:image/jpeg;base64,{data}"]),
+            ])
+            return [action, event.model_copy(update={"observation": observation})]
+
+        events = [*image_turn("/tmp/screenshots/0001.png", "b2xk"), self.user(self.objective),
+                  *image_turn("/tmp/screenshots/0002.png", "b2xk"),
+                  *image_turn("/tmp/screenshots/0003.png", "YmVmb3Jl"),
+                  *image_turn("/tmp/screenshots/0004.png", "YWZ0ZXI="), *image_turn("/tmp/other.png", "b3RoZXI=")]
+        engine = LLM(model="openai/holo", base_url="http://127.0.0.1:18030/v1", api_key="not-needed",
+                     usage_id="audit", stream=True, capability_overrides={"supports_vision": True})
+        received = []
+
+        def completion(llm, messages):
+            self.assertFalse(llm.stream)
+            received.append(messages[-1].content)
+            return SimpleNamespace(message=Message(role="assistant", content=[TextContent(
+                text='{"score": 1, "complete": true, "missing": ""}')]))
+
+        with patch.object(LLM, "completion", completion):
+            for llm in (engine, engine.model_copy(update={"base_url": "https://example.net/v1"}),
+                        engine.model_copy(update={"capability_overrides": {"supports_vision": False}})):
+                done = sdk.GoalController(self.objective, llm).on_run_finished(events)
+                self.assertEqual(done.outcome.status, "complete")
+        local, remote, text_only = received
+        self.assertEqual([part.image_urls[0] for part in local if isinstance(part, ImageContent)],
+                         ["data:image/jpeg;base64,YmVmb3Jl", "data:image/jpeg;base64,YWZ0ZXI="])
+        self.assertEqual(len(remote), 1)
+        self.assertEqual(len(text_only), 1)
+
     def test_owner_decision_stops_the_loop_and_plain_gap_continues_in_russian(self):
         from openhands.sdk.conversation.goal import controller as sdk
         from openhands.agent_server import event_service

@@ -63,7 +63,8 @@ def layers():
     """(name, folder, commands, reason to skip or None)"""
     venv = Path(VOICE).exists()
     dist = (ROOT / "ui/dist/index.html").exists()
-    yield "готовность к запуску", ".", [["python3", "-I", "launcher/preflight.py"]], None
+    yield "готовность к запуску", ".", [["python3", "-I", "launcher/preflight.py"],
+                                      [str(ROOT / "screen/.venv/bin/python"), "screen/test_locate_label.py"]], None
     yield "интерфейс", "ui", [["npm", "test"]], None if dist else "нет ui/dist: (cd ui && npm run build)"
     yield "страж", "guard", [["python3", "test_guard.py"]], None
     yield "голос", "voice", [[VOICE, name] for name in ("test_pronunciation.py", "test_service.py", "test_download.py")], \
