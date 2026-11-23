@@ -3,6 +3,8 @@
 
   python3 -I agent/config.py check   # differing keys, exit 1 on drift
   python3 -I agent/config.py apply   # LLM profiles, other settings, then the active profile
+  python3 -I agent/config.py sync-optional   # reconcile optional profiles on agent startup
+  python3 -I agent/config.py optional-model-dir   # llama-swap's optional configuration directory
 
 The files hold only what differs from OpenHands defaults; apply leaves everything else as
 it is. It talks to agent-server directly with the session key and never prints a value of
@@ -17,6 +19,7 @@ from urllib.parse import quote, urlsplit
 SERVER = "http://127.0.0.1:18010"
 SESSION_ENV = Path.home() / ".config/openhands-nexus/session.env"
 CONFIG = Path(__file__).resolve().parent / "config"
+MODELS = CONFIG.parent.parent / "models"
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
 
@@ -46,13 +49,36 @@ def merged(common, own):
     return result
 
 
+def profile_data():
+    return json.loads((CONFIG / "profiles.json").read_text())
+
+
+def optional_weight_ready(spec):
+    path = MODELS / "weights" / spec["weight"]
+    try:
+        if not path.is_file() or path.stat().st_size != spec["size"]:
+            return False
+        with path.open("rb") as model:
+            return model.read(4) == b"GGUF"
+    except OSError:
+        return False
+
+
+def optional_model_dir():
+    if optional_weight_ready(profile_data()["optional"]["Holo4-MTP-27B"]):
+        print(MODELS / "optional/holo-mtp")
+    return 0
+
+
 def wanted():
     """Settings and profiles exactly as the files describe them."""
     settings = json.loads((CONFIG / "settings.json").read_text())
     settings["agent_settings"].setdefault("agent_context", {})["system_message_suffix"] = \
         (CONFIG / "suffix.md").read_text()
-    data = json.loads((CONFIG / "profiles.json").read_text())
-    profiles = {name: merged(data["common"], own) for name, own in data["profiles"].items()}
+    data = profile_data()
+    optional = data.get("optional", {})
+    profiles = {name: merged(data["common"], own) for name, own in data["profiles"].items()
+                if name not in optional or optional_weight_ready(optional[name])}
     for name, llm in profiles.items():
         if urlsplit(llm["base_url"]).hostname not in LOCAL_HOSTS:
             raise SystemExit(f"Профиль {name}: внешний провайдер, его ключ этим скриптом не задаётся")
@@ -93,19 +119,48 @@ def check():
     return 1 if drift else 0
 
 
+def save_profile(name, llm):
+    call("POST", f"/api/profiles/{quote(name)}", {"llm": {**llm, "api_key": "not-needed"}})
+
+
+def sync_optional():
+    data = profile_data()
+    optional = data.get("optional", {})
+    if not optional:
+        return 0
+    current = call("GET", "/api/profiles")
+    stored = {item["name"]: item for item in current["profiles"]}
+    for name, spec in optional.items():
+        llm = merged(data["common"], data["profiles"][name])
+        path = f"/api/profiles/{quote(name)}"
+        if optional_weight_ready(spec):
+            if name not in stored or differences(llm, call("GET", path)["config"]):
+                save_profile(name, llm)
+        elif name in stored and stored[name].get("model") == llm["model"]:
+            if current.get("active_profile") == name:
+                fallback = spec["fallback"]
+                if fallback not in stored:
+                    save_profile(fallback, merged(data["common"], data["profiles"][fallback]))
+                call("POST", f"/api/profiles/{quote(fallback)}/activate")
+            call("DELETE", path)
+    return 0
+
+
 def apply():
     settings, profiles, active = wanted()
     for name, llm in profiles.items():
-        call("POST", f"/api/profiles/{quote(name)}", {"llm": {**llm, "api_key": "not-needed"}})
+        save_profile(name, llm)
     call("PATCH", "/api/settings", {"agent_settings_diff": settings["agent_settings"],
                                     "conversation_settings_diff": settings["conversation_settings"]})
     call("POST", f"/api/profiles/{quote(active)}/activate")
+    sync_optional()
     print(f"Применено: {len(profiles)} профилей, активный {active}")
     return check()
 
 
 if __name__ == "__main__":
-    commands = {"check": check, "apply": apply}
+    commands = {"check": check, "apply": apply, "sync-optional": sync_optional,
+                "optional-model-dir": optional_model_dir}
     if len(sys.argv) != 2 or sys.argv[1] not in commands:
         raise SystemExit(__doc__)
     sys.exit(commands[sys.argv[1]]())

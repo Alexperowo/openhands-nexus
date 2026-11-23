@@ -25,6 +25,47 @@ models:
 
 
 class PreflightTests(unittest.TestCase):
+    def test_mtp_profile_and_router_require_the_installed_module(self):
+        config = runpy.run_path(str(preflight.ROOT / "agent/config.py"))
+        profile_data = config["profile_data"]()
+        spec = profile_data["optional"]["Holo4-MTP-27B"]
+        spec["size"] = 8
+        with tempfile.TemporaryDirectory() as temp, patch.dict(config["wanted"].__globals__, {
+            "MODELS": Path(temp), "profile_data": lambda: profile_data,
+        }):
+            weights = Path(temp) / "weights" / spec["weight"]
+            weights.parent.mkdir(parents=True)
+            for contents, available in ((None, False), (b"00000000", False), (b"GGUF", False), (b"GGUF0000", True)):
+                if contents is not None:
+                    weights.write_bytes(contents)
+                _, profiles, active = config["wanted"]()
+                self.assertEqual("Holo4-MTP-27B" in profiles, available)
+                self.assertIn("Holo4-27B", profiles)
+                self.assertEqual(active, "Nex-25G")
+                with patch("builtins.print") as printed:
+                    config["optional_model_dir"]()
+                if available:
+                    printed.assert_called_once_with(Path(temp) / "optional/holo-mtp")
+                else:
+                    printed.assert_not_called()
+
+    def test_unavailable_mtp_switches_the_old_default_before_removing_it(self):
+        config = runpy.run_path(str(preflight.ROOT / "agent/config.py"))
+        saved = {"active_profile": "Holo4-MTP-27B", "profiles": [
+            {"name": "Holo4-27B", "model": "openai/holo"},
+            {"name": "Holo4-MTP-27B", "model": "openai/holo-mtp"},
+        ]}
+        requests = []
+
+        def call(method, path):
+            requests.append((method, path))
+            return saved if method == "GET" else {}
+
+        with patch.dict(config["sync_optional"].__globals__, {"call": call, "optional_weight_ready": lambda _: False}):
+            self.assertEqual(config["sync_optional"](), 0)
+        self.assertEqual(requests, [("GET", "/api/profiles"), ("POST", "/api/profiles/Holo4-27B/activate"),
+                                    ("DELETE", "/api/profiles/Holo4-MTP-27B")])
+
     def test_desk_skill_explains_the_configured_coordinates_and_keeps_aliases(self):
         with tempfile.TemporaryDirectory() as temp:
             screen = Path(temp)

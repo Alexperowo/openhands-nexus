@@ -225,7 +225,10 @@ def card_plan():
     A model pinned to one card names it by UUID (CUDA_VISIBLE_DEVICES=GPU-… in llama-swap.yaml);
     any other model served there needs every such card; a model not served there needs none."""
     import yaml  # here: without it only the cards go unwatched
-    served = yaml.safe_load((WORK / "models/llama-swap.yaml").read_text())["models"]
+    model_dir = WORK / "models"
+    served = {}
+    for path in [model_dir / "llama-swap.yaml", *sorted((model_dir / "optional").glob("*/*.yaml"))]:
+        served.update(yaml.safe_load(path.read_text())["models"])
     pinned = {}
     for name, model in served.items():
         for item in model.get("env") or []:

@@ -23,6 +23,13 @@
       "thinking_budget_tokens": 8192
     }
   },
+  "optional": {
+    "Holo4-MTP-27B": {
+      "weight": "Holo4-27B/Holo4-27B-MTP-Qwen3.8-Q8_0-ik.gguf",
+      "size": 2548173280,
+      "fallback": "Holo4-27B"
+    }
+  },
   "profiles": {
     "Nex-25G": {
       "model": "openai/nex25",
@@ -56,6 +63,12 @@
     },
     "Holo4-27B": {
       "model": "openai/holo",
+      "max_input_tokens": 229376,
+      "max_output_tokens": 32768,
+      "capability_overrides": {"send_reasoning_content": false}
+    },
+    "Holo4-MTP-27B": {
+      "model": "openai/holo-mtp",
       "max_input_tokens": 229376,
       "max_output_tokens": 32768,
       "capability_overrides": {"send_reasoning_content": false}

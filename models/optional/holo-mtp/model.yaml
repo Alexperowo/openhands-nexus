@@ -1,0 +1,18 @@
+models:
+  holo-mtp:
+    name: "Holo4 27B с MTP — обе карты"
+    description: "Ускоренная генерация, больше расход видеопамяти"
+    env:
+      - "CUDA_DEVICE_ORDER=PCI_BUS_ID"
+      - "NCCL_SOCKET_IFNAME=lo"
+      - "MTMD_BACKEND_DEVICE=CUDA1"
+      - "LD_LIBRARY_PATH=/usr/local/cuda-13.1/lib64"
+    cmd: |
+      ${server}
+      ${holo_weights}
+      ${holo_devices}
+      ${qwen_sampling} ${common} -ub 2048
+      -md ${holo_dir}/Holo4-27B-MTP-Qwen3.8-Q8_0-ik.gguf
+      --spec-type mtp:n_max=3,p_min=0.0 --draft-params "-ub 512"
+    metadata: {ctx: 262144}
+    disableKeepAlives: true

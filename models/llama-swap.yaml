@@ -28,6 +28,8 @@ macros:
   nex_dir: weights/Nex-N2.5-mini-OrcaRouter
   tess_dir: weights/Tess-4.5-27B
   holo_dir: weights/Holo4-27B
+  holo_weights: -m ${holo_dir}/Holo4-27B-q4_k_m.gguf --mmproj ${holo_dir}/Holo4-27B-mmproj.f16.gguf
+  holo_devices: -dev CUDA0,CUDA1 -sm layer -ts 16,20 -ngl 999 -c 262144
   # --metrics: numbers only (KV tokens, requests in progress), no prompt text. The status line of
   # the interface reads them to tell reading the context from writing the answer and from a stall.
   # At the thinking budget (thinking_budget_tokens of the request) the server ends the thought with
@@ -41,8 +43,7 @@ macros:
     --reasoning-format deepseek --reasoning-budget -1 ${budget_message}
     --jinja --metrics
   nex_template: --chat-template-file nex-stock.jinja
-  # Sampling by the model cards (Nex N2.5: 0.7/0.95/40; Qwen3.8 thinking, Tess, Holo4: 1.0/0.95/20,
-  # min_p 0). The agent sends the same values from agent/config/profiles.json; these are for other clients.
+  # The agent sends these same defaults from agent/config/profiles.json.
   nex_sampling: --temp 0.7 --top-p 0.95 --top-k 40 --min-p 0
   qwen_sampling: --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0
 
@@ -140,9 +141,8 @@ models:
     # 14.1/18.8 GB, answers at temp 0 unchanged. Measured 28.10.
     cmd: |
       ${server}
-      -m ${holo_dir}/Holo4-27B-q4_k_m.gguf
-      --mmproj ${holo_dir}/Holo4-27B-mmproj.f16.gguf
-      -dev CUDA0,CUDA1 -sm layer -ts 16,20 -ngl 999 -c 262144
+      ${holo_weights}
+      ${holo_devices}
       ${qwen_sampling} ${common} -ub 2048
     metadata: {ctx: 262144}
     disableKeepAlives: true

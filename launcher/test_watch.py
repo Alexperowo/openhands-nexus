@@ -313,7 +313,9 @@ class CardsTests(unittest.TestCase):
         self.assertEqual(list(self.state.parent.iterdir()), [])
 
     def test_plan_reads_the_pinned_cards_from_llama_swap(self):
-        root = Path(tempfile.mkdtemp())
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
         (root / "models").mkdir()
         (root / "agent/config").mkdir(parents=True)
         (root / "models/llama-swap.yaml").write_text(
@@ -322,13 +324,18 @@ class CardsTests(unittest.TestCase):
             "  nex19-2080:\n    env:\n      - \"CUDA_VISIBLE_DEVICES=GPU-2080\"\n    cmd: x\n"
             "  nex19-5060:\n    env:\n      - \"CUDA_VISIBLE_DEVICES=GPU-5060\"\n    cmd: x\n"
             "  tess:\n    env: *both\n    cmd: x\n")
+        optional = root / "models/optional/holo-mtp"
+        optional.mkdir(parents=True)
+        (optional / "model.yaml").write_text("models:\n  holo-mtp:\n    cmd: x\n")
         (root / "agent/config/profiles.json").write_text(json.dumps(
-            {"profiles": {**{p: {"model": m} for p, m in MODELS.items()}, "Cloud": {"model": "other/x"}}}))
+            {"profiles": {**{p: {"model": m} for p, m in MODELS.items()},
+                          "Holo4-MTP-27B": {"model": "openai/holo-mtp"}, "Cloud": {"model": "other/x"}}}))
         with mock.patch.object(watch, "WORK", root):
             models, needs, single = watch.card_plan()
         self.assertEqual(single, {TWO: "Nex-19G-2080", FIVE: "Nex-19G-5060"})
         self.assertEqual(needs["Nex-25G"], {TWO, FIVE})
         self.assertEqual(needs["Tess-27B"], {TWO, FIVE})
+        self.assertEqual(needs["Holo4-MTP-27B"], {TWO, FIVE})
         self.assertNotIn("Cloud", needs)
         self.assertEqual(models["Nex-19G-5060"], "openai/nex19-5060")
 

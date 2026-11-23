@@ -18,7 +18,10 @@ case "${1:-}" in
   models)
     # llama-swap.yaml names files of this folder relatively.
     cd -- "$WORK/models"
-    exec ./llama-swap -config llama-swap.yaml -listen 127.0.0.1:18030
+    optional_config=$(python3 -I "$WORK/agent/config.py" optional-model-dir)
+    args=(-config llama-swap.yaml)
+    if [ -n "$optional_config" ]; then args+=(-config-dir "$optional_config"); fi
+    exec ./llama-swap "${args[@]}" -listen 127.0.0.1:18030
     ;;
   voice)
     cd -- "$WORK/voice"
@@ -51,10 +54,13 @@ case "${1:-}" in
     node node_modules/@openhands/agent-canvas/bin/agent-canvas.mjs -p 8010 -H 127.0.0.1 &
     canvas=$!
     trap 'kill -TERM "$canvas" 2>/dev/null; wait "$canvas"; exit 0' TERM INT
-    answered=0 misses=0
+    answered=0 misses=0 profiles_synced=0
     while kill -0 "$canvas" 2>/dev/null; do
       sleep 10 & wait $!
       if curl -fs -m 5 -o /dev/null http://127.0.0.1:18010/ready; then
+        if (( ! profiles_synced )) && python3 -I "$WORK/agent/config.py" sync-optional; then
+          profiles_synced=1
+        fi
         answered=1 misses=0
       elif ((++misses >= (answered ? 6 : 30))); then
         echo "agent-server on 18010 is not answering; exiting for a restart" >&2
