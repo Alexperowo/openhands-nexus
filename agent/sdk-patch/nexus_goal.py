@@ -460,17 +460,64 @@ def stops(message):
     return any(STOP_WORDS.search(KEEP_GOING.sub(" ", getattr(content, "text", ""))) for content in message.content)
 
 
+GOAL_RESTART_TIMEOUT = 10.0
+
+
 def patch_event_service(module):
+    from openhands.sdk.errors import Conflict
+
     module.RESUME_PROMPT = RESUME_PROMPT
     send = module.EventService.send_message
     stop = module.EventService.stop_goal_loop
+    pause = module.EventService.pause
+    start = module.EventService.start_goal_loop
+    resume = module.EventService.resume_goal_loop
     correction = ContextVar("nexus_goal_correction", default=None)
+
+    async def wait_for_stopped_run(self):
+        # Keep the identities captured by stop/pause. A repeated resume must never
+        # wait for the newly resumed loop to finish and accidentally launch it again.
+        stopping = getattr(self, "_nexus_goal_stopping", ())
+        tasks = {task for task in stopping if task is not None and not task.done()}
+        if tasks:
+            _, pending = await asyncio.wait(tasks, timeout=GOAL_RESTART_TIMEOUT)
+            if pending:
+                raise Conflict("Предыдущий запуск агента ещё завершается. "
+                               "Повторите продолжение через несколько секунд.")
+        if getattr(self, "_nexus_goal_stopping", ()) is stopping:
+            self._nexus_goal_stopping = ()
 
     async def stop_goal_loop(self):
         active = correction.get()
         if active is not None and active[0] is self and active[1] is asyncio.current_task():
             return False
-        return await stop(self)
+        run = getattr(self, "_run_task", None)
+        stopped = await stop(self)
+        if stopped:
+            self._nexus_goal_stopping = (run,)
+            # SDK stop cancels the goal's judge loop alone. Stop its agent run too,
+            # otherwise it can keep waiting for the model or executing the old task.
+            if run is not None and not run.done() and not self._closing:
+                await self.interrupt()
+        return stopped
+
+    async def pause_run(self):
+        tasks = (self._run_task, self._goal_loop_task)
+        await pause(self)
+        self._nexus_goal_stopping = tasks
+        # A goal pause must also interrupt in-flight LLM I/O before it can resume.
+        # Ordinary conversations retain the SDK's graceful pause behavior.
+        run, loop = tasks
+        if loop is not None and not loop.done() and run is not None and not run.done():
+            await self.interrupt()
+
+    async def start_goal_loop(self, objective, **kwargs):
+        await wait_for_stopped_run(self)
+        return await start(self, objective, **kwargs)
+
+    async def resume_goal_loop(self, **kwargs):
+        await wait_for_stopped_run(self)
+        return await resume(self, **kwargs)
 
     async def send_message(self, message, run=False, _from_goal_loop=False, **kwargs):
         loop = self._goal_loop_task
@@ -484,6 +531,9 @@ def patch_event_service(module):
             correction.reset(token)
 
     module.EventService.stop_goal_loop = stop_goal_loop
+    module.EventService.pause = pause_run
+    module.EventService.start_goal_loop = start_goal_loop
+    module.EventService.resume_goal_loop = resume_goal_loop
     module.EventService.send_message = send_message
 
 

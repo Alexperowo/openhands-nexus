@@ -990,5 +990,192 @@ class GoalSendTests(unittest.TestCase):
         self.assertEqual(self.started, [])
 
 
+class GoalRestartTests(unittest.IsolatedAsyncioTestCase):
+    """Real SDK start/stop/resume guards and HTTP routes, with controlled background work."""
+
+    async def asyncSetUp(self):
+        import httpx
+        from fastapi import FastAPI
+        from fastapi.responses import JSONResponse
+        from openhands.agent_server import conversation_router as routes
+        from openhands.agent_server.dependencies import get_conversation_service
+        from openhands.agent_server.event_service import EventService
+        from openhands.sdk.conversation.state import ConversationExecutionStatus as Status
+        from openhands.sdk.errors import Conflict
+        from uuid import uuid4
+
+        test = self
+        self.started, self.tasks = [], []
+        self.interrupts = 0
+        self.release = asyncio.Event()
+        self.cleanup_delay = 0.03
+
+        class Events(EventService):
+            def __init__(self):
+                self._conversation = SimpleNamespace(
+                    agent=SimpleNamespace(llm=LLM(model="openai/test", api_key="not-needed")),
+                    _state=SimpleNamespace(execution_status=Status.PAUSED))
+                self._closing = False
+                self._run_lock = asyncio.Lock()
+                self._run_task = self._goal_loop_task = None
+                self.last = None
+                self._explicit_interrupt_generation = 0
+
+                def pause():
+                    self._conversation._state.execution_status = Status.PAUSED
+                self._conversation.pause = pause
+
+            async def interrupt(self):
+                # Signal a blocked LLM, leaving its async cleanup pending.
+                test.interrupts += 1
+                self._conversation._state.execution_status = Status.PAUSED
+                test.release.set()
+
+            async def _publish_state_update(self):
+                pass
+
+            async def run_state_op(self, function, *args):
+                return function(*args)
+
+            async def _get_execution_status(self):
+                return self._conversation._state.execution_status
+
+            def _last_goal_loop_status(self):
+                return self.last
+
+            async def _schedule_goal_loop(self, controller, *, resume=False):
+                test.started.append((controller.objective, resume))
+                self.last = dict(objective=controller.objective, status="running",
+                                 iteration=0, max_iterations=controller.max_iterations)
+                self._conversation._state.execution_status = Status.RUNNING
+                release = test.release = asyncio.Event()
+
+                async def run():
+                    await release.wait()
+                    await asyncio.sleep(test.cleanup_delay)
+                    self._conversation._state.execution_status = Status.PAUSED
+
+                self._run_task = asyncio.create_task(run())
+                test.tasks.append(self._run_task)
+
+                async def loop():
+                    try:
+                        await asyncio.wait({self._run_task})
+                    finally:
+                        self.last['status'] = 'interrupted'
+                        self._goal_loop_task = None
+
+                self._goal_loop_task = asyncio.create_task(loop())
+                test.tasks.append(self._goal_loop_task)
+                await asyncio.sleep(0)  # the loop has entered its cancellation cleanup
+
+        self.events = Events()
+
+        class Service:
+            async def get_event_service(self, conversation_id):
+                return test.events
+
+        async def understand(event_service, text):
+            return "task", "Цель: " + text
+
+        understanding = patch.object(goal, "understand", understand)
+        understanding.start()
+        self.addCleanup(understanding.stop)
+        app = FastAPI()
+
+        async def conflict(request, error):
+            return JSONResponse(status_code=409, content={"detail": error.detail})
+
+        app.add_exception_handler(Conflict, conflict)
+        app.include_router(routes.conversation_router, prefix="/api")
+        app.dependency_overrides[get_conversation_service] = lambda: Service()
+        self.client = httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
+        self.url = f"/api/conversations/{uuid4()}/goal"
+
+    async def asyncTearDown(self):
+        for task in self.tasks:
+            task.cancel()
+        await asyncio.gather(*self.tasks, return_exceptions=True)
+        await self.client.aclose()
+
+    async def start_and_stop(self):
+        response = await self.client.post(self.url, json={"objective": "Узнай версию ядра", "attempt": "first"})
+        self.assertEqual(response.status_code, 200, response.text)
+        response = await self.client.post(self.url + "/stop")
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertFalse(self.events._run_task.done())
+
+    async def test_stop_then_immediate_resume_waits_and_starts_once(self):
+        await self.start_and_stop()
+        self.release.set()
+        replies = await asyncio.gather(self.client.post(self.url + "/resume"),
+                                       self.client.post(self.url + "/resume"))
+        self.assertEqual(sorted(reply.status_code for reply in replies), [200, 409])
+        self.assertEqual([resume for _, resume in self.started], [False, True])
+        self.assertFalse(self.events._run_task.done())
+        reply = await self.client.post(self.url + "/resume")
+        self.assertEqual(reply.status_code, 409)
+        self.assertEqual(len(self.started), 2)
+
+    async def test_stop_interrupts_blocked_llm_before_waiting_for_cleanup(self):
+        await self.start_and_stop()
+        self.assertEqual(self.interrupts, 1)
+        with patch.object(goal, "GOAL_RESTART_TIMEOUT", 0.1):
+            reply = await self.client.post(self.url + "/resume")
+        self.assertEqual(reply.status_code, 200, reply.text)
+        self.assertEqual(len(self.started), 2)
+
+    async def test_restart_after_stop_preserves_attempt_idempotency(self):
+        await self.start_and_stop()
+        self.release.set()
+        body = {"objective": "Узнай версию драйвера", "attempt": "second"}
+        replies = await asyncio.gather(self.client.post(self.url, json=body), self.client.post(self.url, json=body))
+        self.assertEqual([reply.status_code for reply in replies], [200, 200])
+        self.assertEqual(len(self.started), 2)
+        self.assertEqual(self.started[-1][0].request, body['objective'])
+
+    async def test_pause_tail_waits_for_both_run_and_old_goal_loop(self):
+        await self.client.post(self.url, json={"objective": "Узнай версию ядра"})
+        await self.events.pause()
+        reply = await self.client.post(self.url + "/resume")
+        self.assertEqual(reply.status_code, 200, reply.text)
+        self.assertEqual(len(self.started), 2)
+
+    async def test_pause_without_goal_retains_sdk_behavior(self):
+        run = asyncio.create_task(self.release.wait())
+        self.tasks.append(run)
+        self.events._run_task = run
+        await self.events.pause()
+        self.assertEqual(self.interrupts, 0)
+        self.assertFalse(run.done())
+
+    async def test_timeout_keeps_old_run_and_allows_retry_after_it_finishes(self):
+        await self.start_and_stop()
+        old = self.events._run_task
+        with patch.object(goal, "GOAL_RESTART_TIMEOUT", 0.02):
+            reply = await self.client.post(self.url + "/resume")
+        self.assertEqual(reply.status_code, 409)
+        self.assertIn("Предыдущий запуск", reply.json()['detail'])
+        self.assertFalse(old.done())
+        self.assertEqual(len(self.started), 1)
+        self.release.set()
+        reply = await self.client.post(self.url + "/resume")
+        self.assertEqual(reply.status_code, 200, reply.text)
+
+    async def test_cancelled_resume_does_not_cancel_old_cleanup(self):
+        await self.start_and_stop()
+        old = self.events._run_task
+        request = asyncio.create_task(self.client.post(self.url + "/resume"))
+        await asyncio.sleep(0.01)
+        self.assertFalse(request.done())
+        request.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await request
+        self.assertFalse(old.done())
+        self.release.set()
+        reply = await self.client.post(self.url + "/resume")
+        self.assertEqual(reply.status_code, 200, reply.text)
+
+
 if __name__ == "__main__":
     unittest.main()
