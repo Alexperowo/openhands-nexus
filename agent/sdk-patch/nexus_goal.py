@@ -101,6 +101,19 @@ question, plan, offer or inferred goal cannot authorize work. For example, if th
 reinstalling Linux after the owner complained about agents filling disks, do not demand a ready
 reinstallation, a migration plan, an ISO or a USB stick. The owner requested none of these.
 
+Preserve intent in both directions. If the agent refused the actual request or substituted a
+different task, such as offering alternatives the owner never requested, return "complete": false
+and "needs_user": true. In "missing", honestly name what the owner requested, what the agent
+declined or did instead, and the owner's decision needed to continue. Do not order the agent to
+finish the substituted task or repeat its refusal. An ordinary unfinished attempt at the actual
+request can still need more work.
+Example: the owner asked how to get LLM Hub's full version free or modify the app to unlock it,
+then said «мне не нужны альтернативы». The agent only offered legal alternatives. Return
+{"score": 0.0, "complete": false, "needs_user": true,
+"missing": "Агент не стал выяснять получение полной версии LLM Hub и самостоятельную модификацию приложения, предложил альтернативы. Нужно решение владельца о продолжении"}.
+The assistant decides how to answer the request. Recording its actual intent does not require
+carrying it out. The judge must report the mismatch instead of rewriting the owner's intent.
+
 Before asking for any further work, check whether the owner's own messages explicitly request it.
 For OS reinstallation, writing images or formatting disks, or mass deletion, absent an explicit
 owner request for that operation, return "complete": false, "needs_user": true and
@@ -190,6 +203,11 @@ Examples of the owner's spoken Russian:
 For a task write "goal": one short sentence in Russian, in plain words, saying what must be true \
 when the owner's request is done, as the owner means it. Use the conversation to resolve "it", \
 "this", "there". Do not add work the owner did not ask for and do not drop any part of the request.
+Record the owner's actual intent, including uncomfortable or sensitive parts. Never replace it \
+with a safer, more modest or easier task, legal alternatives, or your own recommendation. \
+Recording a request is separate from executing it. The assistant decides how to answer it.
+Example: «Есть приложение LLM hub. Надо узнать как получить полную версию бесплатно или взломать его» \
+-> {"kind":"task","goal":"Выяснено, как получить полную версию LLM Hub бесплатно или взломать приложение самостоятельной модификацией"}.
 For talk, "goal" is "".
 
 Answer with JSON only: {"kind": "task" or "talk", "goal": "..."}"""

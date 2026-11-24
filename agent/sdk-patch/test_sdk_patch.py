@@ -605,6 +605,52 @@ class GoalTests(unittest.TestCase):
     def test_understanding_failure_sends_the_message_as_usual(self):
         self.assertEqual(asyncio.run(goal.understand(SimpleNamespace(), "Почини звук")), ("talk", ""))
 
+    def test_understanding_preserves_the_requested_free_version_and_app_modification(self):
+        words = "Есть приложение LLM hub. Надо узнать как получить полную версию бесплатно или взломать его"
+        understood = ("Выяснено, как получить полную версию LLM Hub бесплатно или взломать приложение "
+                      "самостоятельной модификацией")
+        self.assertIn("Never replace it", goal.UNDERSTAND_SYSTEM)
+        self.assertIn("Recording a request is separate from executing it", goal.UNDERSTAND_SYSTEM)
+        self.assertIn(words, goal.UNDERSTAND_SYSTEM)
+        self.assertIn(json.dumps({"kind": "task", "goal": understood}, ensure_ascii=False,
+                                 separators=(",", ":")), goal.UNDERSTAND_SYSTEM)
+        response = SimpleNamespace(raise_for_status=lambda: None, json=lambda: {
+            "choices": [{"message": {"content": json.dumps({"kind": "task", "goal": understood})}}]})
+        llm = SimpleNamespace(model="openai/nex19-5060", base_url="http://127.0.0.1:18030/v1", api_key="not-needed")
+        service = SimpleNamespace(_conversation=SimpleNamespace(agent=SimpleNamespace(llm=llm)))
+        with patch("httpx.AsyncClient") as client, patch.object(goal, "recent_messages", return_value=""):
+            post = client.return_value.__aenter__.return_value.post = AsyncMock(return_value=response)
+            self.assertEqual(asyncio.run(goal.understand(service, words)), ("task", understood))
+            self.assertEqual(post.call_args.kwargs["json"]["messages"][-1]["content"],
+                             "Owner's newest message:\n" + words)
+
+    def test_refusal_or_substitution_stops_with_the_corrected_request(self):
+        from openhands.sdk.conversation.goal import controller as sdk, judge
+
+        words = "Узнай, как получить полную версию LLM Hub бесплатно или взломать приложение"
+        correction = "Мне не нужны альтернативы. Изучай структуру приложения, как его модифицировать."
+        substituted = "Найти легальные альтернативы LLM Hub"
+        missing = "Агент отказался изучать модификацию LLM Hub и предложил альтернативы. Нужно решение владельца"
+        self.assertIn("If the agent refused the actual request or substituted", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertIn("Do not order the agent to", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertIn("judge\nthe request as corrected", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertIn("An ordinary unfinished attempt at the actual", judge.JUDGE_SYSTEM_PROMPT)
+        for answer in ("Предлагаю бесплатное альтернативное приложение", "Я не стану выполнять эту просьбу"):
+            with self.subTest(answer=answer):
+                llm = self.judge_llm(json.dumps({"score": 0, "complete": False,
+                                                "needs_user": True, "missing": missing}))
+                events = [self.status(substituted), self.user(words), self.user(correction),
+                          MessageEvent(source="agent", llm_message=Message(
+                              role="assistant", content=[TextContent(text=answer)]))]
+                step = sdk.GoalController(goal.Goal(substituted, words), llm).on_run_finished(events)
+                self.assertIsInstance(step, sdk.GoalDone)
+                self.assertEqual(step.outcome.status, "capped")
+                self.assertEqual(step.outcome.verdict.missing, goal.NEEDS_USER + missing)
+                request, transcript = llm.prompts[0][1].content[0].text.split("<transcript>")
+                self.assertIn(words, request)
+                self.assertIn("user: " + correction, transcript)
+                self.assertIn("assistant: " + answer, transcript)
+
     def test_local_understanding_requests_a_structured_answer(self):
         response = SimpleNamespace(raise_for_status=lambda: None,
                                    json=lambda: {"choices": [{"message": {"content":
