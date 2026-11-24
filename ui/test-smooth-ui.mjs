@@ -8,6 +8,7 @@ import puppeteer from "puppeteer-core";
 import { startFixture } from "./dev/server.mjs";
 import { chromeOptions, openPage, pause, replay } from "./dev/measure.mjs";
 import { testLongHistory } from "./test-long-history.mjs";
+import { testInputMenu, testSettingsLayout } from "./test-settings-layout.mjs";
 
 // A kept fixture build would test old code: without OHN_REPLAY_DIR the current source is built afresh.
 const built = process.env.OHN_REPLAY_DIR ? null : await fs.mkdtemp(path.join(os.tmpdir(), "ohn-ui-replay-"));
@@ -149,6 +150,7 @@ try {
       enhancedContrast: contrast, passes: audit.passes.map(rule => ({id: rule.id, nodes: rule.nodes.length}))}, null, 2) + "\n");
     assert.deepEqual(audit.violations.map(item => ({id: item.id, nodes: item.nodes.map(node => node.target)})), [], caseName);
     assert.ok(ratios.length && minContrast >= 7, `measured text contrast below 7:1: ${minContrast}`);
+    if (!reduced) await testInputMenu(page);
     // A real keyboard expansion must keep focus on the native summary.
     const summary = ".nexus-reasoning > summary";
     await page.focus(summary); await page.keyboard.press("Enter"); await pause(250);
@@ -160,6 +162,7 @@ try {
     console.log(`PASS ${caseName}: scroll, article, keyboard, axe including enhanced contrast`);
     await context.close();
   }
+  await testSettingsLayout(browser, fixture, output);
   // Select through Canvas's existing overflow menu and read the confirmed settings below it.
   {
     const {page, context, errors} = await openPage(browser, fixture.origin, {fontSize: 28});

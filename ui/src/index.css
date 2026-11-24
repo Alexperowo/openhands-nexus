@@ -188,6 +188,52 @@ label:has([data-testid="enable-sound-notifications-switch"]) {
 .nexus-button[aria-pressed="true"] { color: #000; background: #ffdd00; border-color: #fff; }
 
 .settings-shell { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.settings-page { container: nexus-settings / inline-size; }
+.settings-page [data-testid="secrets-settings-screen"] td { white-space: normal; overflow-wrap: anywhere; }
+/* The available form width scales with text, unlike Canvas's viewport breakpoints. */
+@container nexus-settings (width < 40rem) {
+  .settings-page main { padding-inline: 0; }
+  .settings-page [data-slot="combo-box-input-group"] { padding-inline: 0.25rem; }
+  .settings-page [data-slot="combo-box-input-group"] input { padding-left: 0.25rem; }
+  .settings-page div:has(> [data-testid="settings-navbar-desktop"]) { flex-direction: column; }
+  .settings-page [data-testid="settings-navbar-desktop"] { position: static; width: 100%; padding-left: 0; }
+  .settings-page [data-testid="settings-navbar-desktop"] > div:first-of-type {
+    display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.25rem;
+  }
+  .settings-page [data-testid="settings-navbar-desktop"] a { width: auto; }
+  .settings-page [data-testid="settings-navbar-desktop"] > div:empty { display: none; }
+  .settings-page [data-testid="llm-settings-screen"] .grid { grid-template-columns: minmax(0, 1fr); }
+  .settings-page [data-testid="llm-settings-screen"] .grid > div { min-width: 0; grid-column: auto; }
+  .settings-page label > div:first-child { flex-wrap: wrap; }
+  .settings-page p, .settings-page label { overflow-wrap: anywhere; }
+  .settings-page [data-testid="secrets-settings-screen"] > div:has(> [data-testid="add-secret-button"]) {
+    flex-wrap: wrap;
+  }
+  .settings-page [data-testid="secrets-settings-screen"] th,
+  .settings-page [data-testid="secrets-settings-screen"] td {
+    width: auto; padding-inline: 0.5rem; white-space: normal; overflow-wrap: anywhere;
+    overflow: visible; text-overflow: clip;
+  }
+  .settings-page [data-testid="secrets-settings-screen"] th:last-child {
+    width: max(6rem, calc(96px + 1.125rem));
+  }
+  .settings-page .nexus-field select { padding-inline: 0.25rem; }
+}
+@media (max-width: 767px) {
+  [data-agent-server-ui] div:has(> [data-testid="chat-input-overflow-menu"]) {
+    left: 0.5rem !important; right: 0.5rem;
+  }
+  [data-testid="chat-input-overflow-menu"] {
+    width: 100%; max-height: 70vh; overflow-y: auto !important;
+  }
+  [data-testid="chat-input-overflow-menu"] div:has(> [data-testid="overflow-model-submenu"]) {
+    position: static; margin-left: 0;
+  }
+  [data-testid="chat-input-overflow-menu"] div.invisible:has(> [data-testid="overflow-model-submenu"]) { display: none; }
+  [data-testid="overflow-model-submenu"] {
+    position: static; width: 100%; min-width: 0; max-width: none; max-height: none; margin: 0;
+  }
+}
 .settings-shell > :last-child { flex: 1; min-height: 0; overflow: auto; padding: 0 1rem 1rem; }
 .settings-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; border-bottom: 2px solid #888899; }
 .settings-bar h1 { flex: 1; margin: 0; font-size: 1.1rem; }

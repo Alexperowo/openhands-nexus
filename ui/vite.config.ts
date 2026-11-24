@@ -67,6 +67,7 @@ export function canvasEnglishOnly(): Plugin {
 // Replacements take its place: English that bypasses the dictionary where Aleksandr sees or hears it.
 // Private-module compatibility shims for the pinned version (test-providers.mjs guards them).
 export const ADAPTERS = {
+  "components/shared/appearance-portal.js": "src/appearance-portal.tsx",
   "hooks/chat/use-dictation.js": "src/use-dictation-with-speech.ts",
   "components/conversation-events/chat/event-message.js": "src/event-message-with-speech.tsx",
   "ui/dropdown/toggle-button.js": "src/dropdown-toggle-with-label.tsx",

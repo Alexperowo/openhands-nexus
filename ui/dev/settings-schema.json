@@ -1,0 +1,68 @@
+{
+  "model_name": "AgentSettings",
+  "sections": [
+    {
+      "key": "llm",
+      "label": "LLM",
+      "fields": [
+        {
+          "key": "llm.openrouter_app_name",
+          "label": "Openrouter App Name",
+          "description": null,
+          "section": "llm",
+          "section_label": "LLM",
+          "value_type": "string",
+          "default": "OpenHands",
+          "prominence": "major",
+          "depends_on": [],
+          "secret": false,
+          "choices": [],
+          "variant": "openhands"
+        },
+        {
+          "key": "llm.num_retries",
+          "label": "Num Retries",
+          "description": null,
+          "section": "llm",
+          "section_label": "LLM",
+          "value_type": "integer",
+          "default": 5,
+          "prominence": "major",
+          "depends_on": [],
+          "secret": false,
+          "choices": [],
+          "variant": "openhands"
+        },
+        {
+          "key": "llm.retry_multiplier",
+          "label": "Retry Multiplier",
+          "description": null,
+          "section": "llm",
+          "section_label": "LLM",
+          "value_type": "number",
+          "default": 8.0,
+          "prominence": "major",
+          "depends_on": [],
+          "secret": false,
+          "choices": [],
+          "variant": "openhands"
+        },
+        {
+          "key": "llm.retry_min_wait",
+          "label": "Retry Min Wait",
+          "description": null,
+          "section": "llm",
+          "section_label": "LLM",
+          "value_type": "integer",
+          "default": 8,
+          "prominence": "major",
+          "depends_on": [],
+          "secret": false,
+          "choices": [],
+          "variant": "openhands"
+        }
+      ],
+      "variant": null
+    }
+  ]
+}

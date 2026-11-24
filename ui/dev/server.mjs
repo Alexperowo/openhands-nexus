@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { WebSocketServer } from "ws";
 import { fileURLToPath } from "node:url";
+import settingsSchema from "./settings-schema.json" with { type: "json" };
 const timestamp = "2026-10-24T12:00:00Z";
 export const answer = "Проверка завершена. Звук работает, сеть подключена.\n\n" + Array.from({length: 9}, (_, i) => `Пункт ${i + 1}. Это записанный пример длинного ответа для проверки плавности. Текст приходит неравномерными пакетами, но место чтения должно сохраняться.`).join("\n\n");
 const message = (id, source, text) => ({ id, kind: "MessageEvent", source, timestamp, llm_message: { role: source === "agent" ? "assistant" : "user", content: [{type: "text", text}] } });
@@ -76,7 +77,10 @@ export async function startFixture({ root, port = 0, profiles = [] } = {}) {
       if (p === "/llm/model/fixture/health") return json(res, {status: status === "running" ? "no slot available" : "ok", slots_idle: status === "running" ? 0 : 1, slots_processing: status === "running" ? 1 : 0});
       if (p === "/api/settings") return json(res, {language: "ru", enable_sound_notifications: false, is_new_user: false, agent_settings: {llm: {model: "fixture", base_url: "http://127.0.0.1", api_key: "fixture-only"}, tools: []}, conversation_settings: {max_iterations: 100, confirmation_mode: false}, llm_api_key_set: true});
       if (p === "/api/settings/experimental") return json(res, []);
-      if (p === "/api/settings/secrets") return json(res, {secrets: []});
+      if (p === "/api/settings/agent-schema") return json(res, settingsSchema);
+      if (p === "/api/settings/secrets") return json(res, {secrets: [{
+        name: "NEXUS_TEST_SECRET_WITH_LONG_NAME", description: "Тестовое описание секрета для проверки переноса текста.",
+      }]});
       if (p === "/api/profiles") return json(res, {profiles: profiles.map(({name, config}) => ({name, model: config.model})), active_profile: profiles[0]?.name ?? null});
       if (p.startsWith("/api/profiles/")) return json(res, profiles.find(profile => profile.name === decodeURIComponent(p.split("/").at(-1))) ?? {});
       if (p.endsWith("/switch_llm") && req.method === "POST") {

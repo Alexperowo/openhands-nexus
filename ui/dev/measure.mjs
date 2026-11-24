@@ -54,7 +54,7 @@ export async function openPage(browser, origin, {width = 564, height = 785, font
     window.endMeasurement = () => { observing = false; return {shifts, gaps, longFrames, textFrames, articleChanges}; };
   }, {fontSize, autoSpeak, motion});
   await page.goto(origin + initialPath, {waitUntil: "networkidle0"});
-  await page.waitForSelector(initialPath.startsWith("/settings") ? ".nexus-settings" : "[data-testid='chat-input']", {timeout: 15000});
+  await page.waitForSelector(initialPath.startsWith("/settings") ? ".settings-page main" : "[data-testid='chat-input']", {timeout: 15000});
   return {page, context, errors, remoteRequests};
 }
 export async function replay(page) {
