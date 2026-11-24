@@ -8,7 +8,7 @@ import puppeteer from "puppeteer-core";
 import { startFixture } from "./dev/server.mjs";
 import { chromeOptions, openPage, pause, replay } from "./dev/measure.mjs";
 import { testLongHistory } from "./test-long-history.mjs";
-import { testInputMenu, testSettingsLayout } from "./test-settings-layout.mjs";
+import { inputActionsLayout, assertInputActionsLayout, testInputMenu, testSettingsLayout } from "./test-settings-layout.mjs";
 
 // A kept fixture build would test old code: without OHN_REPLAY_DIR the current source is built afresh.
 const built = process.env.OHN_REPLAY_DIR ? null : await fs.mkdtemp(path.join(os.tmpdir(), "ohn-ui-replay-"));
@@ -99,27 +99,19 @@ try {
   for (const [width, height] of [[564, 785], [1280, 900]]) for (const fontSize of [18, 28]) for (const reduced of [false, true]) {
     const {page, context, errors, remoteRequests} = await openPage(browser, fixture.origin, {width, height, fontSize, reduced});
     const caseName = `${width}x${height}-${fontSize}px-${reduced ? "reduced" : "normal"}`;
-    await page.waitForFunction(() => document.querySelector("[data-testid='chat-input-model-status']")?.textContent.includes("Высокое"));
-    const modelStatus = await page.$eval("[data-testid='chat-input-model-status']", node => {
-      const picker = document.querySelector("[data-testid='chat-input-llm-profile']");
-      const row = node.previousElementSibling.getBoundingClientRect();
-      const rect = node.getBoundingClientRect();
-      return {visible: !!node.getClientRects().length, pickerVisible: !!picker.getClientRects().length,
-        text: node.textContent, below: rect.top >= row.bottom, fits: node.scrollWidth <= node.clientWidth,
-        fontSize: getComputedStyle(node).fontSize};
-    });
-    assert.equal(modelStatus.visible, width === 564, `model status visibility: ${caseName}`);
-    assert.equal(modelStatus.pickerVisible, width === 1280, `model picker visibility: ${caseName}`);
-    assert.equal(modelStatus.text, "Holo4-MTP-27B-Q8_0 · Высокое");
-    if (modelStatus.visible) {
-      assert.ok(modelStatus.below && modelStatus.fits, `model status must fit below controls: ${caseName}`);
-      assert.equal(modelStatus.fontSize, `${fontSize}px`);
-    }
+    await page.waitForFunction(() => document.querySelector(".nexus-model-pill-level")?.textContent === "Высокое");
+    const modelStatus = await page.evaluate(inputActionsLayout);
+    assertInputActionsLayout(modelStatus, caseName);
+    if (modelStatus.statusVisible) assert.equal(modelStatus.text, "Holo4-MTP-27B-Q8_0 · Высокое");
+    if (width === 1280) assert.equal(modelStatus.statusVisible, false, caseName);
+    if (width === 564 && fontSize === 28) assert.equal(modelStatus.statusVisible, true, caseName);
+    if (modelStatus.statusVisible) assert.equal(modelStatus.fontSize, `${fontSize}px`);
     assert.ok(await page.$eval("[data-testid='chat-input']", node => {
       const style = getComputedStyle(node), placeholder = getComputedStyle(node, "::before");
       return style.fontSize === placeholder.fontSize && node.getBoundingClientRect().height >= parseFloat(style.lineHeight) - 1;
     }), "input and placeholder must follow the selected font without clipping");
     await replay(page); await pause(3000);
+    assertInputActionsLayout(await page.evaluate(inputActionsLayout), `${caseName} while running`);
     await page.evaluate(() => { window.streamArticle = document.querySelector("[data-testid='nexus-stream'] article"); });
     const scroll = "[data-testid='chat-scroll-container']";
     await page.hover(scroll); await page.mouse.wheel({deltaY: -200}); await pause(100);
@@ -137,7 +129,7 @@ try {
     // The run ends paused; Canvas's own «Готово» fades out before that and fails contrast mid-fade.
     await page.waitForFunction(() => document.querySelector(".nexus-status-text")?.textContent === "Пауза", {timeout: 10000});
     assert.equal(await page.evaluate(() => window.streamArticle?.isConnected), true, "delta -> final remounted article");
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    assertInputActionsLayout(await page.evaluate(inputActionsLayout), `${caseName} after streaming`);
     assert.equal(await page.$$eval("main,[role='main']", nodes => nodes.filter(node => !["presentation", "none"].includes(node.getAttribute("role"))).length), 1, "one main at desktop and tablet widths");
     await page.screenshot({path: path.join(output, `${caseName}.png`)});
     await page.addScriptTag({content: axe});
@@ -163,7 +155,7 @@ try {
     await context.close();
   }
   await testSettingsLayout(browser, fixture, output);
-  // Select through Canvas's existing overflow menu and read the confirmed settings below it.
+  // Select through Canvas's overflow menu and read the inline status immediately after it.
   {
     const {page, context, errors} = await openPage(browser, fixture.origin, {fontSize: 28});
     const status = "[data-testid='chat-input-model-status']";
@@ -175,18 +167,37 @@ try {
     await openModels();
     await page.click("[data-testid='chat-input-llm-profile-option-Tess4.5-27B']");
     await page.waitForFunction(selector => document.querySelector(selector)?.textContent === "Tess4.5-27B · Высокое", {}, status);
+    assertInputActionsLayout(await page.evaluate(inputActionsLayout), "after model switch");
     await openModels();
     await page.click("[data-testid='chat-input-reasoning-low']");
     await page.waitForFunction(selector => document.querySelector(selector)?.textContent === "Tess4.5-27B · Низкое", {}, status);
+    assertInputActionsLayout(await page.evaluate(inputActionsLayout), "after reasoning switch");
     assert.equal(fixture.requests.filter(entry => entry.path.endsWith("/switch_llm")).length, 2);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.setViewport({width: 1280, height: 900});
-    await page.waitForFunction(selector => !document.querySelector(selector).getClientRects().length, {}, status);
+    await page.waitForFunction(selector => !document.querySelector(selector)?.getClientRects().length, {}, status);
     await page.setViewport({width: 564, height: 785});
     await page.waitForSelector(status, {visible: true});
     assert.equal(await page.$eval(status, node => node.textContent), "Tess4.5-27B · Низкое");
+    assertInputActionsLayout(await page.evaluate(inputActionsLayout), "after resizing back to tablet");
+    // Crossing Canvas's fit threshold must settle, without a ResizeObserver feedback loop.
+    for (const width of [600, 640, 700, 1280, 564]) {
+      await page.setViewport({width, height: 900});
+      await pause(300);
+      const changes = await page.evaluate(async () => {
+        const picker = document.querySelector("[data-testid='chat-input-llm-profile']");
+        let changes = 0;
+        const observer = new MutationObserver(() => changes++);
+        observer.observe(picker.parentElement.parentElement, {attributes: true, attributeFilter: ["class"]});
+        for (let frame = 0; frame < 20; frame++) await new Promise(requestAnimationFrame);
+        observer.disconnect();
+        return changes;
+      });
+      assert.equal(changes, 0, `Canvas fit must settle at ${width}px`);
+      assertInputActionsLayout(await page.evaluate(inputActionsLayout), `resize ${width}px`);
+    }
     assert.deepEqual(errors, []);
-    console.log("PASS model and reasoning from overflow menu, status follows switches and resizing");
+    console.log("PASS inline model/reasoning after overflow, switches, no duplication/overflow and stable Canvas resizing");
     await context.close();
   }
   fixture.setProfiles([]);

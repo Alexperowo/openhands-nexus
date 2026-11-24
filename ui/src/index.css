@@ -31,11 +31,33 @@ body, #root { margin: 0; height: 100%; background: #000; color: #fff; }
 /* Follow Canvas's measured fit, including font changes and side panels. */
 .nexus-input-actions { width: 100%; min-width: 0; }
 .nexus-model-status {
-  display: none; margin: 0; padding-top: 0.25rem;
-  font-size: 1rem; line-height: 1.5; overflow-wrap: anywhere;
+  display: none; flex: 1 1 0; min-width: 0;
+  font-size: 1rem; line-height: 1.5;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.nexus-input-actions:has(.hidden [data-testid="chat-input-llm-profile"]) > .nexus-model-status {
+.nexus-input-actions:has(.hidden [data-testid="chat-input-llm-profile"]) .nexus-model-status {
   display: block;
+}
+/* Only compact the row while the native picker lives in the overflow menu. */
+.nexus-input-actions:has(.hidden [data-testid="chat-input-llm-profile"]) > div {
+  gap: 0.25rem;
+}
+.nexus-input-actions:has(.hidden [data-testid="chat-input-llm-profile"]) > div > div:first-child,
+.nexus-input-actions:has(.hidden [data-testid="chat-input-llm-profile"]) > div > div:first-child > div {
+  flex: 1; min-width: 0; gap: 0.15rem;
+}
+
+.nexus-input-actions:has(.hidden [data-testid="chat-input-llm-profile"]) div:has(> .nexus-model-status) {
+  display: flex; align-items: center; flex: 1; min-width: 0; gap: 0.15rem;
+}
+.nexus-input-actions:has(.hidden [data-testid="chat-input-llm-profile"]) div:has(> .nexus-model-status) > button { flex-shrink: 0; }
+
+/* Share the caption reserve with the inline model, keeping every control its size. */
+@media (max-width: 767px) {
+  [data-agent-server-ui] .nexus-input-actions div.ml-auto:has(> [data-testid="chat-dictation-button"]) {
+    inline-size: calc(196px + 2rem);
+  }
+  .nexus-input-actions [data-testid="submit-button"] { flex-shrink: 0; }
 }
 
 *:focus-visible {

@@ -44,6 +44,59 @@ export function assertSettingsLayout(result, name) {
   for (const value of result.selectedValues) assert.ok(value.available >= value.needed - 1, `${name}: selected value clipped`);
 }
 
+// Also used by the read-only HTTPS check. Only the status text may ellipsize.
+export function inputActionsLayout() {
+  const root = document.querySelector(".nexus-input-actions");
+  const row = root.firstElementChild;
+  const picker = root.querySelector("[data-testid='chat-input-llm-profile']");
+  const status = root.querySelector("[data-testid='chat-input-model-status']");
+  const plus = root.querySelector("[data-testid='chat-plus-button']");
+  const overflow = root.querySelector("button[aria-label='Действия с дополнительным вводом']");
+  const right = row.lastElementChild;
+  const visible = node => !!node?.getClientRects().length;
+  const rect = node => node?.getBoundingClientRect();
+  const statusRect = rect(status), plusRect = rect(plus), overflowRect = rect(overflow);
+  const controls = [...root.querySelectorAll("[data-testid='chat-plus-button'], [data-testid='chat-dictation-button'], [data-testid='submit-button'], [data-testid='stop-button']")]
+    .filter(visible).map(node => ({id: node.dataset.testid, width: rect(node).width, height: rect(node).height}));
+  return {
+    viewportWidth: innerWidth,
+    documentOverflow: document.documentElement.scrollWidth > innerWidth,
+    rowOverflow: row.scrollWidth > row.clientWidth + 1,
+    pickerVisible: visible(picker), statusVisible: visible(status), text: status?.textContent,
+    statusCount: root.querySelectorAll("[data-testid='chat-input-model-status']").length,
+    fontSize: getComputedStyle(root).fontSize,
+    inlineAfterOverflow: !!overflow && status?.previousElementSibling === overflow &&
+      statusRect.left >= overflowRect.right - 1 &&
+      Math.abs(statusRect.top + statusRect.height / 2 - overflowRect.top - overflowRect.height / 2) <= 1,
+    plusThenOverflow: !!overflow && overflowRect.left >= plusRect.right - 1 && overflowRect.left - plusRect.right <= 8,
+    statusWidth: statusRect?.width,
+    clearOfRightControls: !!statusRect && statusRect.right <= rect(right).left + 1,
+    ellipsis: !!status && getComputedStyle(status).textOverflow === "ellipsis" && getComputedStyle(status).minWidth === "0px",
+    controls,
+  };
+}
+
+export function assertInputActionsLayout(result, name) {
+  assert.equal(result.documentOverflow, false, name);
+  assert.equal(result.rowOverflow, false, name);
+  assert.ok(result.statusCount <= 1, name);
+  assert.equal(result.statusVisible, !result.pickerVisible, `${name}: exactly one model indicator`);
+  if (result.statusVisible) {
+    assert.equal(result.inlineAfterOverflow, true, `${name}: status immediately after overflow in the same row`);
+    assert.equal(result.plusThenOverflow, true, `${name}: compact plus/overflow order`);
+    assert.equal(result.clearOfRightControls, true, `${name}: status overlaps right controls`);
+    assert.equal(result.ellipsis, true, name);
+    assert.ok(result.statusWidth >= 48, `${name}: status must have readable space, got ${result.statusWidth}px`);
+  }
+  for (const control of result.controls) {
+    // Canvas permits the desktop send button to flex down to its 48px minimum.
+    const fullSize = control.id === "chat-dictation-button" ||
+      (control.id === "submit-button" && result.viewportWidth <= 767);
+    const expected = fullSize ? Math.max(48, parseFloat(result.fontSize) * 2) : 48;
+    assert.ok(control.width >= expected && control.height >= expected, `${name}: unchanged touch target ${control.id}`);
+  }
+}
+
 export async function testSettingsLayout(browser, fixture, output) {
   const results = [];
   for (const width of [564, 1280]) for (const fontSize of [18, 28]) {
