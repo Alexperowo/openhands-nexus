@@ -4,6 +4,7 @@ import { getPreferences, stateCuesEnabled } from "./preferences";
 import { cueForStatus, playConnectionCue, playCue } from "./status-cues";
 import { shouldAnnounceStatus } from "./status-announcement";
 import { ConnectionAnnouncements, type ConnectionPhase } from "./connection-state";
+import { requestReconnect } from "./connection-events.ts";
 
 // Shown for a few seconds after the change; a request for the owner stays.
 const TRANSIENT = new Set(["verified", "unverified", "paused"]);
@@ -18,6 +19,17 @@ interface Props {
 
 /** The visual slot stays mounted; live regions only change for meaningful transitions. */
 export function StatusBar({ status, activity, model, problems, connection = "online" }: Props) {
+  const slot = useRef<HTMLElement>(null);
+  const focusOnRestore = useRef(false);
+  const reconnect = () => {
+    focusOnRestore.current = Boolean(slot.current?.contains(document.activeElement));
+    requestReconnect();
+  };
+  useEffect(() => {
+    if (connection !== "online" || !focusOnRestore.current) return;
+    focusOnRestore.current = false;
+    if (document.activeElement === document.body) slot.current?.focus({ preventScroll: true });
+  }, [connection]);
   const previous = useRef({ status: "", error: "" });
   const previousCue = useRef("");
   const connectionNotices = useRef(new ConnectionAnnouncements());
@@ -77,14 +89,18 @@ export function StatusBar({ status, activity, model, problems, connection = "onl
     return () => clearTimeout(timer);
   }, [status, connection]);
 
-  const visual = problem || (connection === "connecting" ? "Подключение к диалогу…" :
+  const Visual = connection === "lost" ? "button" : "p";
+  const visual = connection === "lost" ? "Связь потеряна. Переподключиться" : problem || (connection === "connecting" ? "Подключение к диалогу…" :
     visible ? lineText : loading ? MODEL_LOADING : "");
-  return <section className="nexus-status-slot" aria-label="Состояние агента">
-    <p className={`status-bar${problem ? " status-problem" : ""}`} data-tone={problem ? "error" : loading ? "work" : line?.tone}
+  return <section ref={slot} tabIndex={-1} className="nexus-status-slot" aria-label="Состояние агента">
+    <Visual type={connection === "lost" ? "button" : undefined}
+      data-testid={connection === "lost" ? "reconnect-button" : undefined}
+      onClick={connection === "lost" ? reconnect : undefined}
+      className={`status-bar${problem ? " status-problem" : ""}`} data-tone={problem ? "error" : loading ? "work" : line?.tone}
       data-empty={!visual || undefined}>
       <span className={(WORKING.has(status) || loading) && !problem ? "nexus-working" : undefined} aria-hidden="true" />
       <span className="nexus-status-text" key={visual}>{visual || "\u00a0"}</span>
-    </p>
+    </Visual>
     <p className="visually-hidden" role="status" aria-atomic="true">{announcement}</p>
     <p className="visually-hidden" role="alert" aria-atomic="true">{urgent}</p>
   </section>;

@@ -156,6 +156,10 @@ label:has([data-testid="enable-sound-notifications-switch"]) {
   border-bottom: 2px solid #888899;
   background: #111115;
 }
+.nexus-status-slot > button.status-bar {
+  width: 100%; font-family: inherit; line-height: inherit; text-align: start;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 0.15em;
+}
 .status-bar[data-tone="work"] { color: #9abaff; }
 .status-bar[data-tone="done"] { color: #8ee59a; }
 .status-bar[data-tone="attention"] { color: #000; background: #ffdd00; }

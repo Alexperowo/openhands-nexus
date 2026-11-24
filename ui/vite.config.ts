@@ -67,6 +67,8 @@ export function canvasEnglishOnly(): Plugin {
 // Replacements take its place: English that bypasses the dictionary where Aleksandr sees or hears it.
 // Private-module compatibility shims for the pinned version (test-providers.mjs guards them).
 export const ADAPTERS = {
+  // Re-enable socket retries after freeze/resume even before Canvas observes onclose.
+  "hooks/use-websocket.js": "src/use-websocket-with-resume.ts",
   "components/shared/appearance-portal.js": "src/appearance-portal.tsx",
   "hooks/chat/use-dictation.js": "src/use-dictation-with-speech.ts",
   "components/conversation-events/chat/event-message.js": "src/event-message-with-speech.tsx",

@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import puppeteer from "puppeteer-core";
 import { startFixture } from "./dev/server.mjs";
 import { chromeOptions, openPage, pause, replay } from "./dev/measure.mjs";
+import { testReconnect } from "./test-reconnect.mjs";
 import { testLongHistory } from "./test-long-history.mjs";
 import { inputActionsLayout, assertInputActionsLayout, testInputMenu, testSettingsLayout } from "./test-settings-layout.mjs";
 
@@ -32,6 +33,7 @@ try {
     }
   }
   const axe = await fs.readFile(axePath, "utf8");
+  await testReconnect(browser, fixture, output, axe);
   // A recognition outage keeps a typed draft. A second recording replaces only the selected
   // word, leaves the edit in the composer, and sends it once on the user's tap.
   {

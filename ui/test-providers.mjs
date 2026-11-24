@@ -50,6 +50,7 @@ test("navigation context is still the private module the alias replaces", () => 
 
 // vite.config.ts (ADAPTERS) swaps these private modules for host adapters that wrap them.
 const ADAPTED = {
+  [`${dist}/hooks/use-websocket.js`]: "useWebSocket",
   [`${dist}/components/shared/appearance-portal.js`]: "AppearancePortal",
   [`${dist}/hooks/chat/use-dictation.js`]: "useDictation",
   [`${dist}/components/conversation-events/chat/event-message.js`]: "EventMessage",

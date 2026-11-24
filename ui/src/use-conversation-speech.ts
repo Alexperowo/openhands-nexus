@@ -5,6 +5,7 @@ import { requestJson, errorMessage } from "./api.ts";
 import { SpeechEvents, type AgentEvent } from "./speech-events.ts";
 import { SessionEvents, openingCursor, runningGoal, type SessionFrame } from "./session-events.ts";
 import { AgentActivity, CheckedSpeech, ModelProgress, readModelState, type ActivitySnapshot, type ModelState } from "./agent-activity.ts";
+import { RECONNECT_EVENT } from "./connection-events.ts";
 import { screenAwake } from "./screen-awake.ts";
 
 const NO_ACTIVITY: ActivitySnapshot = { actions: [], error: "" };
@@ -235,11 +236,13 @@ export function useConversationSpeech(conversationId: string | null) {
       ws?.close();
     });
     document.addEventListener("visibilitychange", resume);
+    document.addEventListener(RECONNECT_EVENT, resume);
     void connect();
     checkTimer = setTimeout(check, CHECK_INTERVAL);
     return () => {
       controller.abort();
       document.removeEventListener("visibilitychange", resume);
+      document.removeEventListener(RECONNECT_EVENT, resume);
       screenAwake.set(false);
       audioService.stop();
     };
