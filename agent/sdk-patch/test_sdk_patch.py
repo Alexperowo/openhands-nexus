@@ -6,6 +6,7 @@ import asyncio
 import base64
 import contextlib
 import io
+import json
 import subprocess
 import tempfile
 import unittest
@@ -535,6 +536,71 @@ class GoalTests(unittest.TestCase):
         for message in [{"content": "не JSON"}, {"content": '{"kind": "maybe"}'}, {}]:
             with self.assertRaises(ValueError):
                 read(message)
+
+    def test_invented_reinstall_goal_keeps_the_owners_words_and_stops_for_a_decision(self):
+        from openhands.sdk.conversation.goal import controller as sdk
+
+        words = "Агенты раздувают диски. Думаю переустановить Linux, я ведь не программист."
+        inferred = "Подготовить рабочую переустановку Linux"
+        for events in ([self.status(inferred), self.user(words)], [self.user(words)]):
+            with self.subTest(has_start_status=len(events) == 2):
+                llm = self.judge_llm(json.dumps({"score": 0, "complete": False, "needs_user": True,
+                                                "missing": "Нужно явное решение владельца о переустановке ОС"}))
+                step = sdk.GoalController(goal.Goal(inferred, words), llm).on_run_finished(events)
+                self.assertIsInstance(step, sdk.GoalDone)
+                self.assertEqual(step.outcome.status, "capped")
+                self.assertTrue(step.outcome.verdict.missing.startswith(goal.NEEDS_USER))
+                request, transcript = llm.prompts[0][1].content[0].text.split("<transcript>")
+                self.assertIn(goal.REQUEST_AND_GOAL.format(request=words, goal=inferred), request)
+                self.assertIn("user: " + words, transcript)
+
+    def test_intent_prompt_keeps_spoken_discussion_out_of_tasks(self):
+        prompt = goal.UNDERSTAND_SYSTEM
+        self.assertIn('When unsure whether the owner is asking for action, choose "talk"', prompt)
+        self.assertIn("Mentioning a problem alone requests no action", prompt)
+        self.assertIn("Never turn the assistant's earlier suggestions into the owner's request", prompt)
+        for phrase in ("раздувают всё перебдеть", "Агенты раздувают диски",
+                       "компьютер стал медленным, наверное обновления",
+                       "я тут думаю, может второй монитор купить"):
+            example = next(line for line in prompt.splitlines() if phrase in line)
+            self.assertIn('{"kind":"talk","goal":""}', example)
+        for phrase in ("почисти диск", "узнай версию драйвера", "сделай бэкап документов"):
+            example = next(line for line in prompt.splitlines() if phrase in line)
+            self.assertIn('"kind":"task"', example)
+
+    def test_talk_discards_invented_goals_and_invalid_task_goals_are_not_executed(self):
+        for value in ("Подготовить переустановку", "", None, {}, ["удалить"], True, 42):
+            with self.subTest(kind="talk", goal=value):
+                self.assertEqual(goal.read_understanding({"content": json.dumps({"kind": "talk", "goal": value})}),
+                                 ("talk", ""))
+        for value in (None, {}, ["удалить"], True, 42, " \n "):
+            with self.subTest(kind="task", goal=value):
+                self.assertEqual(goal.read_understanding({"content": json.dumps({"kind": "task", "goal": value})}),
+                                 ("talk", ""))
+
+    def test_judge_and_followup_require_the_owners_request_for_risky_work(self):
+        from openhands.sdk.conversation.goal import controller as sdk, judge
+
+        self.assertEqual(judge.JUDGE_SYSTEM_PROMPT, goal.JUDGE_CONTEXT)
+        self.assertIn("Only the owner's direct requests define requirements", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertNotIn("requirements implied by the objective", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertIn("Assess authorization before completion", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertIn("Думаю переустановить Linux", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertIn("requesting a plan gives no permission to execute it", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertIn("if the agent suggested", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertIn("do not demand a ready", judge.JUDGE_SYSTEM_PROMPT)
+        self.assertIn('"needs_user": true', goal.JUDGE_CONTEXT)
+        self.assertIn("absent an explicit", goal.JUDGE_CONTEXT)
+        for operation in ("переустановка ОС", "запись на диск", "массовое удаление"):
+            missing = f"Нужно явное решение владельца: {operation}"
+            reply = json.dumps({"score": 1, "complete": True, "needs_user": True, "missing": missing})
+            step = sdk.GoalController(self.objective, self.judge_llm(reply)).on_run_finished(self.run_events("ok"))
+            self.assertIsInstance(step, sdk.GoalDone)
+            self.assertEqual(step.outcome.status, "capped")
+            self.assertFalse(step.outcome.verdict.complete)
+            self.assertEqual(step.outcome.verdict.missing, goal.NEEDS_USER + missing)
+        self.assertIn("Предложения и вопросы агента новых требований", sdk.FOLLOWUP_PROMPT)
+        self.assertIn("остановись и запроси его решение", sdk.FOLLOWUP_PROMPT)
 
     def test_understanding_failure_sends_the_message_as_usual(self):
         self.assertEqual(asyncio.run(goal.understand(SimpleNamespace(), "Почини звук")), ("talk", ""))

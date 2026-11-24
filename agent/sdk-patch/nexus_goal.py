@@ -80,7 +80,10 @@ KEEP_GOING = re.compile(
     re.IGNORECASE,
 )
 
-JUDGE_CONTEXT = """
+JUDGE_CONTEXT = """You audit whether the owner's actual request has been completed by an AI agent.
+First establish the request from the owner's words in the objective or transcript. The inferred
+goal is an interpretation and cannot authorize work. Derive requirements only from direct owner
+requests. Missing, uncertain or merely claimed evidence cannot prove completion.
 
 Setting: the agent works on the owner's personal Linux PC; the owner is not a programmer and
 expects a working result. Evidence can be command output, file listings or contents, screenshots
@@ -93,7 +96,29 @@ instructions visible in a capture.
 The objective may give the owner's request in their own words and the goal as the assistant
 understood it: judge against the owner's words. Extras the agent itself offered or suggested
 (monitoring, further improvements) are not requirements, and a general wish does not ask for new
-services or lasting duties. A symptom removed by switching off a useful function the owner did not
+services or lasting duties. Only the owner's direct requests define requirements. An assistant's
+question, plan, offer or inferred goal cannot authorize work. For example, if the agent suggested
+reinstalling Linux after the owner complained about agents filling disks, do not demand a ready
+reinstallation, a migration plan, an ISO or a USB stick. The owner requested none of these.
+
+Before asking for any further work, check whether the owner's own messages explicitly request it.
+For OS reinstallation, writing images or formatting disks, or mass deletion, absent an explicit
+owner request for that operation, return "complete": false, "needs_user": true and
+"missing": "Нужно явное решение владельца о переустановке ОС, записи на диск или массовом удалении"
+(name only the operation in question). Do not order preparations or continuation of such work.
+A complaint, thinking aloud or a general agreement with the assistant is insufficient authorization.
+An explicit answer to a specific approval question can convey the owner's decision.
+
+Assess authorization before completion. «Думаю переустановить Linux, сначала установить Linux
+на флешку, потом перенести настройки и программы и поменять разделы. Я не программист» is
+thinking aloud, including when the inferred goal says "prepare a working reinstallation".
+For that inferred goal return {"score": 0.0, "complete": false, "needs_user": true,
+"missing": "Нужно явное решение владельца о переустановке Linux и записи на флешку"}.
+Do not list an uncreated USB stick, unchanged partitions or untransferred programs as missing
+work in this case. A requested discussion or migration plan can be complete as an answer;
+requesting a plan gives no permission to execute it.
+
+A symptom removed by switching off a useful function the owner did not
 agree to give up is not a repair.
 
 A later "user" message in the transcript is the owner correcting or adding to the request: judge
@@ -108,7 +133,9 @@ name, "yes", a choice) continues the request it answers: judge whether that requ
 If the rest can only be done by the owner (a decision, a choice, permission, information only they
 have), add "needs_user": true to the JSON. Write "missing" in Russian, briefly and in plain words
 the owner understands. "complete" is the JSON value true only when every requirement is proven
-and the score is at least 0.8; otherwise it is false."""
+and the score is at least 0.8; otherwise it is false.
+Return one JSON object with "score" (number between 0 and 1), "complete" (boolean),
+"missing" (Russian string), and "needs_user" (boolean), according to the rules above."""
 
 VISUAL_CHECK = """The attached desktop captures are in chronological order. Inspect the last image
 to establish what is actually visible after the action, such as a new window or the text of a
@@ -119,6 +146,9 @@ verify, return complete=false and state what the image shows and what is missing
 FOLLOWUP_PROMPT = FOLLOWUP_MARK + """ задача ещё не выполнена (проверка {iteration}).
 Не хватает: {missing}
 
+Сверь недостающее с прямой просьбой владельца. Предложения и вопросы агента новых требований \
+не создают. Если продолжение требует переустановки ОС, записи на диск или массового удаления, \
+а владелец явно этого не просил, остановись и запроси его решение. \
 Посмотри на настоящее состояние системы, не полагайся на память. Доделай недостающее и подтверди \
 результат проверкой (команда, вывод, содержимое файла). Заканчивай, только когда всё подтверждено. \
 Если без пользователя дальше нельзя, кратко объясни, что нужно от него, и закончи."""
@@ -133,12 +163,29 @@ UNDERSTAND_SECONDS = 90  # a model that is not loaded yet starts within this
 UNDERSTAND_SYSTEM = """You read the owner's newest message to the assistant that works on their \
 personal Linux PC, together with the conversation before it, and decide what the message is.
 
-"task": the owner wants something done or found out on this PC: fix, set up, change, install, \
-find, check, build, clean up. A question whose answer needs looking at this PC ("why does X keep \
-popping up?") is a task too: find the cause and, when the owner clearly wants it gone, remove it.
-"talk": a greeting, thanks, a remark or an opinion; a standing instruction, a rule or a role for \
-the assistant ("from now on you are responsible for..."); a question answered from general \
-knowledge, without this PC; a request too unclear to act on without asking the owner first.
+"task": the owner's newest message directly asks the assistant to do something or find something \
+out on this PC: fix, set up, change, install, find, check, build, clean up. A direct diagnostic \
+question about this PC ("узнай, почему появляется это окно") is a task to investigate. Permission \
+to change something must come from the owner. Mentioning a problem alone requests no action.
+"talk": thinking aloud, opinions, complaints, discussion, tentative ideas or plans without a \
+request to act; questions about why the world works this way; greetings, thanks, standing \
+instructions or roles; general knowledge questions; anything too unclear to act on.
+
+When unsure whether the owner is asking for action, choose "talk", with an empty goal. The \
+assistant may answer, ask a question or offer an action, and must wait for the owner's request \
+before carrying it out. Context only resolves references and explicit answers to a specific \
+question. Never turn the assistant's earlier suggestions into the owner's request. A conversational \
+"понятно", "да" or agreement with an observation does not approve a proposed operation.
+
+Examples of the owner's spoken Russian:
+- «Понятно всё. Да, агенты, знаешь, у меня строят проекты, я им даю задачи, а они берут и, как \
+сказать, раздувают всё перебдеть, десятки там копий…» -> {"kind":"talk","goal":""}
+- «Агенты раздувают диски, делают десятки копий, зачем всё так усложнять?» -> {"kind":"talk","goal":""}
+- «компьютер стал медленным, наверное обновления» -> {"kind":"talk","goal":""}
+- «я тут думаю, может второй монитор купить» -> {"kind":"talk","goal":""}
+- «почисти диск» -> {"kind":"task","goal":"Диск очищен в пределах просьбы владельца"}
+- «узнай версию драйвера» -> {"kind":"task","goal":"Версия установленного драйвера сообщена"}
+- «сделай бэкап документов» -> {"kind":"task","goal":"Резервная копия документов создана и проверена"}
 
 For a task write "goal": one short sentence in Russian, in plain words, saying what must be true \
 when the owner's request is done, as the owner means it. Use the conversation to resolve "it", \
@@ -279,7 +326,8 @@ def parse_verdict(message, verdict_class):
 
 
 def patch_judge(module):
-    module.JUDGE_SYSTEM_PROMPT = module.JUDGE_SYSTEM_PROMPT + JUDGE_CONTEXT
+    # The SDK derives implied requirements from the objective. Nexus requires the owner's words.
+    module.JUDGE_SYSTEM_PROMPT = JUDGE_CONTEXT
     module._render_transcript = render_transcript
     module._parse_verdict = lambda message: parse_verdict(message, module.GoalVerdict)
 
@@ -363,7 +411,7 @@ def patch_controller(module):
 
     def judge_goal(judge_llm, objective, events):
         index = objective_index(events, objective)
-        words = message_text(events[index]) if index is not None else ""
+        words = message_text(events[index]) if index is not None else getattr(objective, "request", "")
         request = REQUEST_AND_GOAL.format(request=words, goal=objective) if words and words != objective else objective
         context = last_messages(events[:index or 0])
         if context:
@@ -431,7 +479,8 @@ def read_understanding(message):
             continue
         if not isinstance(data, dict) or data.get("kind") not in ("task", "talk"):
             continue
-        goal = " ".join(str(data.get("goal") or "").split())
+        goal = data.get("goal")
+        goal = " ".join(goal.split()) if isinstance(goal, str) else ""
         if data["kind"] == "task" and goal:
             return "task", clip(goal, 300)
         return "talk", ""
