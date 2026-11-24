@@ -72,7 +72,7 @@ models:
 
   nex19-2080:
     name: "Nex 19G — RTX 2080 Ti"
-    description: "Одна карта 2080 Ti, 5060 Ti свободна"
+    description: "Одна карта 2080 Ti, эксперты 3 слоёв в ОЗУ, 5060 Ti свободна"
     # A single-card profile names its card by UUID, not by number: with the other card gone the numbers
     # shift (this one would become CUDA0), and launcher/watch.py then moves the agent here from profiles
     # that need the lost card. Inside the process the pinned card is CUDA0.
@@ -81,38 +81,39 @@ models:
       - "CUDA_VISIBLE_DEVICES=GPU-edf061f2-691d-d6fb-d083-e5b1c42d0720"
       - "MTMD_BACKEND_DEVICE=CUDA0"
       - "LD_LIBRARY_PATH=/usr/local/cuda-13.1/lib64"
-    # 128K fits 22 GB only with V cache q4_0 (the later -ctv overrides common). Measured 26.10 with a
-    # screenshot and a 115K prompt: q8_0/q8_0 runs out of memory on the screenshot, q8_0 K with q6_0 or
-    # q5_0 V at ~60K (flash attention converts those V types into an extra buffer); q8_0/q4_0 peaks at
-    # 21.97 of 22.5 GB with the desktop's 1.5 GB, 94 tok/s, 35 at 115K. Vision on the CPU would free
-    # 1.1 GB but takes 76 s per screenshot; q6_0/q4_0 leaves 160 MB more.
+    # 128K uses q8_0 K and q4_0 V. Three layers' experts in RAM leave room for GPU vision.
+    # Measured 24.11: 122067 input tokens with a 1920x1080 screenshot, peak 20484/22528 MiB
+    # including the desktop, request 139.5 s. Without RAM experts the peak was 21472 MiB.
+    # K/V q4_0/q4_0 alone left only 1376 MiB free. Keep K at q8_0 for tool calling.
     cmd: |
       ${server}
       -m ${nex_dir}/Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf
       --mmproj ${nex_dir}/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf
-      -dev CUDA0 -ngl 999 -c 131072
-      ${nex_template} ${nex_sampling} ${common} -ctv q4_0
+      -dev CUDA0 -ngl 999 --n-cpu-moe 3 -c 131072
+      ${nex_template} ${nex_sampling} ${common} -ctk q8_0 -ctv q4_0
     metadata: {ctx: 131072}
     disableKeepAlives: true
 
   nex19-5060:
     name: "Nex 19G — RTX 5060 Ti + ОЗУ"
-    description: "Одна карта 5060 Ti, эксперты 20 слоёв в ОЗУ (~41 ток/с); 2080 Ti свободна"
+    description: "Одна карта 5060 Ti, эксперты 22 слоёв в ОЗУ, 2080 Ti свободна"
     env:
       - "CUDA_DEVICE_ORDER=PCI_BUS_ID"
       - "CUDA_VISIBLE_DEVICES=GPU-aefa95ef-fb59-5594-0817-18dd07d74a09"
       - "MTMD_BACKEND_DEVICE=CUDA0"
       - "LD_LIBRARY_PATH=/usr/local/cuda-13.1/lib64"
-    # -ub 2048: a batch of 1024+ tokens moves the RAM experts to the GPU for the prompt, so 45K reads in 40 s
-    # instead of 165 s (generation 31 vs 33 tok/s); a full window with a screenshot peaks at 15.4 of 16.3 GB
-    # (the desktop lives on the 2080 Ti). KLD to an f16-cache reference: 0.0126 (-ub 512) vs 0.0124 (2048), 27.10.
-    # On nex19-2080 -ub 1024 does not fit: the screenshot encoder runs out of memory.
+    # -ub 2048 moves RAM experts to the GPU for prompt reading. Measured 27.10: 45K in 40 s
+    # instead of 165 s, generation 31 vs 33 tok/s. KLD to f16 cache: 0.0126 vs 0.0124.
+    # GPU vision needs q8_0 K/q4_0 V and 22 layers' experts in RAM to keep a ~2 GiB reserve.
+    # Measured 24.11: 122067 input tokens with a 1920x1080 screenshot, peak 14259/16311 MiB,
+    # image encoding 2.0 s, request 94.8 s (CPU vision: 80-84 s and 167-171 s respectively).
+    # With 20 RAM layers, q8_0/q4_0 left 1238 MiB free, q4_0/q4_0 left 1558 MiB.
     cmd: |
       ${server}
       -m ${nex_dir}/Nex-N2.5-mini-OrcaRouter-Sangreal-19G-ICEv2.gguf
       --mmproj ${nex_dir}/mmproj-Nex-N2.5-mini-OrcaRouter-Q8_0.gguf
-      -dev CUDA0 -ngl 999 --n-cpu-moe 20 -c 131072
-      ${nex_template} ${nex_sampling} ${common} -ub 2048
+      -dev CUDA0 -ngl 999 --n-cpu-moe 22 -c 131072
+      ${nex_template} ${nex_sampling} ${common} -ub 2048 -ctk q8_0 -ctv q4_0
     metadata: {ctx: 131072}
     disableKeepAlives: true
 

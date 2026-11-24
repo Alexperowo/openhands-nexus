@@ -2,6 +2,7 @@
 import hashlib
 import importlib.util
 import io
+import re
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -30,6 +31,19 @@ def quiet(*args, **kwargs):
 
 
 class WeightsTests(unittest.TestCase):
+    def test_single_card_gpu_vision_keeps_measured_cache_and_ram_offload(self):
+        text = (HERE / "llama-swap.yaml").read_text()
+        for profile, layers in (("nex19-5060", 22), ("nex19-2080", 3)):
+            with self.subTest(profile=profile):
+                block = re.search(rf"^  {profile}:\n(.*?)(?=^  \S|\Z)", text, re.M | re.S).group(1)
+                self.assertIn('"MTMD_BACKEND_DEVICE=CUDA0"', block)
+                self.assertIn(f"--n-cpu-moe {layers} -c 131072", block)
+                self.assertIn("${common}", block)
+                command = block.split("cmd: |", 1)[1]
+                self.assertIn("-ctk q8_0 -ctv q4_0", command.split("${common}", 1)[1])
+                self.assertIn("-c 131072", block)
+                self.assertIn("CUDA_VISIBLE_DEVICES=GPU-", block)
+
     def test_list_covers_every_weight_of_the_menu(self):
         menu = {str(p.relative_to(HERE / "weights")) for p in preflight.model_files(HERE / "llama-swap.yaml")
                 if HERE / "weights" in p.parents}
